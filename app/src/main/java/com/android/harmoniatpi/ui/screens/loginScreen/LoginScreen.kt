@@ -29,7 +29,7 @@ fun LoginScreen(innerPadding: PaddingValues, navigateToHome: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceEvenly
         ) {
-            Text(text = "LoginScreen", fontSize = 24.sp, fontWeight = FontWeight.Bold)
+            Text(text = "LoginScreen Test", fontSize = 24.sp, fontWeight = FontWeight.Bold)
             Button(onClick = { navigateToHome() }) {
                 Text("go to home")
             }
