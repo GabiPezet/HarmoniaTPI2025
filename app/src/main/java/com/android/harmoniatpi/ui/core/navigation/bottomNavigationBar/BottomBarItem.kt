@@ -2,6 +2,7 @@ package com.android.harmoniatpi.ui.core.navigation.bottomNavigationBar
 
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
@@ -64,9 +65,9 @@ sealed class BottomBarItem {
 
     data object Tab4 : BottomBarItem() {
         override val route: BottomBarRoutes
-            get() = BottomBarRoutes.Tab4Screen
+            get() = BottomBarRoutes.RehearsalRoomRoute
         override val titleRes: String
-            get() = "tab4"
+            get() = "Sala de ensayo"
         override val icon: @Composable () -> Unit
             get() = {
                 Icon(

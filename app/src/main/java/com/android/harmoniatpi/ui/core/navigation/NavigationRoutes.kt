@@ -21,5 +21,5 @@ sealed class BottomBarRoutes{
     @Serializable
     data object Tab3Screen : BottomBarRoutes()
     @Serializable
-    data object Tab4Screen : BottomBarRoutes()
+    data object RehearsalRoomRoute : BottomBarRoutes()
 }

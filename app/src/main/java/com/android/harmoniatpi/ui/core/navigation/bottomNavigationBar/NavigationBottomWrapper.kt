@@ -8,7 +8,7 @@ import com.android.harmoniatpi.ui.core.navigation.BottomBarRoutes
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.Tab1Screen
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.Tab2Screen
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.Tab3Screen
-import com.android.harmoniatpi.ui.screens.homeScreen.tabs.Tab4Screen
+import com.android.harmoniatpi.ui.screens.homeScreen.tabs.rehearsalRoomScreen.RehearsalRoomScreen
 
 @Composable
 fun NavigationBottomWrapper(
@@ -19,6 +19,6 @@ fun NavigationBottomWrapper(
         composable<BottomBarRoutes.Tab1Screen> { Tab1Screen(navigateToLogin = navigateToHome) }
         composable<BottomBarRoutes.Tab2Screen> { Tab2Screen() }
         composable<BottomBarRoutes.Tab3Screen> { Tab3Screen() }
-        composable<BottomBarRoutes.Tab4Screen> { Tab4Screen() }
+        composable<BottomBarRoutes.RehearsalRoomRoute> { RehearsalRoomScreen() }
     }
 }

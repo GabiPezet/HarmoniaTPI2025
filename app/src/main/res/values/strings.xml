@@ -1,3 +1,24 @@
 <resources>
     <string name="app_name">HarmoniaTPI</string>
+    <string name="internet_disable_screen_NoInternetMessage">Sin conexión a Internet</string>
+    <string name="internet_disable_screen_verifyInternetMessage">Por favor verifique su conexión y vuelva a intentarlo.</string>
+    <string name="internet_disable_screen_tryAgainMessage">Volver a intentar</string>
+    <!--Global-->
+    <string name="no_conection_internet_message">Sin conexión a internet</string>
+    <string name="content_description_notification">Notificaciones</string>
+    <!--LoadingScreen-->
+    <string name="circular_progress_bar_loadingMessage">Cargando</string>
+    <!--LoginScreen-->
+    <string name="login_screen_userNotExist">"El Usuario ingresado no existe en el sistema, consulte con mesa de ayuda"</string>
+    <string name="login_screen_version_app">Versión: %1$s</string>
+    <string name="login_screen_helpDeskNumberPhone">+5491147858585</string>
+    <string name="login_screen_callHelpDesk">LLAMAR</string>
+    <string name="login_screen_offlineMessage">No hay internet, por favor revisa tu conexión y vuelve a intentarlo.</string>
+    <string name="login_screen_EnterApp">INGRESAR</string>
+    <string name="login_screen_userPassword">Contraseña</string>
+    <string name="login_screen_userName">Usuario</string>
+    <string name="login_screen_login_error">Usuario o contraseña incorrectos</string>
+    <string name="login_screen_messageNotPermissionGranted">Se necesitan permisos para continuar</string>
+    <!--ContentDescription-->
+    <string name="content_description_no_internet_icon">No Internet Icon</string>
 </resources>
