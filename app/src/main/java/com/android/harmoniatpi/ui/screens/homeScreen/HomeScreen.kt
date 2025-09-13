@@ -1,0 +1,106 @@
+package com.android.harmoniatpi.ui.screens.homeScreen
+
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import com.android.harmoniatpi.ui.core.navigation.bottomNavigationBar.BottomBarItem
+import com.android.harmoniatpi.ui.core.navigation.bottomNavigationBar.NavigationBottomWrapper
+
+@Composable
+fun HomeScreen(navigateToLogin: () -> Unit) {
+    val itemsTabs = listOf(
+        BottomBarItem.Tab1,
+        BottomBarItem.Tab2,
+        BottomBarItem.Tab3,
+        BottomBarItem.Tab4
+    )
+    val navControllerNavBar = rememberNavController()
+    var currentTabName by remember { mutableStateOf("tab1") }
+
+    Scaffold(
+        bottomBar = {
+            BottomNavigation(
+                items = itemsTabs,
+                navControllerNavBar = navControllerNavBar,
+                onCurrentScreenChanged = { screen -> currentTabName = screen })
+        }
+    ) { innerScaffoldPadding ->
+        Box(
+            modifier = Modifier
+                .padding(innerScaffoldPadding)
+        ) {
+            NavigationBottomWrapper(navControllerNavBar, navigateToLogin)
+        }
+
+    }
+}
+
+@Composable
+fun BottomNavigation(
+    items: List<BottomBarItem>,
+    navControllerNavBar: NavHostController,
+    onCurrentScreenChanged: (String) -> Unit
+) {
+    val navBackStackEntry by navControllerNavBar.currentBackStackEntryAsState()
+    val currentDestination = navBackStackEntry?.destination
+
+    NavigationBar(
+        containerColor = MaterialTheme.colorScheme.onSecondaryContainer,
+        tonalElevation = 16.dp
+    ) {
+        val currentScreen = currentDestination?.toString()?.substringAfterLast(".")
+        LaunchedEffect(currentScreen) {
+            currentScreen?.let { onCurrentScreenChanged(it) }
+        }
+
+        items.forEach { item ->
+            NavigationBarItem(
+                colors = NavigationBarItemDefaults.colors(
+                    indicatorColor = MaterialTheme.colorScheme.primary,
+                    selectedIconColor = MaterialTheme.colorScheme.onPrimary,
+                    unselectedIconColor = MaterialTheme.colorScheme.secondary
+                ),
+                icon = item.icon,
+                onClick = {
+                    navControllerNavBar.navigate(route = item.route) {
+                        navControllerNavBar.graph.startDestinationRoute?.let { route ->
+                            popUpTo(route) {
+                                saveState = true
+                            }
+
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                },
+                selected = currentScreen == item.route.toString(),
+                label = {
+                    Text(
+                        text = item.titleRes,
+                        color = if (currentScreen == item.route.toString()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
+                        fontSize = 10.sp
+                    )
+                },
+                interactionSource = null,
+            )
+        }
+
+    }
+}

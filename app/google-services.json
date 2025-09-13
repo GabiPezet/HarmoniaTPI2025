@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "154479614223",
+    "firebase_url": "https://harmoniatpi2025-default-rtdb.firebaseio.com",
+    "project_id": "harmoniatpi2025",
+    "storage_bucket": "harmoniatpi2025.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:154479614223:android:f62dc57eda31643c18067a",
+        "android_client_info": {
+          "package_name": "com.android.harmoniatpi"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDCyDn2yAglnuc6-YJ4Q3cGlLIlyfJjFTw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
