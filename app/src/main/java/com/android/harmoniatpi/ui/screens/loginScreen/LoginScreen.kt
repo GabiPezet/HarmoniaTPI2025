@@ -81,8 +81,8 @@ fun LoginScreen(
 //    asdasd
     val isPortrait = isScreenInPortrait()
     val uiState by viewModel.uiState.collectAsState()
-    val username = rememberSaveable { mutableStateOf("") }
-    val password = rememberSaveable { mutableStateOf("") }
+    val username = rememberSaveable { mutableStateOf("test@gmail.com") }
+    val password = rememberSaveable { mutableStateOf("123456") }
     val hasNavigated = remember { mutableStateOf(false) }
     val permissions = buildList {
         add(permission.RECORD_AUDIO)

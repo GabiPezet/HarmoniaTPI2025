@@ -30,7 +30,6 @@ dataStoreVersion = "1.1.7"
 barcodeScanning = "17.3.0"
 cameraCore = "1.4.2"
 kotlinxCoroutinesPlayServices = "1.10.1"
-reorderable = "2.4.3"
 mapsCompose = "2.11.4"
 playServicesMaps = "19.2.0"
 location = "21.3.0"
@@ -118,6 +117,8 @@ firebase-realtime-database = { module = "com.google.firebase:firebase-database" 
 firebase-perf = {module = "com.google.firebase:firebase-perf-ktx"}
 firebase-config = {module = "com.google.firebase:firebase-config-ktx"}
 firebase-firestore = { module = "com.google.firebase:firebase-firestore-ktx" }
+firebase-auth = { module = "com.google.firebase:firebase-auth-ktx" }
+firebase-storage = { module = "com.google.firebase:firebase-storage-ktx" }
 # Lottie
 lottie-compose = { module = "com.airbnb.android:lottie-compose", version.ref = "lottieCompose" }
 [plugins]

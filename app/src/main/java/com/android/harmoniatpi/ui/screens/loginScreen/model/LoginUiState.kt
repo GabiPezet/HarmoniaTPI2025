@@ -8,6 +8,5 @@ data class LoginUiState(
     val errorMessage: String? = null,
     val isLoading : Boolean = false,
     val helpDeskContact: Boolean = false,
-    val isInitialized: Boolean = false,
-    val autoLogin : Boolean = false
+    val isInitialized: Boolean = false
 )
