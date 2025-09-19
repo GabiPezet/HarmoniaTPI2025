@@ -1,6 +1,5 @@
 package com.android.harmoniatpi.ui.components
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,9 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -39,13 +36,6 @@ fun InternetDisableScreen(colorText: Color, modifier: Modifier, tryAgain: () -> 
             .testTag("InternetDisableScreen"),
         contentAlignment = Alignment.Center
     ) {
-
-        Image(
-            painter = painterResource(id = R.drawable.iv_ocasa_background),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -63,7 +53,7 @@ fun InternetDisableScreen(colorText: Color, modifier: Modifier, tryAgain: () -> 
             Text(
                 text = stringResource(R.string.internet_disable_screen_NoInternetMessage),
                 style = MaterialTheme.typography.titleLarge.copy(
-                    color = MaterialTheme.colorScheme.onSecondary
+                    color = MaterialTheme.colorScheme.secondary
                 ),
                 textAlign = TextAlign.Center
             )

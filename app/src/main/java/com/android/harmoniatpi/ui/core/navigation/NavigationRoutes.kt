@@ -8,6 +8,9 @@ sealed class NavigationRoutes() {
     data object LoginScreenRoute : NavigationRoutes()
 
     @Serializable
+    data object RegisterScreenRoute : NavigationRoutes()
+
+    @Serializable
     data object HomeScreenRoute : NavigationRoutes()
 }
 

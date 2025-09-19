@@ -1,10 +1,10 @@
 package com.android.harmoniatpi.domain.usecases
 
-import com.google.firebase.auth.FirebaseAuth
+import com.android.harmoniatpi.domain.interfaces.Repository
 import javax.inject.Inject
 
 class GetFirebaseCurrentUserUseCase @Inject constructor(
-    private val firebaseAuth: FirebaseAuth
+    private val repository: Repository
 ) {
-    operator fun invoke() = firebaseAuth.currentUser
+    operator fun invoke() = repository.getFirebaseCurrentUser()
 }
