@@ -1,16 +1,16 @@
 package com.android.harmoniatpi.ui.screens.loginScreen.viewModel
 
 import android.content.Context
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.harmoniatpi.domain.usecases.CheckIsInternetAvailableUseCase
+import com.android.harmoniatpi.domain.usecases.FirebaseLoginUseCase
+import com.android.harmoniatpi.domain.usecases.GetFirebaseCurrentUserUseCase
 import com.android.harmoniatpi.ui.screens.loginScreen.model.LoginUiState
 import com.android.harmoniatpi.ui.screens.loginScreen.util.checkUserNick
 import com.android.harmoniatpi.ui.screens.loginScreen.util.checkValidPassword
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -20,9 +20,10 @@ import javax.inject.Inject
 @HiltViewModel
 class LoginScreenViewModel @Inject constructor(
     private val isInternetAvailable: CheckIsInternetAvailableUseCase,
+    private val getFirebaseCurrentUserUseCase: GetFirebaseCurrentUserUseCase,
+    private val firebaseLoginUseCase: FirebaseLoginUseCase,
     @ApplicationContext private val context: Context
-) :
-    ViewModel() {
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState = _uiState.asStateFlow()
@@ -40,7 +41,6 @@ class LoginScreenViewModel @Inject constructor(
     fun checkInternetAvailable() {
         viewModelScope.launch {
             val isInternetAvailable = isInternetAvailable()
-            Log.i("KlyxDevs", "Internet Activado: $isInternetAvailable")
             _uiState.update {
                 it.copy(
                     isInternetAvailable = isInternetAvailable,
@@ -53,24 +53,20 @@ class LoginScreenViewModel @Inject constructor(
 
     fun tryAutoLogin() {
         viewModelScope.launch {
-            val result = _uiState.value.autoLogin
+            val result = getFirebaseCurrentUserUseCase() != null
             _uiState.update {
                 when (result) {
-                    true -> {
-                        it.copy(
-                            loginSuccess = true,
-                            isLoading = false,
-                            isInitialized = true
-                        )
-                    }
+                    true -> it.copy(
+                        loginSuccess = true,
+                        isLoading = false,
+                        isInitialized = true
+                    )
 
-                    false -> {
-                        it.copy(
-                            isLoading = false,
-                            showLoginScreen = true,
-                            isInitialized = true
-                        )
-                    }
+                    false -> it.copy(
+                        isLoading = false,
+                        showLoginScreen = true,
+                        isInitialized = true
+                    )
                 }
             }
         }
@@ -80,15 +76,25 @@ class LoginScreenViewModel @Inject constructor(
         val isValid = checkUserNick(username) && checkValidPassword(password)
         if (username.isNotBlank() && password.isNotBlank() && isValid) {
             viewModelScope.launch {
-                _uiState.update { it.copy(isLoading = true) }
-                delay(4000)
-                _uiState.update { it.copy(loginSuccess = true, isLoading = false) }
+                _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
+                val result = firebaseLoginUseCase(username, password)
+
+                result.onSuccess { _ ->
+                    _uiState.update { it.copy(loginSuccess = true, isLoading = false) }
+                }.onFailure { e ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = e.message ?: "Error de autenticación"
+                        )
+                    }
+                }
             }
+        } else {
+            _uiState.update { it.copy(errorMessage = "Usuario o contraseña inválidos") }
         }
-
     }
-
 
     fun onErrorShown() {
         _uiState.update { it.copy(errorMessage = null, helpDeskContact = true) }

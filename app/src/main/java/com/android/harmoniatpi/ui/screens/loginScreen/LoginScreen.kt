@@ -2,19 +2,15 @@ package com.android.harmoniatpi.ui.screens.loginScreen
 
 import android.Manifest.permission
 import android.content.Context
-import android.content.Intent
 import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -33,7 +29,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -58,7 +53,6 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
-import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.android.harmoniatpi.R
 import com.android.harmoniatpi.data.local.ext.findActivity
@@ -75,14 +69,14 @@ import com.android.harmoniatpi.ui.screens.loginScreen.viewModel.LoginScreenViewM
 fun LoginScreen(
     innerPadding: PaddingValues,
     navigateToHome: () -> Unit,
+    navigateToRegister: () -> Unit,
     viewModel: LoginScreenViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
-//    asdasd
     val isPortrait = isScreenInPortrait()
     val uiState by viewModel.uiState.collectAsState()
-    val username = rememberSaveable { mutableStateOf("") }
-    val password = rememberSaveable { mutableStateOf("") }
+    val username = rememberSaveable { mutableStateOf("test@gmail.com") }
+    val password = rememberSaveable { mutableStateOf("123456") }
     val hasNavigated = remember { mutableStateOf(false) }
     val permissions = buildList {
         add(permission.RECORD_AUDIO)
@@ -158,7 +152,8 @@ fun LoginScreen(
                     password,
                     context,
                     permissions,
-                    viewModel
+                    viewModel,
+                    navigateToRegister
                 )
             } else {
                 LoginLandscapeScreen(
@@ -168,7 +163,8 @@ fun LoginScreen(
                     password,
                     context,
                     permissions,
-                    viewModel
+                    viewModel,
+                    navigateToRegister
                 )
             }
 
@@ -187,7 +183,8 @@ private fun LoginLandscapeScreen(
     password: MutableState<String>,
     context: Context,
     permissions: List<String>,
-    viewModel: LoginScreenViewModel
+    viewModel: LoginScreenViewModel,
+    navigateToRegister: () -> Unit
 ) {
     when {
         !uiState.isInitialized || uiState.isLoading -> {
@@ -200,14 +197,6 @@ private fun LoginLandscapeScreen(
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
-
-                Image(
-                    painter = painterResource(id = R.drawable.iv_ocasa_background),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -238,62 +227,21 @@ private fun LoginLandscapeScreen(
                         )
                     }
 
-                    UserLogin(username, password) { username, password ->
-                        if (context.hasPermissions(permissions)) {
-                            viewModel.checkInternetAvailable()
-                            if (uiState.isInternetAvailable) {
-                                viewModel.onLogin(username, password)
-                            }
-                        } else {
-                            showPermissionsDeniedMessage(context)
-                        }
-                    }
-                }
-
-                AnimatedVisibility(
-                    visible = uiState.helpDeskContact,
-                    modifier = Modifier.align(Alignment.BottomCenter)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(40.dp)
-                            .align(Alignment.BottomCenter)
-                            .background(MaterialTheme.colorScheme.background.copy(alpha = 0.7f)),
-                        contentAlignment = Alignment.BottomCenter
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(start = 16.dp),
-                                text = stringResource(R.string.login_screen_userNotExist),
-                                color = MaterialTheme.colorScheme.secondary,
-                                style = MaterialTheme.typography.labelMedium,
-                            )
-                            TextButton(
-                                modifier = Modifier.padding(end = 16.dp),
-                                onClick = {
-                                    val phoneNumber =
-                                        context.getString(R.string.login_screen_helpDeskNumberPhone)
-                                    val intent = Intent(Intent.ACTION_CALL).apply {
-                                        data = "tel:$phoneNumber".toUri()
-                                    }
-                                    context.startActivity(intent)
+                    UserLogin(
+                        username = username,
+                        password = password,
+                        onLogin = { username, password ->
+                            if (context.hasPermissions(permissions)) {
+                                viewModel.checkInternetAvailable()
+                                if (uiState.isInternetAvailable) {
+                                    viewModel.onLogin(username, password)
                                 }
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.login_screen_callHelpDesk),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
+                            } else {
+                                showPermissionsDeniedMessage(context)
                             }
-                        }
-
-                    }
+                        },
+                        navigateToRegister = navigateToRegister
+                    )
                 }
             }
 
@@ -324,7 +272,8 @@ private fun LoginPortraitScreen(
     password: MutableState<String>,
     context: Context,
     permissions: List<String>,
-    viewModel: LoginScreenViewModel
+    viewModel: LoginScreenViewModel,
+    navigateToRegister: () -> Unit
 ) {
     when {
         !uiState.isInitialized || uiState.isLoading -> {
@@ -338,13 +287,6 @@ private fun LoginPortraitScreen(
                     .padding(innerPadding),
                 contentAlignment = Alignment.Center
             ) {
-
-                Image(
-                    painter = painterResource(id = R.drawable.iv_ocasa_background),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
 
                 Column(
                     modifier = Modifier
@@ -369,62 +311,21 @@ private fun LoginPortraitScreen(
                         )
                     }
 
-                    UserLogin(username, password) { username, password ->
-                        if (context.hasPermissions(permissions)) {
-                            viewModel.checkInternetAvailable()
-                            if (uiState.isInternetAvailable) {
-                                viewModel.onLogin(username, password)
-                            }
-                        } else {
-                            showPermissionsDeniedMessage(context)
-                        }
-                    }
-                }
-
-                AnimatedVisibility(
-                    visible = uiState.helpDeskContact,
-                    modifier = Modifier.align(Alignment.BottomCenter)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(80.dp)
-                            .align(Alignment.BottomCenter)
-                            .background(Color.Black.copy(alpha = 0.7f)),
-                        contentAlignment = Alignment.BottomCenter
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(start = 16.dp, bottom = 16.dp),
-                                text = stringResource(R.string.login_screen_userNotExist),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSecondary,
-                                fontSize = 14.sp
-                            )
-                            TextButton(
-                                modifier = Modifier.padding(end = 16.dp),
-                                onClick = {
-                                    val phoneNumber =
-                                        context.getString(R.string.login_screen_helpDeskNumberPhone)
-                                    val intent = Intent(Intent.ACTION_CALL).apply {
-                                        data = "tel:$phoneNumber".toUri()
-                                    }
-                                    context.startActivity(intent)
+                    UserLogin(
+                        username = username,
+                        password = password,
+                        onLogin = { username, password ->
+                            if (context.hasPermissions(permissions)) {
+                                viewModel.checkInternetAvailable()
+                                if (uiState.isInternetAvailable) {
+                                    viewModel.onLogin(username, password)
                                 }
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.login_screen_callHelpDesk),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
+                            } else {
+                                showPermissionsDeniedMessage(context)
                             }
-                        }
-
-                    }
+                        },
+                        navigateToRegister = navigateToRegister
+                    )
                 }
             }
 
@@ -451,7 +352,8 @@ private fun LoginPortraitScreen(
 private fun UserLogin(
     username: MutableState<String>,
     password: MutableState<String>,
-    onLogin: (String, String) -> Unit
+    onLogin: (String, String) -> Unit,
+    navigateToRegister: () -> Unit
 ) {
     val passwordVisible = rememberSaveable { mutableStateOf(false) }
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -473,8 +375,11 @@ private fun UserLogin(
             onLogin(username.value.trim(), password.value.trim())
             keyboardController?.hide()
         }
+        RegisterButton(label = stringResource(R.string.registrarce), onClick = { navigateToRegister() })
+
     }
 }
+
 
 @Composable
 private fun LoginButton(
@@ -503,6 +408,30 @@ private fun LoginButton(
             containerColor = containerColor,
             disabledContentColor = contentColor,
             disabledContainerColor = containerColor
+        )
+    ) {
+        Text(label, modifier = Modifier.padding(5.dp))
+    }
+}
+
+@Composable
+private fun RegisterButton(
+    label: String,
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        shape = CircleShape,
+        enabled = true,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+            .testTag("REGISTER_BUTTON"),
+        colors = ButtonColors(
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            containerColor = MaterialTheme.colorScheme.primary,
+            disabledContentColor = MaterialTheme.colorScheme.onPrimary,
+            disabledContainerColor = MaterialTheme.colorScheme.primary
         )
     ) {
         Text(label, modifier = Modifier.padding(5.dp))

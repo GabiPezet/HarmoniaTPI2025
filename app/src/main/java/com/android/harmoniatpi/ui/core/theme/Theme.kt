@@ -1,54 +1,66 @@
 package com.android.harmoniatpi.ui.core.theme
 
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
-
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
-)
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
+import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+    primary = OcasaColors.Primary,
+    onPrimary = OcasaColors.OnPrimary,
+    primaryContainer = OcasaColors.SurfaceLight,
+    secondary = OcasaColors.Secondary,
+    onSecondary = OcasaColors.OnSecondary,
+    background = OcasaColors.BackgroundLight,
+    error = OcasaColors.Error,
+    onBackground = OcasaColors.InfoGreen,
+    tertiary = OcasaColors.InfoYellow,
+    surface = OcasaColors.FloatingLight,
+    onSurface = OcasaColors.OnPrimary,
+    inverseSurface = OcasaColors.Primary,
+    inverseOnSurface = Color.Black,
+    surfaceContainerHighest = OcasaColors.toolBar,
+    onSecondaryContainer = OcasaColors.onSecondaryBackgroundLight // PrymaryWhite - PrymaryDark
 
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+)
+private val DarkColorScheme = darkColorScheme(
+    primary = OcasaColors.primaryDark,
+    onPrimary = OcasaColors.OnPrimary,
+    primaryContainer = OcasaColors.primaryContainerDark,
+    secondary = OcasaColors.OnSecondary,
+    onSecondary = OcasaColors.Secondary,
+    background = OcasaColors.BackgroundDark,
+    error = OcasaColors.Error,
+    onBackground = OcasaColors.InfoGreen,
+    tertiary = OcasaColors.InfoYellow,
+    surface = OcasaColors.FloatingDark,
+    onSurface = OcasaColors.Primary,
+    inverseSurface = Color.Black,
+    inverseOnSurface = OcasaColors.Primary,
+    surfaceContainerHighest = OcasaColors.toolBar,
+    onSecondaryContainer = OcasaColors.onSecondaryBackgroundDark
+
 )
 
 @Composable
 fun HarmoniaTPITheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
+    val systemUiController = rememberSystemUiController()
+    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+    SideEffect {
+        systemUiController.setSystemBarsColor(
+            color = Color.Black,
+            darkIcons = darkTheme,
+            isNavigationBarContrastEnforced = true
+        )
     }
-
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
