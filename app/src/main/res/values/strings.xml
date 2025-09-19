@@ -21,4 +21,5 @@
     <string name="login_screen_messageNotPermissionGranted">Se necesitan permisos para continuar</string>
     <!--ContentDescription-->
     <string name="content_description_no_internet_icon">No Internet Icon</string>
+    <string name="registrarce">Registrarce</string>
 </resources>

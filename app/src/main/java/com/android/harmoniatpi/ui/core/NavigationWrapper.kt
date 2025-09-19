@@ -5,8 +5,9 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes
-import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.*
+import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.HomeScreenRoute
+import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.LoginScreenRoute
+import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.RegisterScreenRoute
 import com.android.harmoniatpi.ui.screens.homeScreen.HomeScreen
 import com.android.harmoniatpi.ui.screens.loginScreen.LoginScreen
 import com.android.harmoniatpi.ui.screens.registerScreen.RegisterScreen
