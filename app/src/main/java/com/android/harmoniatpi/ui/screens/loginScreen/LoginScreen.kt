@@ -7,6 +7,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -75,8 +76,8 @@ fun LoginScreen(
     val context = LocalContext.current
     val isPortrait = isScreenInPortrait()
     val uiState by viewModel.uiState.collectAsState()
-    val username = rememberSaveable { mutableStateOf("test@gmail.com") }
-    val password = rememberSaveable { mutableStateOf("123456") }
+    val username = rememberSaveable { mutableStateOf("") }
+    val password = rememberSaveable { mutableStateOf("") }
     val hasNavigated = remember { mutableStateOf(false) }
     val permissions = buildList {
         add(permission.RECORD_AUDIO)
@@ -142,6 +143,7 @@ fun LoginScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
                 .testTag("login_screen")
         ) {
             if (isPortrait) {
@@ -173,6 +175,90 @@ fun LoginScreen(
     }
 
 
+}
+
+@Composable
+private fun LoginPortraitScreen(
+    uiState: LoginUiState,
+    innerPadding: PaddingValues,
+    username: MutableState<String>,
+    password: MutableState<String>,
+    context: Context,
+    permissions: List<String>,
+    viewModel: LoginScreenViewModel,
+    navigateToRegister: () -> Unit
+) {
+    when {
+        !uiState.isInitialized || uiState.isLoading -> {
+            CircularProgressBar(stringResource(R.string.circular_progress_bar_loadingMessage))
+        }
+
+        uiState.showLoginScreen -> {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                contentAlignment = Alignment.Center
+            ) {
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Image(
+                            painter = painterResource(id = R.drawable.iv_harmonia_logo),
+                            contentDescription = null,
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = stringResource(
+                                R.string.login_screen_version_app,
+                                uiState.versionName
+                            ),
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+                    }
+
+                    UserLogin(
+                        username = username,
+                        password = password,
+                        onLogin = { username, password ->
+                            if (context.hasPermissions(permissions)) {
+                                viewModel.checkInternetAvailable()
+                                if (uiState.isInternetAvailable) {
+                                    viewModel.onLogin(username, password)
+                                }
+                            } else {
+                                showPermissionsDeniedMessage(context)
+                            }
+                        },
+                        navigateToRegister = navigateToRegister
+                    )
+                }
+            }
+
+        }
+
+        else -> {
+            InternetDisableScreen(
+                colorText = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.testTag("InternetDisableScreen")
+            ) {
+                viewModel.checkInternetAvailable()
+                if (!uiState.isInternetAvailable) {
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.login_screen_offlineMessage), Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -222,92 +308,8 @@ private fun LoginLandscapeScreen(
                                 uiState.versionName
                             ),
                             style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.onPrimary,
+                            color = MaterialTheme.colorScheme.secondary,
                             fontSize = 10.sp
-                        )
-                    }
-
-                    UserLogin(
-                        username = username,
-                        password = password,
-                        onLogin = { username, password ->
-                            if (context.hasPermissions(permissions)) {
-                                viewModel.checkInternetAvailable()
-                                if (uiState.isInternetAvailable) {
-                                    viewModel.onLogin(username, password)
-                                }
-                            } else {
-                                showPermissionsDeniedMessage(context)
-                            }
-                        },
-                        navigateToRegister = navigateToRegister
-                    )
-                }
-            }
-
-        }
-
-        else -> {
-            InternetDisableScreen(
-                colorText = MaterialTheme.colorScheme.secondary,
-                modifier = Modifier.testTag("InternetDisableScreen")
-            ) {
-                viewModel.checkInternetAvailable()
-                if (!uiState.isInternetAvailable) {
-                    Toast.makeText(
-                        context,
-                        context.getString(R.string.login_screen_offlineMessage), Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun LoginPortraitScreen(
-    uiState: LoginUiState,
-    innerPadding: PaddingValues,
-    username: MutableState<String>,
-    password: MutableState<String>,
-    context: Context,
-    permissions: List<String>,
-    viewModel: LoginScreenViewModel,
-    navigateToRegister: () -> Unit
-) {
-    when {
-        !uiState.isInitialized || uiState.isLoading -> {
-            CircularProgressBar(stringResource(R.string.circular_progress_bar_loadingMessage))
-        }
-
-        uiState.showLoginScreen -> {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentAlignment = Alignment.Center
-            ) {
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Image(
-                            painter = painterResource(id = R.drawable.iv_harmonia_logo),
-                            contentDescription = null,
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = stringResource(
-                                R.string.login_screen_version_app,
-                                uiState.versionName
-                            ),
-                            style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.onPrimary
                         )
                     }
 
@@ -375,7 +377,9 @@ private fun UserLogin(
             onLogin(username.value.trim(), password.value.trim())
             keyboardController?.hide()
         }
-        RegisterButton(label = stringResource(R.string.registrarce), onClick = { navigateToRegister() })
+        RegisterButton(
+            label = stringResource(R.string.registrarce),
+            onClick = { navigateToRegister() })
 
     }
 }

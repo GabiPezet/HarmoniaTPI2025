@@ -1,11 +1,12 @@
 package com.android.harmoniatpi.ui.core.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
@@ -15,7 +16,7 @@ private val LightColorScheme = lightColorScheme(
     primaryContainer = OcasaColors.SurfaceLight,
     secondary = OcasaColors.Secondary,
     onSecondary = OcasaColors.OnSecondary,
-    background = OcasaColors.BackgroundLight,
+    background = OcasaColors.onSecondaryBackgroundLight,
     error = OcasaColors.Error,
     onBackground = OcasaColors.InfoGreen,
     tertiary = OcasaColors.InfoYellow,
@@ -24,7 +25,7 @@ private val LightColorScheme = lightColorScheme(
     inverseSurface = OcasaColors.Primary,
     inverseOnSurface = Color.Black,
     surfaceContainerHighest = OcasaColors.toolBar,
-    onSecondaryContainer = OcasaColors.onSecondaryBackgroundLight // PrymaryWhite - PrymaryDark
+    onSecondaryContainer = OcasaColors.BackgroundLight // PrymaryWhite - PrymaryDark
 
 )
 private val DarkColorScheme = darkColorScheme(
@@ -33,7 +34,7 @@ private val DarkColorScheme = darkColorScheme(
     primaryContainer = OcasaColors.primaryContainerDark,
     secondary = OcasaColors.OnSecondary,
     onSecondary = OcasaColors.Secondary,
-    background = OcasaColors.BackgroundDark,
+    background = OcasaColors.onSecondaryBackgroundDark,
     error = OcasaColors.Error,
     onBackground = OcasaColors.InfoGreen,
     tertiary = OcasaColors.InfoYellow,
@@ -42,17 +43,21 @@ private val DarkColorScheme = darkColorScheme(
     inverseSurface = Color.Black,
     inverseOnSurface = OcasaColors.Primary,
     surfaceContainerHighest = OcasaColors.toolBar,
-    onSecondaryContainer = OcasaColors.onSecondaryBackgroundDark
+    onSecondaryContainer = OcasaColors.BackgroundDark
 
 )
 
 @Composable
 fun HarmoniaTPITheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean,
     content: @Composable () -> Unit
 ) {
     val systemUiController = rememberSystemUiController()
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val baseTypography = Typography()
+    val typographyStyle = remember {
+        typographyProvider(baseTypography)
+    }
 
     SideEffect {
         systemUiController.setSystemBarsColor(
@@ -63,7 +68,7 @@ fun HarmoniaTPITheme(
     }
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
+        typography = typographyStyle,
         content = content
     )
 }
