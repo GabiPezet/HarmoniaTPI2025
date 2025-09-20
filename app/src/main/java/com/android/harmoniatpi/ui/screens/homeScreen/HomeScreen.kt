@@ -10,31 +10,66 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.android.harmoniatpi.R
+import com.android.harmoniatpi.data.local.ext.findActivity
+import com.android.harmoniatpi.ui.components.ShowConfirmationDialog
+import com.android.harmoniatpi.ui.components.Toolbar
 import com.android.harmoniatpi.ui.core.navigation.bottomNavigationBar.BottomBarItem
 import com.android.harmoniatpi.ui.core.navigation.bottomNavigationBar.NavigationBottomWrapper
+import com.android.harmoniatpi.ui.screens.menuPrincipal.content.viewmodel.DrawerContentViewModel
 
 @Composable
-fun HomeScreen(navigateToLogin: () -> Unit) {
+fun HomeScreen(
+    openDrawerState: () -> Unit,
+    drawerViewModel: DrawerContentViewModel
+) {
     val itemsTabs = listOf(
         BottomBarItem.Tab1,
         BottomBarItem.Tab2,
         BottomBarItem.Tab3,
         BottomBarItem.Tab4
     )
+    var showExitAppDialog by rememberSaveable { mutableStateOf(false) }
     val navControllerNavBar = rememberNavController()
     var currentTabName by remember { mutableStateOf("tab1") }
+    val drawerUiState by drawerViewModel.uiState.collectAsState()
+    val activity = LocalContext.current.findActivity()
+
+    ShowConfirmationDialog(
+        show = showExitAppDialog,
+        onDismiss = { showExitAppDialog = false },
+        onConfirm = {
+            activity.finishAffinity()
+        },
+        title = stringResource(R.string.show_confirmation_dialog_exit_confirmation_tittle),
+        message = stringResource(R.string.show_confirmation_dialog_exit_confirmation_question),
+    )
 
     Scaffold(
+        topBar = {
+            Toolbar(
+                title = currentTabName,
+                onNotificationClick = { },
+                hasNotifications = drawerUiState.newNotification,
+                showMenuPrincipal = true,
+                onMenuClick = openDrawerState,
+                isInternetAvailable = true,
+            )
+        },
         bottomBar = {
             BottomNavigation(
                 items = itemsTabs,
@@ -46,7 +81,7 @@ fun HomeScreen(navigateToLogin: () -> Unit) {
             modifier = Modifier
                 .padding(innerScaffoldPadding)
         ) {
-            NavigationBottomWrapper(navControllerNavBar, navigateToLogin)
+            NavigationBottomWrapper(navControllerNavBar, onExitApp = { showExitAppDialog = true })
         }
 
     }

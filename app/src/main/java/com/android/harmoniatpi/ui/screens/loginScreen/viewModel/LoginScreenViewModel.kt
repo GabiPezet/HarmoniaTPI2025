@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.harmoniatpi.domain.usecases.CheckIsInternetAvailableUseCase
-import com.android.harmoniatpi.domain.usecases.FirebaseLoginUseCase
+import com.android.harmoniatpi.domain.usecases.LoginInFirebaseUseCase
 import com.android.harmoniatpi.domain.usecases.GetFirebaseCurrentUserUseCase
 import com.android.harmoniatpi.ui.screens.loginScreen.model.LoginUiState
 import com.android.harmoniatpi.ui.screens.loginScreen.util.checkUserNick
@@ -21,7 +21,7 @@ import javax.inject.Inject
 class LoginScreenViewModel @Inject constructor(
     private val isInternetAvailable: CheckIsInternetAvailableUseCase,
     private val getFirebaseCurrentUserUseCase: GetFirebaseCurrentUserUseCase,
-    private val firebaseLoginUseCase: FirebaseLoginUseCase,
+    private val firebaseLoginUseCase: LoginInFirebaseUseCase,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -98,9 +98,5 @@ class LoginScreenViewModel @Inject constructor(
 
     fun onErrorShown() {
         _uiState.update { it.copy(errorMessage = null, helpDeskContact = true) }
-    }
-
-    fun onLoginNavigated() {
-        _uiState.update { it.copy(loginSuccess = false, helpDeskContact = false) }
     }
 }

@@ -21,5 +21,14 @@
     <string name="login_screen_messageNotPermissionGranted">Se necesitan permisos para continuar</string>
     <!--ContentDescription-->
     <string name="content_description_no_internet_icon">No Internet Icon</string>
-    <string name="registrarce">Registrarce</string>
+    <string name="registrarce">REGISTRARSE</string>
+    <string name="cerrar_sesion">Cerrar sesión</string>
+    <string name="preferencias_generales">Preferencias generales</string>
+    <string name="theme">Tema:</string>
+    <string name="oscuro">Oscuro</string>
+    <string name="claro">Claro</string>
+    <string name="show_confirm_dialog_confirm">Confirmar</string>
+    <string name="show_confirm_dialog_cancel">Cancelar</string>
+    <string name="show_confirmation_dialog_exit_confirmation_tittle">Confirmación de salida</string>
+    <string name="show_confirmation_dialog_exit_confirmation_question">¿Seguro que quieres salir?</string>
 </resources>

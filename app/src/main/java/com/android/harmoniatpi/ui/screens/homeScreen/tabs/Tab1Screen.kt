@@ -13,12 +13,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun Tab1Screen(navigateToLogin: () -> Unit) {
+fun Tab1Screen(onExitApp: () -> Unit) {
 
     BackHandler {
-        navigateToLogin()
+        onExitApp()
     }
-    Box(modifier = Modifier.fillMaxSize().background(Color.DarkGray), contentAlignment = Alignment.Center) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.DarkGray),
+        contentAlignment = Alignment.Center
+    ) {
         Text(text = "Tab 1", fontSize = 24.sp, fontWeight = FontWeight.Bold)
     }
 }
