@@ -2,11 +2,7 @@ package com.android.harmoniatpi.ui.screens.editAudioTest.viewmodel
 
 import android.content.Context
 import android.media.MediaPlayer
-import android.media.MediaRecorder
-import android.os.Environment
 import android.util.Log
-import android.view.Surface
-import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.harmoniatpi.ui.screens.editAudioTest.model.EditAudioTestState
@@ -19,10 +15,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import javax.inject.Inject
 
 @HiltViewModel

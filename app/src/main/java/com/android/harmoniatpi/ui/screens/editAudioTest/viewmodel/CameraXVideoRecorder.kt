@@ -141,7 +141,7 @@ fun CameraXVideoRecorder(
 
                             is VideoRecordEvent.Finalize -> {
                                 activeRecording = null
-                                recordEvent.outputResults.outputUri?.let { uri ->
+                                recordEvent.outputResults.outputUri.let { uri ->
                                     onVideoSaved(uri)
                                 }
                             }
