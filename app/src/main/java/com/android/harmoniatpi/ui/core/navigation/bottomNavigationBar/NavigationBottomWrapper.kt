@@ -13,10 +13,15 @@ import com.android.harmoniatpi.ui.screens.homeScreen.tabs.rehearsalRoomScreen.Re
 @Composable
 fun NavigationBottomWrapper(
     navController: NavHostController,
-    onExitApp: () -> Unit
+    onExitApp: () -> Unit,
+    navigateToEditAudioTest: () -> Unit
 ) {
     NavHost(navController = navController, startDestination = BottomBarRoutes.Tab1Screen) {
-        composable<BottomBarRoutes.Tab1Screen> { Tab1Screen( onExitApp = onExitApp) }
+        composable<BottomBarRoutes.Tab1Screen> {
+            Tab1Screen(
+                onExitApp = onExitApp,
+                navigateToEditAudioTest = {navigateToEditAudioTest()})
+        }
         composable<BottomBarRoutes.Tab2Screen> { Tab2Screen() }
         composable<BottomBarRoutes.Tab3Screen> { Tab3Screen() }
         composable<BottomBarRoutes.RehearsalRoomRoute> { RehearsalRoomScreen() }

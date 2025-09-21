@@ -8,9 +8,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.EditAudioTestRoute
 import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.HomeScreenRoute
 import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.LoginScreenRoute
 import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.RegisterScreenRoute
+import com.android.harmoniatpi.ui.screens.editAudioTest.EditAudioTest
 import com.android.harmoniatpi.ui.screens.homeScreen.HomeScreen
 import com.android.harmoniatpi.ui.screens.loginScreen.LoginScreen
 import com.android.harmoniatpi.ui.screens.menuPrincipal.DrawerScreen
@@ -64,12 +66,17 @@ fun NavigationWrapper(innerPadding: PaddingValues, drawerViewModel: DrawerConten
                         openDrawerState = {
                             coroutineScope.launch { drawerState.open() }
                         },
-                        drawerViewModel = drawerViewModel
+                        drawerViewModel = drawerViewModel,
+                        navigateToEditAudioTest = { navController.navigate(EditAudioTestRoute) }
                     )
 
                 }
             )
 
+        }
+
+        composable<EditAudioTestRoute> {
+            EditAudioTest()
         }
     }
 }

@@ -12,6 +12,9 @@ sealed class NavigationRoutes() {
 
     @Serializable
     data object HomeScreenRoute : NavigationRoutes()
+
+    @Serializable
+    data object EditAudioTestRoute : NavigationRoutes()
 }
 
 // BottomNav

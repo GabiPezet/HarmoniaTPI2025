@@ -76,8 +76,8 @@ fun LoginScreen(
     val context = LocalContext.current
     val isPortrait = isScreenInPortrait()
     val uiState by viewModel.uiState.collectAsState()
-    val username = rememberSaveable { mutableStateOf("") }
-    val password = rememberSaveable { mutableStateOf("") }
+    val username = rememberSaveable { mutableStateOf("pepeArgento@gmail.com") }
+    val password = rememberSaveable { mutableStateOf("123456") }
     val hasNavigated = remember { mutableStateOf(false) }
     val permissions = buildList {
         add(permission.RECORD_AUDIO)
@@ -85,15 +85,16 @@ fun LoginScreen(
         add(permission.ACCESS_FINE_LOCATION)
         add(permission.CALL_PHONE)
         add(permission.READ_PHONE_STATE)
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             add(permission.POST_NOTIFICATIONS)
             add(permission.READ_MEDIA_IMAGES)
             add(permission.READ_MEDIA_VIDEO)
             add(permission.READ_MEDIA_AUDIO)
-        } else {
+        } else if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
             add(permission.READ_EXTERNAL_STORAGE)
             add(permission.WRITE_EXTERNAL_STORAGE)
+        } else {
+            add(permission.READ_EXTERNAL_STORAGE)
         }
     }
 
