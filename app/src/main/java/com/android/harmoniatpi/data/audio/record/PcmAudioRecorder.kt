@@ -14,8 +14,9 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
+import javax.inject.Inject
 
-class PcmAudioRecorder : AudioRecorder {
+class PcmAudioRecorder @Inject constructor() : AudioRecorder {
     private var audioRecord: AudioRecord? = null
     private var recordingJob: Job? = null
 
@@ -35,11 +36,7 @@ class PcmAudioRecorder : AudioRecorder {
         }
 
         audioRecord = AudioRecord(
-            MediaRecorder.AudioSource.MIC,
-            sampleRate,
-            channelConfig,
-            audioFormat,
-            bufferSize
+            MediaRecorder.AudioSource.MIC, sampleRate, channelConfig, audioFormat, bufferSize
         )
 
         if (audioRecord?.state != AudioRecord.STATE_INITIALIZED) {
