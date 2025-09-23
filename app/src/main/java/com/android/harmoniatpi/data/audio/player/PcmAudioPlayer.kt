@@ -29,7 +29,7 @@ class PcmAudioPlayer @Inject constructor() : AudioPlayer {
     private val bufferSize = AudioTrack.getMinBufferSize(sampleRate, channel, encoding)
 
     override fun play(file: File): Result<Unit> {
-        if (playJob != null) {
+        if (playJob != null && audioTrack?.playState == AudioTrack.PLAYSTATE_PLAYING) {
             return Result.failure(IllegalStateException("Playback already in progress"))
         }
 
@@ -55,25 +55,28 @@ class PcmAudioPlayer @Inject constructor() : AudioPlayer {
         }
         audioTrack?.play()
 
-        playJob = scope.launch {
-            val buffer = ByteArray(bufferSize)
-            try {
-                FileInputStream(file).use { fis ->
-                    fis.skip(lastPos)
-                    var read: Int
-                    while (fis.read(buffer).also { read = it } > 0 && isActive) {
-                        while (audioTrack?.playState == AudioTrack.PLAYSTATE_PAUSED && isActive) {
-                            delay(50)
+        if (playJob == null) {
+            playJob = scope.launch {
+                val buffer = ByteArray(bufferSize)
+                try {
+                    FileInputStream(file).use { fis ->
+                        fis.skip(lastPos)
+                        var read: Int
+                        while (fis.read(buffer).also { read = it } > 0 && isActive) {
+                            while (audioTrack?.playState == AudioTrack.PLAYSTATE_PAUSED && isActive) {
+                                delay(50)
+                            }
+                            audioTrack?.write(buffer, 0, read)
+                            lastPos += read
                         }
-                        audioTrack?.write(buffer, 0, read)
-                        lastPos += read
                     }
+                    audioTrack?.stop()
+                    lastPos
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error during playback", e)
                 }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error during playback", e)
             }
         }
-
         return Result.success(Unit)
     }
 
