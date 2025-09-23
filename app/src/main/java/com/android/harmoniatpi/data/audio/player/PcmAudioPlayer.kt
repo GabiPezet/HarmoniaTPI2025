@@ -13,9 +13,10 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileInputStream
+import javax.inject.Inject
 
 
-class PcmAudioPlayer : AudioPlayer {
+class PcmAudioPlayer @Inject constructor() : AudioPlayer {
 
     private var audioTrack: AudioTrack? = null
     private var playJob: Job? = null
