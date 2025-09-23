@@ -29,5 +29,5 @@ abstract class AudioModule {
     abstract fun bindAudioPlayerRepository(impl: AudioPlayerRepositoryImpl): AudioPlayerRepository
 
     @Binds
-    abstract fun bindAudioRecorder(impl: PcmAudioPlayer): AudioPlayer
+    abstract fun bindAudioPlayer(impl: PcmAudioPlayer): AudioPlayer
 }
