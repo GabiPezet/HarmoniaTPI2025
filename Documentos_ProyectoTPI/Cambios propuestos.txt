@@ -1,0 +1,12 @@
+AcademicInvaders Juego y Comunidad Académica
+
+Idea: Videojuego inspirado en Space Invaders, donde inicia en modo fácil aumentando la dificultad gradualmente, cada x tiempo de juego se respondes preguntas académicas o de cultura general. Si reponde correcta adquiere un beneficio y bonus en el puntaje , si responde mal aumenta la dificultad y resta puntos. Se integra con rankings por carrera y foros de debate. Competencia entre universidades.
+
+Funcionalidades Clave: Ranking global y por universidad, creación de torneos, preguntas aportadas por alumnos/docentes, recompensas digitales, badges por conocimiento interdisciplinar.
+
+
+
+Harmonia
+Plataforma Social y Educativa de Música
+
+Funcionalidades Clave: Marketplace de clases presenciales/online, calificaciones de profesores, feed con eventos locales, foros de discusión, reels de prácticas/conciertos/tips etc que permita a los estudiantes mostrar su progreso y a los profesores mostrar sus conocimientos de manera creativa para atraer estudiantes.
