@@ -13,7 +13,20 @@
           "package_name": "com.android.harmoniatpi"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "154479614223-bf3ivdi1vjhm4gk1h5h8elq5chhq2khm.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.android.harmoniatpi",
+            "certificate_hash": "34b2487993002c6093132c99644257bdc16c2952"
+          }
+        },
+        {
+          "client_id": "154479614223-a77ds345029sk98m3ko76f3r4vkouhld.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDCyDn2yAglnuc6-YJ4Q3cGlLIlyfJjFTw"
@@ -21,7 +34,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "154479614223-a77ds345029sk98m3ko76f3r4vkouhld.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

@@ -20,4 +20,6 @@ interface Repository {
         name: String,
         lastName: String
     ): Result<FirebaseUser>
+
+    suspend fun signInWithGoogle(idToken: String): Result<FirebaseUser>
 }

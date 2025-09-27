@@ -1,6 +1,8 @@
 [versions]
 accompanistSystemuicontroller = "0.27.0"
 agp = "8.7.3"
+credentials = "1.3.0"
+googleid = "1.1.0"
 kotlin = "2.1.10"
 coreKtx = "1.16.0"
 junit = "4.13.2"
@@ -39,6 +41,7 @@ services = "4.4.3"
 crashlytics = "3.0.5"
 performance = "2.0.0"
 lottieCompose = "6.6.6"
+playServicesAuth = "21.2.0"
 
 [libraries]
 # Core AndroidX
@@ -119,6 +122,11 @@ firebase-config = {module = "com.google.firebase:firebase-config-ktx"}
 firebase-firestore = { module = "com.google.firebase:firebase-firestore-ktx" }
 firebase-auth = { module = "com.google.firebase:firebase-auth-ktx" }
 firebase-storage = { module = "com.google.firebase:firebase-storage-ktx" }
+# Google Play Services para autenticación de Google
+play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "playServicesAuth" }
+androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
+androidx-credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentials" }
+googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
 # Lottie
 lottie-compose = { module = "com.airbnb.android:lottie-compose", version.ref = "lottieCompose" }
 [plugins]

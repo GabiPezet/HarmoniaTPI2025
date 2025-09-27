@@ -3,7 +3,7 @@ package com.android.harmoniatpi.ui.core.theme
 import androidx.compose.ui.graphics.Color
 
 // Colores de Marca
-val PrimaryHarmonia = Color(0xFFFF9800)
+val PrimaryHarmonia = Color(0xFFFBC658)
 val PrimaryDark = Color(0xFF0C0B0B)
 val PrimaryWhite = Color(0xFFFAFAFA)
 
@@ -13,8 +13,8 @@ val SecondMedium = Color(0xFFCACACA)
 val SecondLight = Color(0xFFEEEEEE)
 
 // Informativos
-val InfoRed = Color(0xFFD61717)
-val InfoYellowHarmonia = Color(0xFFFEAF3E)
+val InfoRed = Color(0xFFFF7878)
+val InfoYellowHarmonia = Color(0xFFFF9400)
 val InfoGreenHarmonia= Color(0xFF0C9D61)
 
 

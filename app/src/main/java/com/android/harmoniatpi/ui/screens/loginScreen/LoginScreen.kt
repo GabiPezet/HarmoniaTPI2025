@@ -1,36 +1,38 @@
 package com.android.harmoniatpi.ui.screens.loginScreen
 
 import android.Manifest.permission
-import android.content.Context
 import android.os.Build
-import android.widget.Toast
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -38,62 +40,65 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
+import androidx.credentials.CredentialManager
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialException
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.android.harmoniatpi.R
 import com.android.harmoniatpi.data.local.ext.findActivity
-import com.android.harmoniatpi.ui.components.CircularProgressBar
-import com.android.harmoniatpi.ui.components.InternetDisableScreen
-import com.android.harmoniatpi.ui.components.isScreenInPortrait
-import com.android.harmoniatpi.ui.screens.loginScreen.model.LoginUiState
+import com.android.harmoniatpi.ui.components.HarmoniaTextField
+import com.android.harmoniatpi.ui.components.LoginBackGroundHeader
+import com.android.harmoniatpi.ui.screens.loginScreen.components.PreviewScreen
 import com.android.harmoniatpi.ui.screens.loginScreen.util.hasPermissions
 import com.android.harmoniatpi.ui.screens.loginScreen.util.showPermissionsDeniedMessage
 import com.android.harmoniatpi.ui.screens.loginScreen.viewModel.LoginScreenViewModel
+import com.android.harmoniatpi.ui.screens.registerScreen.ScreenTitle
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import kotlinx.coroutines.launch
 
 
 @Composable
 fun LoginScreen(
-    innerPadding: PaddingValues,
     navigateToHome: () -> Unit,
     navigateToRegister: () -> Unit,
     viewModel: LoginScreenViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
-    val isPortrait = isScreenInPortrait()
     val uiState by viewModel.uiState.collectAsState()
-    val username = rememberSaveable { mutableStateOf("") }
-    val password = rememberSaveable { mutableStateOf("") }
-    val hasNavigated = remember { mutableStateOf(false) }
+    val username = rememberSaveable { mutableStateOf("pepeArgento@gmail.com") }
+    val password = rememberSaveable { mutableStateOf("123456") }
     val permissions = buildList {
         add(permission.RECORD_AUDIO)
         add(permission.CAMERA)
         add(permission.ACCESS_FINE_LOCATION)
         add(permission.CALL_PHONE)
         add(permission.READ_PHONE_STATE)
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             add(permission.POST_NOTIFICATIONS)
             add(permission.READ_MEDIA_IMAGES)
             add(permission.READ_MEDIA_VIDEO)
             add(permission.READ_MEDIA_AUDIO)
-        } else {
+        } else if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
             add(permission.READ_EXTERNAL_STORAGE)
             add(permission.WRITE_EXTERNAL_STORAGE)
+        } else {
+            add(permission.READ_EXTERNAL_STORAGE)
         }
     }
 
@@ -121,266 +126,193 @@ fun LoginScreen(
     }
 
     LaunchedEffect(uiState.loginSuccess) {
-        if (uiState.loginSuccess && !hasNavigated.value) {
-            hasNavigated.value = true
+        if (uiState.loginSuccess) {
             navigateToHome()
             username.value = ""
             password.value = ""
         }
     }
 
-    uiState.errorMessage?.let { message ->
-        LaunchedEffect(message) {
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-            viewModel.onErrorShown()
-        }
+    Column(modifier = Modifier.fillMaxSize()) {
+        if (uiState.previewScreen) {
+            PreviewScreen(goToLogin = { viewModel.navigateToLogin() })
+        } else {
 
-    }
+            Box(modifier = Modifier.fillMaxSize()) {
+                // Imagen de fondo que cubre toda la pantalla
+                LoginBackGroundHeader()
 
-    if (uiState.isLoading) {
-        CircularProgressBar(stringResource(R.string.circular_progress_bar_loadingMessage))
-    } else {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .testTag("login_screen")
-        ) {
-            if (isPortrait) {
-                LoginPortraitScreen(
-                    uiState,
-                    innerPadding,
-                    username,
-                    password,
-                    context,
-                    permissions,
-                    viewModel,
-                    navigateToRegister
-                )
-            } else {
-                LoginLandscapeScreen(
-                    uiState,
-                    innerPadding,
-                    username,
-                    password,
-                    context,
-                    permissions,
-                    viewModel,
-                    navigateToRegister
-                )
-            }
-
-        }
-
-    }
-
-
-}
-
-@Composable
-private fun LoginPortraitScreen(
-    uiState: LoginUiState,
-    innerPadding: PaddingValues,
-    username: MutableState<String>,
-    password: MutableState<String>,
-    context: Context,
-    permissions: List<String>,
-    viewModel: LoginScreenViewModel,
-    navigateToRegister: () -> Unit
-) {
-    when {
-        !uiState.isInitialized || uiState.isLoading -> {
-            CircularProgressBar(stringResource(R.string.circular_progress_bar_loadingMessage))
-        }
-
-        uiState.showLoginScreen -> {
-            Box(
-                modifier = Modifier
+                // Column con fondo semi-transparente o gradiente para mejor legibilidad
+                Column(modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding),
-                contentAlignment = Alignment.Center
-            ) {
+                    .padding(horizontal = 16.dp)) {
+                    Spacer(modifier = Modifier.weight(1f))
+                    Column(modifier = Modifier.weight(2f)) {
+                        Box(modifier = Modifier.weight(0.1f)) {
+                            ScreenTitle("Inicia Sesión")
+                        }
+                        Box(modifier = Modifier.weight(0.6f)) {
+                            LoginForm(
+                                username = username,
+                                password = password,
+                                onLogin = { u, p -> viewModel.onLogin(u, p) },
+                                onGoogleLogin = { idToken -> viewModel.onGoogleLogin(idToken) }
+                            )
+                        }
+                        Box(modifier = Modifier.weight(0.1f)) {
+                            NoAccountSection(onRegisterClick = navigateToRegister)
+                        }
 
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Image(
-                            painter = painterResource(id = R.drawable.iv_harmonia_logo),
-                            contentDescription = null,
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = stringResource(
-                                R.string.login_screen_version_app,
-                                uiState.versionName
-                            ),
-                            style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.secondary
-                        )
+
                     }
-
-                    UserLogin(
-                        username = username,
-                        password = password,
-                        onLogin = { username, password ->
-                            if (context.hasPermissions(permissions)) {
-                                viewModel.checkInternetAvailable()
-                                if (uiState.isInternetAvailable) {
-                                    viewModel.onLogin(username, password)
-                                }
-                            } else {
-                                showPermissionsDeniedMessage(context)
-                            }
-                        },
-                        navigateToRegister = navigateToRegister
-                    )
-                }
-            }
-
-        }
-
-        else -> {
-            InternetDisableScreen(
-                colorText = MaterialTheme.colorScheme.secondary,
-                modifier = Modifier.testTag("InternetDisableScreen")
-            ) {
-                viewModel.checkInternetAvailable()
-                if (!uiState.isInternetAvailable) {
-                    Toast.makeText(
-                        context,
-                        context.getString(R.string.login_screen_offlineMessage), Toast.LENGTH_SHORT
-                    ).show()
                 }
             }
         }
     }
 }
 
-@Composable
-private fun LoginLandscapeScreen(
-    uiState: LoginUiState,
-    innerPadding: PaddingValues,
-    username: MutableState<String>,
-    password: MutableState<String>,
-    context: Context,
-    permissions: List<String>,
-    viewModel: LoginScreenViewModel,
-    navigateToRegister: () -> Unit
-) {
-    when {
-        !uiState.isInitialized || uiState.isLoading -> {
-            CircularProgressBar(stringResource(R.string.circular_progress_bar_loadingMessage))
-        }
-
-        uiState.showLoginScreen -> {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(start = 32.dp, end = 32.dp, top = 16.dp, bottom = 32.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Top
-                ) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Image(
-                            modifier = Modifier
-                                .height(50.dp)
-                                .width(200.dp),
-                            painter = painterResource(id = R.drawable.iv_harmonia_logo),
-                            contentDescription = null,
-                            contentScale = ContentScale.Inside
-                        )
-                        Text(
-                            text = stringResource(
-                                R.string.login_screen_version_app,
-                                uiState.versionName
-                            ),
-                            style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.secondary,
-                            fontSize = 10.sp
-                        )
-                    }
-
-                    UserLogin(
-                        username = username,
-                        password = password,
-                        onLogin = { username, password ->
-                            if (context.hasPermissions(permissions)) {
-                                viewModel.checkInternetAvailable()
-                                if (uiState.isInternetAvailable) {
-                                    viewModel.onLogin(username, password)
-                                }
-                            } else {
-                                showPermissionsDeniedMessage(context)
-                            }
-                        },
-                        navigateToRegister = navigateToRegister
-                    )
-                }
-            }
-
-        }
-
-        else -> {
-            InternetDisableScreen(
-                colorText = MaterialTheme.colorScheme.secondary,
-                modifier = Modifier.testTag("InternetDisableScreen")
-            ) {
-                viewModel.checkInternetAvailable()
-                if (!uiState.isInternetAvailable) {
-                    Toast.makeText(
-                        context,
-                        context.getString(R.string.login_screen_offlineMessage), Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
-        }
-    }
-}
 
 @Composable
-private fun UserLogin(
+private fun LoginForm(
     username: MutableState<String>,
     password: MutableState<String>,
     onLogin: (String, String) -> Unit,
-    navigateToRegister: () -> Unit
+    onGoogleLogin: (String) -> Unit
 ) {
     val passwordVisible = rememberSaveable { mutableStateOf(false) }
     val keyboardController = LocalSoftwareKeyboardController.current
-
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     val isFormValid = remember(username.value, password.value) {
         username.value.trim().isNotEmpty() && password.value.trim().isNotEmpty()
     }
+    val credentialManager = remember { CredentialManager.create(context) }
+    val googleSignInRequest = remember {
+        GetGoogleIdOption.Builder()
+            .setFilterByAuthorizedAccounts(false)
+            .setServerClientId(context.getString(R.string.default_web_client_id))
+            .build()
+    }
+    val credentialRequest = remember {
+        GetCredentialRequest.Builder()
+            .addCredentialOption(googleSignInRequest)
+            .build()
+    }
 
     Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceEvenly
+        modifier = Modifier.fillMaxSize()
     ) {
-        UsernameInput(username)
-        PasswordInput(password, passwordVisible)
-        LoginButton(
-            label = stringResource(R.string.login_screen_EnterApp),
-            enabled = isFormValid
-        ) {
-            onLogin(username.value.trim(), password.value.trim())
-            keyboardController?.hide()
-        }
-        RegisterButton(
-            label = stringResource(R.string.registrarce),
-            onClick = { navigateToRegister() })
 
+        Box(modifier = Modifier.weight(0.3f)) {
+            UsernameInput(username)
+        }
+        Box(modifier = Modifier.weight(0.4f)) {
+            PasswordInput(password, passwordVisible)
+        }
+        Box(modifier = Modifier.weight(0.3f)) {
+            LoginButton(
+                label = stringResource(R.string.login_screen_EnterApp),
+                enabled = isFormValid
+            ) {
+                onLogin(username.value.trim(), password.value.trim())
+                keyboardController?.hide()
+            }
+        }
+        Box(modifier = Modifier.weight(0.3f)) {
+            GoogleSignInButton(
+                onClick = {
+                    scope.launch {
+                        try {
+                            Log.d("GoogleLogin", "🚀 Iniciando flujo con Credential Manager...")
+                            val result = credentialManager.getCredential(
+                                request = credentialRequest,
+                                context = context
+                            )
+
+                            val credential = result.credential
+                            if (credential is GoogleIdTokenCredential) {
+                                val idToken = credential.idToken
+                                if (idToken.isNotBlank()) {
+                                    onGoogleLogin(idToken)
+                                } else {
+                                    Log.e("GoogleLogin", "idToken vacío o nulo")
+                                }
+                            } else {
+                                Log.e("GoogleLogin", "❌ Credencial no es GoogleIdTokenCredential")
+                            }
+                        } catch (e: GetCredentialException) {
+                            Log.e("GoogleLogin", "❌ Error al obtener credencial: ${e.message}", e)
+                        } catch (e: Exception) {
+                            Log.e("GoogleLogin", "❌ Excepción inesperada: ${e.message}", e)
+                        }
+                    }
+                }
+            )
+        }
+
+
+    }
+}
+
+
+@Composable
+private fun GoogleSignInButton(
+    onClick: () -> Unit
+) {
+    OutlinedButton(
+        onClick = onClick,
+        shape = CircleShape,
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("GOOGLE_SIGNIN_BUTTON"),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)),
+        colors = ButtonDefaults.outlinedButtonColors(
+            contentColor = MaterialTheme.colorScheme.secondary,
+            containerColor = MaterialTheme.colorScheme.onPrimary
+        )
+    ) {
+        Image(
+            modifier = Modifier.size(24.dp),
+            painter = painterResource(R.drawable.ic_google),
+            contentDescription = null
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = "Continuar con Google",
+            modifier = Modifier.padding(vertical = 8.dp),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)
+        )
+    }
+}
+
+@Composable
+private fun NoAccountSection(
+    onRegisterClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "¿No tenés una cuenta?",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)
+        )
+
+        TextButton(
+            onClick = onRegisterClick,
+            modifier = Modifier.testTag("REGISTER_TEXT_BUTTON")
+        ) {
+            Text(
+                text = "Registrarse",
+                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.Bold
+                )
+            )
+        }
     }
 }
 
@@ -393,18 +325,17 @@ private fun LoginButton(
 ) {
     val containerColor =
         if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(
-            alpha = 0.30f
+            alpha = 0.6f
         )
     val contentColor =
-        if (enabled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimary.copy(
-            alpha = 0.40f
-        )
+        if (enabled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimary
     Button(
         onClick = onClick,
-        shape = CircleShape,
+        shape = RoundedCornerShape(16.dp),
         enabled = enabled,
         modifier = Modifier
             .fillMaxWidth()
+            .height(70.dp)
             .padding(vertical = 8.dp)
             .testTag("LOGIN_BUTTON"),
         colors = ButtonColors(
@@ -414,31 +345,10 @@ private fun LoginButton(
             disabledContainerColor = containerColor
         )
     ) {
-        Text(label, modifier = Modifier.padding(5.dp))
-    }
-}
-
-@Composable
-private fun RegisterButton(
-    label: String,
-    onClick: () -> Unit
-) {
-    Button(
-        onClick = onClick,
-        shape = CircleShape,
-        enabled = true,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-            .testTag("REGISTER_BUTTON"),
-        colors = ButtonColors(
-            contentColor = MaterialTheme.colorScheme.onPrimary,
-            containerColor = MaterialTheme.colorScheme.primary,
-            disabledContentColor = MaterialTheme.colorScheme.onPrimary,
-            disabledContainerColor = MaterialTheme.colorScheme.primary
+        Text(
+            text = label,
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
         )
-    ) {
-        Text(label, modifier = Modifier.padding(5.dp))
     }
 }
 
@@ -448,40 +358,20 @@ private fun PasswordInput(
     visible: MutableState<Boolean>,
     modifier: Modifier = Modifier
 ) {
-    val transformation =
-        if (visible.value) VisualTransformation.None else PasswordVisualTransformation()
-
-    TextField(
+    HarmoniaTextField(
         value = state.value,
         onValueChange = { state.value = it },
-        label = { Text(stringResource(R.string.login_screen_userPassword)) },
-        singleLine = true,
-        visualTransformation = transformation,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-        trailingIcon = {
-            val icon = if (visible.value) Icons.Default.Visibility else Icons.Default.VisibilityOff
-            IconButton(onClick = { visible.value = !visible.value }) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null
-                )
-            }
-        },
+        label = stringResource(R.string.login_screen_userPassword),
+        placeholder = "Ingresa tu contraseña",
+        leadingIcon = Icons.Default.Lock,
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
             .testTag("PASSWORD_INPUT"),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedTextColor = Color.Black,
-            unfocusedTextColor = Color.Black,
-            cursorColor = Color.Black,
-            focusedLabelColor = Color.Black,
-            unfocusedLabelColor = Color.DarkGray,
-            focusedContainerColor = Color.White,
-            unfocusedContainerColor = Color.White,
-            focusedBorderColor = Color.Black,
-            unfocusedBorderColor = Color.Black
-        )
+        trailingIcon = if (visible.value) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+        onTrailingIconClick = { visible.value = !visible.value },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+        visualTransformation = if (visible.value) VisualTransformation.None else PasswordVisualTransformation()
     )
 }
 
@@ -490,31 +380,18 @@ private fun UsernameInput(
     state: MutableState<String>,
     modifier: Modifier = Modifier
 ) {
-    TextField(
+    HarmoniaTextField(
         value = state.value,
         onValueChange = { state.value = it },
-        label = {
-            Text(
-                stringResource(R.string.login_screen_userName),
-                style = MaterialTheme.typography.labelMedium
-            )
-        },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+        label = "Email",
+        placeholder = "Ingresa tu usuario o email",
+        leadingIcon = Icons.Default.Person,
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
             .testTag("USERNAME_INPUT"),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedTextColor = Color.Black,
-            unfocusedTextColor = Color.Black,
-            cursorColor = Color.Black,
-            focusedLabelColor = Color.Black,
-            unfocusedLabelColor = Color.DarkGray,
-            focusedContainerColor = Color.White,
-            unfocusedContainerColor = Color.White,
-            focusedBorderColor = Color.Black,
-            unfocusedBorderColor = Color.Black
-        )
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+        visualTransformation = VisualTransformation.None,
+        isError = false
     )
 }
