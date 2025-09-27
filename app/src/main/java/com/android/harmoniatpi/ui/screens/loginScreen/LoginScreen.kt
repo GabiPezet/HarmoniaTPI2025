@@ -19,12 +19,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
@@ -62,15 +65,16 @@ import androidx.core.app.ActivityCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.android.harmoniatpi.R
 import com.android.harmoniatpi.data.local.ext.findActivity
-import com.android.harmoniatpi.ui.components.BackGroundHeader
 import com.android.harmoniatpi.ui.components.CircularProgressBar
 import com.android.harmoniatpi.ui.components.HarmoniaTextField
 import com.android.harmoniatpi.ui.components.InternetDisableScreen
+import com.android.harmoniatpi.ui.components.LoginBackGroundHeader
 import com.android.harmoniatpi.ui.screens.loginScreen.components.PreviewScreen
 import com.android.harmoniatpi.ui.screens.loginScreen.model.LoginUiState
 import com.android.harmoniatpi.ui.screens.loginScreen.util.hasPermissions
 import com.android.harmoniatpi.ui.screens.loginScreen.util.showPermissionsDeniedMessage
 import com.android.harmoniatpi.ui.screens.loginScreen.viewModel.LoginScreenViewModel
+import com.android.harmoniatpi.ui.screens.registerScreen.ScreenTitle
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
@@ -82,45 +86,24 @@ fun LoginScreen(
     navigateToRegister: () -> Unit,
     viewModel: LoginScreenViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
-    val username = rememberSaveable { mutableStateOf("pepeArgento@gmail.com") }
-    val password = rememberSaveable { mutableStateOf("123456") }
-    val hasNavigated = remember { mutableStateOf(false) }
-    val permissions = buildList {
-        add(permission.RECORD_AUDIO)
-        add(permission.CAMERA)
-        add(permission.ACCESS_FINE_LOCATION)
-        add(permission.CALL_PHONE)
-        add(permission.READ_PHONE_STATE)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            add(permission.POST_NOTIFICATIONS)
-            add(permission.READ_MEDIA_IMAGES)
-            add(permission.READ_MEDIA_VIDEO)
-            add(permission.READ_MEDIA_AUDIO)
-        } else if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
-            add(permission.READ_EXTERNAL_STORAGE)
-            add(permission.WRITE_EXTERNAL_STORAGE)
-        } else {
-            add(permission.READ_EXTERNAL_STORAGE)
-        }
-    }
+    val context = LocalContext.current
+    val username = rememberSaveable { mutableStateOf("") }
+    val password = rememberSaveable { mutableStateOf("") }
+
+    val permissions = listOf(
+        permission.RECORD_AUDIO,
+        permission.CAMERA,
+        permission.ACCESS_FINE_LOCATION,
+        permission.CALL_PHONE,
+        permission.READ_PHONE_STATE,
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) permission.POST_NOTIFICATIONS else null
+    ).filterNotNull()
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissionsResult ->
-        val allGranted = permissionsResult.values.all { it }
-        if (!allGranted) {
-            val showSettings = permissionsResult.any { (perm, granted) ->
-                !granted && !ActivityCompat.shouldShowRequestPermissionRationale(
-                    context.findActivity(),
-                    perm
-                )
-            }
-            if (showSettings) {
-                showPermissionsDeniedMessage(context)
-            }
-        }
+    ) { results ->
+        if (!results.values.all { it }) showPermissionsDeniedMessage(context)
     }
 
     LaunchedEffect(Unit) {
@@ -130,171 +113,67 @@ fun LoginScreen(
     }
 
     LaunchedEffect(uiState.loginSuccess) {
-        if (uiState.loginSuccess && !hasNavigated.value) {
-            hasNavigated.value = true
+        if (uiState.loginSuccess) {
             navigateToHome()
             username.value = ""
             password.value = ""
         }
     }
 
-    uiState.errorMessage?.let { message ->
-        LaunchedEffect(message) {
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-            viewModel.onErrorShown()
-        }
-
-    }
-
-    if (uiState.isLoading) {
-        CircularProgressBar(stringResource(R.string.circular_progress_bar_loadingMessage))
-    } else {
+    Box(modifier = Modifier.fillMaxSize()) {
         if (uiState.previewScreen) {
+
             PreviewScreen(goToLogin = { viewModel.navigateToLogin() })
         } else {
-            Box(
+
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.background)
-                    .testTag("login_screen")
+                    .verticalScroll(rememberScrollState())
             ) {
+                LoginBackGroundHeader()
 
-                LoginPortraitScreen(
-                    uiState,
-                    username,
-                    password,
-                    context,
-                    permissions,
-                    viewModel,
-                    navigateToRegister
+                ScreenTitle("Inicia Sesión", modifier = Modifier.padding(start = 24.dp, top = 2.dp, end = 8.dp))
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                LoginForm(
+                    username = username,
+                    password = password,
+                    onLogin = { u, p -> viewModel.onLogin(u, p) },
+                    onGoogleLogin = { idToken -> viewModel.onGoogleLogin(idToken) }
                 )
 
-            }
+                Spacer(modifier = Modifier.height(24.dp))
 
-        }
+                NoAccountSection(onRegisterClick = navigateToRegister)
 
-    }
-
-
-}
-
-@Composable
-private fun LoginPortraitScreen(
-    uiState: LoginUiState,
-    username: MutableState<String>,
-    password: MutableState<String>,
-    context: Context,
-    permissions: List<String>,
-    viewModel: LoginScreenViewModel,
-    navigateToRegister: () -> Unit
-) {
-    when {
-        !uiState.isInitialized || uiState.isLoading -> {
-            CircularProgressBar(stringResource(R.string.circular_progress_bar_loadingMessage))
-        }
-
-        uiState.showLoginScreen -> {
-            Box(modifier = Modifier.fillMaxSize()) {
-
-                BackGroundHeader()
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Box(modifier = Modifier.weight(1f)) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Image(
-                                painter = painterResource(id = R.drawable.iv_harmonia_logo),
-                                contentDescription = null,
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(bottom = 56.dp, start = 16.dp),
-                                contentAlignment = Alignment.BottomStart
-                            ) {
-                                Text(
-                                    text = "Inicia sesión",
-                                    style = MaterialTheme.typography.headlineLarge.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.8f)
-                                    )
-                                )
-                            }
-
-                            HorizontalDivider(
-                                modifier = Modifier
-                                    .width(120.dp)
-                                    .fillMaxWidth()
-                                    .align(alignment = Alignment.Start),
-                                thickness = 4.dp,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-
-                    Box(modifier = Modifier.weight(1.3f)) {
-                        UserLogin(
-                            username = username,
-                            password = password,
-                            onLogin = { username, password ->
-                                if (context.hasPermissions(permissions)) {
-                                    viewModel.checkInternetAvailable()
-                                    if (uiState.isInternetAvailable) {
-                                        viewModel.onLogin(username, password)
-                                    }
-                                } else {
-                                    showPermissionsDeniedMessage(context)
-                                }
-                            },
-                            navigateToRegister = navigateToRegister,
-                            onGoogleLogin = { idToken -> viewModel.onGoogleLogin(idToken) }
-                        )
-                    }
-
-                }
-            }
-
-        }
-
-        else -> {
-            InternetDisableScreen(
-                colorText = MaterialTheme.colorScheme.secondary,
-                modifier = Modifier.testTag("InternetDisableScreen")
-            ) {
-                viewModel.checkInternetAvailable()
-                if (!uiState.isInternetAvailable) {
-                    Toast.makeText(
-                        context,
-                        context.getString(R.string.login_screen_offlineMessage), Toast.LENGTH_SHORT
-                    ).show()
-                }
+                Spacer(modifier = Modifier.navigationBarsPadding())
             }
         }
     }
 }
 
 
+
 @Composable
-private fun UserLogin(
+private fun LoginForm(
     username: MutableState<String>,
     password: MutableState<String>,
     onLogin: (String, String) -> Unit,
-    navigateToRegister: () -> Unit,
     onGoogleLogin: (String) -> Unit
 ) {
     val passwordVisible = rememberSaveable { mutableStateOf(false) }
     val keyboardController = LocalSoftwareKeyboardController.current
-
-    val isFormValid = remember(username.value, password.value) {
-        username.value.trim().isNotEmpty() && password.value.trim().isNotEmpty()
-    }
-
     val context = LocalContext.current
     val activity = context.findActivity()
+
+
+    val isFormValid = remember(username.value, password.value) {
+        username.value.isNotBlank() && password.value.isNotBlank()
+    }
+
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -303,38 +182,22 @@ private fun UserLogin(
             val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
             try {
                 val account = task.getResult(ApiException::class.java)
-                val idToken = account?.idToken
-                Log.d(
-                    "GoogleLogin",
-                    "Callback -> Account: ${account?.email}, idToken: ${idToken?.take(20)}..."
-                )
-                if (idToken != null) {
-                    onGoogleLogin(idToken)
-                } else {
-                    Log.e("GoogleLogin", "Callback -> idToken es null")
-                }
+                account?.idToken?.let { onGoogleLogin(it) }
             } catch (e: ApiException) {
-                Log.e(
-                    "GoogleLogin",
-                    "Callback -> Error al obtener cuenta: ${e.statusCode} ${e.message}"
-                )
                 Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
             }
-        } else {
-            Log.e("GoogleLogin", "Callback -> resultCode != OK (${result.resultCode})")
         }
     }
 
-
     Column(
-        modifier = Modifier.padding(top = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceEvenly
+        modifier = Modifier.fillMaxWidth()
+            .padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+
         UsernameInput(username)
-        Spacer(modifier = Modifier.height(16.dp))
         PasswordInput(password, passwordVisible)
-        Spacer(modifier = Modifier.height(24.dp))
+
 
         LoginButton(
             label = stringResource(R.string.login_screen_EnterApp),
@@ -344,27 +207,20 @@ private fun UserLogin(
             keyboardController?.hide()
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
+        // Google Sign-In
         GoogleSignInButton(
             onClick = {
                 val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                     .requestIdToken(context.getString(R.string.default_web_client_id))
                     .requestEmail()
                     .build()
-
                 val googleSignInClient = GoogleSignIn.getClient(activity, gso)
                 launcher.launch(googleSignInClient.signInIntent)
             }
         )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        NoAccountSection(
-            onRegisterClick = navigateToRegister
-        )
     }
 }
+
 
 @Composable
 private fun GoogleSignInButton(

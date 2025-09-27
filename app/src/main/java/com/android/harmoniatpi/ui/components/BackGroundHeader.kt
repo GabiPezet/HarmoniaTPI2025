@@ -9,14 +9,25 @@ import androidx.compose.ui.res.painterResource
 import com.android.harmoniatpi.R
 
 @Composable
-fun BackGroundHeader() {
+fun PreviewBackGroundHeader() {
     Image(
-        painter = painterResource(id = R.drawable.ic_welcome_login_header_background),
+        painter = painterResource(id = R.drawable.ic_welcome_header_background),
         contentDescription = "Header Background",
         modifier = Modifier.fillMaxWidth(),
         contentScale = ContentScale.FillWidth
     )
 }
+
+@Composable
+fun LoginBackGroundHeader() {
+    Image(
+        painter = painterResource(id = R.drawable.ic_login_header_background),
+        contentDescription = "Header Background",
+        modifier = Modifier.fillMaxWidth(),
+        contentScale = ContentScale.FillWidth
+    )
+}
+
 
 @Composable
 fun RegisterBackgroundHeader() {

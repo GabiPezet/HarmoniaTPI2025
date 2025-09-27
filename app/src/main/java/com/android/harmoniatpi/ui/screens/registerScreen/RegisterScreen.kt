@@ -46,7 +46,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.android.harmoniatpi.ui.components.BackGroundHeader
+
 import com.android.harmoniatpi.ui.components.HarmoniaTextField
 import com.android.harmoniatpi.ui.components.RegisterBackgroundHeader
 import com.android.harmoniatpi.ui.screens.registerScreen.viewmodel.RegisterScreenViewModel
@@ -177,7 +177,7 @@ fun RegisterScreen(
                 )
             } else {
                 Text(
-                    if (uiState.registerEnabled) "REGISTRARCE" else "BIENVENIDO A HARMONIA",
+                    if (uiState.registerEnabled) "REGISTRARSE" else "BIENVENIDO A HARMONIA",
                     style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.secondary,
                     fontWeight = FontWeight.Bold
@@ -215,7 +215,10 @@ fun ScreenTitle(title: String, modifier: Modifier = Modifier) {
     Column(modifier = modifier) {
         Text(
             text = title,
-            style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
+            style = MaterialTheme.typography.headlineLarge.copy(
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.8f)
+            )
         )
         Spacer(modifier = Modifier.height(4.dp))
         Box(
