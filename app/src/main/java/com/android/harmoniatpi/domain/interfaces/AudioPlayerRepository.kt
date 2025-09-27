@@ -6,4 +6,6 @@ interface AudioPlayerRepository {
     fun playFile(inputFile: File): Result<Unit>
     fun pause()
     fun stop()
+    fun setOnPlaybackCompletedCallback(callback: () -> Unit)
+
 }

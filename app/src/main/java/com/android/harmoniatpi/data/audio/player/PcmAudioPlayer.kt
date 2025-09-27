@@ -27,6 +27,7 @@ class PcmAudioPlayer @Inject constructor() : AudioPlayer {
     private val channel = AudioFormat.CHANNEL_OUT_MONO
     private val encoding = AudioFormat.ENCODING_PCM_16BIT
     private val bufferSize = AudioTrack.getMinBufferSize(sampleRate, channel, encoding)
+    private var onPlaybackCompletedCallback: (() -> Unit)? = null
 
     override fun play(file: File): Result<Unit> {
         if (playJob != null && audioTrack?.playState == AudioTrack.PLAYSTATE_PLAYING) {
@@ -71,10 +72,15 @@ class PcmAudioPlayer @Inject constructor() : AudioPlayer {
                         }
                     }
                     audioTrack?.stop()
-                    lastPos
+                    lastPos = 0
+                    onPlaybackCompletedCallback?.invoke()
                 } catch (e: Exception) {
                     Log.e(TAG, "Error during playback", e)
                 }
+            }
+            playJob?.invokeOnCompletion {
+                release()
+                playJob = null
             }
         }
         return Result.success(Unit)
@@ -87,11 +93,19 @@ class PcmAudioPlayer @Inject constructor() : AudioPlayer {
     override fun stop() {
         playJob?.cancel()
         playJob = null
+        release()
+        lastPos = 0L
+    }
+
+    private fun release() {
         audioTrack?.stop()
         audioTrack?.flush()
         audioTrack?.release()
         audioTrack = null
-        lastPos = 0L
+    }
+
+    override fun setOnPlaybackCompletedCallback(callback: () -> Unit) {
+        onPlaybackCompletedCallback = callback
     }
 
     companion object {
