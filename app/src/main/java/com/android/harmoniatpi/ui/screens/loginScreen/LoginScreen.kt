@@ -1,7 +1,6 @@
 package com.android.harmoniatpi.ui.screens.loginScreen
 
 import android.Manifest.permission
-import android.app.Activity
 import android.content.Context
 import android.os.Build
 import android.util.Log
@@ -45,6 +44,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,6 +59,9 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
+import androidx.credentials.CredentialManager
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialException
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.android.harmoniatpi.R
 import com.android.harmoniatpi.data.local.ext.findActivity
@@ -71,9 +74,9 @@ import com.android.harmoniatpi.ui.screens.loginScreen.model.LoginUiState
 import com.android.harmoniatpi.ui.screens.loginScreen.util.hasPermissions
 import com.android.harmoniatpi.ui.screens.loginScreen.util.showPermissionsDeniedMessage
 import com.android.harmoniatpi.ui.screens.loginScreen.viewModel.LoginScreenViewModel
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import com.google.android.gms.common.api.ApiException
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import kotlinx.coroutines.launch
 
 
 @Composable
@@ -288,43 +291,23 @@ private fun UserLogin(
 ) {
     val passwordVisible = rememberSaveable { mutableStateOf(false) }
     val keyboardController = LocalSoftwareKeyboardController.current
-
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     val isFormValid = remember(username.value, password.value) {
         username.value.trim().isNotEmpty() && password.value.trim().isNotEmpty()
     }
-
-    val context = LocalContext.current
-    val activity = context.findActivity()
-
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-            try {
-                val account = task.getResult(ApiException::class.java)
-                val idToken = account?.idToken
-                Log.d(
-                    "GoogleLogin",
-                    "Callback -> Account: ${account?.email}, idToken: ${idToken?.take(20)}..."
-                )
-                if (idToken != null) {
-                    onGoogleLogin(idToken)
-                } else {
-                    Log.e("GoogleLogin", "Callback -> idToken es null")
-                }
-            } catch (e: ApiException) {
-                Log.e(
-                    "GoogleLogin",
-                    "Callback -> Error al obtener cuenta: ${e.statusCode} ${e.message}"
-                )
-                Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
-        } else {
-            Log.e("GoogleLogin", "Callback -> resultCode != OK (${result.resultCode})")
-        }
+    val credentialManager = remember { CredentialManager.create(context) }
+    val googleSignInRequest = remember {
+        GetGoogleIdOption.Builder()
+            .setFilterByAuthorizedAccounts(false)
+            .setServerClientId(context.getString(R.string.default_web_client_id))
+            .build()
     }
-
+    val credentialRequest = remember {
+        GetCredentialRequest.Builder()
+            .addCredentialOption(googleSignInRequest)
+            .build()
+    }
 
     Column(
         modifier = Modifier.padding(top = 24.dp),
@@ -348,13 +331,31 @@ private fun UserLogin(
 
         GoogleSignInButton(
             onClick = {
-                val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                    .requestIdToken(context.getString(R.string.default_web_client_id))
-                    .requestEmail()
-                    .build()
+                scope.launch {
+                    try {
+                        Log.d("GoogleLogin", "🚀 Iniciando flujo con Credential Manager...")
+                        val result = credentialManager.getCredential(
+                            request = credentialRequest,
+                            context = context
+                        )
 
-                val googleSignInClient = GoogleSignIn.getClient(activity, gso)
-                launcher.launch(googleSignInClient.signInIntent)
+                        val credential = result.credential
+                        if (credential is GoogleIdTokenCredential) {
+                            val idToken = credential.idToken
+                            if (idToken.isNotBlank()) {
+                                onGoogleLogin(idToken)
+                            } else {
+                                Log.e("GoogleLogin", "idToken vacío o nulo")
+                            }
+                        } else {
+                            Log.e("GoogleLogin", "❌ Credencial no es GoogleIdTokenCredential")
+                        }
+                    } catch (e: GetCredentialException) {
+                        Log.e("GoogleLogin", "❌ Error al obtener credencial: ${e.message}", e)
+                    } catch (e: Exception) {
+                        Log.e("GoogleLogin", "❌ Excepción inesperada: ${e.message}", e)
+                    }
+                }
             }
         )
 
@@ -365,6 +366,7 @@ private fun UserLogin(
         )
     }
 }
+
 
 @Composable
 private fun GoogleSignInButton(
