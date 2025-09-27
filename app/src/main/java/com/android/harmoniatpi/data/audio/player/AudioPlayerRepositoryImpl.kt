@@ -11,4 +11,6 @@ class AudioPlayerRepositoryImpl @Inject constructor(private val player: AudioPla
     override fun pause() = player.pause()
 
     override fun stop() = player.stop()
+    override fun setOnPlaybackCompletedCallback(callback: () -> Unit) =
+        player.setOnPlaybackCompletedCallback(callback)
 }

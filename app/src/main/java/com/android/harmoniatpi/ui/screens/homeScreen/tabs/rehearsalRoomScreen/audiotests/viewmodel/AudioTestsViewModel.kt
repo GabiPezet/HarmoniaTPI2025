@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.android.harmoniatpi.domain.usecases.PauseAudioUseCase
 import com.android.harmoniatpi.domain.usecases.PlayAudioUseCase
+import com.android.harmoniatpi.domain.usecases.SetOnPlaybackCompletedCallbackUseCase
 import com.android.harmoniatpi.domain.usecases.StartRecordingAudioUseCase
 import com.android.harmoniatpi.domain.usecases.StopAudioUseCase
 import com.android.harmoniatpi.domain.usecases.StopRecordingAudioUseCase
@@ -25,11 +26,11 @@ class AudioTestsViewModel @Inject constructor(
     private val playAudio: PlayAudioUseCase,
     private val pauseAudio: PauseAudioUseCase,
     private val stopAudio: StopAudioUseCase,
+    private val setOnPlaybackCompletedCallback: SetOnPlaybackCompletedCallbackUseCase
 ) : ViewModel() {
     private val filePath = context.filesDir.absolutePath.plus("/test.pcm")
     private val _state = MutableStateFlow(AudioTestUiState())
     val state = _state.asStateFlow()
-
 
     fun startRecording() {
         val outputFile = File(filePath)
@@ -54,6 +55,11 @@ class AudioTestsViewModel @Inject constructor(
 
     fun play() {
         val inputFile = File(filePath)
+        setOnPlaybackCompletedCallback {
+            _state.update {
+                it.copy(isPlaying = false)
+            }
+        }
         playAudio(inputFile)
             .onSuccess {
                 Log.i(TAG, "Reproducción comenzada")
