@@ -47,7 +47,7 @@ fun HarmoniaTextField(
             value = value,
             onValueChange = onValueChange,
             modifier = Modifier.fillMaxWidth(),
-            textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground),
+            textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.secondary),
             keyboardOptions = keyboardOptions,
             visualTransformation = visualTransformation,
             singleLine = true,

@@ -78,11 +78,11 @@ dependencies {
     ksp(libs.google.dagger.hilt.android.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
     // Retrofit
-    implementation (libs.retrofit)
-    implementation (libs.converter.gson)
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
     // Coil
-    implementation (libs.coil.compose)
-    implementation (libs.androidx.runtime)
+    implementation(libs.coil.compose)
+    implementation(libs.androidx.runtime)
     // Dagger testing
     androidTestImplementation(libs.google.dagger.hilt.android.testing)
     testImplementation(libs.google.dagger.hilt.android.testing)
@@ -118,7 +118,7 @@ dependencies {
     // ZXing
     implementation(libs.zxing.android.embedded)
     // Accompanist System Color
-    implementation (libs.accompanist.systemuicontroller)
+    implementation(libs.accompanist.systemuicontroller)
     // Firebase Implementation
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.crashlytics)
@@ -133,5 +133,8 @@ dependencies {
     implementation(libs.lottie.compose)
     // Google Sign-In
     implementation(libs.play.services.auth)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
 
 }

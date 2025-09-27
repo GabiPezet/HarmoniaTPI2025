@@ -1,16 +1,12 @@
 package com.android.harmoniatpi.ui.screens.loginScreen
 
 import android.Manifest.permission
-import android.app.Activity
-import android.content.Context
 import android.os.Build
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,15 +15,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
@@ -36,7 +29,6 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -48,6 +40,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,22 +55,22 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
+import androidx.credentials.CredentialManager
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialException
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.android.harmoniatpi.R
 import com.android.harmoniatpi.data.local.ext.findActivity
-import com.android.harmoniatpi.ui.components.CircularProgressBar
 import com.android.harmoniatpi.ui.components.HarmoniaTextField
-import com.android.harmoniatpi.ui.components.InternetDisableScreen
 import com.android.harmoniatpi.ui.components.LoginBackGroundHeader
 import com.android.harmoniatpi.ui.screens.loginScreen.components.PreviewScreen
-import com.android.harmoniatpi.ui.screens.loginScreen.model.LoginUiState
 import com.android.harmoniatpi.ui.screens.loginScreen.util.hasPermissions
 import com.android.harmoniatpi.ui.screens.loginScreen.util.showPermissionsDeniedMessage
 import com.android.harmoniatpi.ui.screens.loginScreen.viewModel.LoginScreenViewModel
 import com.android.harmoniatpi.ui.screens.registerScreen.ScreenTitle
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import com.google.android.gms.common.api.ApiException
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import kotlinx.coroutines.launch
 
 
 @Composable
@@ -86,24 +79,44 @@ fun LoginScreen(
     navigateToRegister: () -> Unit,
     viewModel: LoginScreenViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
-    val username = rememberSaveable { mutableStateOf("") }
-    val password = rememberSaveable { mutableStateOf("") }
-
-    val permissions = listOf(
-        permission.RECORD_AUDIO,
-        permission.CAMERA,
-        permission.ACCESS_FINE_LOCATION,
-        permission.CALL_PHONE,
-        permission.READ_PHONE_STATE,
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) permission.POST_NOTIFICATIONS else null
-    ).filterNotNull()
+    val uiState by viewModel.uiState.collectAsState()
+    val username = rememberSaveable { mutableStateOf("pepeArgento@gmail.com") }
+    val password = rememberSaveable { mutableStateOf("123456") }
+    val permissions = buildList {
+        add(permission.RECORD_AUDIO)
+        add(permission.CAMERA)
+        add(permission.ACCESS_FINE_LOCATION)
+        add(permission.CALL_PHONE)
+        add(permission.READ_PHONE_STATE)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            add(permission.POST_NOTIFICATIONS)
+            add(permission.READ_MEDIA_IMAGES)
+            add(permission.READ_MEDIA_VIDEO)
+            add(permission.READ_MEDIA_AUDIO)
+        } else if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+            add(permission.READ_EXTERNAL_STORAGE)
+            add(permission.WRITE_EXTERNAL_STORAGE)
+        } else {
+            add(permission.READ_EXTERNAL_STORAGE)
+        }
+    }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) { results ->
-        if (!results.values.all { it }) showPermissionsDeniedMessage(context)
+    ) { permissionsResult ->
+        val allGranted = permissionsResult.values.all { it }
+        if (!allGranted) {
+            val showSettings = permissionsResult.any { (perm, granted) ->
+                !granted && !ActivityCompat.shouldShowRequestPermissionRationale(
+                    context.findActivity(),
+                    perm
+                )
+            }
+            if (showSettings) {
+                showPermissionsDeniedMessage(context)
+            }
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -120,41 +133,43 @@ fun LoginScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize()) {
         if (uiState.previewScreen) {
-
             PreviewScreen(goToLogin = { viewModel.navigateToLogin() })
         } else {
 
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background)
-                    .verticalScroll(rememberScrollState())
-            ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                // Imagen de fondo que cubre toda la pantalla
                 LoginBackGroundHeader()
 
-                ScreenTitle("Inicia Sesión", modifier = Modifier.padding(start = 24.dp, top = 2.dp, end = 8.dp))
+                // Column con fondo semi-transparente o gradiente para mejor legibilidad
+                Column(modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp)) {
+                    Spacer(modifier = Modifier.weight(1f))
+                    Column(modifier = Modifier.weight(2f)) {
+                        Box(modifier = Modifier.weight(0.1f)) {
+                            ScreenTitle("Inicia Sesión")
+                        }
+                        Box(modifier = Modifier.weight(0.6f)) {
+                            LoginForm(
+                                username = username,
+                                password = password,
+                                onLogin = { u, p -> viewModel.onLogin(u, p) },
+                                onGoogleLogin = { idToken -> viewModel.onGoogleLogin(idToken) }
+                            )
+                        }
+                        Box(modifier = Modifier.weight(0.1f)) {
+                            NoAccountSection(onRegisterClick = navigateToRegister)
+                        }
 
-                Spacer(modifier = Modifier.height(8.dp))
 
-                LoginForm(
-                    username = username,
-                    password = password,
-                    onLogin = { u, p -> viewModel.onLogin(u, p) },
-                    onGoogleLogin = { idToken -> viewModel.onGoogleLogin(idToken) }
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                NoAccountSection(onRegisterClick = navigateToRegister)
-
-                Spacer(modifier = Modifier.navigationBarsPadding())
+                    }
+                }
             }
         }
     }
 }
-
 
 
 @Composable
@@ -166,58 +181,76 @@ private fun LoginForm(
 ) {
     val passwordVisible = rememberSaveable { mutableStateOf(false) }
     val keyboardController = LocalSoftwareKeyboardController.current
+    val scope = rememberCoroutineScope()
     val context = LocalContext.current
-    val activity = context.findActivity()
-
-
     val isFormValid = remember(username.value, password.value) {
-        username.value.isNotBlank() && password.value.isNotBlank()
+        username.value.trim().isNotEmpty() && password.value.trim().isNotEmpty()
     }
-
-
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-            try {
-                val account = task.getResult(ApiException::class.java)
-                account?.idToken?.let { onGoogleLogin(it) }
-            } catch (e: ApiException) {
-                Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
-        }
+    val credentialManager = remember { CredentialManager.create(context) }
+    val googleSignInRequest = remember {
+        GetGoogleIdOption.Builder()
+            .setFilterByAuthorizedAccounts(false)
+            .setServerClientId(context.getString(R.string.default_web_client_id))
+            .build()
+    }
+    val credentialRequest = remember {
+        GetCredentialRequest.Builder()
+            .addCredentialOption(googleSignInRequest)
+            .build()
     }
 
     Column(
-        modifier = Modifier.fillMaxWidth()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier = Modifier.fillMaxSize()
     ) {
 
-        UsernameInput(username)
-        PasswordInput(password, passwordVisible)
+        Box(modifier = Modifier.weight(0.3f)) {
+            UsernameInput(username)
+        }
+        Box(modifier = Modifier.weight(0.4f)) {
+            PasswordInput(password, passwordVisible)
+        }
+        Box(modifier = Modifier.weight(0.3f)) {
+            LoginButton(
+                label = stringResource(R.string.login_screen_EnterApp),
+                enabled = isFormValid
+            ) {
+                onLogin(username.value.trim(), password.value.trim())
+                keyboardController?.hide()
+            }
+        }
+        Box(modifier = Modifier.weight(0.3f)) {
+            GoogleSignInButton(
+                onClick = {
+                    scope.launch {
+                        try {
+                            Log.d("GoogleLogin", "🚀 Iniciando flujo con Credential Manager...")
+                            val result = credentialManager.getCredential(
+                                request = credentialRequest,
+                                context = context
+                            )
 
-
-        LoginButton(
-            label = stringResource(R.string.login_screen_EnterApp),
-            enabled = isFormValid
-        ) {
-            onLogin(username.value.trim(), password.value.trim())
-            keyboardController?.hide()
+                            val credential = result.credential
+                            if (credential is GoogleIdTokenCredential) {
+                                val idToken = credential.idToken
+                                if (idToken.isNotBlank()) {
+                                    onGoogleLogin(idToken)
+                                } else {
+                                    Log.e("GoogleLogin", "idToken vacío o nulo")
+                                }
+                            } else {
+                                Log.e("GoogleLogin", "❌ Credencial no es GoogleIdTokenCredential")
+                            }
+                        } catch (e: GetCredentialException) {
+                            Log.e("GoogleLogin", "❌ Error al obtener credencial: ${e.message}", e)
+                        } catch (e: Exception) {
+                            Log.e("GoogleLogin", "❌ Excepción inesperada: ${e.message}", e)
+                        }
+                    }
+                }
+            )
         }
 
-        // Google Sign-In
-        GoogleSignInButton(
-            onClick = {
-                val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                    .requestIdToken(context.getString(R.string.default_web_client_id))
-                    .requestEmail()
-                    .build()
-                val googleSignInClient = GoogleSignIn.getClient(activity, gso)
-                launcher.launch(googleSignInClient.signInIntent)
-            }
-        )
+
     }
 }
 
