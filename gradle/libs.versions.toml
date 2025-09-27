@@ -39,6 +39,7 @@ services = "4.4.3"
 crashlytics = "3.0.5"
 performance = "2.0.0"
 lottieCompose = "6.6.6"
+playServicesAuth = "21.2.0"
 
 [libraries]
 # Core AndroidX
@@ -119,6 +120,8 @@ firebase-config = {module = "com.google.firebase:firebase-config-ktx"}
 firebase-firestore = { module = "com.google.firebase:firebase-firestore-ktx" }
 firebase-auth = { module = "com.google.firebase:firebase-auth-ktx" }
 firebase-storage = { module = "com.google.firebase:firebase-storage-ktx" }
+# Google Play Services para autenticación de Google
+play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "playServicesAuth" }
 # Lottie
 lottie-compose = { module = "com.airbnb.android:lottie-compose", version.ref = "lottieCompose" }
 [plugins]

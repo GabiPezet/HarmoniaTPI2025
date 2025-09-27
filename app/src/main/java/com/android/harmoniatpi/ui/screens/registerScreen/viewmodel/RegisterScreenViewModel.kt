@@ -8,6 +8,7 @@ import com.android.harmoniatpi.ui.screens.registerScreen.model.RegisterUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -80,14 +81,17 @@ class RegisterScreenViewModel @Inject constructor(
         val isFormValid =
             isNameValid && isLastNameValid && isEmailValid && isPasswordValid && doPasswordsMatch
 
-        _uiState.value = currentState.copy(
-            isNameValid = isNameValid,
-            isLastNameValid = isLastNameValid,
-            isEmailValid = isEmailValid,
-            isPasswordValid = isPasswordValid,
-            doPasswordsMatch = doPasswordsMatch,
-            isFormValid = isFormValid
-        )
+        _uiState.update {
+            it.copy(
+                isNameValid = isNameValid,
+                isLastNameValid = isLastNameValid,
+                isEmailValid = isEmailValid,
+                isPasswordValid = isPasswordValid,
+                doPasswordsMatch = doPasswordsMatch,
+                isFormValid = isFormValid,
+                registerEnabled = isNameValid && isLastNameValid && isEmailValid && isPasswordValid && doPasswordsMatch
+            )
+        }
     }
 }
 

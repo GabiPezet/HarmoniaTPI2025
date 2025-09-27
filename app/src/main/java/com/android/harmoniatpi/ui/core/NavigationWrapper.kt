@@ -27,7 +27,6 @@ fun NavigationWrapper(innerPadding: PaddingValues, drawerViewModel: DrawerConten
     NavHost(navController = navController, startDestination = LoginScreenRoute) {
         composable<LoginScreenRoute> {
             LoginScreen(
-                innerPadding = innerPadding,
                 navigateToHome = {
                     drawerViewModel.start()
                     navController.navigate(HomeScreenRoute)

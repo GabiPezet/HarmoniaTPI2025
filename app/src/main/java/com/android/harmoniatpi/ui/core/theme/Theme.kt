@@ -11,21 +11,21 @@ import androidx.compose.ui.graphics.Color
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 private val LightColorScheme = lightColorScheme(
-    primary = OcasaColors.Primary,
+    primary = OcasaColors.Primary, // Amarillo Fijo en modo claro y oscuro
     onPrimary = OcasaColors.OnPrimary,
     primaryContainer = OcasaColors.SurfaceLight,
-    secondary = OcasaColors.Secondary,
+    secondary = OcasaColors.Secondary, // COLOR PARA LETRA NEGRO
     onSecondary = OcasaColors.OnSecondary,
-    background = OcasaColors.onSecondaryBackgroundLight,
-    error = OcasaColors.Error,
-    onBackground = OcasaColors.InfoGreen,
-    tertiary = OcasaColors.InfoYellow,
+    background = OcasaColors.onSecondaryBackgroundLight, // BACKGROUND BLANCO
+    error = OcasaColors.Error, // ERROR ROJO
+    onBackground = OcasaColors.InfoGreen, // VERDE OK
+    tertiary = OcasaColors.InfoYellow, // AMARILLO INFORMATIVO
     surface = OcasaColors.FloatingLight,
     onSurface = OcasaColors.OnPrimary,
     inverseSurface = OcasaColors.Primary,
     inverseOnSurface = Color.Black,
     surfaceContainerHighest = OcasaColors.toolBar,
-    onSecondaryContainer = OcasaColors.BackgroundLight // PrymaryWhite - PrymaryDark
+    onSecondaryContainer = OcasaColors.BackgroundLight
 
 )
 private val DarkColorScheme = darkColorScheme(

@@ -1,7 +1,6 @@
 package com.android.harmoniatpi.ui.screens.registerScreen
 
 import android.widget.Toast
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,34 +16,20 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -53,22 +38,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.android.harmoniatpi.R
-import com.android.harmoniatpi.ui.screens.registerScreen.model.RegisterUiState
+import com.android.harmoniatpi.ui.components.BackGroundHeader
+import com.android.harmoniatpi.ui.components.HarmoniaTextField
 import com.android.harmoniatpi.ui.screens.registerScreen.viewmodel.RegisterScreenViewModel
 
 
@@ -87,13 +66,12 @@ fun RegisterScreen(
             .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
     ) {
-        Header()
+        BackGroundHeader()
 
         // titulo
         ScreenTitle("Únete", modifier = Modifier.padding(start = 24.dp, top = 2.dp, end = 8.dp))
 
-        Spacer(modifier = Modifier.height(24.dp))
-
+        Spacer(modifier = Modifier.height(8.dp))
 
         Column(
             modifier = Modifier.padding(horizontal = 24.dp),
@@ -186,14 +164,23 @@ fun RegisterScreen(
             shape = RoundedCornerShape(16.dp),
             enabled = uiState.isFormValid && !uiState.isLoading,
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFFFFC107), // Color amarillo más vibrante
-                disabledContainerColor = Color(0xFFFFC107).copy(alpha = 0.5f)
+                containerColor = MaterialTheme.colorScheme.primary,
+                disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
             )
         ) {
             if (uiState.isLoading) {
-                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.Black, strokeWidth = 2.dp)
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = MaterialTheme.colorScheme.secondary,
+                    strokeWidth = 2.dp
+                )
             } else {
-                Text("BIENVENIDO A HARMONIA", color = Color.Black, fontWeight = FontWeight.Bold)
+                Text(
+                    if (uiState.registerEnabled) "REGISTRARCE" else "BIENVENIDO A HARMONIA",
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.secondary,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
 
@@ -205,9 +192,16 @@ fun RegisterScreen(
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(text = "¿Ya tienes una cuenta? ", color = Color.Gray)
+            Text(
+                text = "¿Ya tienes una cuenta? ",
+                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)
+            )
             TextButton(onClick = onBackToLogin) {
-                Text("Inicia sesión", color = Color(0xFFFFC107), fontWeight = FontWeight.Bold)
+                Text(
+                    "Inicia sesión",
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
 
@@ -215,18 +209,6 @@ fun RegisterScreen(
     }
 }
 
-//componentes para las pantallas
-
-@Composable
-fun Header() {
-    Image(
-        painter = painterResource(id = R.drawable.ic_register_header_background),
-        contentDescription = "Header Background",
-        modifier = Modifier.fillMaxWidth(),
-
-        contentScale = ContentScale.FillWidth
-    )
-}
 @Composable
 fun ScreenTitle(title: String, modifier: Modifier = Modifier) {
     Column(modifier = modifier) {
@@ -239,71 +221,9 @@ fun ScreenTitle(title: String, modifier: Modifier = Modifier) {
             modifier = Modifier
                 .width(40.dp)
                 .height(4.dp)
-                .background(Color(0xFFFFC107), shape = RoundedCornerShape(2.dp))
+                .background(MaterialTheme.colorScheme.background, shape = RoundedCornerShape(2.dp))
         )
     }
 }
 
 
-@Composable
-fun HarmoniaTextField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: String,
-    placeholder: String,
-    leadingIcon: ImageVector,
-    modifier: Modifier = Modifier,
-    trailingIcon: ImageVector? = null,
-    onTrailingIconClick: (() -> Unit)? = null,
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-    visualTransformation: VisualTransformation = VisualTransformation.None,
-    isError: Boolean = false,
-    supportingText: String? = null
-) {
-    Column(modifier = modifier) {
-        Text(
-            text = label,
-            color = Color.Gray,
-            style = MaterialTheme.typography.labelLarge,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-        BasicTextField(
-            value = value,
-            onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth(),
-            textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground),
-            keyboardOptions = keyboardOptions,
-            visualTransformation = visualTransformation,
-            singleLine = true,
-            decorationBox = { innerTextField ->
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                ) {
-                    Icon(imageVector = leadingIcon, contentDescription = null, tint = Color.Gray)
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Box(modifier = Modifier.weight(1f)) {
-                        if (value.isEmpty()) {
-                            Text(placeholder, color = Color.LightGray, style = MaterialTheme.typography.bodyLarge)
-                        }
-                        innerTextField()
-                    }
-                    if (trailingIcon != null) {
-                        IconButton(onClick = { onTrailingIconClick?.invoke() }) {
-                            Icon(imageVector = trailingIcon, contentDescription = null)
-                        }
-                    }
-                }
-            }
-        )
-        Divider(color = if (isError) MaterialTheme.colorScheme.error else Color.LightGray, thickness = 1.dp)
-        if (isError && supportingText != null) {
-            Text(
-                text = supportingText,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(start = 4.dp, top = 4.dp)
-            )
-        }
-    }
-}
