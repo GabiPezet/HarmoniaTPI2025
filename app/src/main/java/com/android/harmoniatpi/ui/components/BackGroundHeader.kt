@@ -11,9 +11,21 @@ import com.android.harmoniatpi.R
 @Composable
 fun BackGroundHeader() {
     Image(
-        painter = painterResource(id = R.drawable.ic_register_header_background),
+        painter = painterResource(id = R.drawable.ic_welcome_login_header_background),
         contentDescription = "Header Background",
         modifier = Modifier.fillMaxWidth(),
         contentScale = ContentScale.FillWidth
     )
 }
+
+@Composable
+fun RegisterBackgroundHeader() {
+    Image(
+        painter = painterResource(id = R.drawable.ic_register_header_background),
+        contentDescription = "Register Header Background",
+        modifier = Modifier.fillMaxWidth(),
+        contentScale = ContentScale.FillWidth
+    )
+}
+
+

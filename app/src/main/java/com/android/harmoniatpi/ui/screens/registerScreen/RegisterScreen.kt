@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.android.harmoniatpi.ui.components.BackGroundHeader
 import com.android.harmoniatpi.ui.components.HarmoniaTextField
+import com.android.harmoniatpi.ui.components.RegisterBackgroundHeader
 import com.android.harmoniatpi.ui.screens.registerScreen.viewmodel.RegisterScreenViewModel
 
 
@@ -66,7 +67,7 @@ fun RegisterScreen(
             .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
     ) {
-        BackGroundHeader()
+        RegisterBackgroundHeader()
 
         // titulo
         ScreenTitle("Únete", modifier = Modifier.padding(start = 24.dp, top = 2.dp, end = 8.dp))
