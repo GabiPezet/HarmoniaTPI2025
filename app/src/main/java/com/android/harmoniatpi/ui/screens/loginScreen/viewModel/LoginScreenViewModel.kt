@@ -98,10 +98,6 @@ class LoginScreenViewModel @Inject constructor(
         }
     }
 
-    fun onErrorShown() {
-        _uiState.update { it.copy(errorMessage = null, helpDeskContact = true) }
-    }
-
     fun navigateToLogin() {
         _uiState.update { it.copy(previewScreen = false) }
     }
