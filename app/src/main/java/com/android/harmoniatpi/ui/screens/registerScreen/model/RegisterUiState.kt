@@ -12,5 +12,6 @@ data class RegisterUiState(
     val isEmailValid: Boolean = false,
     val isPasswordValid: Boolean = false,
     val doPasswordsMatch: Boolean = false,
-    val isFormValid: Boolean = false
+    val isFormValid: Boolean = false,
+    val registerEnabled : Boolean = false
 )

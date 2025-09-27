@@ -131,4 +131,7 @@ dependencies {
     implementation(libs.firebase.storage)
     // Lottie
     implementation(libs.lottie.compose)
+    // Google Sign-In
+    implementation(libs.play.services.auth)
+
 }

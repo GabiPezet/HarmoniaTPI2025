@@ -7,6 +7,7 @@ import com.android.harmoniatpi.domain.interfaces.Repository
 import com.android.harmoniatpi.domain.model.UserPreferences
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
@@ -81,14 +82,40 @@ class RepositoryImpl @Inject constructor(
             }
         }
 
+    override suspend fun signInWithGoogle(idToken: String): Result<FirebaseUser> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val credential = GoogleAuthProvider.getCredential(idToken, null)
+                val authResult = firebaseAuth.signInWithCredential(credential).await()
+                val user = authResult.user ?: return@withContext Result.failure(Exception("User is null"))
 
-    private suspend fun ensureUserPreferencesExist(userId: String, email: String) {
+                ensureUserPreferencesExist(
+                    userId = user.uid,
+                    email = user.email ?: "",
+                    displayName = user.displayName
+                )
+
+                Result.success(user)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
+
+    private suspend fun ensureUserPreferencesExist(
+        userId: String,
+        email: String,
+        displayName: String? = null
+    ) {
         val existingPrefs = userPreferencesDao.getUserPreferences(userId)
         if (existingPrefs == null) {
             userPreferencesDao.insertUserPreferences(
                 UserPreferencesEntity(
                     userID = userId,
-                    userEmail = email
+                    userEmail = email,
+                    userName = displayName ?: "",
+                    userLastName = "",
                 )
             )
         }
