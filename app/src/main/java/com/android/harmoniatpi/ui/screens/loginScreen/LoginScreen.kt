@@ -84,8 +84,8 @@ fun LoginScreen(
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
-    val username = rememberSaveable { mutableStateOf("") }
-    val password = rememberSaveable { mutableStateOf("") }
+    val username = rememberSaveable { mutableStateOf("pepeArgento@gmail.com") }
+    val password = rememberSaveable { mutableStateOf("123456") }
     val hasNavigated = remember { mutableStateOf(false) }
     val permissions = buildList {
         add(permission.RECORD_AUDIO)
@@ -93,15 +93,16 @@ fun LoginScreen(
         add(permission.ACCESS_FINE_LOCATION)
         add(permission.CALL_PHONE)
         add(permission.READ_PHONE_STATE)
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             add(permission.POST_NOTIFICATIONS)
             add(permission.READ_MEDIA_IMAGES)
             add(permission.READ_MEDIA_VIDEO)
             add(permission.READ_MEDIA_AUDIO)
-        } else {
+        } else if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
             add(permission.READ_EXTERNAL_STORAGE)
             add(permission.WRITE_EXTERNAL_STORAGE)
+        } else {
+            add(permission.READ_EXTERNAL_STORAGE)
         }
     }
 
@@ -303,14 +304,20 @@ private fun UserLogin(
             try {
                 val account = task.getResult(ApiException::class.java)
                 val idToken = account?.idToken
-                Log.d("GoogleLogin", "Callback -> Account: ${account?.email}, idToken: ${idToken?.take(20)}...")
+                Log.d(
+                    "GoogleLogin",
+                    "Callback -> Account: ${account?.email}, idToken: ${idToken?.take(20)}..."
+                )
                 if (idToken != null) {
                     onGoogleLogin(idToken)
                 } else {
                     Log.e("GoogleLogin", "Callback -> idToken es null")
                 }
             } catch (e: ApiException) {
-                Log.e("GoogleLogin", "Callback -> Error al obtener cuenta: ${e.statusCode} ${e.message}")
+                Log.e(
+                    "GoogleLogin",
+                    "Callback -> Error al obtener cuenta: ${e.statusCode} ${e.message}"
+                )
                 Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         } else {

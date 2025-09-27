@@ -118,6 +118,12 @@ class RepositoryImpl @Inject constructor(
                     userLastName = "",
                 )
             )
+        } else {
+            val updatedPrefs = existingPrefs.copy(
+                userEmail = email.ifBlank { existingPrefs.userEmail },
+                userName = displayName ?: existingPrefs.userName
+            )
+            userPreferencesDao.updateUserPreferences(updatedPrefs)
         }
     }
 }
