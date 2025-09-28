@@ -1,4 +1,4 @@
-package com.android.harmoniatpi.ui.screens.homeScreen.tabs.rehearsalRoomScreen.audiotests.model
+package com.android.harmoniatpi.ui.screens.homeScreen.tabs.rehearsalRoomScreen.recordingScreen.model
 
 data class AudioTestUiState(
     val isRecording: Boolean = false,

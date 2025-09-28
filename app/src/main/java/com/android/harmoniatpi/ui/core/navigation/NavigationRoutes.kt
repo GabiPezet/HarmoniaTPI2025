@@ -13,8 +13,16 @@ sealed class NavigationRoutes() {
     @Serializable
     data object HomeScreenRoute : NavigationRoutes()
 
+
     @Serializable
-    data object AudioTestsScreenRoute : NavigationRoutes()
+    data object RecordingScreenRoute : NavigationRoutes()
+
+    @Serializable
+    data object ProjectManagementScreenRoute : NavigationRoutes()
+
+    @Serializable
+    data object CollabScreenRoute : NavigationRoutes()
+
 }
 
 // BottomNav
