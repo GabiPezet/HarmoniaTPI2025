@@ -1,4 +1,4 @@
-package com.android.harmoniatpi.ui.screens.homeScreen.tabs.rehearsalRoomScreen.projectManagementScreen
+package com.android.harmoniatpi.ui.screens.projectManagementScreen
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column

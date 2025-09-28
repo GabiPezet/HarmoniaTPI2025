@@ -35,7 +35,8 @@ import com.android.harmoniatpi.ui.screens.menuPrincipal.content.viewmodel.Drawer
 @Composable
 fun HomeScreen(
     openDrawerState: () -> Unit,
-    drawerViewModel: DrawerContentViewModel
+    drawerViewModel: DrawerContentViewModel,
+    onNavigateToProjectManagement: () -> Unit
 ) {
     val itemsTabs = listOf(
         BottomBarItem.Tab1,
@@ -81,7 +82,10 @@ fun HomeScreen(
             modifier = Modifier
                 .padding(innerScaffoldPadding)
         ) {
-            NavigationBottomWrapper(navControllerNavBar, onExitApp = { showExitAppDialog = true })
+            NavigationBottomWrapper(
+                navControllerNavBar,
+                onExitApp = { showExitAppDialog = true },
+                onNavigateToProjectManagement = {onNavigateToProjectManagement()})
         }
 
     }
