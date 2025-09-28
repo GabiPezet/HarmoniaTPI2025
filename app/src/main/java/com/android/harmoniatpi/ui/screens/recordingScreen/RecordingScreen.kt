@@ -1,4 +1,4 @@
-package com.android.harmoniatpi.ui.screens.homeScreen.tabs.rehearsalRoomScreen.recordingScreen
+package com.android.harmoniatpi.ui.screens.recordingScreen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -34,7 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.android.harmoniatpi.ui.screens.homeScreen.tabs.rehearsalRoomScreen.recordingScreen.viewmodel.AudioTestsViewModel
+import com.android.harmoniatpi.ui.screens.recordingScreen.viewmodel.AudioTestsViewModel
 
 @Composable
 fun RecordingScreen(

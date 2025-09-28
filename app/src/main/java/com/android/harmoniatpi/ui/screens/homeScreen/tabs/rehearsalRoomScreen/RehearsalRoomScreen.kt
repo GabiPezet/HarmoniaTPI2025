@@ -19,8 +19,6 @@ fun RehearsalRoomScreen(
 ) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         //Text(text = "RehearsalRoomScreen", fontSize = 24.sp, fontWeight = FontWeight.Bold)
-
-
         Button(
             onClick = onNavigateToProjectManagement
         ) {
