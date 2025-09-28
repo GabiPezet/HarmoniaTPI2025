@@ -1,4 +1,4 @@
-package com.android.harmoniatpi.ui.screens.homeScreen.tabs.rehearsalRoomScreen.audiotests.viewmodel
+package com.android.harmoniatpi.ui.screens.homeScreen.tabs.rehearsalRoomScreen.recordingScreen.viewmodel
 
 import android.content.Context
 import android.util.Log
@@ -9,7 +9,7 @@ import com.android.harmoniatpi.domain.usecases.SetOnPlaybackCompletedCallbackUse
 import com.android.harmoniatpi.domain.usecases.StartRecordingAudioUseCase
 import com.android.harmoniatpi.domain.usecases.StopAudioUseCase
 import com.android.harmoniatpi.domain.usecases.StopRecordingAudioUseCase
-import com.android.harmoniatpi.ui.screens.homeScreen.tabs.rehearsalRoomScreen.audiotests.model.AudioTestUiState
+import com.android.harmoniatpi.ui.screens.homeScreen.tabs.rehearsalRoomScreen.recordingScreen.model.AudioTestUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
