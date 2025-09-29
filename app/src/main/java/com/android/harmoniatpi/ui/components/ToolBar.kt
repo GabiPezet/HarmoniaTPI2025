@@ -92,7 +92,7 @@ fun Toolbar(
                 Icon(
                     imageVector = if (showMenuPrincipal) Icons.Default.Menu else Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = if (showMenuPrincipal) "Abrir menú" else "Volver",
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = MaterialTheme.colorScheme.secondary
                 )
             }
         },
@@ -119,7 +119,7 @@ fun Toolbar(
                                         .offset(
                                             x = 2.dp,
                                             y = (-2).dp
-                                        ) // ajuste fino sobre la campana
+                                        )
                                 )
                             }
                         }

@@ -31,4 +31,7 @@
     <string name="show_confirm_dialog_cancel">Cancelar</string>
     <string name="show_confirmation_dialog_exit_confirmation_tittle">Confirmación de salida</string>
     <string name="show_confirmation_dialog_exit_confirmation_question">¿Seguro que quieres salir?</string>
+    <string name="notification_screen_no_notifications_tittle">SIN NOTIFICACIONES</string>
+    <string name="notification_screen_no_notifications_message">Bandeja de entrada vacía. Sin mensajes pendientes.</string>
+    <string name="notification_screen_text_close">Cerrar</string>
 </resources>

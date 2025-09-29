@@ -8,14 +8,17 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.HomeScreenRoute
-import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.LoginScreenRoute
-import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.RegisterScreenRoute
+import com.android.harmoniatpi.ui.components.AnimationHorizontalEffect
+import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.*
+import com.android.harmoniatpi.ui.screens.collabScreen.CollabScreen
 import com.android.harmoniatpi.ui.screens.homeScreen.HomeScreen
 import com.android.harmoniatpi.ui.screens.loginScreen.LoginScreen
 import com.android.harmoniatpi.ui.screens.menuPrincipal.DrawerScreen
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.DrawerContent
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.viewmodel.DrawerContentViewModel
+import com.android.harmoniatpi.ui.screens.notificationScreen.NotificationsScreen
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.ProjectManagementScreen
+import com.android.harmoniatpi.ui.screens.recordingScreen.RecordingScreen
 import com.android.harmoniatpi.ui.screens.registerScreen.RegisterScreen
 import kotlinx.coroutines.launch
 
@@ -63,12 +66,43 @@ fun NavigationWrapper(innerPadding: PaddingValues, drawerViewModel: DrawerConten
                         openDrawerState = {
                             coroutineScope.launch { drawerState.open() }
                         },
-                        drawerViewModel = drawerViewModel
+                        drawerViewModel = drawerViewModel,
+                        onNavigateToProjectManagement = {
+                            navController.navigate(
+                                ProjectManagementScreenRoute
+                            )
+                        },
+                        onNavigateToNotifications = { navController.navigate(NotificationScreenRoute) },
                     )
-
                 }
             )
+        }
 
+
+        composable<ProjectManagementScreenRoute> {
+            AnimationHorizontalEffect(onBackNavigation = { navController.popBackStack() }) {
+                ProjectManagementScreen(
+                    onNavigateToRecording = {
+                        navController.navigate(RecordingScreenRoute)
+                    },
+                    onNavigateToCollab = {
+                        navController.navigate(CollabScreenRoute)
+                    }
+                )
+            }
+        }
+
+        // pantalla grabacion
+        composable<RecordingScreenRoute> {
+            AnimationHorizontalEffect(onBackNavigation = { navController.popBackStack() }) { RecordingScreen() }
+        }
+
+        composable<CollabScreenRoute> { AnimationHorizontalEffect(onBackNavigation = { navController.popBackStack() }) { CollabScreen() } }
+
+        composable<NotificationScreenRoute> {
+            AnimationHorizontalEffect {
+                NotificationsScreen(onBack = { navController.popBackStack() })
+            }
         }
     }
 }
