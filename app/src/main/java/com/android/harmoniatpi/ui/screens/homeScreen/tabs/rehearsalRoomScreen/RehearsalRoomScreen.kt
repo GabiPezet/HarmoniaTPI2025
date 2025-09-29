@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.material3.IconButton
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.ModeComment
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
@@ -81,7 +82,7 @@ fun RehearsalRoomScreen(
                 containerColor = Color(0xFFFBC658), // Amarillo PrimaryHarmonia
                 contentColor = Color.Black
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Nuevo proyecto")
+                Icon(Icons.Default.LibraryMusic, contentDescription = "Nuevo proyecto")
             }
         },
         containerColor = Color(0xFFF5F5F5) // Fondo gris claro
