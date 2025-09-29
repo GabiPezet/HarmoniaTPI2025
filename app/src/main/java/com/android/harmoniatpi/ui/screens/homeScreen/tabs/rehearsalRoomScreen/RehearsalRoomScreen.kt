@@ -56,8 +56,8 @@ import kotlin.random.Random
 fun RehearsalRoomScreen(
     onNavigateToProjectManagement: () -> Unit
 ) {
-    val selectedTab = remember { ProjectTab.MY_PROJECTS }
-    val sampleProjects = remember {
+    val selectedTab = remember { ProjectTab.MY_PROJECTS } // este es un Enum mockeado más abajo
+    val sampleProjects = remember {                       // estos son dos proyectos de prueba para visualizar las card.
         listOf(
             Project(
                 title = "Proyecto 001",
