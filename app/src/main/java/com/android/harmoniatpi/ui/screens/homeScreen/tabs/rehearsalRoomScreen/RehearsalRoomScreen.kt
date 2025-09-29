@@ -56,7 +56,6 @@ import kotlin.random.Random
 fun RehearsalRoomScreen(
     onNavigateToProjectManagement: () -> Unit
 ) {
-
     val selectedTab = remember { ProjectTab.MY_PROJECTS }
     val sampleProjects = remember {
         listOf(
@@ -64,17 +63,16 @@ fun RehearsalRoomScreen(
                 title = "Proyecto 001",
                 description = "Ideas iniciales ambient y demo.",
                 hashtags = listOf("#Rock", "#Piano"),
-                audioWaveform = List(150) { Random.nextFloat() * 0.7f + 0.1f}
+                audioWaveform = List(150) { Random.nextFloat() * 0.7f + 0.1f }
             ),
             Project(
                 title = "Proyecto 002",
                 description = "Super patrón ritmico, anotaciones.",
                 hashtags = listOf("#Indie", "#Guitarra"),
-                audioWaveform = List(150) { Random.nextFloat() * 0.7f + 0.1f}
+                audioWaveform = List(150) { Random.nextFloat() * 0.7f + 0.1f }
             )
         )
     }
-
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
@@ -87,14 +85,15 @@ fun RehearsalRoomScreen(
         },
         containerColor = Color(0xFFF5F5F5) // Fondo gris claro
     ) { padding ->
-        Column(modifier = Modifier
-            .fillMaxSize()
-            .padding(padding)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
         ) {
             // Selector de pestañas proyecto y colaboraciones
             ProjectTabSelector(
                 selectedTab = selectedTab,
-                onTabSelected = { /* Hacer Navegación entre pestañas */} )
+                onTabSelected = { /* Hacer Navegación entre pestañas */ })
 
             // Lista de proyectos
             LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -141,7 +140,6 @@ fun ProjectTabSelector(
             cornerRadius = cornerRadius
         )
         Spacer(modifier = Modifier.width(8.dp))
-
         TabButtonB(
             "Colaboraciones",
             selectedTab == ProjectTab.COLLABS,
@@ -229,11 +227,36 @@ fun ProjectCard(project: Project) {
             Text(project.hashtags.joinToString(" "), fontStyle = FontStyle.Italic, fontSize = 12.sp)
             Spacer(Modifier.height(12.dp))
             Row(horizontalArrangement = Arrangement.SpaceBetween) {
-                IconButton(onClick = { /* Likear */ }) { Icon(Icons.Default.Favorite, contentDescription = "Like") }
-                IconButton(onClick = { /* Comentar */ }) { Icon(Icons.Default.ModeComment, contentDescription = "Comment") }
-                IconButton(onClick = { /* Compartir */ }) { Icon(Icons.Default.Share, contentDescription = "Share") }
-                IconButton(onClick = { /* Descargar */ }) { Icon(Icons.Default.Download, contentDescription = "Download") }
-                IconButton(onClick = { /* Settings */ }) { Icon(Icons.Default.Settings, contentDescription = "Settings") }
+                IconButton(onClick = { /* Likear */ }) {
+                    Icon(
+                        Icons.Default.Favorite,
+                        contentDescription = "Like"
+                    )
+                }
+                IconButton(onClick = { /* Comentar */ }) {
+                    Icon(
+                        Icons.Default.ModeComment,
+                        contentDescription = "Comment"
+                    )
+                }
+                IconButton(onClick = { /* Compartir */ }) {
+                    Icon(
+                        Icons.Default.Share,
+                        contentDescription = "Share"
+                    )
+                }
+                IconButton(onClick = { /* Descargar */ }) {
+                    Icon(
+                        Icons.Default.Download,
+                        contentDescription = "Download"
+                    )
+                }
+                IconButton(onClick = { /* Settings */ }) {
+                    Icon(
+                        Icons.Default.Settings,
+                        contentDescription = "Settings"
+                    )
+                }
             }
         }
     }
@@ -271,12 +294,12 @@ fun WaveformPreview(
         val max = clamped.maxOrNull().takeIf { it != 0f } ?: 1f
         clamped.map { it / max }
     }
-
     Canvas(modifier = modifier.background(backgroundColor)) {
         val w = size.width
         val h = size.height
         val count = normalized.size
-        val spacing = (w * 0.03f) / (count.coerceAtLeast(1)) // Este es el valor para un espaciado relativo, hay que ir probandoló.
+        val spacing =
+            (w * 0.03f) / (count.coerceAtLeast(1)) // Este es el valor para un espaciado relativo, hay que ir probandoló.
         val availableWidth = w - spacing * (count - 1)
         val barWidth = (availableWidth / count).coerceAtLeast(1f)
 
