@@ -2,15 +2,13 @@ package com.android.harmoniatpi.ui.core.navigation.bottomNavigationBar
 
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Cloud
-import androidx.compose.material.icons.filled.CloudDone
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.android.harmoniatpi.R
 import com.android.harmoniatpi.ui.core.navigation.BottomBarRoutes
 
 sealed class BottomBarItem {
@@ -18,60 +16,31 @@ sealed class BottomBarItem {
     abstract val titleRes: String
     abstract val icon: @Composable () -> Unit
 
-    data object Tab1 : BottomBarItem() {
+    data object CommunityTab : BottomBarItem() {
         override val route: BottomBarRoutes
-            get() = BottomBarRoutes.Tab1Screen
+            get() = BottomBarRoutes.CommunityScreenRoute
         override val titleRes: String
-            get() = "tab1"
+            get() = "Comunidad"
         override val icon: @Composable () -> Unit
             get() = {
                 Icon(
-                    imageVector = Icons.Default.Favorite,
+                    imageVector = Icons.Filled.Groups,
                     contentDescription = null,
                     modifier = Modifier.size(24.dp)
                 )
             }
     }
 
-    data object Tab2 : BottomBarItem() {
-        override val route: BottomBarRoutes
-            get() = BottomBarRoutes.Tab2Screen
-        override val titleRes: String
-            get() = "tab2"
-        override val icon: @Composable () -> Unit
-            get() = {
-                Icon(
-                    imageVector = Icons.Filled.Home,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-    }
 
-    data object Tab3 : BottomBarItem() {
+    data object ProjectsTab : BottomBarItem() {
         override val route: BottomBarRoutes
-            get() = BottomBarRoutes.Tab3Screen
+            get() = BottomBarRoutes.ProjectsScreenRoute
         override val titleRes: String
-            get() = "tab3"
+            get() = "Proyectos"
         override val icon: @Composable () -> Unit
             get() = {
                 Icon(
-                    imageVector = Icons.Filled.NotificationsActive,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-    }
-
-    data object Tab4 : BottomBarItem() {
-        override val route: BottomBarRoutes
-            get() = BottomBarRoutes.RehearsalRoomRoute
-        override val titleRes: String
-            get() = "Sala de ensayo"
-        override val icon: @Composable () -> Unit
-            get() = {
-                Icon(
-                    imageVector = Icons.Filled.CloudDone,
+                    painter = painterResource(R.drawable.ic_harmonyicon),
                     contentDescription = null,
                     modifier = Modifier.size(24.dp)
                 )
