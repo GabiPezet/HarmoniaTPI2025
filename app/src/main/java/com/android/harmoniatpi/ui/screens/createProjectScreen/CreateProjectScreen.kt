@@ -105,16 +105,6 @@ fun CreateProjectScreen(
                     keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text)
                 )
 
-                // Campo informativo de audio (read-only)
-                HarmoniaTextField(
-                    value = "Longitud del audio: ${uiState.audioWaveform.size} samples",
-                    onValueChange = {},
-                    label = "Audio",
-                    placeholder = "",
-                    leadingIcon = Icons.Default.AudioFile,
-                    isError = false
-                )
-
                 Button(
                     onClick = {
                         keyboardController?.hide()
