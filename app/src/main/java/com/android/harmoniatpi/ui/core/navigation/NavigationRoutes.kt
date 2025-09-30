@@ -22,6 +22,9 @@ sealed class NavigationRoutes() {
     @Serializable
     data object CollabScreenRoute : NavigationRoutes()
 
+    @Serializable
+    data object CreateProjectScreenRoute : NavigationRoutes()
+
 }
 
 // BottomNav

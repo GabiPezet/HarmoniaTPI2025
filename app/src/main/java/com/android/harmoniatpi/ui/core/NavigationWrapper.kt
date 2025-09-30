@@ -13,6 +13,7 @@ import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.HomeScreenRou
 import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.LoginScreenRoute
 import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.RegisterScreenRoute
 import com.android.harmoniatpi.ui.screens.collabScreen.CollabScreen
+import com.android.harmoniatpi.ui.screens.createProjectScreen.CreateProjectScreen
 import com.android.harmoniatpi.ui.screens.homeScreen.HomeScreen
 import com.android.harmoniatpi.ui.screens.loginScreen.LoginScreen
 import com.android.harmoniatpi.ui.screens.menuPrincipal.DrawerScreen
@@ -68,14 +69,13 @@ fun NavigationWrapper(innerPadding: PaddingValues, drawerViewModel: DrawerConten
                             coroutineScope.launch { drawerState.open() }
                         },
                         drawerViewModel = drawerViewModel,
-                        onNavigateToProjectManagement = { navController.navigate(NavigationRoutes.ProjectManagementScreenRoute) }
+                        onNavigateToCreateProjet = { navController.navigate(NavigationRoutes.CreateProjectScreenRoute) }
                     )
 
                 }
             )
 
         }
-
 
         composable<NavigationRoutes.ProjectManagementScreenRoute> {
             ProjectManagementScreen(
@@ -92,5 +92,10 @@ fun NavigationWrapper(innerPadding: PaddingValues, drawerViewModel: DrawerConten
         composable<NavigationRoutes.RecordingScreenRoute> { RecordingScreen() }
 
         composable<NavigationRoutes.CollabScreenRoute> { CollabScreen() }
+
+
+        composable<NavigationRoutes.CreateProjectScreenRoute> {
+            CreateProjectScreen(onBack={ navController.popBackStack() })
+        }
     }
 }

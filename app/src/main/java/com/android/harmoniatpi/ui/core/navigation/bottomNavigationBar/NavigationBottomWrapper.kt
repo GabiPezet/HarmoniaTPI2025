@@ -5,20 +5,16 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.android.harmoniatpi.ui.core.navigation.BottomBarRoutes
-import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes
-import com.android.harmoniatpi.ui.screens.collabScreen.CollabScreen
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.Tab1Screen
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.Tab2Screen
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.Tab3Screen
-import com.android.harmoniatpi.ui.screens.homeScreen.tabs.rehearsalRoomScreen.RehearsalRoomScreen
-import com.android.harmoniatpi.ui.screens.projectManagementScreen.ProjectManagementScreen
-import com.android.harmoniatpi.ui.screens.recordingScreen.RecordingScreen
+import com.android.harmoniatpi.ui.screens.rehearsalRoomScreen.RehearsalRoomScreen
 
 @Composable
 fun NavigationBottomWrapper(
     navController: NavHostController,
     onExitApp: () -> Unit,
-    onNavigateToProjectManagement: () -> Unit
+    onNavigateToCreateProjet: () -> Unit
 ) {
     NavHost(navController = navController, startDestination = BottomBarRoutes.Tab1Screen) {
         composable<BottomBarRoutes.Tab1Screen> { Tab1Screen(onExitApp = onExitApp) }
@@ -26,7 +22,7 @@ fun NavigationBottomWrapper(
         composable<BottomBarRoutes.Tab3Screen> { Tab3Screen() }
         composable<BottomBarRoutes.RehearsalRoomRoute> {
             RehearsalRoomScreen(
-                onNavigateToProjectManagement = {onNavigateToProjectManagement()} //solo para prueba
+                onNavigateToCreateProjet = {onNavigateToCreateProjet()} //solo para prueba
             )
         }
 

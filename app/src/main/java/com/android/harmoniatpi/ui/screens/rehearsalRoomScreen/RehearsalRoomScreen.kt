@@ -1,10 +1,8 @@
-package com.android.harmoniatpi.ui.screens.homeScreen.tabs.rehearsalRoomScreen
+package com.android.harmoniatpi.ui.screens.rehearsalRoomScreen
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -24,7 +22,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Card
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -34,9 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.filled.CommentBank
 import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.unit.sp
 import androidx.compose.material3.IconButton
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Favorite
@@ -48,13 +43,13 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.remember
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.unit.Dp
-import com.android.harmoniatpi.ui.core.theme.PrimaryWhite
 import kotlin.random.Random
 
 @Composable
 fun RehearsalRoomScreen(
-    onNavigateToProjectManagement: () -> Unit
+    onNavigateToCreateProjet: () -> Unit
 ) {
     val selectedTab = remember { ProjectTab.MY_PROJECTS } // este es un Enum mockeado más abajo
     val sampleProjects = remember {                       // estos son dos proyectos de prueba para visualizar las card.
@@ -76,7 +71,7 @@ fun RehearsalRoomScreen(
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
-                onClick = onNavigateToProjectManagement, //onAddProject,
+                onClick = onNavigateToCreateProjet, //onAddProject,
                 containerColor = Color(0xFFFBC658), // Amarillo PrimaryHarmonia
                 contentColor = Color.Black
             ) {
@@ -310,7 +305,7 @@ fun WaveformPreview(
             drawRect(
                 color = barColor,
                 topLeft = Offset(left, top),
-                size = androidx.compose.ui.geometry.Size(barWidth, barHeight)
+                size = Size(barWidth, barHeight)
             )
         }
     }
