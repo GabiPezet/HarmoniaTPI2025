@@ -3,6 +3,7 @@ package com.android.harmoniatpi.di
 import android.content.Context
 import androidx.room.Room
 import com.android.harmoniatpi.data.database.DataBaseHarmonia
+import com.android.harmoniatpi.data.database.dao.ProjectDao
 import com.android.harmoniatpi.data.database.dao.UserPreferencesDao
 import dagger.Module
 import dagger.Provides
@@ -30,4 +31,7 @@ object RoomProvider {
     @Singleton
     fun provideUserPreferencesDao(dataBaseHarmonia: DataBaseHarmonia): UserPreferencesDao =
         dataBaseHarmonia.userPreferencesDao()
+
+    @Provides
+    fun provideProjectDao(db: DataBaseHarmonia): ProjectDao = db.projectDao()
 }

@@ -3,7 +3,8 @@ package com.android.harmoniatpi.ui.screens.createProject.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.android.harmoniatpi.domain.model.Project
+import com.android.harmoniatpi.data.ProjectRepository
+import com.android.harmoniatpi.domain.model.project.Project
 import com.android.harmoniatpi.ui.screens.createProjectScreen.model.CreateProjectUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,8 +15,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class CreateProjectViewModel @Inject constructor(
-    // Si luego usás un caso de uso o repo, lo inyectás aquí
-    // private val saveProjectUseCase: SaveProjectUseCase
+    private val projectRepository: ProjectRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CreateProjectUiState())
@@ -49,14 +49,11 @@ class CreateProjectViewModel @Inject constructor(
                 val project = Project(
                     title = _uiState.value.title,
                     description = _uiState.value.description,
-                    hashtags = _uiState.value.hashtags
-                        .split(",")
-                        .map { it.trim() }
-                        .filter { it.isNotEmpty() }.toString(),
+                    hashtags = _uiState.value.hashtags.split(",").map { it.trim() },
+                    audioWaveform = emptyList()
                 )
 
-                // Aquí guardarías el proyecto, por ejemplo:
-                // saveProjectUseCase(project)
+                projectRepository.saveProject(project)
 
                 _uiState.update { it.copy(isLoading = false) }
                 onSuccess()

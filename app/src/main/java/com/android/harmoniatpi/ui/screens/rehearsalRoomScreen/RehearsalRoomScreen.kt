@@ -19,7 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.runtime.getValue
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material3.Card
@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.material3.IconButton
 import androidx.compose.material.icons.filled.Download
@@ -40,64 +41,53 @@ import androidx.compose.material.icons.filled.ModeComment
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.CardDefaults
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.unit.Dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.android.harmoniatpi.domain.model.project.Project
+import com.android.harmoniatpi.ui.screens.rehearsalRoomScreen.viewmodel.ProjectListViewModel
 import kotlin.random.Random
 
 @Composable
 fun RehearsalRoomScreen(
-    onNavigateToCreateProjet: () -> Unit
+    onNavigateToCreateProjet: () -> Unit,
+    viewModel: ProjectListViewModel = hiltViewModel()
 ) {
-    val selectedTab = remember { ProjectTab.MY_PROJECTS } // este es un Enum mockeado más abajo
-    val sampleProjects = remember {                       // estos son dos proyectos de prueba para visualizar las card.
-        listOf(
-            Project(
-                title = "Proyecto 001",
-                description = "Ideas iniciales ambient y demo.",
-                hashtags = listOf("#Rock", "#Piano"),
-                audioWaveform = List(150) { Random.nextFloat() * 0.7f + 0.1f }
-            ),
-            Project(
-                title = "Proyecto 002",
-                description = "Super patrón ritmico, anotaciones.",
-                hashtags = listOf("#Indie", "#Guitarra"),
-                audioWaveform = List(150) { Random.nextFloat() * 0.7f + 0.1f }
-            )
-        )
-    }
+    val projects by viewModel.projects.collectAsState() // Opción A (usar `by`)
+
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
-                onClick = onNavigateToCreateProjet, //onAddProject,
-                containerColor = Color(0xFFFBC658), // Amarillo PrimaryHarmonia
+                onClick = onNavigateToCreateProjet,
+                containerColor = Color(0xFFFBC658),
                 contentColor = Color.Black
             ) {
                 Icon(Icons.Default.LibraryMusic, contentDescription = "Nuevo proyecto")
             }
         },
-        containerColor = Color(0xFFF5F5F5) // Fondo gris claro
+        containerColor = Color(0xFFF5F5F5)
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Selector de pestañas proyecto y colaboraciones
             ProjectTabSelector(
-                selectedTab = selectedTab,
-                onTabSelected = { /* Hacer Navegación entre pestañas */ })
+                selectedTab = ProjectTab.MY_PROJECTS,
+                onTabSelected = {}
+            )
 
-            // Lista de proyectos
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(sampleProjects) { project ->
-                    ProjectCard(project)
-                }
+                items(projects) { project ->
+                    ProjectCard(project) }
             }
         }
     }
+}
 // Esta es la BOX con el botón de navegación viejo
 
 //    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -108,7 +98,6 @@ fun RehearsalRoomScreen(
 //            Text("Manejo de Proyectos")
 //        }
 //    }
-}
 
 
 @Composable
@@ -258,12 +247,12 @@ fun ProjectCard(project: Project) {
 }
 
 // data class local de prueba
-data class Project(
+/*data class Project(
     val title: String,
     val description: String,
     val hashtags: List<String>,
     val audioWaveform: List<Float> // Intento de simulación de forma de onda
-)
+)*/
 
 // enum class local de prueba
 enum class ProjectTab {
