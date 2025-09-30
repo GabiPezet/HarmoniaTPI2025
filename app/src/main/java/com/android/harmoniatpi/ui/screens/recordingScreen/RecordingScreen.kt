@@ -34,11 +34,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.android.harmoniatpi.ui.screens.recordingScreen.viewmodel.AudioTestsViewModel
+import com.android.harmoniatpi.ui.components.SquareButton
+import com.android.harmoniatpi.ui.screens.recordingScreen.viewmodel.ProjectScreenViewModel
 
 @Composable
 fun RecordingScreen(
-    viewModel: AudioTestsViewModel = hiltViewModel(),
+    viewModel: ProjectScreenViewModel = hiltViewModel(),
     onBack: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
@@ -119,24 +120,5 @@ fun RecordingScreen(
             viewModel.stopRecording()
             viewModel.stopPlaying()
         }
-    }
-}
-
-
-@Composable
-private fun SquareButton(
-    onClick: () -> Unit,
-    icon: ImageVector,
-    contentDesc: String,
-    color: Color = MaterialTheme.colorScheme.primary
-) {
-    Button(
-        onClick = onClick,
-        modifier = Modifier.size(80.dp),
-        shape = RoundedCornerShape(8.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = color),
-        contentPadding = PaddingValues(0.dp)
-    ) {
-        Icon(icon, contentDescription = contentDesc, modifier = Modifier.size(36.dp), tint = Color.White)
     }
 }
