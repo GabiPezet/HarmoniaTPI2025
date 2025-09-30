@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.random.Random
 
 @HiltViewModel
 class CreateProjectViewModel @Inject constructor(
@@ -50,7 +51,7 @@ class CreateProjectViewModel @Inject constructor(
                     title = _uiState.value.title,
                     description = _uiState.value.description,
                     hashtags = _uiState.value.hashtags.split(",").map { it.trim() },
-                    audioWaveform = emptyList()
+                    audioWaveform = List(150) { Random.nextFloat() * 0.7f + 0.1f }
                 )
 
                 projectRepository.saveProject(project)
