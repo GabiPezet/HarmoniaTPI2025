@@ -86,19 +86,11 @@ fun NavigationWrapper(innerPadding: PaddingValues, drawerViewModel: DrawerConten
         composable<ProjectManagementScreenRoute> {
             AnimationHorizontalEffect(onBackNavigation = { navController.popBackStack() }) {
                 ProjectManagementScreen(
-                    onNavigateToRecording = {
-                        navController.navigate(RecordingScreenRoute)
-                    },
                     onNavigateToCollab = {
                         navController.navigate(CollabScreenRoute)
                     }
                 )
             }
-        }
-
-        // pantalla grabacion
-        composable<RecordingScreenRoute> {
-            AnimationHorizontalEffect(onBackNavigation = { navController.popBackStack() }) { RecordingScreen() }
         }
 
         composable<CollabScreenRoute> { AnimationHorizontalEffect(onBackNavigation = { navController.popBackStack() }) { CollabScreen() } }

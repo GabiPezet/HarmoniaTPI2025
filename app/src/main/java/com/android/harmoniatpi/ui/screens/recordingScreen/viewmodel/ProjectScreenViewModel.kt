@@ -9,7 +9,7 @@ import com.android.harmoniatpi.domain.usecases.SetOnPlaybackCompletedCallbackUse
 import com.android.harmoniatpi.domain.usecases.StartRecordingAudioUseCase
 import com.android.harmoniatpi.domain.usecases.StopAudioUseCase
 import com.android.harmoniatpi.domain.usecases.StopRecordingAudioUseCase
-import com.android.harmoniatpi.ui.screens.recordingScreen.model.AudioTestUiState
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.ProyectScreenUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +19,7 @@ import java.io.File
 import javax.inject.Inject
 
 @HiltViewModel
-class AudioTestsViewModel @Inject constructor(
+class ProjectScreenViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val startRecordingAudio: StartRecordingAudioUseCase,
     private val stopRecordingAudio: StopRecordingAudioUseCase,
@@ -29,7 +29,7 @@ class AudioTestsViewModel @Inject constructor(
     private val setOnPlaybackCompletedCallback: SetOnPlaybackCompletedCallbackUseCase
 ) : ViewModel() {
     private val filePath = context.filesDir.absolutePath.plus("/test.pcm")
-    private val _state = MutableStateFlow(AudioTestUiState())
+    private val _state = MutableStateFlow(ProyectScreenUiState())
     val state = _state.asStateFlow()
 
     fun startRecording() {
