@@ -52,8 +52,7 @@ class CreateProjectViewModel @Inject constructor(
                     hashtags = _uiState.value.hashtags
                         .split(",")
                         .map { it.trim() }
-                        .filter { it.isNotEmpty() },
-                    audioWaveform = _uiState.value.audioWaveform
+                        .filter { it.isNotEmpty() }.toString(),
                 )
 
                 // Aquí guardarías el proyecto, por ejemplo:
