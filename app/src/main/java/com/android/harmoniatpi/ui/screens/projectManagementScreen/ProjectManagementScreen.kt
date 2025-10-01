@@ -2,7 +2,6 @@ package com.android.harmoniatpi.ui.screens.projectManagementScreen
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,11 +12,6 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.FiberManualRecord
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.SkipPrevious
-import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -38,7 +32,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.android.harmoniatpi.ui.components.ProyectControlButtonRow
-import com.android.harmoniatpi.ui.components.SquareButton
 import com.android.harmoniatpi.ui.components.TrackItem
 import com.android.harmoniatpi.ui.screens.recordingScreen.viewmodel.ProjectScreenViewModel
 
@@ -72,12 +65,12 @@ fun ProjectManagementScreen(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                state.tracks.forEachIndexed { index, track ->
+                state.tracks.forEach { track ->
                     item {
                         TrackItem(
                             track = track,
-                            onClick = { viewModel.selectTrack(index) },
-                            onDelete = { viewModel.deleteTrack(index) }
+                            onClick = { viewModel.selectTrack(track.id) },
+                            onDelete = { viewModel.deleteTrack(track.id) }
                         )
                     }
                 }
