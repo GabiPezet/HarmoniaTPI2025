@@ -40,6 +40,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.android.harmoniatpi.ui.components.SquareButton
+import com.android.harmoniatpi.ui.components.TrackItem
 import com.android.harmoniatpi.ui.screens.recordingScreen.viewmodel.ProjectScreenViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -72,7 +73,14 @@ fun ProjectManagementScreen(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-
+                state.tracks.forEachIndexed { index, track ->
+                    item {
+                        TrackItem(
+                            track = track,
+                            onDelete = { viewModel.deleteTrack(index) }
+                        )
+                    }
+                }
             }
 
             IconButton(
@@ -144,6 +152,7 @@ fun ProjectManagementScreen(
                         Button(
                             onClick = {
                                 showSheet = false
+                                viewModel.addTrack()
                             },
                             modifier = Modifier.fillMaxWidth()
                         ) {

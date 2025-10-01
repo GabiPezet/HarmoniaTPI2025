@@ -10,6 +10,7 @@ import com.android.harmoniatpi.domain.usecases.StartRecordingAudioUseCase
 import com.android.harmoniatpi.domain.usecases.StopAudioUseCase
 import com.android.harmoniatpi.domain.usecases.StopRecordingAudioUseCase
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.ProyectScreenUiState
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -83,6 +84,18 @@ class ProjectScreenViewModel @Inject constructor(
         stopAudio()
         _state.update {
             it.copy(isPlaying = false)
+        }
+    }
+
+    fun addTrack() {
+        _state.update {
+            it.copy(tracks = it.tracks + TrackUi("Voz"))
+        }
+    }
+
+    fun deleteTrack(index: Int) {
+        _state.update {
+            it.copy(tracks = it.tracks.filterIndexed { i, _ -> i != index })
         }
     }
 
