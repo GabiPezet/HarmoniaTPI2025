@@ -2,6 +2,7 @@ package com.android.harmoniatpi.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -39,24 +41,31 @@ import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 
 @Composable
 fun TrackItem(
-    track: TrackUi, modifier: Modifier = Modifier, onDelete: () -> Unit = {}
+    track: TrackUi,
+    onClick: () -> Unit,
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     var showOptions by remember { mutableStateOf(false) }
 
     Row(
         modifier = modifier
-            .background(
-                color = Color.Transparent, shape = RoundedCornerShape(16.dp)
-            )
+            .clip(RoundedCornerShape(16.dp))
+            .background(color = Color.Transparent)
             .fillMaxWidth()
-            .height(100.dp),
+            .height(100.dp)
+            .clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Surface(
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.background,
-            border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary),
+            border = if (track.selected) {
+                BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+            } else {
+                null
+            },
             modifier = Modifier
                 .fillMaxHeight()
                 .width(100.dp)
@@ -205,8 +214,7 @@ private fun TrackOptionsMenu(
 private fun DbWaveForm(modifier: Modifier = Modifier) {
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.background,
-        border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary),
+        color = MaterialTheme.colorScheme.surface,
         modifier = modifier
     ) {
         Box(
@@ -222,7 +230,9 @@ private fun DbWaveForm(modifier: Modifier = Modifier) {
 private fun TrackPrev() {
     HarmoniaTPITheme(false) {
         TrackItem(
-            track = TrackUi("Nombre")
+            track = TrackUi("Nombre", true),
+            onClick = {},
+            onDelete = {}
         )
     }
 }
