@@ -37,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.android.harmoniatpi.ui.components.ProyectControlButtonRow
 import com.android.harmoniatpi.ui.components.SquareButton
 import com.android.harmoniatpi.ui.components.TrackItem
 import com.android.harmoniatpi.ui.screens.recordingScreen.viewmodel.ProjectScreenViewModel
@@ -99,44 +100,16 @@ fun ProjectManagementScreen(
                 )
             }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-
-                SquareButton(
-                    onClick = { viewModel.stopPlaying() },
-                    icon = Icons.Default.SkipPrevious,
-                    contentDesc = "Limpiar audio"
-                )
-
-                SquareButton(
-                    onClick = {
-                        if (state.isRecording) {
-                            viewModel.stopRecording()
-                        } else {
-                            viewModel.startRecording()
-                        }
-                    },
-                    icon = if (state.isRecording) Icons.Default.Stop else Icons.Default.FiberManualRecord,
-                    contentDesc = if (state.isRecording) "Parar grabación" else "Grabar",
-                    color = if (state.isRecording) Color.Gray else Color.Red
-                )
-
-                SquareButton(
-                    onClick = {
-                        if (state.isPlaying) {
-                            viewModel.pause()
-                        } else {
-                            viewModel.play()
-                        }
-                    },
-                    icon = if (state.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                    contentDesc = if (state.isPlaying) "Pausa" else "Play"
-                )
-            }
+            ProyectControlButtonRow(
+                onSkipPrevious = { },
+                onPlay = { viewModel.play() },
+                onPause = { viewModel.pause() },
+                startRecording = { viewModel.startRecording() },
+                stopRecording = { viewModel.stopRecording() },
+                isRecording = state.isRecording,
+                isPlaying = state.isPlaying,
+                modifier = Modifier,
+            )
 
             if (showSheet) {
                 ModalBottomSheet(
