@@ -89,20 +89,26 @@ class ProjectScreenViewModel @Inject constructor(
 
     fun addTrack() {
         _state.update {
-            it.copy(tracks = it.tracks + TrackUi("Voz", false))
+            it.copy(
+                tracks = it.tracks + TrackUi(
+                    id = System.currentTimeMillis(),
+                    title = "Voz",
+                    selected = false
+                )
+            )
         }
     }
 
-    fun deleteTrack(index: Int) {
+    fun deleteTrack(id: Long) {
         _state.update {
-            it.copy(tracks = it.tracks.filterIndexed { i, _ -> i != index })
+            it.copy(tracks = it.tracks.filter { track -> track.id != id })
         }
     }
 
-    fun selectTrack(index: Int) {
+    fun selectTrack(id: Long) {
         _state.update {
-            it.copy(tracks = it.tracks.mapIndexed { i, track ->
-                if (i == index) {
+            it.copy(tracks = it.tracks.map { track ->
+                if (track.id == id) {
                     track.copy(selected = true)
                 } else {
                     track.copy(selected = false)
