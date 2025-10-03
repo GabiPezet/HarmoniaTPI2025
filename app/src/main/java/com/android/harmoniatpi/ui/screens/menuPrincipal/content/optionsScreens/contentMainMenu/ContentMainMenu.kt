@@ -210,7 +210,7 @@ private fun UserProfileCard(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
-                        text = "Transportista",
+                        text = "Violero",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)
                     )
