@@ -69,6 +69,7 @@ fun NavigationWrapper(innerPadding: PaddingValues, drawerViewModel: DrawerConten
                         openDrawerState = {
                             coroutineScope.launch { drawerState.open() }
                         },
+                        drawerState = drawerState,
                         drawerViewModel = drawerViewModel,
                         onNavigateToProjectManagement = {
                             navController.navigate(
