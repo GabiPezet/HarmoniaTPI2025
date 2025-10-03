@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.ListItemDefaults.contentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -24,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -39,7 +39,7 @@ import kotlinx.coroutines.delay
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun CircularProgressBar(message: String) {
-    val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.cat_loading))
+    val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.disk_loading))
     BackHandler { }
     val progress by animateLottieCompositionAsState(
         composition = composition,
@@ -76,12 +76,12 @@ fun CircularProgressBar(message: String) {
         ) {
             // Contenedor principal
             Surface(
-                modifier = Modifier.size(250.dp),
+                modifier = Modifier.size(300.dp),
                 shape = CircleShape,
-                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f),
+                color = MaterialTheme.colorScheme.background.copy(alpha = 0.8f),
                 border = BorderStroke(
                     1.dp,
-                    contentColor.copy(alpha = 0.1f)
+                    Color.Black.copy(alpha = 0.1f)
                 )
             ) {
                 Box(
@@ -102,7 +102,7 @@ fun CircularProgressBar(message: String) {
                 fontSize = 24.sp,
                 text = message + ".".repeat(dotCount),
                 style = MaterialTheme.typography.titleLarge,
-                color = contentColor,
+                color = MaterialTheme.colorScheme.secondary,
                 fontWeight = FontWeight.ExtraBold
             )
 

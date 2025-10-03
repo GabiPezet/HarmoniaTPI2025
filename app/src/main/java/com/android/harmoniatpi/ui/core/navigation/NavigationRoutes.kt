@@ -22,17 +22,16 @@ sealed class NavigationRoutes() {
     @Serializable
     data object CollabScreenRoute : NavigationRoutes()
 
+    @Serializable
+    data object NotificationScreenRoute : NavigationRoutes()
+
 }
 
 // BottomNav
 @Serializable
 sealed class BottomBarRoutes{
     @Serializable
-    data object Tab1Screen : BottomBarRoutes()
+    data object CommunityScreenRoute : BottomBarRoutes()
     @Serializable
-    data object Tab2Screen : BottomBarRoutes()
-    @Serializable
-    data object Tab3Screen : BottomBarRoutes()
-    @Serializable
-    data object RehearsalRoomRoute : BottomBarRoutes()
+    data object ProjectsScreenRoute : BottomBarRoutes()
 }

@@ -6,6 +6,7 @@ import androidx.room.PrimaryKey
 import com.android.harmoniatpi.di.util.JsonUtils
 import com.android.harmoniatpi.domain.model.UserPreferences
 import com.android.harmoniatpi.domain.model.userPreferences.AppTheme
+import com.android.harmoniatpi.ui.screens.notificationScreen.model.NotificationHarmonia
 
 @Entity(tableName = "UserPreferencesTable")
 data class UserPreferencesEntity(
@@ -18,6 +19,8 @@ data class UserPreferencesEntity(
     @ColumnInfo
     val userLastName: String = "LastName",
     @ColumnInfo
+    val userPhotoPath: String = "",
+    @ColumnInfo
     val appTheme: AppTheme = AppTheme.LIGHT,
     @ColumnInfo
     val notificationList: String = "",
@@ -29,9 +32,10 @@ data class UserPreferencesEntity(
         userEmail = userEmail,
         userName = userName,
         userLastName = userLastName,
+        userPhotoPath = userPhotoPath,
         appTheme = appTheme,
         notificationList = if (notificationList.isNotBlank()) {
-            jsonUtils.decodeJsonToListObject<String>(notificationList)
+            jsonUtils.decodeJsonToListObject<NotificationHarmonia>(notificationList)
         } else {
             emptyList()
         },
