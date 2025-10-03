@@ -33,13 +33,13 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.android.harmoniatpi.ui.components.ProyectControlButtonRow
 import com.android.harmoniatpi.ui.components.TrackItem
-import com.android.harmoniatpi.ui.screens.recordingScreen.viewmodel.ProjectScreenViewModel
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.viewmodel.ProjectManagementScreenViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProjectManagementScreen(
     onNavigateToCollab: () -> Unit,
-    viewModel: ProjectScreenViewModel = hiltViewModel(),
+    viewModel: ProjectManagementScreenViewModel = hiltViewModel(),
     onBack: () -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState()
@@ -70,7 +70,7 @@ fun ProjectManagementScreen(
                         TrackItem(
                             track = track,
                             onClick = { viewModel.selectTrack(track.id) },
-                            onDelete = { viewModel.deleteTrack(track.id) }
+                            onDelete = { viewModel.deleteTrack() }
                         )
                     }
                 }
@@ -83,7 +83,6 @@ fun ProjectManagementScreen(
                 modifier = Modifier
                     .size(36.dp)
                     .align(Alignment.Start)
-                    .weight(1f)
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
@@ -92,6 +91,7 @@ fun ProjectManagementScreen(
                     tint = Color.Black
                 )
             }
+            Spacer(modifier = Modifier.weight(1f))
 
             ProyectControlButtonRow(
                 onSkipPrevious = { },
@@ -117,7 +117,7 @@ fun ProjectManagementScreen(
                         Button(
                             onClick = {
                                 showSheet = false
-                                viewModel.addTrack()
+                                viewModel.addNewTrack()
                             },
                             modifier = Modifier.fillMaxWidth()
                         ) {

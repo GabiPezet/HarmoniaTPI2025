@@ -230,7 +230,7 @@ private fun DbWaveForm(modifier: Modifier = Modifier) {
 private fun TrackPrev() {
     HarmoniaTPITheme(false) {
         TrackItem(
-            track = TrackUi(0L, "Nombre", true),
+            track = TrackUi(0, "", "Nombre", true),
             onClick = {},
             onDelete = {}
         )
