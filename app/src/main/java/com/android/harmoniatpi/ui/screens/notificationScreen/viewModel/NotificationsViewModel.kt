@@ -77,6 +77,8 @@ class NotificationsViewModel @Inject constructor(
             userName = sharedMenuUiState.uiState.value.userName,
             userEmail = sharedMenuUiState.uiState.value.userEmail,
             userID = sharedMenuUiState.uiState.value.userID,
+            userPhotoPath = sharedMenuUiState.uiState.value.userPhotoPath,
+            userLastName = sharedMenuUiState.uiState.value.userLastName,
             appTheme = sharedMenuUiState.uiState.value.appTheme,
             notificationList = sharedMenuUiState.uiState.value.notificationsList,
             newNotification = sharedMenuUiState.uiState.value.newNotification

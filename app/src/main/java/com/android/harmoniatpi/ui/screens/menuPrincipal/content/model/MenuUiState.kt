@@ -13,6 +13,7 @@ data class MenuUiState(
     val userID: String = "",
     val userName : String = "",
     val userLastName : String = "",
+    val userPhotoPath: String = "",
     val isLoading: Boolean = false,
     val logOutSuccess: Boolean = false,
     val appTheme: AppTheme = AppTheme.LIGHT,
@@ -34,6 +35,7 @@ class SharedMenuUiState @Inject constructor() {
 }
 
 enum class OptionsMenu {
+    USER_PROFILE,
     USER_PREFERENCES_SCREEN,
     MAIN_CONTENT_SCREEN
 }

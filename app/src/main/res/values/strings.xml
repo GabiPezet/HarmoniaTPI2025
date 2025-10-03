@@ -34,4 +34,7 @@
     <string name="notification_screen_no_notifications_tittle">SIN NOTIFICACIONES</string>
     <string name="notification_screen_no_notifications_message">Bandeja de entrada vacía. Sin mensajes pendientes.</string>
     <string name="notification_screen_text_close">Cerrar</string>
+    <string name="dialog_type_tema">Tema</string>
+    <string name="dialog_type_tema_claro">Claro</string>
+    <string name="dialog_type_tema_oscuro">Oscuro</string>
 </resources>
