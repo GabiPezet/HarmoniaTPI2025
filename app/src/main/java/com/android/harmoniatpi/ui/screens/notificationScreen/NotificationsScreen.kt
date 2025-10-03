@@ -90,7 +90,7 @@ fun NotificationsScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.background),
+                        .background(MaterialTheme.colorScheme.onSecondaryContainer),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
@@ -126,7 +126,7 @@ fun NotificationsScreen(
             } else {
                 LazyColumn(
                     modifier = Modifier
-                        .background(MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.3f))
+                        .background(MaterialTheme.colorScheme.onSecondaryContainer)
                         .fillMaxSize()
                         .padding(innerPadding)
                         .padding(16.dp)

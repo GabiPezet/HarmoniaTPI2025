@@ -19,6 +19,8 @@ data class UserPreferencesEntity(
     @ColumnInfo
     val userLastName: String = "LastName",
     @ColumnInfo
+    val userPhotoPath: String = "",
+    @ColumnInfo
     val appTheme: AppTheme = AppTheme.LIGHT,
     @ColumnInfo
     val notificationList: String = "",
@@ -30,6 +32,7 @@ data class UserPreferencesEntity(
         userEmail = userEmail,
         userName = userName,
         userLastName = userLastName,
+        userPhotoPath = userPhotoPath,
         appTheme = appTheme,
         notificationList = if (notificationList.isNotBlank()) {
             jsonUtils.decodeJsonToListObject<NotificationHarmonia>(notificationList)

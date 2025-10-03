@@ -51,6 +51,9 @@ fun NavigationWrapper(innerPadding: PaddingValues, drawerViewModel: DrawerConten
                         onCloseDrawer = {
                             coroutineScope.launch { drawerState.close() }
                         },
+                        onNavigateToNotifications = {
+                            navController.navigate(NotificationScreenRoute)
+                        },
                         onLogOutNavigateToLogin = {
                             coroutineScope.launch { drawerState.close() }
                             navController.navigate(LoginScreenRoute) {
