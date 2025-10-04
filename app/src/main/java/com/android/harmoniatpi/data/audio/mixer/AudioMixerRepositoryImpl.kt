@@ -26,15 +26,22 @@ class AudioMixerRepositoryImpl @Inject constructor(
         val totalTracks = validTracks.size
         completedCount.set(0)
         tracksCompleted.value = false
-        validTracks.forEach { track ->
-            track.setOnPlaybackCompletedCallback {
-                val count = completedCount.incrementAndGet()
-                Log.i(TAG, "Track ${track.id} completed. Count: $count")
-                if (count == totalTracks) {
-                    tracksCompleted.value = true
+
+        if (validTracks.isNotEmpty()) {
+            Log.i(TAG, "Tracks with audio: $totalTracks")
+            validTracks.forEach { track ->
+                track.setOnPlaybackCompletedCallback {
+                    val count = completedCount.incrementAndGet()
+                    Log.i(TAG, "Track ${track.id} completed. Count: $count")
+                    if (count == totalTracks) {
+                        tracksCompleted.value = true
+                    }
                 }
+                track.play()
             }
-            track.play()
+        } else {
+            Log.i(TAG, "No tracks with audio")
+            tracksCompleted.value = true
         }
     }
 

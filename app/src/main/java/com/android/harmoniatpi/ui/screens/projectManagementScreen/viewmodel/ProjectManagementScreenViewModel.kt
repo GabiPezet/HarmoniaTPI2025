@@ -72,12 +72,10 @@ class ProjectManagementScreenViewModel @Inject constructor(
     }
 
     fun play() {
-        if (_state.value.tracks.isNotEmpty()) {
-            playAudio()
-            _state.update {
-                it.copy(isPlaying = true)
-            }
+        _state.update {
+            it.copy(isPlaying = true)
         }
+        playAudio()
     }
 
     fun pause() {
