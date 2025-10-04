@@ -8,6 +8,7 @@ import com.android.harmoniatpi.ui.screens.notificationScreen.model.NotificationH
 data class UserPreferences(
     val userID: String,
     val userEmail: String,
+    val userPhotoPath: String,
     val userName : String = "User",
     val userLastName : String = "LastName",
     val appTheme: AppTheme,
@@ -20,6 +21,7 @@ data class UserPreferences(
             userEmail = userEmail,
             userName = userName,
             userLastName = userLastName,
+            userPhotoPath = userPhotoPath,
             appTheme = appTheme,
             notificationList = jsonUtils.encodeToJson(notificationList),
             newNotification = newNotification

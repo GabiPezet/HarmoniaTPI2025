@@ -1,4 +1,4 @@
-package com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens
+package com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.contentMainMenu
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
@@ -6,6 +6,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -27,6 +28,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.HorizontalDivider
@@ -37,11 +40,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil.compose.rememberAsyncImagePainter
 import com.android.harmoniatpi.R
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.MenuUiState
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.OptionsMenu
@@ -70,19 +76,25 @@ fun ContentMainMenu(
         modifier = Modifier
             .fillMaxSize()
             .padding(innerPadding)
-            .background(MaterialTheme.colorScheme.onSecondaryContainer)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         // Header
         UserProfileCard(
-            userName = uiState.userEmail.ifEmpty { "Pepe ArgEnTo" },
-            userId = uiState.userID,
+            userName = uiState.userName.ifEmpty { "Pepe ArgEnTo" },
+            uiState = uiState,
             onCloseDrawer = {
                 drawerViewModel.updateUserPreferences()
                 onCloseDrawer()
             }
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        HorizontalDivider(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            thickness = 1.dp,
+            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)
+        )
 
         AnimatedContent(
             targetState = true,
@@ -92,13 +104,11 @@ fun ContentMainMenu(
             label = "BottomSheetTransition"
         ) {
             if (it) {
-                // Contenedor principal
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 8.dp)
                 ) {
-                    // Sección superior con las opciones principales
                     Column(
                         modifier = Modifier
                             .weight(1f)
@@ -106,10 +116,24 @@ fun ContentMainMenu(
                     ) {
 
                         MenuOptionItem(
+                            icon = Icons.Default.Person,
+                            text = "Perfil",
+                            onClick = { drawerViewModel.changeOptionsMenu(OptionsMenu.USER_PROFILE) },
+                            drawable = R.drawable.ic_profile
+                        )
+
+                        MenuOptionItem(
+                            icon = Icons.Default.Favorite,
+                            text = "Notificaciones",
+                            onClick = { onNavigateToNotifications() },
+                            drawable = R.drawable.ic_notificationsprofile
+                        )
+
+                        MenuOptionItem(
                             icon = Icons.Default.Settings,
-                            text = "Preferencias",
+                            text = "Configuración",
                             onClick = { drawerViewModel.changeOptionsMenu(OptionsMenu.USER_PREFERENCES_SCREEN) },
-                            drawable = R.drawable.settings_24dp
+                            drawable = R.drawable.ic_configuracion
                         )
 
 
@@ -120,9 +144,9 @@ fun ContentMainMenu(
                         MenuOptionItem(
                             icon = Icons.AutoMirrored.Filled.ExitToApp,
                             text = stringResource(R.string.cerrar_sesion),
-                            onClick = { showCloseSessionDialog() }
+                            onClick = { showCloseSessionDialog() },
+                            drawable = R.drawable.ic_logout
                         )
-
                         Spacer(modifier = Modifier.height(16.dp))
                     }
                 }
@@ -135,7 +159,7 @@ fun ContentMainMenu(
 @Composable
 private fun UserProfileCard(
     userName: String,
-    userId: String,
+    uiState: MenuUiState,
     onCloseDrawer: () -> Unit
 ) {
     Column(
@@ -154,36 +178,40 @@ private fun UserProfileCard(
                     .weight(1f)
                     .padding(16.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(64.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.background.copy(alpha = 0.1f),
-                            shape = CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
+                if (uiState.userPhotoPath.isEmpty()) {
                     Icon(
                         imageVector = Icons.Default.AccountCircle,
-                        contentDescription = "User Profile",
-                        modifier = Modifier.size(60.dp),
-                        tint = MaterialTheme.colorScheme.primary
+                        contentDescription = "Foto de perfil",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(80.dp)
+                    )
+                } else {
+                    Image(
+                        painter = rememberAsyncImagePainter(uiState.userPhotoPath),
+                        contentDescription = "Foto de perfil",
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
                     )
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 Column {
                     Text(
                         text = userName,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.SemiBold
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            fontWeight = FontWeight.Bold
                         ),
                         color = MaterialTheme.colorScheme.primary
                     )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
                     Text(
-                        text = "ID: $userId",
-                        style = MaterialTheme.typography.bodySmall,
+                        text = "Violero",
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)
                     )
                 }
@@ -198,20 +226,11 @@ private fun UserProfileCard(
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Close Drawer",
-                        tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.8f)
+                        tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f)
                     )
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(12.dp))
-        HorizontalDivider(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            thickness = 1.dp,
-            color = MaterialTheme.colorScheme.primaryContainer
-        )
     }
 }
 
@@ -261,6 +280,7 @@ private fun MenuOptionItem(
         Text(
             text = text,
             style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Medium,
             color = textColor,
             modifier = Modifier.weight(1f)
         )

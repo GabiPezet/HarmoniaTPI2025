@@ -2,6 +2,7 @@ package com.android.harmoniatpi.ui.screens.homeScreen
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.DrawerState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -38,6 +39,7 @@ import com.android.harmoniatpi.ui.screens.menuPrincipal.content.viewmodel.Drawer
 @Composable
 fun HomeScreen(
     openDrawerState: () -> Unit,
+    drawerState: DrawerState,
     drawerViewModel: DrawerContentViewModel,
     onNavigateToProjectManagement: () -> Unit,
     onNavigateToNotifications: () -> Unit,
@@ -95,6 +97,7 @@ fun HomeScreen(
             ) {
                 NavigationBottomWrapper(
                     navControllerNavBar,
+                    drawerState = drawerState,
                     onExitApp = { showExitAppDialog = true },
                     onNavigateToProjectManagement = { onNavigateToProjectManagement() })
             }

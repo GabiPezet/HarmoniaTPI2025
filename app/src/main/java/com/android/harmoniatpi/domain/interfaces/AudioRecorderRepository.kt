@@ -1,8 +1,17 @@
 package com.android.harmoniatpi.domain.interfaces
 
-import java.io.File
-
+/**
+ * Interfaz para operaciones de grabación de audio.
+ */
 interface AudioRecorderRepository {
-    fun startRecording(outputFile: File): Result<Unit>
-    fun stopRecording()
+    /**
+     * Inicia la grabación de audio.
+     * @param outputFilePath Ruta del archivo de salida.
+     */
+    fun startRecording(outputFilePath: String): Result<Unit>
+
+    /**
+     * Para la grabación de audio.
+     */
+    fun stopRecording(): Result<Unit>
 }
