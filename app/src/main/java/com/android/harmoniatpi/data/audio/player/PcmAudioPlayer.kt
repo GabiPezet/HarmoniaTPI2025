@@ -43,6 +43,7 @@ class PcmAudioPlayer @Inject constructor() : AudioPlayer {
         )
         .setBufferSizeInBytes(bufferSize)
         .build()
+
     private var onPlaybackCompletedCallback: (() -> Unit)? = null
 
     override fun play(): Result<Unit> {
@@ -54,8 +55,7 @@ class PcmAudioPlayer @Inject constructor() : AudioPlayer {
             return Result.failure(IllegalStateException("Error initializing AudioTrack"))
         }
         audioTrack.play()
-
-        if (playJob == null) {
+        if (playJob == null || playJob?.isCompleted == true || playJob?.isCancelled == true) {
             playJob = scope.launch {
                 val buffer = ByteArray(bufferSize)
                 try {
@@ -73,34 +73,41 @@ class PcmAudioPlayer @Inject constructor() : AudioPlayer {
                         }
                     }
                     audioTrack.stop()
+                    audioTrack.flush()
                     lastPos = 0
                     onPlaybackCompletedCallback?.invoke()
                 } catch (e: Exception) {
                     Log.e(TAG, "Error during playback", e)
                 }
             }
-            playJob?.invokeOnCompletion {
-                release()
-                playJob = null
-            }
         }
+
         return Result.success(Unit)
     }
 
     override fun pause() {
-        audioTrack.pause()
+        if (audioTrack.playState == AudioTrack.PLAYSTATE_PLAYING) {
+            audioTrack.pause()
+        }
     }
 
     override fun stop() {
         playJob?.cancel()
         playJob = null
         lastPos = 0L
+        try {
+            if (audioTrack.playState != AudioTrack.PLAYSTATE_STOPPED) {
+                audioTrack.stop()
+                audioTrack.flush()
+            }
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "Error stopping AudioTrack", e)
+        }
     }
 
     override fun release() {
         try {
-            audioTrack.stop()
-            audioTrack.flush()
+            stop()
             audioTrack.release()
         } catch (e: IllegalStateException) {
             Log.e(TAG, "Error during release", e)
@@ -110,8 +117,6 @@ class PcmAudioPlayer @Inject constructor() : AudioPlayer {
     override fun setFile(path: String) {
         file = File(path)
     }
-
-    override fun getFilePath(): String = file?.absolutePath ?: ""
 
     override fun setOnPlaybackCompletedCallback(callback: () -> Unit) {
         onPlaybackCompletedCallback = callback

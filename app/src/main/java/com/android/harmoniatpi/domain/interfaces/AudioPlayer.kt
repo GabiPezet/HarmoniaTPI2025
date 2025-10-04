@@ -6,6 +6,5 @@ interface AudioPlayer {
     fun stop()
     fun release()
     fun setFile(path: String)
-    fun getFilePath(): String
     fun setOnPlaybackCompletedCallback(callback: () -> Unit)
 }

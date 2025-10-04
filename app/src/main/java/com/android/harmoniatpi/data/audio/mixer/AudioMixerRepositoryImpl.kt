@@ -17,7 +17,6 @@ class AudioMixerRepositoryImpl @Inject constructor(
 ) : AudioMixerRepository {
     private val tracks = MutableStateFlow<List<Track>>(emptyList())
 
-
     override fun play() {
         tracks.value.forEach {
             it.play()
