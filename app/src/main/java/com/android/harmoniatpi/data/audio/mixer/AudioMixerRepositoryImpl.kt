@@ -13,12 +13,27 @@ import kotlinx.coroutines.flow.update
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 
+/**
+ * Maneja las pistas creadas y se encarga de reproducirlas, pausarlas y pararlas.
+ */
 class AudioMixerRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     private val trackFactory: TrackFactory
 ) : AudioMixerRepository {
+    /**
+     * Lista de pistas disponibles
+     */
     private val tracks = MutableStateFlow<List<Track>>(emptyList())
+
+    /**
+     * Estado observable para saber cuándo se terminaron de reproducir todas las pistas,
+     * por más que difieran en duración
+     */
     private val tracksCompleted = MutableStateFlow(false)
+
+    /**
+     * Contador de pistas que se han completado. El uso de AtomicInteger es seguro en hilos.
+     */
     private val completedCount = AtomicInteger(0)
 
     override fun play() {

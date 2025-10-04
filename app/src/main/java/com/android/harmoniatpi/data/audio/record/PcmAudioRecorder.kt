@@ -17,6 +17,10 @@ import java.io.File
 import java.io.FileOutputStream
 import javax.inject.Inject
 
+/**
+ * Utiliza AudioRecord para la grabación de audio en archivos .pcm.
+ * **La grabación en el archivo se realiza en un hilo separado**.
+ */
 class PcmAudioRecorder @Inject constructor() : AudioRecorder {
     private var audioRecord: AudioRecord? = null
     private var recordingJob: Job? = null

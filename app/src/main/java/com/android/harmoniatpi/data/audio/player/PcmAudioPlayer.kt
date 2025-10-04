@@ -16,7 +16,10 @@ import java.io.File
 import java.io.FileInputStream
 import javax.inject.Inject
 
-
+/**
+ * Utiliza AudioTrack para reproducir archivos .pcm.
+ * **La reproducción en el archivo se realiza en un hilo separado**.
+ */
 class PcmAudioPlayer @Inject constructor() : AudioPlayer {
 
     private var file: File? = null

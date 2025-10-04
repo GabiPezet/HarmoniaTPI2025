@@ -6,6 +6,9 @@ import com.android.harmoniatpi.domain.interfaces.AudioRecorder
 import com.android.harmoniatpi.domain.interfaces.AudioRecorderRepository
 import javax.inject.Inject
 
+/**
+ * Repositorio para operaciones de grabación de audio. Utiliza un AudioRecorder para la grabación.
+ */
 class AudioRecorderRepositoryImpl
 @Inject constructor(private val recorder: AudioRecorder) : AudioRecorderRepository {
 
