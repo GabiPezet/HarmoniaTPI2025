@@ -39,7 +39,7 @@ fun CommunityScreen(onExitApp: () -> Unit,drawerState: DrawerState) {
             text = "Comunidad",
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.secondary
-        )
+
+            )
     }
 }

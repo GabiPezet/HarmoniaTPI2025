@@ -55,7 +55,6 @@ fun Toolbar(
                 Text(
                     text = title.uppercase(Locale.getDefault()),
                     fontSize = 20.sp,
-                    color = MaterialTheme.colorScheme.secondary,
                     style = MaterialTheme.typography.titleLarge
                 )
             } else {

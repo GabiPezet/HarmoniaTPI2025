@@ -27,14 +27,11 @@ fun PreferenceDialog(
     onConfirm: () -> Unit
 ) {
     AlertDialog(
-        containerColor = MaterialTheme.colorScheme.onSecondaryContainer,
-        titleContentColor = MaterialTheme.colorScheme.secondary,
         onDismissRequest = onDismiss,
         confirmButton = {
             TextButton(onClick = onConfirm) {
                 Text(
                     text = "Aceptar",
-                    color = MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.titleMedium
                 )
             }
