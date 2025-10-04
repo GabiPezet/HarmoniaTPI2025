@@ -94,7 +94,7 @@ fun ProjectManagementScreen(
             Spacer(modifier = Modifier.weight(1f))
 
             ProyectControlButtonRow(
-                onSkipPrevious = { },
+                onSkipPrevious = { viewModel.stopPlaying() },
                 onPlay = { viewModel.play() },
                 onPause = { viewModel.pause() },
                 startRecording = { viewModel.startRecording() },
