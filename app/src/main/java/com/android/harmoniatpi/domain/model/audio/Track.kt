@@ -48,6 +48,17 @@ class Track @AssistedInject constructor(
         }
     }
 
+    fun setOnPlaybackCompletedCallback(callback: () -> Unit) {
+        player.setOnPlaybackCompletedCallback {
+            callback()
+        }
+    }
+
+    fun hasAudio(): Boolean {
+        val file = File(path)
+        return file.exists() && file.length() > 0
+    }
+
     private fun deleteFile(): Boolean {
         val file = File(path)
         return file.exists() && file.delete()

@@ -5,10 +5,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.harmoniatpi.domain.usecases.AddTrackUseCase
 import com.android.harmoniatpi.domain.usecases.DeleteTrackUseCase
+import com.android.harmoniatpi.domain.usecases.GetIfAllTracksWherePlayedUseCase
 import com.android.harmoniatpi.domain.usecases.GetTracksUseCase
 import com.android.harmoniatpi.domain.usecases.PauseAudioUseCase
 import com.android.harmoniatpi.domain.usecases.PlayAudioUseCase
-import com.android.harmoniatpi.domain.usecases.SetOnPlaybackCompletedCallbackUseCase
 import com.android.harmoniatpi.domain.usecases.StartRecordingAudioUseCase
 import com.android.harmoniatpi.domain.usecases.StopAudioUseCase
 import com.android.harmoniatpi.domain.usecases.StopRecordingAudioUseCase
@@ -31,7 +31,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
     private val getTracks: GetTracksUseCase,
     private val addTrack: AddTrackUseCase,
     private val deleteTrack: DeleteTrackUseCase,
-    private val setOnPlaybackCompletedCallback: SetOnPlaybackCompletedCallbackUseCase
+    private val getIfAllTracksWherePlayed: GetIfAllTracksWherePlayedUseCase,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ProyectScreenUiState())
     private var selectedTrack: TrackUi? = null
@@ -39,6 +39,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
 
     init {
         fetchTracks()
+        checkIfTracksWherePlayed()
     }
 
     fun startRecording() {
@@ -71,12 +72,12 @@ class ProjectManagementScreenViewModel @Inject constructor(
     }
 
     fun play() {
-        setOnPlaybackCompletedCallback {
+        if (_state.value.tracks.isNotEmpty()) {
+            playAudio()
             _state.update {
-                it.copy(isPlaying = false)
+                it.copy(isPlaying = true)
             }
         }
-        playAudio()
     }
 
     fun pause() {
@@ -128,6 +129,18 @@ class ProjectManagementScreenViewModel @Inject constructor(
                             path = track.path,
                         )
                     })
+                }
+            }
+        }
+    }
+
+    private fun checkIfTracksWherePlayed() {
+        viewModelScope.launch {
+            getIfAllTracksWherePlayed().collect { value ->
+                if (value) {
+                    _state.update {
+                        it.copy(isPlaying = false)
+                    }
                 }
             }
         }

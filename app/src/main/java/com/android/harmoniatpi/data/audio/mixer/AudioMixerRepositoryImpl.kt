@@ -1,6 +1,7 @@
 package com.android.harmoniatpi.data.audio.mixer
 
 import android.content.Context
+import android.util.Log
 import com.android.harmoniatpi.di.TrackFactory
 import com.android.harmoniatpi.domain.interfaces.AudioMixerRepository
 import com.android.harmoniatpi.domain.model.audio.Track
@@ -9,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 
 class AudioMixerRepositoryImpl @Inject constructor(
@@ -16,10 +18,23 @@ class AudioMixerRepositoryImpl @Inject constructor(
     private val trackFactory: TrackFactory
 ) : AudioMixerRepository {
     private val tracks = MutableStateFlow<List<Track>>(emptyList())
+    private val tracksCompleted = MutableStateFlow(false)
+    private val completedCount = AtomicInteger(0)
 
     override fun play() {
-        tracks.value.forEach {
-            it.play()
+        val validTracks = tracks.value.filter { it.hasAudio() }
+        val totalTracks = validTracks.size
+        completedCount.set(0)
+        tracksCompleted.value = false
+        validTracks.forEach { track ->
+            track.setOnPlaybackCompletedCallback {
+                val count = completedCount.incrementAndGet()
+                Log.i(TAG, "Track ${track.id} completed. Count: $count")
+                if (count == totalTracks) {
+                    tracksCompleted.value = true
+                }
+            }
+            track.play()
         }
     }
 
@@ -48,5 +63,9 @@ class AudioMixerRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getTracks(): StateFlow<List<Track>> = tracks.asStateFlow()
+    override suspend fun allTracksWerePlayed(): StateFlow<Boolean> = tracksCompleted.asStateFlow()
 
+    private companion object {
+        const val TAG = "AudioMixerRepository"
+    }
 }

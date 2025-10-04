@@ -10,4 +10,5 @@ interface AudioMixerRepository {
     fun createTrack()
     fun removeTrack(id: Long)
     suspend fun getTracks(): StateFlow<List<Track>>
+    suspend fun allTracksWerePlayed(): StateFlow<Boolean>
 }
