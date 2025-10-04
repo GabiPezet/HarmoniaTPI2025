@@ -1,11 +1,8 @@
 package com.android.harmoniatpi.domain.usecases
 
-import com.android.harmoniatpi.domain.interfaces.AudioPlayerRepository
-import java.io.File
+import com.android.harmoniatpi.domain.interfaces.AudioMixerRepository
 import javax.inject.Inject
 
-class PlayAudioUseCase @Inject constructor(
-    private val audioPlayerRepository: AudioPlayerRepository
-) {
-    operator fun invoke(inputFile: File) = audioPlayerRepository.playFile(inputFile)
+class PlayAudioUseCase @Inject constructor(private val mixer: AudioMixerRepository) {
+    operator fun invoke() = mixer.play()
 }
