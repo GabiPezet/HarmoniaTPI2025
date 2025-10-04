@@ -29,6 +29,15 @@ class WavUtility @Inject constructor() {
      * @return Un ByteArray que contiene el encabezado WAV.
      */
     fun createWavHeader(pcmSize: Int, sampleRate: Int, numChannels: Int, bitsPerSample: Int): ByteArray {
+        require(pcmSize > 0) { "El tamaño del PCM debe ser mayor que cero" }
+        require(sampleRate > 0) { "La tasa de muestreo debe ser mayor que cero" }
+        require(numChannels > 0) { "El número de canales debe ser mayor que cero" }
+        require(bitsPerSample > 0) { "Los bits por muestra deben ser mayor que cero" }
+        require(bitsPerSample == 8 || bitsPerSample == 16) { "Los bits por muestra deben ser 8 o 16"}
+        require(pcmSize % (numChannels * bitsPerSample / BITS_PER_BYTE) == 0) {
+            "El tamaño del PCM debe ser múltiplo del número de canales y bits por muestra"
+        }
+
         val header = ByteBuffer.allocate(WAV_HEADER_SIZE)
         val byteRate = sampleRate * numChannels * bitsPerSample / BITS_PER_BYTE
         val blockAlign = (numChannels * bitsPerSample / BITS_PER_BYTE).toShort()
