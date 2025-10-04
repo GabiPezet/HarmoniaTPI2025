@@ -83,7 +83,10 @@ fun TrackItem(
                     color = MaterialTheme.colorScheme.secondary
                 )
                 Box {
-                    IconButton(onClick = { showOptions = true }) {
+                    IconButton(onClick = {
+                        onClick()
+                        showOptions = true
+                    }) {
                         Icon(
                             imageVector = Icons.Default.MoreVert,
                             contentDescription = "Mostrar opciones de la pista",

@@ -77,15 +77,6 @@ class ProjectManagementScreenViewModel @Inject constructor(
             }
         }
         playAudio()
-        //    .onSuccess {
-        //        Log.i(TAG, "Reproducción comenzada")
-        //        _state.update {
-        //            it.copy(isPlaying = true)
-        //        }
-        //    }
-        //    .onFailure {
-        //        Log.e(TAG, "Error al comenzar la reproducción", it)
-        //    }
     }
 
     fun pause() {
@@ -116,6 +107,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
         _state.update {
             it.copy(tracks = it.tracks.map { track ->
                 if (track.id == id) {
+                    selectedTrack = track
                     track.copy(selected = true)
                 } else {
                     track.copy(selected = false)
