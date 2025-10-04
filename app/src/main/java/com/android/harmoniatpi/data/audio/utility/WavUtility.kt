@@ -1,5 +1,6 @@
 package com.android.harmoniatpi.data.audio.utility
 
+import java.io.OutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import javax.inject.Inject
@@ -69,5 +70,66 @@ class WavUtility @Inject constructor() {
         header.putInt(pcmSize)
 
         return header.array()
+    }
+
+    /**
+     * Escribe un archivo WAV completo (header + PCM) a un OutputStream.
+     *
+     * Este método es eficiente en memoria ya que escribe los datos directamente
+     * al stream de salida sin crear un array de bytes combinado en memoria.
+     * Es ideal para archivos grandes.
+     *
+     * @param pcm Los datos de audio PCM en formato de ByteArray.
+     * @param outputStream El stream donde se escribirá el archivo WAV.
+     * @param sampleRate La tasa de muestreo del audio.
+     * @param numChannels El número de canales.
+     * @param bitsPerSample Los bits por muestra.
+     */
+    fun writeWavToStream(
+        pcm: ByteArray,
+        outputStream: OutputStream,
+        sampleRate: Int,
+        numChannels: Int,
+        bitsPerSample: Int
+    ) {
+        val header = createWavHeader(
+            pcmSize = pcm.size,
+            sampleRate = sampleRate,
+            numChannels = numChannels,
+            bitsPerSample = bitsPerSample
+        )
+        // 'use' se asegura de que el stream se cierre correctamente,
+        // incluso si ocurren errores.
+        // no hay necesidad de usar .flush() o .close()
+        outputStream.use { out ->
+            out.write(header)
+            out.write(pcm)
+        }
+    }
+
+    /**
+     * Crea un archivo WAV a partir de un ByteArray de PCM.
+     *
+     * Este método es más simple de usar que writeWavToStream y, tal vez,
+     * sea más rápido para PCM pequeños o que necesitemos editar en memoria.
+     * Si se quiere guardar un Wav grande, es mejor usar writeWavToStream.
+     *
+     * @param pcm Los datos de audio PCM en formato de ByteArray.
+     * @param sampleRate La tasa de muestreo del audio.
+     * @param numChannels El número de canales.
+     * @param bitsPerSample Los bits por muestra.
+     *
+     */
+    fun createWav(pcm: ByteArray, sampleRate: Int, numChannels: Int, bitsPerSample: Int): ByteArray {
+        val header = createWavHeader(
+            pcmSize = pcm.size,
+            sampleRate = sampleRate,
+            numChannels = numChannels,
+            bitsPerSample = bitsPerSample
+        )
+        val wav = ByteBuffer.allocate(header.size + pcm.size)
+        wav.put(header)
+        wav.put(pcm)
+        return wav.array()
     }
 }
