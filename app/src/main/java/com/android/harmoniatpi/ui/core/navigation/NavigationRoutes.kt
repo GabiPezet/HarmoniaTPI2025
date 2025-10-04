@@ -14,9 +14,6 @@ sealed class NavigationRoutes() {
     data object HomeScreenRoute : NavigationRoutes()
 
     @Serializable
-    data object RecordingScreenRoute : NavigationRoutes()
-
-    @Serializable
     data object ProjectManagementScreenRoute : NavigationRoutes()
 
     @Serializable
