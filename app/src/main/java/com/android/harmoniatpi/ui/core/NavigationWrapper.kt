@@ -27,7 +27,12 @@ import com.android.harmoniatpi.ui.screens.registerScreen.RegisterScreen
 import kotlinx.coroutines.launch
 
 @Composable
-fun NavigationWrapper(innerPadding: PaddingValues, drawerViewModel: DrawerContentViewModel) {
+fun NavigationWrapper(
+    innerPadding: PaddingValues,
+    drawerViewModel: DrawerContentViewModel,
+    startHarmoniaServices: () -> Unit,
+    stopHarmoniaServices: () -> Unit
+) {
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
@@ -36,6 +41,7 @@ fun NavigationWrapper(innerPadding: PaddingValues, drawerViewModel: DrawerConten
             LoginScreen(
                 navigateToHome = {
                     drawerViewModel.start()
+                    startHarmoniaServices()
                     navController.navigate(HomeScreenRoute)
                 },
                 navigateToRegister = { navController.navigate(RegisterScreenRoute) })
@@ -60,6 +66,7 @@ fun NavigationWrapper(innerPadding: PaddingValues, drawerViewModel: DrawerConten
                         },
                         onLogOutNavigateToLogin = {
                             coroutineScope.launch { drawerState.close() }
+                            stopHarmoniaServices()
                             navController.navigate(LoginScreenRoute) {
                                 popUpTo(LoginScreenRoute) {
                                     inclusive = true
