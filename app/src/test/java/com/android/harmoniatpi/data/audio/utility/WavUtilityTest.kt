@@ -1,12 +1,16 @@
 package com.android.harmoniatpi.data.audio.utility
 
+import androidx.compose.foundation.layout.size
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Before
 import org.junit.Test
+import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import kotlin.collections.copyOfRange
+import kotlin.collections.toByteArray
 
 class WavUtilityTest {
 
@@ -222,5 +226,77 @@ class WavUtilityTest {
             pcmData,
             actualPcmData
         )
+    }
+
+    @Test
+    fun `writeWavToStream con parametros validos escribe correctamente el WAV en el stream`() {
+        val pcmData = ByteArray(1024) { i -> (i % 120 - 60).toByte() }
+        val sampleRate = 22050
+        val numChannels = 1
+        val bitsPerSample = 16
+        val expectedHeaderSize = 44
+        val expectedTotalSize = expectedHeaderSize + pcmData.size
+        val expectedHeader = wavUtility.createWavHeader(
+            pcmSize = pcmData.size,
+            sampleRate =  sampleRate,
+            numChannels =  numChannels,
+            bitsPerSample =  bitsPerSample
+        )
+
+        // Creamos un OutputStream en memoria.
+        // No se escribirá ningún archivo real en el disco durante esta prueba.
+        val testOutputStream = ByteArrayOutputStream()
+
+        wavUtility.writeWavToStream(
+            pcm = pcmData,
+            outputStream = testOutputStream,
+            sampleRate = sampleRate,
+            numChannels = numChannels,
+            bitsPerSample = bitsPerSample
+        )
+
+        // Obtenemos el resultado final: los bytes que se "escribieron" en el stream.
+        val resultWavData = testOutputStream.toByteArray()
+        val actualHeader = resultWavData.copyOfRange(0, expectedHeaderSize)
+        val actualPcmData = resultWavData.copyOfRange(expectedHeaderSize, resultWavData.size)
+
+        assertEquals(
+            "El tamaño total de los datos escritos en el stream es incorrecto",
+            expectedTotalSize,
+            resultWavData.size
+        )
+
+        assertArrayEquals(
+            "La sección del header escrita en el stream no es la esperada",
+            expectedHeader,
+            actualHeader
+        )
+
+        assertArrayEquals(
+            "La sección de datos PCM escrita en el stream no coincide con la original",
+            pcmData,
+            actualPcmData
+        )
+    }
+
+    @Test
+    fun `writeWavToStream propaga excepciones al crear el header`() {
+        val invalidPcmData = ByteArray(0) // pcmSize = 0
+        val testOutputStream = ByteArrayOutputStream()
+        val sampleRate = 44100
+        val numChannels = 1
+        val bitsPerSample = 16
+
+        val exception = assertThrows(IllegalArgumentException::class.java) {
+            wavUtility.writeWavToStream(
+                pcm = invalidPcmData,
+                outputStream = testOutputStream,
+                sampleRate = sampleRate,
+                numChannels = numChannels,
+                bitsPerSample = bitsPerSample
+            )
+        }
+
+        assertEquals("El tamaño del PCM debe ser mayor que cero", exception.message)
     }
 }
