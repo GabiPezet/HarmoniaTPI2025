@@ -178,4 +178,49 @@ class WavUtilityTest {
             exception.message
         )
     }
+
+    @Test
+    fun `createWav con parametros validos retorna el byte array correcto`() {
+        // Preparamos un array de PCM de prueba. Puede ser cualquier dato, siempre y cuando sea
+        // su tamaño un múltiplo del blockAlign.
+        val pcmData = ByteArray(2048) { i -> (i % 100 - 50).toByte() }
+        val sampleRate = 44100
+        val numChannels = 2
+        val bitsPerSample = 16
+        val expectedHeaderSize = 44
+        val expectedTotalSize = expectedHeaderSize + pcmData.size
+        val expectedHeader = wavUtility.createWavHeader(
+            pcmSize = pcmData.size,
+            sampleRate = sampleRate,
+            numChannels = numChannels,
+            bitsPerSample = bitsPerSample
+        )
+
+        val resultWavData = wavUtility.createWav(
+            pcm = pcmData,
+            sampleRate = sampleRate,
+            numChannels = numChannels,
+            bitsPerSample = bitsPerSample
+        )
+        val actualHeader = resultWavData.copyOfRange(0, expectedHeaderSize)
+        val actualPcmData = resultWavData.copyOfRange(expectedHeaderSize, resultWavData.size)
+
+        assertEquals(
+            "El tamaño total del WAV debe ser el del header más el del PCM",
+            expectedTotalSize,
+            resultWavData.size
+        )
+
+        assertArrayEquals(
+            "La sección del header en el WAV resultante no es la esperada",
+            expectedHeader,
+            actualHeader
+        )
+
+        assertArrayEquals(
+            "La sección de datos PCM en el WAV resultante no coincide con la original",
+            pcmData,
+            actualPcmData
+        )
+    }
 }
