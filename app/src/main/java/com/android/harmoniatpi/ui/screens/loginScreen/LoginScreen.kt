@@ -267,8 +267,8 @@ private fun GoogleSignInButton(
             .testTag("GOOGLE_SIGNIN_BUTTON"),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)),
         colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = MaterialTheme.colorScheme.secondary,
-            containerColor = MaterialTheme.colorScheme.onPrimary
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
         )
     ) {
         Image(
@@ -281,7 +281,6 @@ private fun GoogleSignInButton(
             text = "Continuar con Google",
             modifier = Modifier.padding(vertical = 8.dp),
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)
         )
     }
 }

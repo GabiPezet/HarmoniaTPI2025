@@ -21,7 +21,6 @@ fun PreferenceCategory(
             text = title,
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
         )
         content()
     }
