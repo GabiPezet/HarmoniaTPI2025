@@ -6,6 +6,7 @@ import android.media.AudioRecord
 import android.media.MediaRecorder
 import android.util.Log
 import androidx.annotation.RequiresPermission
+import com.android.harmoniatpi.domain.interfaces.AudioRecorder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -16,10 +17,14 @@ import java.io.File
 import java.io.FileOutputStream
 import javax.inject.Inject
 
+/**
+ * Utiliza AudioRecord para la grabación de audio en archivos .pcm.
+ * **La grabación en el archivo se realiza en un hilo separado**.
+ */
 class PcmAudioRecorder @Inject constructor() : AudioRecorder {
     private var audioRecord: AudioRecord? = null
     private var recordingJob: Job? = null
-
+    private var outputFile: File? = null
     private val sampleRate = 44100
     private val channelConfig = AudioFormat.CHANNEL_IN_MONO
     private val audioFormat = AudioFormat.ENCODING_PCM_16BIT
@@ -28,8 +33,13 @@ class PcmAudioRecorder @Inject constructor() : AudioRecorder {
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
+    override fun setOutputFile(path: String) {
+        outputFile = File(path)
+    }
+
     @RequiresPermission(Manifest.permission.RECORD_AUDIO)
-    override fun startRecording(outputFile: File): Result<Unit> {
+    override fun startRecording(): Result<Unit> {
+        Log.i(TAG, "Starting recording. Path: ${outputFile?.path}")
         if (recordingJob != null) {
             Log.w(TAG, "Recording already in progress")
             return Result.failure(IllegalStateException("Recording already in progress"))
@@ -50,11 +60,13 @@ class PcmAudioRecorder @Inject constructor() : AudioRecorder {
         recordingJob = scope.launch {
             val buffer = ByteArray(bufferSize)
             try {
-                FileOutputStream(outputFile).use { fos ->
-                    while (isActive && audioRecord?.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
-                        val read = audioRecord?.read(buffer, 0, buffer.size) ?: 0
-                        if (read > 0) {
-                            fos.write(buffer, 0, read)
+                outputFile?.let { file ->
+                    FileOutputStream(file).use { fos ->
+                        while (isActive && audioRecord?.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
+                            val read = audioRecord?.read(buffer, 0, buffer.size) ?: 0
+                            if (read > 0) {
+                                fos.write(buffer, 0, read)
+                            }
                         }
                     }
                 }
@@ -65,14 +77,19 @@ class PcmAudioRecorder @Inject constructor() : AudioRecorder {
         return Result.success(Unit)
     }
 
-    override fun stopRecording() {
-        recordingJob?.cancel()
-        recordingJob = null
-        audioRecord?.stop()
-        audioRecord?.release()
-        audioRecord = null
-        Log.i(TAG, "Recording stopped")
-    }
+    override fun stopRecording(): Result<Unit> =
+        try {
+            recordingJob?.cancel()
+            recordingJob = null
+            audioRecord?.stop()
+            audioRecord?.release()
+            audioRecord = null
+            Log.i(TAG, "Recording stopped")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error during stopping recording", e)
+            Result.failure(e)
+        }
 
     companion object {
         private const val TAG = "AndroidAudioRecorder"

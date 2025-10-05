@@ -2,10 +2,9 @@ package com.android.harmoniatpi.ui.screens.homeScreen
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.DrawerState
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,10 +37,11 @@ import com.android.harmoniatpi.ui.screens.menuPrincipal.content.viewmodel.Drawer
 @Composable
 fun HomeScreen(
     openDrawerState: () -> Unit,
+    drawerState: DrawerState,
     drawerViewModel: DrawerContentViewModel,
     onNavigateToProjectManagement: () -> Unit,
     onNavigateToNotifications: () -> Unit,
-    viewModel : HomeScreenViewModel = hiltViewModel()
+    viewModel: HomeScreenViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val itemsTabs = listOf(
@@ -66,7 +66,7 @@ fun HomeScreen(
 
     if (uiState.isLoading) {
         CircularProgressBar("Cargando")
-    }else{
+    } else {
         Scaffold(
             topBar = {
                 Toolbar(
@@ -95,6 +95,7 @@ fun HomeScreen(
             ) {
                 NavigationBottomWrapper(
                     navControllerNavBar,
+                    drawerState = drawerState,
                     onExitApp = { showExitAppDialog = true },
                     onNavigateToProjectManagement = { onNavigateToProjectManagement() })
             }
@@ -115,7 +116,6 @@ fun BottomNavigation(
     val currentDestination = navBackStackEntry?.destination
 
     NavigationBar(
-        containerColor = MaterialTheme.colorScheme.onSecondaryContainer,
         tonalElevation = 16.dp
     ) {
         val currentScreen = currentDestination?.toString()?.substringAfterLast(".")
@@ -125,11 +125,6 @@ fun BottomNavigation(
 
         items.forEach { item ->
             NavigationBarItem(
-                colors = NavigationBarItemDefaults.colors(
-                    indicatorColor = MaterialTheme.colorScheme.primary,
-                    selectedIconColor = MaterialTheme.colorScheme.onPrimary,
-                    unselectedIconColor = MaterialTheme.colorScheme.secondary
-                ),
                 icon = item.icon,
                 onClick = {
                     navControllerNavBar.navigate(route = item.route) {
@@ -147,7 +142,6 @@ fun BottomNavigation(
                 label = {
                     Text(
                         text = item.titleRes,
-                        color = if (currentScreen == item.route.toString()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
                         fontSize = 10.sp
                     )
                 },
