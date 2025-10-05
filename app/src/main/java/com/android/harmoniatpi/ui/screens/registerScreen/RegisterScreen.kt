@@ -192,7 +192,6 @@ fun RegisterScreen(
                 TextButton(onClick = onBackToLogin) {
                     Text(
                         "Inicia sesión",
-                        color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -212,7 +211,6 @@ fun ScreenTitle(title: String, modifier: Modifier = Modifier) {
             text = title,
             style = MaterialTheme.typography.headlineLarge.copy(
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.8f)
             )
         )
     }

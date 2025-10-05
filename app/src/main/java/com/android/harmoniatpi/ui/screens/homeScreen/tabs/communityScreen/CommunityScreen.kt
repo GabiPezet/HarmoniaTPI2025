@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 
 @Composable
-fun CommunityScreen(onExitApp: () -> Unit,drawerState: DrawerState) {
+fun CommunityScreen(onExitApp: () -> Unit, drawerState: DrawerState) {
     val scope = rememberCoroutineScope()
 
     BackHandler {
@@ -29,6 +29,7 @@ fun CommunityScreen(onExitApp: () -> Unit,drawerState: DrawerState) {
         }
 
     }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -39,7 +40,7 @@ fun CommunityScreen(onExitApp: () -> Unit,drawerState: DrawerState) {
             text = "Comunidad",
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.secondary
-        )
+
+            )
     }
 }

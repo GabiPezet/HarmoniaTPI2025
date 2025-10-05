@@ -89,8 +89,7 @@ fun NotificationsScreen(
             if (uiState.notificationsList.isEmpty()) {
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.onSecondaryContainer),
+                        .fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
@@ -126,7 +125,6 @@ fun NotificationsScreen(
             } else {
                 LazyColumn(
                     modifier = Modifier
-                        .background(MaterialTheme.colorScheme.onSecondaryContainer)
                         .fillMaxSize()
                         .padding(innerPadding)
                         .padding(16.dp)
@@ -151,9 +149,6 @@ fun NotificationsScreen(
                                 Text(stringResource(R.string.notification_screen_text_close))
                             }
                         },
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        titleContentColor = MaterialTheme.colorScheme.secondary,
-                        textContentColor = MaterialTheme.colorScheme.secondary
                     )
                 }
 

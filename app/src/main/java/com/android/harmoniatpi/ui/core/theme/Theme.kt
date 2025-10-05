@@ -11,41 +11,83 @@ import androidx.compose.ui.graphics.Color
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 private val LightColorScheme = lightColorScheme(
-    primary = OcasaColors.Primary, // Amarillo Fijo en modo claro y oscuro
-    onPrimary = OcasaColors.OnPrimary,
-    primaryContainer = OcasaColors.SurfaceLight,
-    secondary = OcasaColors.Secondary, // COLOR PARA LETRA NEGRO
-    onSecondary = OcasaColors.OnSecondary,
-    background = OcasaColors.onSecondaryBackgroundLight, // BACKGROUND BLANCO
-    error = OcasaColors.Error, // ERROR ROJO
-    onBackground = OcasaColors.InfoGreen, // VERDE OK
-    tertiary = OcasaColors.InfoYellow, // AMARILLO INFORMATIVO
-    surface = OcasaColors.FloatingLight,
-    onSurface = OcasaColors.OnPrimary,
-    inverseSurface = OcasaColors.Primary,
-    inverseOnSurface = Color.Black,
-    surfaceContainerHighest = OcasaColors.toolBar,
-    onSecondaryContainer = OcasaColors.BackgroundLight
+    primary = primaryLight,
+    onPrimary = onPrimaryLight,
+    primaryContainer = primaryContainerLight,
+    onPrimaryContainer = onPrimaryContainerLight,
+    secondary = secondaryLight,
+    onSecondary = onSecondaryLight,
+    secondaryContainer = secondaryContainerLight,
+    onSecondaryContainer = onSecondaryContainerLight,
+    tertiary = tertiaryLight,
+    onTertiary = onTertiaryLight,
+    tertiaryContainer = tertiaryContainerLight,
+    onTertiaryContainer = onTertiaryContainerLight,
+    error = errorLight,
+    onError = onErrorLight,
+    errorContainer = errorContainerLight,
+    onErrorContainer = onErrorContainerLight,
+    background = backgroundLight,
+    onBackground = onBackgroundLight,
+    surface = surfaceLight,
+    onSurface = onSurfaceLight,
+    surfaceVariant = surfaceVariantLight,
+    onSurfaceVariant = onSurfaceVariantLight,
+    outline = outlineLight,
+    outlineVariant = outlineVariantLight,
+    scrim = scrimLight,
+    inverseSurface = inverseSurfaceLight,
+    inverseOnSurface = inverseOnSurfaceLight,
+    inversePrimary = inversePrimaryLight,
+    surfaceDim = surfaceDimLight,
+    surfaceBright = surfaceBrightLight,
+    surfaceContainerLowest = surfaceContainerLowestLight,
+    surfaceContainerLow = surfaceContainerLowLight,
+    surfaceContainer = surfaceContainerLight,
+    surfaceContainerHigh = surfaceContainerHighLight,
+    surfaceContainerHighest = surfaceContainerHighestLight,
 
-)
+
+    )
 private val DarkColorScheme = darkColorScheme(
-    primary = OcasaColors.primaryDark,
-    onPrimary = OcasaColors.OnPrimary,
-    primaryContainer = OcasaColors.primaryContainerDark,
-    secondary = OcasaColors.OnSecondary,
-    onSecondary = OcasaColors.Secondary,
-    background = OcasaColors.onSecondaryBackgroundDark,
-    error = OcasaColors.Error,
-    onBackground = OcasaColors.InfoGreen,
-    tertiary = OcasaColors.InfoYellow,
-    surface = OcasaColors.FloatingDark,
-    onSurface = OcasaColors.Primary,
-    inverseSurface = Color.Black,
-    inverseOnSurface = OcasaColors.Primary,
-    surfaceContainerHighest = OcasaColors.toolBar,
-    onSecondaryContainer = OcasaColors.BackgroundDark
+    primary = primaryDark,
+    onPrimary = onPrimaryDark,
+    primaryContainer = primaryContainerDark,
+    onPrimaryContainer = onPrimaryContainerDark,
+    secondary = secondaryDark,
+    onSecondary = onSecondaryDark,
+    secondaryContainer = secondaryContainerDark,
+    onSecondaryContainer = onSecondaryContainerDark,
+    tertiary = tertiaryDark,
+    onTertiary = onTertiaryDark,
+    tertiaryContainer = tertiaryContainerDark,
+    onTertiaryContainer = onTertiaryContainerDark,
+    error = errorDark,
+    onError = onErrorDark,
+    errorContainer = errorContainerDark,
+    onErrorContainer = onErrorContainerDark,
+    background = backgroundDark,
+    onBackground = onBackgroundDark,
+    surface = surfaceDark,
+    onSurface = onSurfaceDark,
+    surfaceVariant = surfaceVariantDark,
+    onSurfaceVariant = onSurfaceVariantDark,
+    outline = outlineDark,
+    outlineVariant = outlineVariantDark,
+    scrim = scrimDark,
+    inverseSurface = inverseSurfaceDark,
+    inverseOnSurface = inverseOnSurfaceDark,
+    inversePrimary = inversePrimaryDark,
+    surfaceDim = surfaceDimDark,
+    surfaceBright = surfaceBrightDark,
+    surfaceContainerLowest = surfaceContainerLowestDark,
+    surfaceContainerLow = surfaceContainerLowDark,
+    surfaceContainer = surfaceContainerDark,
+    surfaceContainerHigh = surfaceContainerHighDark,
+    surfaceContainerHighest = surfaceContainerHighestDark,
 
-)
+
+    )
 
 @Composable
 fun HarmoniaTPITheme(
