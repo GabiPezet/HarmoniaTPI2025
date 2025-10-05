@@ -19,7 +19,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,31 +50,29 @@ fun UserPreferencesScreen(
         viewModel.changeOptionsMenu(OptionsMenu.MAIN_CONTENT_SCREEN)
     }
 
-    Scaffold(topBar = {
-        CenterAlignedTopAppBar(
-            title = {
-                Text(
-                    text = "CONFIGURACIÓN",
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
-                    fontSize = 24.sp
-                )
-            },
-            navigationIcon = {
-                IconButton(onClick = { viewModel.changeOptionsMenu(OptionsMenu.MAIN_CONTENT_SCREEN) }) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        text = "CONFIGURACIÓN",
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+                        fontSize = 24.sp
                     )
-                }
-            },
-            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                containerColor = MaterialTheme.colorScheme.background,
-                titleContentColor = MaterialTheme.colorScheme.secondary,
-                navigationIconContentColor = MaterialTheme.colorScheme.secondary
-            )
-        )
-    }, containerColor = MaterialTheme.colorScheme.onSecondaryContainer) { paddingValues ->
+                },
+                navigationIcon = {
+                    IconButton(onClick = { viewModel.changeOptionsMenu(OptionsMenu.MAIN_CONTENT_SCREEN) }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                },
+
+                )
+        },
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -86,9 +83,6 @@ fun UserPreferencesScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 16.dp, horizontal = 16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                ),
                 elevation = CardDefaults.cardElevation(
                     defaultElevation = 4.dp // sombra
                 ),

@@ -150,7 +150,7 @@ fun UserProfile(
                 )
             )
         },
-        containerColor = MaterialTheme.colorScheme.onSecondaryContainer
+
     ) { paddingValues ->
         Column(
             modifier = Modifier
