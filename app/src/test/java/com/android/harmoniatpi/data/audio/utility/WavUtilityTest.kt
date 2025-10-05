@@ -182,6 +182,31 @@ class WavUtilityTest {
     }
 
     @Test
+    fun `createWavHeader con parametros validos para audio 8-bit stereo retorna header correcto`() {
+        val pcmSize = 44100 // 1 segundo de audio estéreo a 22050 Hz, 8-bit
+        val sampleRate = 22050
+        val numChannels = 2
+        val bitsPerSample = 8
+        val expectedByteRate = sampleRate * numChannels * bitsPerSample / 8
+        val expectedBlockAlign = (numChannels * bitsPerSample / 8).toShort()
+
+        val header = wavUtility.createWavHeader(
+            pcmSize = pcmSize,
+            sampleRate =  sampleRate,
+            numChannels = numChannels,
+            bitsPerSample = bitsPerSample
+        )
+
+        val buffer = ByteBuffer.wrap(header).order(ByteOrder.LITTLE_ENDIAN)
+        buffer.position(28) // Saltar hasta el campo ByteRate
+
+        // verificamos estos valores ya que los otros campos constantes son verificados en otro test
+        // y estos campos difieren según los parámetros introducidos en el método.
+        assertEquals(expectedByteRate, buffer.int)
+        assertEquals(expectedBlockAlign, buffer.short)
+    }
+
+    @Test
     fun `createWav con parametros validos retorna el byte array correcto`() {
         // Preparamos un array de PCM de prueba. Puede ser cualquier dato, siempre y cuando sea
         // su tamaño un múltiplo del blockAlign.
