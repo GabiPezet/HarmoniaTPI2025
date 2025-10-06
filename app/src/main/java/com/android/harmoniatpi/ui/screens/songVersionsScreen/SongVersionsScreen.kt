@@ -1,7 +1,10 @@
 package com.android.harmoniatpi.ui.screens.songVersionsScreen
 
+import android.view.RoundedCorner
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -35,6 +38,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -42,10 +46,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.android.harmoniatpi.R
 import com.android.harmoniatpi.domain.model.userPreferences.AppTheme
 import com.android.harmoniatpi.ui.core.theme.HarmoniaTPITheme
 
@@ -101,10 +107,8 @@ fun SongVersionsScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary
+
                 )
-            )
         },
 
         ) { paddingValues ->
@@ -117,12 +121,12 @@ fun SongVersionsScreen(
         ) {
             item {
                 Spacer(modifier = Modifier.height(16.dp))
-                SongHeader(songTitle = originalSong.title, versionType = originalSong.versionType)
+                SongHeader(songTitle = originalSong.title, artistName = originalSong.artistName)
                 Spacer(modifier = Modifier.height(24.dp))
                 OriginalSongPlayer(
                     song = originalSong,
                     onPlayClick = { onPlayOriginal(originalSong) },
-                    onOpenProjectClick = { onOpenOriginalProject(originalSong) }
+                    onOpenProjectClick = { onOpenOriginalProject(originalSong) },
                 )
                 Spacer(modifier = Modifier.height(32.dp))
                 Text(
@@ -151,17 +155,18 @@ fun SongVersionsScreen(
 }
 
 @Composable
-fun SongHeader(songTitle: String, versionType: String) {
+fun SongHeader(songTitle: String, artistName: String, modifier: Modifier = Modifier) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth()
     ) {
-        // Reemplaza con tu ícono de forma de onda
-        Icon(
-            imageVector = Icons.Default.Analytics,
-            contentDescription = "Tipo de canción",
-            modifier = Modifier.size(60.dp),
-            tint = MaterialTheme.colorScheme.primary
+        Image(
+            painter = painterResource(id = R.drawable.image_song_default),
+            contentDescription = "Imagen de song",
+            modifier = Modifier
+                .size(80.dp)
+                .clip(shape = RoundedCornerShape(12.dp)),
+            contentScale = ContentScale.Crop
         )
         Spacer(modifier = Modifier.width(16.dp))
         Column {
@@ -171,8 +176,8 @@ fun SongHeader(songTitle: String, versionType: String) {
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = versionType,
-                style = MaterialTheme.typography.bodyMedium,
+                text = artistName,
+                style = MaterialTheme.typography.titleLarge,
                 color = Color.Gray
             )
 
@@ -185,13 +190,14 @@ fun OriginalSongPlayer(
     song: Song,
     onPlayClick: () -> Unit,
     onOpenProjectClick: () -> Unit,
+    modifier: Modifier = Modifier,
     // Deberías añadir el progreso actual y un callback para el cambio del slider
-    currentProgress: Float = 0.3f, // Ejemplo, debería venir del estado
-    onSliderValueChange: (Float) -> Unit = {} // Ejemplo
+    currentProgress: Float = 0.9f, // Ejemplo, debería venir del estado
+    onSliderValueChange: (Float) -> Unit = {}// Ejemplo
 ) {
     Card(
         shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
     ) {
@@ -201,59 +207,72 @@ fun OriginalSongPlayer(
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            CircularPlay(onPlayClick, modifier = Modifier.size(50.dp))
-            Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = song.title, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text(text = song.title, style = MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = "${song.artistName} (${song.versionType})",
-                    fontSize = 12.sp,
+                    text = song.artistName,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = Color.DarkGray
+                )
+                Text(
+                    text = song.versionType,
+                    style = MaterialTheme.typography.titleSmall,
                     color = Color.DarkGray
                 )
             }
             Spacer(modifier = Modifier.width(12.dp))
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 // Reemplaza con Coil o Glide para cargar imágenes desde URL
+                // Reemplazar con Coil o Glide para cargar imágenes desde URL y borrar background
                 Image(
-                    imageVector = Icons.Filled.Image,
-                    contentDescription = "Artista: ${song.artistName}",
+                    painter = painterResource(id = R.drawable.outline_account_circle_24),
+                    contentDescription = "Imagen de artista: ${song.artistName}",
                     modifier = Modifier
-                        .size(50.dp)
-                        .clip(CircleShape),
+                        .size(80.dp)
+                        .clip(CircleShape)
+                        .background(color = Color.LightGray)
+                        .border(BorderStroke(2.dp, Color.Black), CircleShape),
                     contentScale = ContentScale.Crop
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Abrir proyecto",
-                    fontSize = 10.sp,
-                    color = Color.DarkGray,
-                    modifier = Modifier.clickable { if (song.projectId != null) onOpenProjectClick() }
-                )
+                TextButton(onClick = { if (song.projectId != null) onOpenProjectClick() }) {
+                    Text(text = "Abrir proyecto", color = Color.DarkGray)
+                }
             }
         }
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-            Slider(
-                value = currentProgress, // Debería ser (currentTimeMillis / song.durationMillis).toFloat()
-                onValueChange = onSliderValueChange,
-                modifier = Modifier.fillMaxWidth(),
-                // colors = SliderDefaults.colors(...) // Personaliza colores si es necesario
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                // Formatea estos tiempos correctamente (ej. 0:00)
-                Text(
-                    text = formatMillisToTimeString((currentProgress * song.durationMillis).toLong()),
-                    fontSize = 12.sp,
-                    color = Color.DarkGray
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            CircularPlay(onPlayClick, modifier = Modifier.size(50.dp).padding(8.dp))
+            Column(modifier = Modifier.weight(1f).padding(horizontal = 8.dp)) {
+                Slider(
+                    value = currentProgress, // Debería ser (currentTimeMillis / song.durationMillis).toFloat()
+                    onValueChange = onSliderValueChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    // colors = SliderDefaults.colors(...) // Personaliza colores si es necesario
                 )
-                Text(
-                    text = formatMillisToTimeString(song.durationMillis),
-                    fontSize = 12.sp,
-                    color = Color.DarkGray
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    // Formatea estos tiempos correctamente (ej. 0:00)
+                    Text(
+                        text = formatMillisToTimeString((currentProgress * song.durationMillis).toLong()),
+                        fontSize = 12.sp,
+                        color = Color.DarkGray
+                    )
+                    Text(
+                        text = formatMillisToTimeString(song.durationMillis),
+                        fontSize = 12.sp,
+                        color = Color.DarkGray
+                    )
+                }
             }
+
         }
     }
 }
@@ -302,15 +321,16 @@ fun DerivedVersionItem(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Reemplaza con Coil o Glide para cargar imágenes desde URL
-            /*Image(
-                painter = painterResource(id = android.R.drawable.sym_def_app_icon), // Placeholder
+            // Reemplazar con Coil o Glide para cargar imágenes desde URL y borrar background
+            Image(
+                painter = painterResource(id = R.drawable.outline_account_circle_24),
                 contentDescription = "Artista: ${version.userName}",
                 modifier = Modifier
                     .size(40.dp)
-                    .clip(CircleShape),
+                    .clip(CircleShape)
+                    .background(color = Color.Gray),
                 contentScale = ContentScale.Crop
-            )*/
+            )
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = version.userName, fontWeight = FontWeight.SemiBold)
