@@ -37,4 +37,12 @@
     <string name="dialog_type_tema">Tema</string>
     <string name="dialog_type_tema_claro">Claro</string>
     <string name="dialog_type_tema_oscuro">Oscuro</string>
+
+    <string name="harmonia_service_powermanager">PowerManager no disponible</string>
+    <string name="harmonia_service_ocasa_ocasaservicewakelock">Harmonia::HarmoniaServiceWakeLock</string>
+    <string name="harmonia_service_sync_channel">sync_channel</string>
+    <string name="harmonia_service_sincronizacion_activa">Sincronización activa</string>
+    <string name="harmonia_service_sincronizacion">Sincronización</string>
+    <string name="harmonia_service_sincronizacion_automatica_de_datos">Sincronización automática de datos</string>
+    <string name="harmonia_service_actualizando_datos_en_segundo_plano">Actualizando datos en segundo plano…</string>
 </resources>
