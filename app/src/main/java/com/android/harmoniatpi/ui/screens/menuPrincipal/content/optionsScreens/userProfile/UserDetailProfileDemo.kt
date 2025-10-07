@@ -95,6 +95,8 @@ data class Project(
 
 enum class ProfileTab { WORK, MEDIA } // enum con la lista de pestañas para seleccionar
 
+// colores de referencia para la Demo
+
 private val Yellow = Color(0xFFFFD600)
 private val BeigeCard = Color(0xFFF2E8D6)
 private val Background = Color(0xFFFDFDFD)
@@ -194,7 +196,7 @@ fun UserDetailProfileDemo(
             )
         },
 
-    ) { paddingValues ->
+    ) { paddingValues -> //El PaddingValues es idea de Cristian supongo, hay que preguntar bien que hace, porque en jerarquía está sobre todos los demás componentes
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -202,7 +204,6 @@ fun UserDetailProfileDemo(
                 .padding(innerPadding),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
             Box(contentAlignment = Alignment.BottomEnd) {
                 if (userPhotoPath.path.isBlank()) {
                     Icon(
@@ -239,27 +240,30 @@ fun UserDetailProfileDemo(
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .widthIn(max = 200.dp), // ajustá este valor según diseño
-                horizontalArrangement = Arrangement.Center
-            ){
-                OutlinedButton(onClick = { /* seguidores */ },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(44.dp)
-                ) {
-                    Text("Seguidores")
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                OutlinedButton(onClick = { /* compartir perfil */ },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(44.dp)) {
-                    Text("Compartir perfil")
-                }
-            }
+            CompactSymmetricButtons()
+// estos son los botones originales para Compartir y ver seguidores pero son muy sencillos, no quedaron bien
+// lo dejo porque los CompactSymmetricButtons tampoco me están convenciendo por ahora
+//            Row(
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .widthIn(max = 200.dp), // ajustá este valor según diseño
+//                horizontalArrangement = Arrangement.Center
+//            ){
+//                OutlinedButton(onClick = { /* seguidores */ },
+//                    modifier = Modifier
+//                        .weight(1f)
+//                        .height(44.dp)
+//                ) {
+//                    Text("Seguidores")
+//                }
+//                Spacer(modifier = Modifier.width(8.dp))
+//                OutlinedButton(onClick = { /* compartir perfil */ },
+//                    modifier = Modifier
+//                        .weight(1f)
+//                        .height(44.dp)) {
+//                    Text("Compartir perfil")
+//                }
+//            }
             Spacer(modifier = Modifier.height(16.dp))
             Row(
                 modifier = Modifier
@@ -292,7 +296,7 @@ fun UserDetailProfileDemo(
                     ProfileTab.MEDIA -> MediaProjectList(projects = projects)
                 }
             }
-
+//            Este es el MOCK original que Cris dejó en la pantalla para referenciar
 //
 //            Spacer(modifier = Modifier.height(24.dp))
 //
@@ -409,6 +413,7 @@ fun UserDetailProfileDemo(
     }
 }
 
+//este composable son los botones de navegación que permiten intercambiar entre la lista de proyectos y el perfil card de usuario
 @Composable
 fun ProfileNavButton(icon: ImageVector, label: String, selected: Boolean, onClick: () -> Unit) {
     Column(
@@ -419,7 +424,7 @@ fun ProfileNavButton(icon: ImageVector, label: String, selected: Boolean, onClic
     ) {
         Surface(
             shape = RoundedCornerShape(12.dp),
-            color = if (selected) Yellow else Color(0xFF673AB7),
+            color = if (selected) Color(0xFFFFBA2B) else Color(0xFFF6E0BB),
             shadowElevation = if (selected) 6.dp else 0.dp,
             tonalElevation = if (selected) 6.dp else 0.dp,
             modifier = Modifier.size(56.dp)
@@ -433,6 +438,7 @@ fun ProfileNavButton(icon: ImageVector, label: String, selected: Boolean, onClic
     }
 }
 
+//Este composable es el que contiene TODA la info personal del usuario
 @Composable
 fun WorkProfileCard(user: UserProfile) {
     Card(
@@ -445,15 +451,15 @@ fun WorkProfileCard(user: UserProfile) {
             .background(BeigeCard)
             .padding(16.dp)
         ) {
-            Text("Perfil laboral", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.Black)
+            Text("Perfil Profesional", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.Black)
             Spacer(modifier = Modifier.height(12.dp))
-            ProfileRow(label = "Tu instrumento:", value = user.instrument, leading = Icons.Default.Mic)
+            ProfileRow(label = "Tu Instrumento:", value = user.instrument, leading = Icons.Default.Mic)
             Spacer(modifier = Modifier.height(8.dp))
-            ProfileRow(label = "Género musical:", value = user.genres, leading = Icons.Default.MusicNote)
+            ProfileRow(label = "Género Favorito:", value = user.genres, leading = Icons.Default.MusicNote)
             Spacer(modifier = Modifier.height(8.dp))
             ProfileRow(label = "Ubicación:", value = user.location, leading = Icons.Default.Place)
             Spacer(modifier = Modifier.height(8.dp))
-            // Rating row
+            // La fila de Rating, esto es muy mejorable, usé este ejemplo para referencia
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(imageVector = Icons.Default.Star, contentDescription = "star", tint = Color(0xFFFFD600))
                 Icon(imageVector = Icons.Default.Star, contentDescription = "star", tint = Color(0xFFFFD600))
@@ -467,7 +473,7 @@ fun WorkProfileCard(user: UserProfile) {
     }
 }
 
-
+//acá se customiza la Fila de Perfil que aparece en la WorkProfileCard
 @Composable
 fun ProfileRow(label: String, value: String, leading: ImageVector) {
     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -480,7 +486,7 @@ fun ProfileRow(label: String, value: String, leading: ImageVector) {
     }
 }
 
-// --- Lista de proyectos (Media)
+// Acá se manipula la lista de proyectos que contiene el usuario
 @Composable
 fun MediaProjectList(projects: List<Project>) {
     if (projects.isEmpty()) {
@@ -527,24 +533,82 @@ fun MediaProjectList(projects: List<Project>) {
     }
 }
 
-// --- Datos de ejemplo
+// Datos de prueba para ver cómo queda la pantalla
 fun sampleUser() = UserProfile(
-    name = "Jane Smith",
+    name = "Alambre González",
     instrument = "Guitarra, voz",
-    genres = "Pop, Rock",
-    location = "Gregorio de Laferrere",
+    genres = "Rock, Country, Shuffle",
+    location = "Gregorio de Laferrere, La Matanza",
     ratingPercent = 85
 )
-
-fun sampleProjects(): List<Project> = List(2) {
+// Idem anterior
+fun sampleProjects(): List<Project> = List(8) {
     Project(
         id = "p$it",
         title = "Proyecto ${it + 1}",
         description = listOf(
-            "Demo inicial, acordes y voz",
-            "Jam session grabada",
-            "Idea para single"
+            "Backing Track Shuffle",
+            "Backing Track Bateria 4/4",
+            "Base Ritmica Funky Only Guitar",
+            "Demo Shoegaze sin Bajo",
+            "Patrón Ritmico Bateria Soul",
+            "Backing Track 3/4 Bateria Stoner",
+            "Yeite melódico en Si bemol - Guitarra",
+            "Demo Sintetizador Ambient + Guitarra"
         ).random()
     )
 }
+
+@Composable
+fun CompactSymmetricButtons(
+    modifier: Modifier = Modifier,
+    leftLabel: String = "Seguidores",
+    rightLabel: String = "Compartir perfil",
+    onLeftClick: () -> Unit = {},
+    onRightClick: () -> Unit = {}
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp),
+        horizontalArrangement = Arrangement.Center
+    ) {
+        Row(
+            modifier = Modifier
+                .widthIn(max = 360.dp) // Este ancho de contenedor es para controlar el comportamiento en pantallas grandotas
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            val buttonModifier = Modifier
+                .height(35.dp)
+                .widthIn(min = 155.dp) // Se supone que asegura el mismo tamaño MINIMO para ambos botones...
+            OutlinedButton(
+                onClick = onLeftClick,
+                modifier = buttonModifier,
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = Color(0xFFFB8C00) // Hay que ver el tema del MaterialTheme, estos colores no están bien
+                ),
+                border = ButtonDefaults.outlinedButtonBorder(enabled = true)
+            ) {
+                Text(text = leftLabel, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            OutlinedButton(
+                onClick = onRightClick,
+                modifier = buttonModifier,
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = Color(0xFFFB8C00)
+                ),
+                border = ButtonDefaults.outlinedButtonBorder(enabled = true)
+            ) {
+                Text(text = rightLabel, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            }
+        }
+    }
+}
+
 
