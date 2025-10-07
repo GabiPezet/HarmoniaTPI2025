@@ -88,9 +88,7 @@ data class UserProfile(
 ) // modelo de usuario para la Demo
 
 data class Project(
-    val id: String,
-    val title: String,
-    val description: String
+    val id: String, val title: String, val description: String
 ) // modelo de proyecto para la Demo
 
 enum class ProfileTab { WORK, MEDIA } // enum con la lista de pestañas para seleccionar
@@ -154,9 +152,7 @@ fun UserDetailProfileDemo(
         if (!imageFile.exists()) imageFile.createNewFile()
 
         return FileProvider.getUriForFile(
-            context,
-            "${context.packageName}.fileprovider",
-            imageFile
+            context, "${context.packageName}.fileprovider", imageFile
         )
     }
 
@@ -168,30 +164,26 @@ fun UserDetailProfileDemo(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Text(
-                        text = "PERFIL",
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        fontSize = 24.sp
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        viewModel.changeOptionsMenu(OptionsMenu.MAIN_CONTENT_SCREEN)
-                    }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "volver al menú anterior",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.secondary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.secondary
+                Text(
+                    text = "PERFIL", style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.SemiBold
+                    ), fontSize = 24.sp
                 )
+            }, navigationIcon = {
+                IconButton(onClick = {
+                    viewModel.changeOptionsMenu(OptionsMenu.MAIN_CONTENT_SCREEN)
+                }) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "volver al menú anterior",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }, colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                containerColor = MaterialTheme.colorScheme.background,
+                titleContentColor = MaterialTheme.colorScheme.secondary,
+                navigationIconContentColor = MaterialTheme.colorScheme.secondary
+            )
             )
         },
 
@@ -227,8 +219,7 @@ fun UserDetailProfileDemo(
                     modifier = Modifier
                         .offset(x = (-8).dp, y = (-8).dp)
                         .background(
-                            color = MaterialTheme.colorScheme.primary,
-                            shape = CircleShape
+                            color = MaterialTheme.colorScheme.primary, shape = CircleShape
                         )
                 ) {
                     Icon(
@@ -274,15 +265,13 @@ fun UserDetailProfileDemo(
                     icon = Icons.Default.School,
                     label = "Perfil laboral",
                     selected = selectedTab == ProfileTab.WORK,
-                    onClick = { selectedTab = ProfileTab.WORK }
-                )
+                    onClick = { selectedTab = ProfileTab.WORK })
                 Spacer(modifier = Modifier.width(24.dp))
                 ProfileNavButton(
                     icon = Icons.Default.Movie,
                     label = "Multimedia",
                     selected = selectedTab == ProfileTab.MEDIA,
-                    onClick = { selectedTab = ProfileTab.MEDIA }
-                )
+                    onClick = { selectedTab = ProfileTab.MEDIA })
             }
             Spacer(modifier = Modifier.height(16.dp))
             Box(
@@ -460,15 +449,11 @@ fun WorkProfileCard(user: UserProfile) {
             )
             Spacer(modifier = Modifier.height(12.dp))
             ProfileRow(
-                label = "Tu Instrumento:",
-                value = user.instrument,
-                leading = Icons.Default.Mic
+                label = "Tu Instrumento:", value = user.instrument, leading = Icons.Default.Mic
             )
             Spacer(modifier = Modifier.height(8.dp))
             ProfileRow(
-                label = "Género Favorito:",
-                value = user.genres,
-                leading = Icons.Default.MusicNote
+                label = "Género Favorito:", value = user.genres, leading = Icons.Default.MusicNote
             )
             Spacer(modifier = Modifier.height(8.dp))
             ProfileRow(label = "Ubicación:", value = user.location, leading = Icons.Default.Place)
@@ -583,9 +568,7 @@ fun sampleUser() = UserProfile(
 // Idem anterior
 fun sampleProjects(): List<Project> = List(8) {
     Project(
-        id = "p$it",
-        title = "Proyecto ${it + 1}",
-        description = listOf(
+        id = "p$it", title = "Proyecto ${it + 1}", description = listOf(
             "Backing Track Shuffle",
             "Backing Track Bateria 4/4",
             "Base Ritmica Funky Only Guitar",
@@ -615,8 +598,7 @@ fun CompactSymmetricButtons(
         Row(
             modifier = Modifier
                 .widthIn(max = 360.dp) // Este ancho de contenedor es para controlar el comportamiento en pantallas grandotas
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center
+                .fillMaxWidth(), horizontalArrangement = Arrangement.Center
         ) {
             val buttonModifier = Modifier
                 .height(35.dp)
