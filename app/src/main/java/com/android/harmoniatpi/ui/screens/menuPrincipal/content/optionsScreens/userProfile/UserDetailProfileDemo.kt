@@ -103,7 +103,6 @@ private val Background = Color(0xFFFDFDFD)
 private val GrayText = Color(0xFF6B6B6B)
 
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserDetailProfileDemo(
@@ -118,7 +117,7 @@ fun UserDetailProfileDemo(
     var photoUri by rememberSaveable { mutableStateOf<Uri?>(null) }
     var showSheet by remember { mutableStateOf(false) }
     val userPhotoPath by viewModel.userPhotoPath.collectAsState()
-    var selectedTab by remember { mutableStateOf(ProfileTab.WORK)}
+    var selectedTab by remember { mutableStateOf(ProfileTab.WORK) }
 
     val takePictureLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
@@ -196,7 +195,7 @@ fun UserDetailProfileDemo(
             )
         },
 
-    ) { paddingValues -> //El PaddingValues es idea de Cristian supongo, hay que preguntar bien que hace, porque en jerarquía está sobre todos los demás componentes
+        ) { paddingValues -> //El PaddingValues es idea de Cristian supongo, hay que preguntar bien que hace, porque en jerarquía está sobre todos los demás componentes
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -286,10 +285,11 @@ fun UserDetailProfileDemo(
                 )
             }
             Spacer(modifier = Modifier.height(16.dp))
-            Box(modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .padding(horizontal = 16.dp)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(horizontal = 16.dp)
             ) {
                 when (selectedTab) {
                     ProfileTab.WORK -> WorkProfileCard(user = user)
@@ -446,26 +446,60 @@ fun WorkProfileCard(user: UserProfile) {
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
-        Column(modifier = Modifier
-            .fillMaxWidth()
-            .background(BeigeCard)
-            .padding(16.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(BeigeCard)
+                .padding(16.dp)
         ) {
-            Text("Perfil Profesional", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.Black)
+            Text(
+                "Perfil Profesional",
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                color = Color.Black
+            )
             Spacer(modifier = Modifier.height(12.dp))
-            ProfileRow(label = "Tu Instrumento:", value = user.instrument, leading = Icons.Default.Mic)
+            ProfileRow(
+                label = "Tu Instrumento:",
+                value = user.instrument,
+                leading = Icons.Default.Mic
+            )
             Spacer(modifier = Modifier.height(8.dp))
-            ProfileRow(label = "Género Favorito:", value = user.genres, leading = Icons.Default.MusicNote)
+            ProfileRow(
+                label = "Género Favorito:",
+                value = user.genres,
+                leading = Icons.Default.MusicNote
+            )
             Spacer(modifier = Modifier.height(8.dp))
             ProfileRow(label = "Ubicación:", value = user.location, leading = Icons.Default.Place)
             Spacer(modifier = Modifier.height(8.dp))
             // La fila de Rating, esto es muy mejorable, usé este ejemplo para referencia
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(imageVector = Icons.Default.Star, contentDescription = "star", tint = Color(0xFFFFD600))
-                Icon(imageVector = Icons.Default.Star, contentDescription = "star", tint = Color(0xFFFFD600))
-                Icon(imageVector = Icons.Default.Star, contentDescription = "star", tint = Color(0xFFFFD600))
-                Icon(imageVector = Icons.Default.Star, contentDescription = "star", tint = Color(0xFFFFD600))
-                Icon(imageVector = Icons.Default.Star, contentDescription = "star_border", tint = Color(0xFFBDBDBD))
+                Icon(
+                    imageVector = Icons.Default.Star,
+                    contentDescription = "star",
+                    tint = Color(0xFFFFD600)
+                )
+                Icon(
+                    imageVector = Icons.Default.Star,
+                    contentDescription = "star",
+                    tint = Color(0xFFFFD600)
+                )
+                Icon(
+                    imageVector = Icons.Default.Star,
+                    contentDescription = "star",
+                    tint = Color(0xFFFFD600)
+                )
+                Icon(
+                    imageVector = Icons.Default.Star,
+                    contentDescription = "star",
+                    tint = Color(0xFFFFD600)
+                )
+                Icon(
+                    imageVector = Icons.Default.Star,
+                    contentDescription = "star_border",
+                    tint = Color(0xFFBDBDBD)
+                )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("${user.ratingPercent}%", color = GrayText)
             }
@@ -504,9 +538,10 @@ fun MediaProjectList(projects: List<Project>) {
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                 shape = RoundedCornerShape(10.dp)
             ) {
-                Row(modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp),
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Surface(
@@ -515,7 +550,10 @@ fun MediaProjectList(projects: List<Project>) {
                         color = Color(0xFFEEEEEE)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Icon(imageVector = Icons.Default.MusicNote, contentDescription = "preview")
+                            Icon(
+                                imageVector = Icons.Default.MusicNote,
+                                contentDescription = "preview"
+                            )
                         }
                     }
                     Spacer(modifier = Modifier.width(12.dp))
@@ -541,6 +579,7 @@ fun sampleUser() = UserProfile(
     location = "Gregorio de Laferrere, La Matanza",
     ratingPercent = 85
 )
+
 // Idem anterior
 fun sampleProjects(): List<Project> = List(8) {
     Project(
