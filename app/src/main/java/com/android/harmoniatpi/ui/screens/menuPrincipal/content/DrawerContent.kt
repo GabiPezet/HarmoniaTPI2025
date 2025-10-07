@@ -22,6 +22,7 @@ import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.MenuUiStat
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.OptionsMenu
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.contentMainMenu.ContentMainMenu
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userPreferencesScreen.UserPreferencesScreen
+import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.UserDetailProfileDemo
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.UserProfile
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.viewmodel.DrawerContentViewModel
 
@@ -112,6 +113,14 @@ fun DrawerScreenContent(
 
         OptionsMenu.USER_PROFILE -> {
             UserProfile(
+                viewModel = drawerViewModel,
+                uiState = uiState,
+                innerPadding = innerPadding
+            )
+        }
+
+        OptionsMenu.USER_PROFILE_DEMO -> {
+            UserDetailProfileDemo(
                 viewModel = drawerViewModel,
                 uiState = uiState,
                 innerPadding = innerPadding

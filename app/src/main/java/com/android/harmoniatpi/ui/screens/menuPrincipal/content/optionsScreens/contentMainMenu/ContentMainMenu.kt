@@ -118,7 +118,7 @@ fun ContentMainMenu(
                         MenuOptionItem(
                             icon = Icons.Default.Person,
                             text = "Perfil",
-                            onClick = { drawerViewModel.changeOptionsMenu(OptionsMenu.USER_PROFILE) },
+                            onClick = { drawerViewModel.changeOptionsMenu(OptionsMenu.USER_PROFILE_DEMO) },
                             drawable = R.drawable.ic_profile
                         )
 
