@@ -80,7 +80,6 @@ fun TrackItem(
                 Text(
                     text = track.title,
                     modifier = Modifier.weight(1f),
-                    color = MaterialTheme.colorScheme.secondary
                 )
                 Box {
                     IconButton(onClick = {
@@ -90,7 +89,6 @@ fun TrackItem(
                         Icon(
                             imageVector = Icons.Default.MoreVert,
                             contentDescription = "Mostrar opciones de la pista",
-                            tint = MaterialTheme.colorScheme.secondary
                         )
                     }
                     TrackOptionsMenu(
@@ -116,76 +114,60 @@ private fun TrackOptionsMenu(
     ) {
         DropdownMenuItem(
             text = {
-                Text(
-                    text = "Silenciar",
-                    color = MaterialTheme.colorScheme.secondary
-                )
+                Text(text = "Silenciar")
             },
             leadingIcon = {
                 Icon(
                     painter = painterResource(R.drawable.mute_icon),
-                    contentDescription = "Silenciar",
-                    tint = MaterialTheme.colorScheme.secondary
+                    contentDescription = "Silenciar"
                 )
             },
             onClick = {}
         )
         DropdownMenuItem(
             text = {
-                Text(
-                    text = "Volumen",
-                    color = MaterialTheme.colorScheme.secondary
-                )
-            }, leadingIcon = {
+                Text(text = "Volumen")
+            },
+            leadingIcon = {
                 Icon(
                     painter = painterResource(R.drawable.mix_icon),
-                    contentDescription = "Volumen",
-                    tint = MaterialTheme.colorScheme.secondary
+                    contentDescription = "Volumen"
                 )
             },
             onClick = {}
         )
         DropdownMenuItem(
             text = {
-                Text(
-                    text = "Paneo",
-                    color = MaterialTheme.colorScheme.secondary
-                )
-            }, leadingIcon = {
+                Text(text = "Paneo")
+            },
+            leadingIcon = {
                 Icon(
                     painter = painterResource(R.drawable.pan_icon),
-                    contentDescription = "Paneo",
-                    tint = MaterialTheme.colorScheme.secondary
+                    contentDescription = "Paneo"
                 )
             },
             onClick = {}
         )
         DropdownMenuItem(
             text = {
-                Text(
-                    text = "Editar",
-                    color = MaterialTheme.colorScheme.secondary
-                )
-            }, leadingIcon = {
+                Text(text = "Editar")
+            },
+            leadingIcon = {
                 Icon(
                     painter = painterResource(R.drawable.edit_icon),
-                    contentDescription = "Editar",
-                    tint = MaterialTheme.colorScheme.secondary
+                    contentDescription = "Editar"
                 )
             },
             onClick = {}
         )
         DropdownMenuItem(
             text = {
-                Text(
-                    text = "Efectos",
-                    color = MaterialTheme.colorScheme.secondary
-                )
-            }, leadingIcon = {
+                Text(text = "Efectos")
+            },
+            leadingIcon = {
                 Icon(
                     painter = painterResource(R.drawable.fx_icon),
-                    contentDescription = "Efectos",
-                    tint = MaterialTheme.colorScheme.secondary
+                    contentDescription = "Efectos"
                 )
             },
             onClick = {}
@@ -193,16 +175,12 @@ private fun TrackOptionsMenu(
 
         DropdownMenuItem(
             text = {
-                Text(
-                    text = "Eliminar",
-                    color = MaterialTheme.colorScheme.secondary
-                )
+                Text(text = "Eliminar")
             },
             leadingIcon = {
                 Icon(
                     painter = painterResource(R.drawable.delete_icon),
-                    contentDescription = "Efectos",
-                    tint = MaterialTheme.colorScheme.secondary
+                    contentDescription = "Efectos"
                 )
             },
             onClick = {
@@ -217,7 +195,7 @@ private fun TrackOptionsMenu(
 private fun DbWaveForm(modifier: Modifier = Modifier) {
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surface,
+        color = MaterialTheme.colorScheme.primaryContainer,
         modifier = modifier
     ) {
         Box(
