@@ -2,6 +2,7 @@ package com.android.harmoniatpi.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -51,7 +52,8 @@ fun TrackItem(
     track: TrackUi,
     onClick: () -> Unit,
     onDelete: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    scrollState: ScrollState = rememberScrollState()
 ) {
     var showOptions by remember { mutableStateOf(false) }
 
@@ -108,7 +110,8 @@ fun TrackItem(
         }
         DbWaveform(
             modifier = Modifier.fillMaxSize(),
-            waveform = track.waveForm ?: listOf()
+            waveform = track.waveForm ?: listOf(),
+            scrollState = scrollState
         )
     }
 }
@@ -202,10 +205,10 @@ private fun TrackOptionsMenu(
 @Composable
 fun DbWaveform(
     waveform: List<Float>,
+    scrollState: ScrollState,
     modifier: Modifier = Modifier,
     color: Color = MaterialTheme.colorScheme.onPrimaryContainer
 ) {
-    val scrollState = rememberScrollState()
 
     Surface(
         modifier = modifier
