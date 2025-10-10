@@ -1,8 +1,10 @@
 package com.android.harmoniatpi.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
@@ -32,12 +35,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.android.harmoniatpi.R
 import com.android.harmoniatpi.ui.core.theme.HarmoniaTPITheme
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
+import kotlin.math.sin
 
 @Composable
 fun TrackItem(
@@ -53,8 +60,7 @@ fun TrackItem(
             .clip(RoundedCornerShape(16.dp))
             .background(color = Color.Transparent)
             .fillMaxWidth()
-            .height(100.dp)
-            .clickable(onClick = onClick),
+            .height(100.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
@@ -69,6 +75,7 @@ fun TrackItem(
             modifier = Modifier
                 .fillMaxHeight()
                 .width(100.dp)
+                .clickable(onClick = onClick)
         ) {
             Column(
                 modifier = Modifier
@@ -99,8 +106,9 @@ fun TrackItem(
                 }
             }
         }
-        DbWaveForm(
-            modifier = Modifier.fillMaxSize()
+        DbWaveform(
+            modifier = Modifier.fillMaxSize(),
+            waveform = track.waveForm ?: listOf()
         )
     }
 }
@@ -192,16 +200,46 @@ private fun TrackOptionsMenu(
 }
 
 @Composable
-private fun DbWaveForm(modifier: Modifier = Modifier) {
+fun DbWaveform(
+    waveform: List<Float>,
+    modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.onPrimaryContainer
+) {
+    val scrollState = rememberScrollState()
+
     Surface(
+        modifier = modifier
+            .horizontalScroll(scrollState),
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.primaryContainer,
-        modifier = modifier
     ) {
         Box(
-            modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
+            modifier = Modifier.padding(vertical = 8.dp),
         ) {
-            Text(text = "Waveform")
+            Canvas(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width((waveform.size / 2).dp)
+            ) {
+
+                val centerY = size.height / 2
+                val stepX = size.width / waveform.size
+
+                val path = Path().apply {
+                    moveTo(0f, centerY)
+                    waveform.forEachIndexed { index, value ->
+                        val x = index * stepX
+                        val y = centerY - (value * centerY)
+                        lineTo(x, y)
+                    }
+                }
+
+                drawPath(
+                    path = path,
+                    color = color,
+                    style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
+                )
+            }
         }
     }
 }
@@ -209,9 +247,15 @@ private fun DbWaveForm(modifier: Modifier = Modifier) {
 @Preview
 @Composable
 private fun TrackPrev() {
+    // Simulamos una onda con valores entre 0 y 1
+    val fakeWaveform = List(300) { index ->
+        val angle = index * 0.1f
+        sin(angle) // <-- Solo sin(angle) para generar valores entre -1 y 1
+    }
+
     HarmoniaTPITheme(false) {
         TrackItem(
-            track = TrackUi(0, "", "Nombre", true),
+            track = TrackUi(0, "", "Nombre", true, fakeWaveform),
             onClick = {},
             onDelete = {}
         )
