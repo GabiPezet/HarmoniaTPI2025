@@ -26,10 +26,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.MusicNote
@@ -50,6 +54,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -69,6 +74,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
@@ -109,13 +116,16 @@ fun UserDetailProfileDemo(
     innerPadding: PaddingValues,
     user: UserProfile = sampleUser(),
     projects: List<Project> = sampleProjects()
-
 ) {
     val context = LocalContext.current
     var photoUri by rememberSaveable { mutableStateOf<Uri?>(null) }
     var showSheet by remember { mutableStateOf(false) }
     val userPhotoPath by viewModel.userPhotoPath.collectAsState()
     var selectedTab by remember { mutableStateOf(ProfileTab.WORK) }
+
+// Estados para controlar la edición del nombre
+    var isEditing by remember { mutableStateOf(false) }
+    var name by remember(uiState.userName) { mutableStateOf(uiState.userName) }
 
     val takePictureLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
@@ -227,6 +237,76 @@ fun UserDetailProfileDemo(
                         contentDescription = "Cambiar foto",
                         tint = Color.White
                     )
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            // --- NUEVO: Sección para mostrar y editar el nombre del usuario ---
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                if (isEditing) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        OutlinedTextField(
+                            value = name,
+                            onValueChange = { name = it },
+                            label = { Text("Nombre de usuario") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            isError = name.isBlank(),
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                            keyboardActions = KeyboardActions(
+                                onDone = {
+                                    if (name.isNotBlank()) {
+                                        viewModel.updateUserName(name)
+                                        viewModel.updateUserPreferences()
+                                        isEditing = false
+                                    }
+                                }
+                            )
+                        )
+                        if (name.isBlank()) {
+                            Text(
+                                text = "El nombre no puede estar vacío",
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(start = 16.dp)
+                            )
+                        }
+                    }
+
+                    IconButton(
+                        onClick = {
+                            viewModel.updateUserName(name)
+                            viewModel.updateUserPreferences()
+                            isEditing = false
+                        },
+                        enabled = name.isNotBlank()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Done,
+                            contentDescription = "Guardar nombre",
+                            tint = if (name.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                        )
+                    }
+                } else {
+                    Text(
+                        text = uiState.userName.ifEmpty { "Sin nombre" },
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.Center
+                    )
+                    IconButton(onClick = { isEditing = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Editar nombre",
+                            tint = MaterialTheme.colorScheme.secondary
+                        )
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))

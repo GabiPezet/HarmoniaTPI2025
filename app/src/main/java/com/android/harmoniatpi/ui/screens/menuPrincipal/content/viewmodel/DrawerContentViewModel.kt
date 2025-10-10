@@ -89,6 +89,10 @@ class DrawerContentViewModel @Inject constructor(
         }
     }
 
+    fun updateUserName(newName: String) {
+        sharedMenuUiState.updateState { it.copy(userName = newName) }
+    }
+
     fun logOutUser() {
         viewModelScope.launch(Dispatchers.IO) {
             logOutUseCase()
