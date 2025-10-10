@@ -5,6 +5,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.FlingBehavior
+import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -52,8 +54,9 @@ fun TrackItem(
     track: TrackUi,
     onClick: () -> Unit,
     onDelete: () -> Unit,
+    scrollState: ScrollState,
     modifier: Modifier = Modifier,
-    scrollState: ScrollState = rememberScrollState()
+    timelineWidth: Int,
 ) {
     var showOptions by remember { mutableStateOf(false) }
 
@@ -111,7 +114,8 @@ fun TrackItem(
         DbWaveform(
             modifier = Modifier.fillMaxSize(),
             waveform = track.waveForm ?: listOf(),
-            scrollState = scrollState
+            scrollState = scrollState,
+            timelineWidth = timelineWidth
         )
     }
 }
@@ -206,6 +210,7 @@ private fun TrackOptionsMenu(
 fun DbWaveform(
     waveform: List<Float>,
     scrollState: ScrollState,
+    timelineWidth: Int,
     modifier: Modifier = Modifier,
     color: Color = MaterialTheme.colorScheme.onPrimaryContainer
 ) {
@@ -260,7 +265,9 @@ private fun TrackPrev() {
         TrackItem(
             track = TrackUi(0, "", "Nombre", true, fakeWaveform),
             onClick = {},
-            onDelete = {}
+            onDelete = {},
+            scrollState = rememberScrollState(),
+            timelineWidth = 500,
         )
     }
 }

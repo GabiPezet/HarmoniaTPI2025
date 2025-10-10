@@ -68,11 +68,15 @@ class ProjectManagementScreenViewModel @Inject constructor(
                 selectedTrack?.let { track ->
                     viewModelScope.launch {
                         val waveform = generateWaveform(track.path)
-                        _state.update {
-                            it.copy(
-                                tracks = it.tracks.map { trackUi ->
-                                    if (trackUi.id == track.id) trackUi.copy(waveForm = waveform) else trackUi
-                                }
+                        _state.update { currentState ->
+                            val updatedTracks = currentState.tracks.map { trackUi ->
+                                if (trackUi.id == track.id) trackUi.copy(waveForm = waveform) else trackUi
+                            }
+
+                            val timelineWidth = getUpdatedTimeline(updatedTracks)
+                            currentState.copy(
+                                tracks = updatedTracks,
+                                timelineWidth = timelineWidth
                             )
                         }
                     }
@@ -135,7 +139,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
             getTracks().collect { domainTracks ->
                 val currentUiTracks = _state.value.tracks
                 _state.update { currentState ->
-                    val newUiTracks = domainTracks.map { domainTrack ->
+                    val updatedTracks = domainTracks.map { domainTrack ->
                         val existingUiTrack = currentUiTracks.find { it.id == domainTrack.id }
                         existingUiTrack?.copy(
                             id = domainTrack.id,
@@ -147,7 +151,12 @@ class ProjectManagementScreenViewModel @Inject constructor(
                             path = domainTrack.path,
                         )
                     }
-                    currentState.copy(tracks = newUiTracks)
+                    val timelineWidth = getUpdatedTimeline(updatedTracks)
+
+                    currentState.copy(
+                        tracks = updatedTracks,
+                        timelineWidth = timelineWidth
+                    )
                 }
             }
         }
@@ -163,6 +172,13 @@ class ProjectManagementScreenViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    private fun getUpdatedTimeline(updatedTracks: List<TrackUi>): Int {
+        if (updatedTracks.isEmpty()) return 500
+        val maxWaveformSize = updatedTracks.maxOf { it.waveForm?.size ?: 0 }
+        val timelineWidth = if (maxWaveformSize > 0) maxWaveformSize / 2 else 500
+        return timelineWidth
     }
 
     private companion object {
