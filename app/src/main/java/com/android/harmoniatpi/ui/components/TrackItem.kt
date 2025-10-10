@@ -1,12 +1,16 @@
 package com.android.harmoniatpi.ui.components
 
+import androidx.compose.animation.animateColor
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.FlingBehavior
-import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -55,10 +59,22 @@ fun TrackItem(
     onClick: () -> Unit,
     onDelete: () -> Unit,
     scrollState: ScrollState,
+    isBeingRecorded: Boolean,
     modifier: Modifier = Modifier,
     timelineWidth: Int,
 ) {
     var showOptions by remember { mutableStateOf(false) }
+
+    val infiniteTransition = rememberInfiniteTransition(label = "")
+    val animatedBorderColor by infiniteTransition.animateColor(
+        initialValue = Color.Red,
+        targetValue = MaterialTheme.colorScheme.background,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "Recording border color animation"
+    )
 
     Row(
         modifier = modifier
@@ -72,10 +88,10 @@ fun TrackItem(
         Surface(
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.background,
-            border = if (track.selected) {
-                BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
-            } else {
-                null
+            border = when {
+                isBeingRecorded -> BorderStroke(2.dp, animatedBorderColor)
+                track.selected -> BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+                else -> null
             },
             modifier = Modifier
                 .fillMaxHeight()
@@ -267,6 +283,7 @@ private fun TrackPrev() {
             onClick = {},
             onDelete = {},
             scrollState = rememberScrollState(),
+            isBeingRecorded = true,
             timelineWidth = 500,
         )
     }

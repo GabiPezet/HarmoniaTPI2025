@@ -76,6 +76,7 @@ fun ProjectManagementScreen(
                         onDelete = { viewModel.deleteTrack() },
                         scrollState = sharedScrollState,
                         timelineWidth = state.timelineWidth,
+                        isBeingRecorded = state.isRecording && track.selected
                     )
                 }
             }
