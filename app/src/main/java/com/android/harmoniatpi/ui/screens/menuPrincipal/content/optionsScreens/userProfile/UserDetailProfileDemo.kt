@@ -24,10 +24,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountCircle
@@ -56,6 +58,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
@@ -82,6 +85,7 @@ import androidx.core.content.FileProvider
 import coil.compose.rememberAsyncImagePainter
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.MenuUiState
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.OptionsMenu
+import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.RatingBar
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.viewmodel.DrawerContentViewModel
 import java.io.File
 
@@ -165,7 +169,6 @@ fun UserDetailProfileDemo(
             context, "${context.packageName}.fileprovider", imageFile
         )
     }
-
     BackHandler {
         viewModel.changeOptionsMenu(OptionsMenu.MAIN_CONTENT_SCREEN)
     }
@@ -361,7 +364,7 @@ fun UserDetailProfileDemo(
                     .padding(horizontal = 16.dp)
             ) {
                 when (selectedTab) {
-                    ProfileTab.WORK -> WorkProfileCard(user = user)
+                    ProfileTab.WORK -> WorkProfileCard(uiState = uiState, viewModel = viewModel)
                     ProfileTab.MEDIA -> MediaProjectList(projects = projects)
                 }
             }
@@ -509,8 +512,18 @@ fun ProfileNavButton(icon: ImageVector, label: String, selected: Boolean, onClic
 
 //Este composable es el que contiene TODA la info personal del usuario
 @Composable
-fun WorkProfileCard(user: UserProfile) {
-    Card(
+fun WorkProfileCard(
+    uiState: MenuUiState,
+    viewModel: DrawerContentViewModel
+) {
+    // Estados locales para el modo de edición
+    var isEditing by remember { mutableStateOf(false) }
+    var instrument by remember(uiState.instrument) { mutableStateOf(uiState.instrument) }
+    var genres by remember(uiState.genres) { mutableStateOf(uiState.genres) }
+    var location by remember(uiState.location) { mutableStateOf(uiState.location) }
+    var rating by remember(uiState.rating) { mutableStateOf(uiState.rating)}
+
+        Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
@@ -521,55 +534,137 @@ fun WorkProfileCard(user: UserProfile) {
                 .background(BeigeCard)
                 .padding(16.dp)
         ) {
-            Text(
-                "Perfil Profesional",
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp,
-                color = Color.Black
-            )
+            //Encabezado con título y botón de editar
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    "Perfil Profesional",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = Color.Black
+                )
+                // Solo muestra el botón de editar si no estamos editando
+                if (!isEditing) {
+                    IconButton(onClick = { isEditing = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Editar perfil",
+                            tint = Color.Black.copy(alpha = 0.7f)
+                        )
+                    }
+                }
+            }
             Spacer(modifier = Modifier.height(12.dp))
-            ProfileRow(
-                label = "Tu Instrumento:", value = user.instrument, leading = Icons.Default.Mic
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            ProfileRow(
-                label = "Género Favorito:", value = user.genres, leading = Icons.Default.MusicNote
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            ProfileRow(label = "Ubicación:", value = user.location, leading = Icons.Default.Place)
-            Spacer(modifier = Modifier.height(8.dp))
-            // La fila de Rating, esto es muy mejorable, usé este ejemplo para referencia
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.Star,
-                    contentDescription = "star",
-                    tint = Color(0xFFFFD600)
+
+            // (Modo Visualización vs. Edición)
+            if (isEditing) {
+                // MODO EDICIÓN
+                EditableProfileRow(
+                    label = "Tu Instrumento:",
+                    value = instrument,
+                    onValueChange = { instrument = it },
+                    leading = Icons.Default.Mic
                 )
-                Icon(
-                    imageVector = Icons.Default.Star,
-                    contentDescription = "star",
-                    tint = Color(0xFFFFD600)
+                Spacer(modifier = Modifier.height(8.dp))
+                EditableProfileRow(
+                    label = "Género Favorito:",
+                    value = genres,
+                    onValueChange = { genres = it },
+                    leading = Icons.Default.MusicNote
                 )
-                Icon(
-                    imageVector = Icons.Default.Star,
-                    contentDescription = "star",
-                    tint = Color(0xFFFFD600)
+                Spacer(modifier = Modifier.height(8.dp))
+                EditableProfileRow(
+                    label = "Ubicación:",
+                    value = location,
+                    onValueChange = { location = it },
+                    leading = Icons.Default.Place
                 )
-                Icon(
-                    imageVector = Icons.Default.Star,
-                    contentDescription = "star",
-                    tint = Color(0xFFFFD600)
+                Spacer(modifier = Modifier.height(16.dp))
+                // Slider para editar el rating
+               /* Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "Tu valoración: ${"%.1f".format(rating)} / 5.0",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = GrayText
+                    )
+                    Slider(
+                        value = rating,
+                        onValueChange = { rating = it },
+                        valueRange = 0f..5f, // Rango de 0 a 5 estrellas
+                        steps = 9 // 9 pasos intermedios para permitir mitades (0, 0.5, 1, 1.5...)
+                    )
+                    // Feedback visual en tiempo real
+                    RatingBar(rating = rating)
+                }*/
+                Spacer(modifier = Modifier.height(16.dp))
+                //Botones de Guardar y Cancelar
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    OutlinedButton(onClick = {
+                        // Restaura los valores originales
+                        instrument = uiState.instrument
+                        genres = uiState.genres
+                        location = uiState.location
+                        isEditing = false
+                        rating = uiState.rating
+                    }) {
+                        Text("Cancelar")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(onClick = {
+                        // Llama al ViewModel para actualizar el estado
+                        viewModel.updateWorkProfile(instrument, genres, location)
+                        viewModel.updateRating(rating)
+                        // Llama para guardar en Firebase
+                        viewModel.updateUserPreferences()
+                        isEditing = false
+                    }) {
+                        Text("Guardar")
+                    }
+                }
+            } else {
+                //MODO VISUALIZACIÓN
+                ProfileRow(
+                    label = "Tu Instrumento:", value = uiState.instrument, leading = Icons.Default.Mic
                 )
-                Icon(
-                    imageVector = Icons.Default.Star,
-                    contentDescription = "star_border",
-                    tint = Color(0xFFBDBDBD)
+                Spacer(modifier = Modifier.height(8.dp))
+                ProfileRow(
+                    label = "Género Favorito:", value = uiState.genres, leading = Icons.Default.MusicNote
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("${user.ratingPercent}%", color = GrayText)
+                Spacer(modifier = Modifier.height(8.dp))
+                ProfileRow(
+                    label = "Ubicación:", value = uiState.location, leading = Icons.Default.Place
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                RatingBar(rating = uiState.rating)
             }
         }
     }
+}
+
+
+//Composable de ayuda para los campos de texto en modo edición
+@Composable
+fun EditableProfileRow(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    leading: ImageVector
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = Modifier.fillMaxWidth(),
+        label = { Text(label) },
+        leadingIcon = { Icon(imageVector = leading, contentDescription = null) },
+        singleLine = true
+    )
 }
 
 //acá se customiza la Fila de Perfil que aparece en la WorkProfileCard

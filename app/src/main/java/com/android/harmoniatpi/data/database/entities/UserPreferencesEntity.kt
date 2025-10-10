@@ -25,7 +25,15 @@ data class UserPreferencesEntity(
     @ColumnInfo
     val notificationList: String = "",
     @ColumnInfo
-    val newNotification: Boolean = false
+    val newNotification: Boolean = false,
+    @ColumnInfo
+    val instrument: String = "",
+    @ColumnInfo
+    val genres: String = "",
+    @ColumnInfo
+    val location: String = "",
+    @ColumnInfo
+    val rating: Float = 0.0f
 ) {
     fun toDomain(jsonUtils: JsonUtils) = UserPreferences(
         userID = userID,
@@ -39,7 +47,11 @@ data class UserPreferencesEntity(
         } else {
             emptyList()
         },
-        newNotification = newNotification
+        newNotification = newNotification,
+        instrument = instrument,
+        genres = genres,
+        location = location,
+        rating = rating
     )
 
 }

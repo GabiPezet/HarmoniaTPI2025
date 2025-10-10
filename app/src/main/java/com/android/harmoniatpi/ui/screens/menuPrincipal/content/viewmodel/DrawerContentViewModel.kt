@@ -47,7 +47,11 @@ class DrawerContentViewModel @Inject constructor(
                         userID = currentUser.userID,
                         appTheme = currentUser.appTheme,
                         notificationsList = currentUser.notificationList,
-                        newNotification = currentUser.newNotification
+                        newNotification = currentUser.newNotification,
+                        instrument = currentUser.instrument,
+                        genres = currentUser.genres,
+                        location = currentUser.location,
+                        rating = currentUser.rating
                     )
                 }
             }
@@ -82,7 +86,11 @@ class DrawerContentViewModel @Inject constructor(
             userID = uiState.value.userID,
             appTheme = uiState.value.appTheme,
             notificationList = uiState.value.notificationsList,
-            newNotification = uiState.value.newNotification
+            newNotification = uiState.value.newNotification,
+            instrument = uiState.value.instrument,
+            genres = uiState.value.genres,
+            location = uiState.value.location,
+            rating = uiState.value.rating
         )
         viewModelScope.launch(Dispatchers.IO) {
             setUserPreferencesUseCase(preferences)
@@ -91,6 +99,24 @@ class DrawerContentViewModel @Inject constructor(
 
     fun updateUserName(newName: String) {
         sharedMenuUiState.updateState { it.copy(userName = newName) }
+    }
+
+    fun updateWorkProfile(instrument: String, genres: String, location: String) {
+        sharedMenuUiState.updateState {
+            it.copy(
+                instrument = instrument,
+                genres = genres,
+                location = location
+            )
+        }
+    }
+
+    fun updateRating(newRating: Float) {
+        // Aseguramos que el valor siempre esté entre 0 y 5
+        val clampedRating = newRating.coerceIn(0f, 5f)
+        sharedMenuUiState.updateState {
+            it.copy(rating = clampedRating)
+        }
     }
 
     fun logOutUser() {

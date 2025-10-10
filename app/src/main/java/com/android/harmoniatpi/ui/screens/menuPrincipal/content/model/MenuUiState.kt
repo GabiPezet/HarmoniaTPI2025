@@ -21,7 +21,11 @@ data class MenuUiState(
     val notificationsList: List<NotificationHarmonia> = emptyList(),
     val newNotification: Boolean = false,
     val showNewNotification : Boolean = false,
-    val internetAvailable : Boolean = true
+    val internetAvailable : Boolean = true,
+    val instrument: String = "",
+    val genres: String = "",
+    val location : String = "",
+    val rating : Float =  0.0f,
 )
 
 @Singleton
