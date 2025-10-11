@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
@@ -45,6 +47,7 @@ fun ProjectManagementScreen(
     val sheetState = rememberModalBottomSheetState()
     var showSheet by remember { mutableStateOf(false) }
     val state by viewModel.state.collectAsState()
+    val sharedScrollState = rememberScrollState()
 
     Scaffold(
         modifier = Modifier.fillMaxSize()
@@ -61,18 +64,20 @@ fun ProjectManagementScreen(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .wrapContentHeight(),
+                    .wrapContentHeight()
+                    .padding(horizontal = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                state.tracks.forEach { track ->
-                    item {
-                        TrackItem(
-                            track = track,
-                            onClick = { viewModel.selectTrack(track.id) },
-                            onDelete = { viewModel.deleteTrack() }
-                        )
-                    }
+                items(state.tracks, key = { it.id }) { track ->
+                    TrackItem(
+                        track = track,
+                        onClick = { viewModel.selectTrack(track.id) },
+                        onDelete = { viewModel.deleteTrack() },
+                        scrollState = sharedScrollState,
+                        timelineWidth = state.timelineWidth,
+                        isBeingRecorded = state.isRecording && track.selected
+                    )
                 }
             }
 

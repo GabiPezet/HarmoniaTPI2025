@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.harmoniatpi.domain.usecases.AddTrackUseCase
 import com.android.harmoniatpi.domain.usecases.DeleteTrackUseCase
+import com.android.harmoniatpi.domain.usecases.GenerateWaveformUseCase
 import com.android.harmoniatpi.domain.usecases.GetIfAllTracksWherePlayedUseCase
 import com.android.harmoniatpi.domain.usecases.GetTracksUseCase
 import com.android.harmoniatpi.domain.usecases.PauseAudioUseCase
@@ -32,6 +33,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
     private val addTrack: AddTrackUseCase,
     private val deleteTrack: DeleteTrackUseCase,
     private val getIfAllTracksWherePlayed: GetIfAllTracksWherePlayedUseCase,
+    private val generateWaveform: GenerateWaveformUseCase
 ) : ViewModel() {
     private val _state = MutableStateFlow(ProyectScreenUiState())
     private var selectedTrack: TrackUi? = null
@@ -62,6 +64,23 @@ class ProjectManagementScreenViewModel @Inject constructor(
         stopRecordingAudio()
             .onSuccess {
                 Log.i(TAG, "Grabación detenida")
+
+                selectedTrack?.let { track ->
+                    viewModelScope.launch {
+                        val waveform = generateWaveform(track.path)
+                        _state.update { currentState ->
+                            val updatedTracks = currentState.tracks.map { trackUi ->
+                                if (trackUi.id == track.id) trackUi.copy(waveForm = waveform) else trackUi
+                            }
+
+                            val timelineWidth = getUpdatedTimeline(updatedTracks)
+                            currentState.copy(
+                                tracks = updatedTracks,
+                                timelineWidth = timelineWidth
+                            )
+                        }
+                    }
+                }
             }
             .onFailure {
                 Log.e(TAG, "Error al detener la grabación", it)
@@ -117,16 +136,27 @@ class ProjectManagementScreenViewModel @Inject constructor(
 
     private fun fetchTracks() {
         viewModelScope.launch {
-            getTracks().collect { tracks ->
-                _state.update {
-                    it.copy(tracks = tracks.map { track ->
-                        TrackUi(
+            getTracks().collect { domainTracks ->
+                val currentUiTracks = _state.value.tracks
+                _state.update { currentState ->
+                    val updatedTracks = domainTracks.map { domainTrack ->
+                        val existingUiTrack = currentUiTracks.find { it.id == domainTrack.id }
+                        existingUiTrack?.copy(
+                            id = domainTrack.id,
+                            path = domainTrack.path
+                        ) ?: TrackUi(
                             title = "Voz",
                             selected = false,
-                            id = track.id,
-                            path = track.path,
+                            id = domainTrack.id,
+                            path = domainTrack.path,
                         )
-                    })
+                    }
+                    val timelineWidth = getUpdatedTimeline(updatedTracks)
+
+                    currentState.copy(
+                        tracks = updatedTracks,
+                        timelineWidth = timelineWidth
+                    )
                 }
             }
         }
@@ -142,6 +172,13 @@ class ProjectManagementScreenViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    private fun getUpdatedTimeline(updatedTracks: List<TrackUi>): Int {
+        if (updatedTracks.isEmpty()) return 500
+        val maxWaveformSize = updatedTracks.maxOf { it.waveForm?.size ?: 0 }
+        val timelineWidth = if (maxWaveformSize > 0) maxWaveformSize / 2 else 500
+        return timelineWidth
     }
 
     private companion object {
