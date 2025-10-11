@@ -75,14 +75,20 @@ class DrawerContentViewModel @Inject constructor(
     fun updateUserPreferences() {
 
         val preferences = UserPreferences(
-            userEmail = uiState.value.userEmail,
-            userName = uiState.value.userName,
-            userPhotoPath = uiState.value.userPhotoPath,
-            userLastName = uiState.value.userLastName,
             userID = uiState.value.userID,
+            userEmail = uiState.value.userEmail,
+            userPhotoPath = uiState.value.userPhotoPath,
+            userPhotoPathRemote = uiState.value.userPhotoPathRemote,
+            userName = uiState.value.userName,
+            userLastName = uiState.value.userLastName,
             appTheme = uiState.value.appTheme,
             notificationList = uiState.value.notificationsList,
-            newNotification = uiState.value.newNotification
+            newNotification = uiState.value.newNotification,
+            friendsList = uiState.value.friendsList,
+            projectsList = uiState.value.projectsList,
+            myPostsList = uiState.value.myPostsList,
+            friendRequestReceived = uiState.value.friendRequestReceived,
+            friendRequestSent = uiState.value.friendRequestSent
         )
         viewModelScope.launch(Dispatchers.IO) {
             setUserPreferencesUseCase(preferences)

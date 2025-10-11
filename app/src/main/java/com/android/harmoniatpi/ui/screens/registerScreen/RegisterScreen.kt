@@ -1,5 +1,6 @@
 package com.android.harmoniatpi.ui.screens.registerScreen
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -147,6 +148,7 @@ fun RegisterScreen(
                         },
                         onError = { error ->
                             Toast.makeText(context, "Error: $error", Toast.LENGTH_LONG).show()
+                            Log.d("FirestoreDebug", " Error: $error")
                         }
                     )
                 },
