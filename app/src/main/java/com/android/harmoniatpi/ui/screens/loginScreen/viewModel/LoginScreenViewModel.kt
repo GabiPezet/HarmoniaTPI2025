@@ -20,7 +20,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class LoginScreenViewModel @Inject constructor(
-    private val isInternetAvailable: CheckIsInternetAvailableUseCase,
+    private val checkInternetUseCase: CheckIsInternetAvailableUseCase,
     private val getFirebaseCurrentUserUseCase: GetFirebaseCurrentUserUseCase,
     private val firebaseLoginUseCase: LoginInFirebaseUseCase,
     private val loginWithGoogleUseCase: LoginWithGoogleUseCase,
@@ -36,18 +36,18 @@ class LoginScreenViewModel @Inject constructor(
     }
 
     init {
-        checkInternetAvailable()
         tryAutoLogin()
     }
 
     fun checkInternetAvailable() {
         viewModelScope.launch {
-            val isInternetAvailable = isInternetAvailable()
+            val isConnected = checkInternetUseCase()
             _uiState.update {
                 it.copy(
-                    isInternetAvailable = isInternetAvailable,
-                    showLoginScreen = isInternetAvailable,
-                    versionName = appVersion
+                    isInternetAvailable = isConnected,
+                    showLoginScreen = isConnected,
+                    versionName = appVersion,
+                    showNoInternetScreen = !isConnected
                 )
             }
         }
@@ -75,26 +75,33 @@ class LoginScreenViewModel @Inject constructor(
     }
 
     fun onLogin(username: String, password: String) {
-        val isValid = checkUserNick(username) && checkValidPassword(password)
-        if (username.isNotBlank() && password.isNotBlank() && isValid) {
-            viewModelScope.launch {
-                _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+        viewModelScope.launch {
+            val connected = checkInternetUseCase()
+            if (connected) {
+                val isValid = checkUserNick(username) && checkValidPassword(password)
+                if (username.isNotBlank() && password.isNotBlank() && isValid) {
+                    viewModelScope.launch {
+                        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
-                val result = firebaseLoginUseCase(username, password)
+                        val result = firebaseLoginUseCase(username, password)
 
-                result.onSuccess { _ ->
-                    _uiState.update { it.copy(loginSuccess = true, isLoading = false) }
-                }.onFailure { e ->
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            errorMessage = e.message ?: "Error de autenticación"
-                        )
+                        result.onSuccess { _ ->
+                            _uiState.update { it.copy(loginSuccess = true, isLoading = false) }
+                        }.onFailure { e ->
+                            _uiState.update {
+                                it.copy(
+                                    isLoading = false,
+                                    errorMessage = e.message ?: "Error de autenticación"
+                                )
+                            }
+                        }
                     }
+                } else {
+                    _uiState.update { it.copy(errorMessage = "Usuario o contraseña inválidos") }
                 }
+            } else {
+                _uiState.update { it.copy(showLoginScreen = false, showNoInternetScreen = true) }
             }
-        } else {
-            _uiState.update { it.copy(errorMessage = "Usuario o contraseña inválidos") }
         }
     }
 

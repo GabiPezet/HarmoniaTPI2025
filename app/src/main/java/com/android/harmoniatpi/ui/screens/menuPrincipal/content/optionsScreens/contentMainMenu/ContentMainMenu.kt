@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Button
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -76,7 +77,7 @@ fun ContentMainMenu(
         modifier = Modifier
             .fillMaxSize()
             .padding(innerPadding)
-            .background(MaterialTheme.colorScheme.background)
+            .background(MaterialTheme.colorScheme.secondaryContainer)
     ) {
         // Header
         UserProfileCard(
@@ -136,7 +137,9 @@ fun ContentMainMenu(
                             drawable = R.drawable.ic_configuracion
                         )
 
-
+                        Button(onClick = { drawerViewModel.sendNotification() }) {
+                            Text("Enviar Notificacion")
+                        }
                     }
 
                     // Sección inferior con "Cerrar sesión"
