@@ -5,7 +5,6 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.android.harmoniatpi.R
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -47,15 +46,13 @@ class NotificationHelper @Inject constructor(
     }
 
     private fun createChannelIfNeeded() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                "test_channel_id",
-                "Canal de Prueba",
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = "Descripción del canal"
-            }
-            notificationManager.createNotificationChannel(channel)
+        val channel = NotificationChannel(
+            "test_channel_id",
+            "Canal de Prueba",
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = "Descripción del canal"
         }
+        notificationManager.createNotificationChannel(channel)
     }
 }

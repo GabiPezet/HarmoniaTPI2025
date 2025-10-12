@@ -33,7 +33,7 @@ class HamoniaServices : Service() {
     @Inject
     lateinit var checkIsInternetAvailableUseCase: CheckIsInternetAvailableUseCase
 
-    private val serviceScope = CoroutineScope(Job() + Dispatchers.IO)
+//    private val serviceScope = CoroutineScope(Job() + Dispatchers.IO)
 
     private var notificationJob: Job? = null
     private var uiStateObserverJob: Job? = null
