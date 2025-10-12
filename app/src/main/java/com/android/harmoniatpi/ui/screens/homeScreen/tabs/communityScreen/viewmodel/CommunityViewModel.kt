@@ -3,6 +3,7 @@ package com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.viewm
 import androidx.lifecycle.ViewModel
 import com.android.harmoniatpi.domain.model.userPreferences.Post
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.model.CommunityUiState
+import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.SharedMenuUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -11,7 +12,9 @@ import java.time.LocalDateTime
 import javax.inject.Inject
 
 @HiltViewModel
-class CommunityViewModel @Inject constructor() : ViewModel() {
+class CommunityViewModel @Inject constructor(
+    private val sharedMenuUiState: SharedMenuUiState
+) : ViewModel() {
     private val _uiState = MutableStateFlow(CommunityUiState())
     val uiState = _uiState.asStateFlow()
 
