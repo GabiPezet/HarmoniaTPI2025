@@ -1,4 +1,4 @@
-package com.android.harmoniatpi.ui.screens.rehearsalRoomScreen.components
+package com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -11,7 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.android.harmoniatpi.ui.screens.rehearsalRoomScreen.model.ProjectTab
+import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.model.ProjectTab
 
 
 @Composable

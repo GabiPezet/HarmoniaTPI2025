@@ -1,4 +1,4 @@
-package com.android.harmoniatpi.ui.screens.rehearsalRoomScreen.viewmodel
+package com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

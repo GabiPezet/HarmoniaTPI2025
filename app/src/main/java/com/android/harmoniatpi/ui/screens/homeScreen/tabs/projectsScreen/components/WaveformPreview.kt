@@ -1,4 +1,4 @@
-package com.android.harmoniatpi.ui.screens.rehearsalRoomScreen.components
+package com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background

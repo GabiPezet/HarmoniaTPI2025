@@ -8,7 +8,6 @@ import androidx.navigation.compose.composable
 import com.android.harmoniatpi.ui.core.navigation.BottomBarRoutes
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.CommunityScreen
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.ProjectsScreen
-import com.android.harmoniatpi.ui.screens.rehearsalRoomScreen.RehearsalRoomScreen
 
 @Composable
 fun NavigationBottomWrapper(
@@ -25,7 +24,7 @@ fun NavigationBottomWrapper(
     ) {
         composable<BottomBarRoutes.CommunityScreenRoute> { CommunityScreen(onExitApp = onExitApp,drawerState = drawerState) }
         composable<BottomBarRoutes.RehearsalRoomRoute> {
-            RehearsalRoomScreen(
+            ProjectsScreen(
                 onNavigateToCreateProjet = {onNavigateToProjectManagement()},
                 onNavigateToProjectDetail = {onNavigateToProjectDetail()}
             )
