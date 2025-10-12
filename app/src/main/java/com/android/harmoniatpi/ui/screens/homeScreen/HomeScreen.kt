@@ -41,6 +41,7 @@ fun HomeScreen(
     openDrawerState: () -> Unit,
     drawerState: DrawerState,
     drawerViewModel: DrawerContentViewModel,
+    onNavigateToCreateProjet: () -> Unit
     onNavigateToProjectManagement: () -> Unit,
     onNavigateToNotifications: () -> Unit,
     viewModel: HomeScreenViewModel = hiltViewModel()
