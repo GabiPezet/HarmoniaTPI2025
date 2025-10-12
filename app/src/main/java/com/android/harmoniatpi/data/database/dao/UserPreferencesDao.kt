@@ -18,4 +18,23 @@ interface UserPreferencesDao {
 
     @Query("SELECT * FROM UserPreferencesTable WHERE userID = :userID LIMIT 1")
     suspend fun getUserPreferences(userID: String): UserPreferencesEntity?
+
+    @Query("""
+        UPDATE UserPreferencesTable 
+        SET 
+            friendsList = COALESCE(:friendsList, friendsList),
+            projectsList = COALESCE(:projectsList, projectsList),
+            myPostsList = COALESCE(:myPostsList, myPostsList),
+            friendRequestReceived = COALESCE(:friendRequestReceived, friendRequestReceived),
+            friendRequestSent = COALESCE(:friendRequestSent, friendRequestSent)
+        WHERE userID = :userID
+    """)
+    suspend fun updateSocialData(
+        userID: String,
+        friendsList: String? = null,
+        projectsList: String? = null,
+        myPostsList: String? = null,
+        friendRequestReceived: String? = null,
+        friendRequestSent: String? = null
+    )
 }
