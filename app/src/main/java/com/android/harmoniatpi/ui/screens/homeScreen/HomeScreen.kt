@@ -43,6 +43,7 @@ fun HomeScreen(
     drawerViewModel: DrawerContentViewModel,
     onNavigateToProjectManagement: () -> Unit,
     onNavigateToNotifications: () -> Unit,
+    onNavigateToProjectDetail: () -> Unit,
     viewModel: HomeScreenViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -99,7 +100,8 @@ fun HomeScreen(
                     navControllerNavBar,
                     drawerState = drawerState,
                     onExitApp = { showExitAppDialog = true },
-                    onNavigateToProjectManagement = { onNavigateToProjectManagement() })
+                    onNavigateToProjectManagement = { onNavigateToProjectManagement() },
+                    onNavigateToProjectDetail = {onNavigateToProjectDetail()})
             }
 
         }

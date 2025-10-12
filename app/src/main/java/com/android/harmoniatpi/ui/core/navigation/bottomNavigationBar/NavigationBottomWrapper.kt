@@ -8,22 +8,26 @@ import androidx.navigation.compose.composable
 import com.android.harmoniatpi.ui.core.navigation.BottomBarRoutes
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.CommunityScreen
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.ProjectsScreen
+import com.android.harmoniatpi.ui.screens.rehearsalRoomScreen.RehearsalRoomScreen
 
 @Composable
 fun NavigationBottomWrapper(
     navController: NavHostController,
     drawerState: DrawerState,
     onExitApp: () -> Unit,
-    onNavigateToProjectManagement: () -> Unit
+    onNavigateToProjectManagement: () -> Unit,
+    onNavigateToProjectDetail: () -> Unit,
+
 ) {
     NavHost(
         navController = navController,
         startDestination = BottomBarRoutes.CommunityScreenRoute
     ) {
         composable<BottomBarRoutes.CommunityScreenRoute> { CommunityScreen(onExitApp = onExitApp,drawerState = drawerState) }
-        composable<BottomBarRoutes.ProjectsScreenRoute> {
-            ProjectsScreen(
-                onNavigateToProjectManagement = { onNavigateToProjectManagement() } //solo para prueba
+        composable<BottomBarRoutes.RehearsalRoomRoute> {
+            RehearsalRoomScreen(
+                onNavigateToCreateProjet = {onNavigateToProjectManagement()},
+                onNavigateToProjectDetail = {onNavigateToProjectDetail()}
             )
         }
 
