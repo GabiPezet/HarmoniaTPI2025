@@ -81,7 +81,7 @@ class HamoniaServices : Service() {
             NotificationCompat.Builder(this, getString(R.string.harmonia_service_sync_channel))
                 .setContentTitle(getString(R.string.harmonia_service_sincronizacion_activa))
                 .setContentText(getString(R.string.harmonia_service_actualizando_datos_en_segundo_plano))
-                .setSmallIcon(R.drawable.ic_harmonyicon)
+                .setSmallIcon(R.drawable.ic_iconserviceapp)
                 .setOngoing(true)
                 .build()
 

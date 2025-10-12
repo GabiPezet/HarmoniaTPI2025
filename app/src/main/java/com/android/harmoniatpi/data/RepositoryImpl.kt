@@ -28,7 +28,7 @@ class RepositoryImpl @Inject constructor(
         val entity = userPreferences.toDataBase(jsonUtils)
         userPreferencesDao.updateUserPreferences(entity)
 
-        val userFirebaseModel = entity.toFirebaseModel(jsonUtils)
+        val userFirebaseModel = entity.toFirebaseModel()
         firestore.collection("users")
             .document(entity.userID)
             .set(userFirebaseModel)
@@ -37,6 +37,7 @@ class RepositoryImpl @Inject constructor(
 
     override suspend fun getUserPreferences(): UserPreferences? {
         val user = firebaseAuth.currentUser ?: return null
+        syncFireStoreToLocal(user.uid)
         val entity = userPreferencesDao.getUserPreferences(user.uid) ?: return null
         return entity.toDomain(jsonUtils)
     }
@@ -51,7 +52,7 @@ class RepositoryImpl @Inject constructor(
                 val authResult = firebaseAuth.signInWithEmailAndPassword(email, password).await()
                 val user = authResult.user ?: return@withContext Result.failure(Exception("User is null"))
 
-                syncFireStoreToLocal(user.uid)
+//                syncFireStoreToLocal(user.uid)
 
                 Result.success(user)
             } catch (e: Exception) {
@@ -80,7 +81,7 @@ class RepositoryImpl @Inject constructor(
                 userPreferencesDao.insertUserPreferences(userPrefs)
 
                 // Crear remoto
-                val userFirebaseModel = userPrefs.toFirebaseModel(jsonUtils)
+                val userFirebaseModel = userPrefs.toFirebaseModel()
                 firestore.collection("users").document(user.uid).set(userFirebaseModel).await()
 
                 Result.success(user)

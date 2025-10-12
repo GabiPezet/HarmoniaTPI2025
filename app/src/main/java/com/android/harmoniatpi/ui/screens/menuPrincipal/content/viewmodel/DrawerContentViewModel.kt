@@ -44,10 +44,16 @@ class DrawerContentViewModel @Inject constructor(
                         userName = currentUser.userName,
                         userLastName = currentUser.userLastName,
                         userPhotoPath = currentUser.userPhotoPath,
+                        userPhotoPathRemote = currentUser.userPhotoPathRemote,
                         userID = currentUser.userID,
                         appTheme = currentUser.appTheme,
                         notificationsList = currentUser.notificationList,
-                        newNotification = currentUser.newNotification
+                        newNotification = currentUser.newNotification,
+                        friendsList = currentUser.friendsList,
+                        projectsList = currentUser.projectsList,
+                        myPostsList = currentUser.myPostsList,
+                        friendRequestReceived = currentUser.friendRequestReceived,
+                        friendRequestSent = currentUser.friendRequestSent
                     )
                 }
             }
@@ -119,6 +125,12 @@ class DrawerContentViewModel @Inject constructor(
         }
         sharedMenuUiState.updateState {
             it.copy(userPhotoPath = path)
+        }
+    }
+
+    fun sendNotification() {
+        viewModelScope.launch {
+            sharedMenuUiState.updateState { it.copy(showNewNotification = true) }
         }
     }
 

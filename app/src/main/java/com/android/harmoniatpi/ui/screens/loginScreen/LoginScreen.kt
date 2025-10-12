@@ -3,6 +3,7 @@ package com.android.harmoniatpi.ui.screens.loginScreen
 import android.Manifest.permission
 import android.os.Build
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
@@ -62,6 +63,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.android.harmoniatpi.R
 import com.android.harmoniatpi.data.local.ext.findActivity
 import com.android.harmoniatpi.ui.components.HarmoniaTextField
+import com.android.harmoniatpi.ui.components.InternetDisableScreen
 import com.android.harmoniatpi.ui.components.LoginBackGroundHeader
 import com.android.harmoniatpi.ui.screens.loginScreen.components.PreviewScreen
 import com.android.harmoniatpi.ui.screens.loginScreen.util.hasPermissions
@@ -119,6 +121,7 @@ fun LoginScreen(
         }
     }
 
+
     LaunchedEffect(Unit) {
         if (!context.hasPermissions(permissions)) {
             permissionLauncher.launch(permissions.toTypedArray())
@@ -136,6 +139,19 @@ fun LoginScreen(
     Column(modifier = Modifier.fillMaxSize()) {
         if (uiState.previewScreen) {
             PreviewScreen(goToLogin = { viewModel.navigateToLogin() })
+        } else if (uiState.showNoInternetScreen) {
+            InternetDisableScreen(
+                colorText = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.testTag("InternetDisableScreen")
+            ) {
+                viewModel.checkInternetAvailable()
+                if (!uiState.isInternetAvailable) {
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.login_screen_offlineMessage), Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
         } else {
 
             Box(modifier = Modifier.fillMaxSize()) {
@@ -143,9 +159,11 @@ fun LoginScreen(
                 LoginBackGroundHeader()
 
                 // Column con fondo semi-transparente o gradiente para mejor legibilidad
-                Column(modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp)
+                ) {
                     Spacer(modifier = Modifier.weight(1f))
                     Column(modifier = Modifier.weight(2f)) {
                         Box(modifier = Modifier.weight(0.1f)) {

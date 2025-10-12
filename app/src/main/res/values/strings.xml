@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">HarmoniaTPI</string>
+    <string name="app_name">HoloJam</string>
     <string name="internet_disable_screen_NoInternetMessage">Sin conexión a Internet</string>
     <string name="internet_disable_screen_verifyInternetMessage">Por favor verifique su conexión y vuelva a intentarlo.</string>
     <string name="internet_disable_screen_tryAgainMessage">Volver a intentar</string>

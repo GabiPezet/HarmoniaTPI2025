@@ -35,7 +35,7 @@ class NotificationHelper @Inject constructor(
         )
 
         val notification = NotificationCompat.Builder(context, "test_channel_id")
-            .setSmallIcon(R.drawable.ic_harmonyicon)
+            .setSmallIcon(R.drawable.ic_iconserviceapp)
             .setContentTitle(title)
             .setContentText(content)
             .setPriority(NotificationCompat.PRIORITY_MAX)

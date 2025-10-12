@@ -1,7 +1,6 @@
 package com.android.harmoniatpi.data.local.model
 
 import com.android.harmoniatpi.data.database.entities.UserPreferencesEntity
-import com.android.harmoniatpi.di.util.JsonUtils
 import com.android.harmoniatpi.domain.model.userPreferences.AppTheme
 
 data class UserFirebaseModel(
@@ -12,7 +11,7 @@ data class UserFirebaseModel(
     val userPhotoPath: String = "",
     val userPhotoPathRemote: String = "",
     val appTheme: Boolean = false,
-    val notificationList:  String = "",
+    val notificationList: String = "",
     val newNotification: Boolean = false,
     val friendsList: String = "",
     val projectsList: String = "",

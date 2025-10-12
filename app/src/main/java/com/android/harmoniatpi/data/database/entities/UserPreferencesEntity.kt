@@ -86,7 +86,7 @@ data class UserPreferencesEntity(
         }
     )
 
-    fun toFirebaseModel(jsonUtils: JsonUtils) = UserFirebaseModel(
+    fun toFirebaseModel() = UserFirebaseModel(
         userID = userID,
         userEmail = userEmail,
         userName = userName,

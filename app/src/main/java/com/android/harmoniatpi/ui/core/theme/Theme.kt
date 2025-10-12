@@ -12,13 +12,13 @@ import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 private val LightColorScheme = lightColorScheme(
     primary = primaryLight,
-    onPrimary = onPrimaryLight,
+    onPrimary = onTertiaryLight,
     primaryContainer = primaryContainerLight,
     onPrimaryContainer = onPrimaryContainerLight,
     secondary = secondaryLight,
     onSecondary = onSecondaryLight,
     secondaryContainer = secondaryContainerLight,
-    onSecondaryContainer = onSecondaryContainerLight,
+    onSecondaryContainer = onPrimaryDark,
     tertiary = tertiaryLight,
     onTertiary = onTertiaryLight,
     tertiaryContainer = tertiaryContainerLight,
@@ -51,11 +51,11 @@ private val LightColorScheme = lightColorScheme(
     )
 private val DarkColorScheme = darkColorScheme(
     primary = primaryDark,
-    onPrimary = onPrimaryDark,
+    onPrimary = onTertiaryLight,
     primaryContainer = primaryContainerDark,
     onPrimaryContainer = onPrimaryContainerDark,
     secondary = secondaryDark,
-    onSecondary = onSecondaryDark,
+    onSecondary = secondaryContainerLight,
     secondaryContainer = secondaryContainerDark,
     onSecondaryContainer = onSecondaryContainerDark,
     tertiary = tertiaryDark,
@@ -104,7 +104,7 @@ fun HarmoniaTPITheme(
     SideEffect {
         systemUiController.setSystemBarsColor(
             color = Color.Black,
-            darkIcons = darkTheme,
+            darkIcons = false,
             isNavigationBarContrastEnforced = true
         )
     }

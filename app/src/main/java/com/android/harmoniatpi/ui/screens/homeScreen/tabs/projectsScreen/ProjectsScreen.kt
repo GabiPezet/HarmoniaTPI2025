@@ -10,7 +10,7 @@ import androidx.compose.ui.Modifier
 
 @Composable
 fun ProjectsScreen(
-    onNavigateToProjectManagement: () -> Unit
+    onNavigateToProjectManagement: () -> Unit,
 ) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         //Text(text = "RehearsalRoomScreen", fontSize = 24.sp, fontWeight = FontWeight.Bold)
