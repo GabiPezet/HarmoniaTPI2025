@@ -51,7 +51,7 @@ fun Toolbar(
 
     CenterAlignedTopAppBar(
         colors = TopAppBarColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            containerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
             titleContentColor = MaterialTheme.colorScheme.secondary,
             navigationIconContentColor = MaterialTheme.colorScheme.secondary,
             actionIconContentColor = MaterialTheme.colorScheme.secondary,

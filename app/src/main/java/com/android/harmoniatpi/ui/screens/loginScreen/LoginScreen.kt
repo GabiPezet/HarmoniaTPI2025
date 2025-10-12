@@ -341,9 +341,7 @@ private fun LoginButton(
     onClick: () -> Unit
 ) {
     val containerColor =
-        if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(
-            alpha = 0.6f
-        )
+        if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f)
     val contentColor =
         if (enabled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimary
     Button(
