@@ -14,7 +14,7 @@ fun NavigationBottomWrapper(
     navController: NavHostController,
     drawerState: DrawerState,
     onExitApp: () -> Unit,
-    onNavigateToProjectManagement: () -> Unit
+    onNavigateToCreateProjet: () -> Unit
 ) {
     NavHost(
         navController = navController,
