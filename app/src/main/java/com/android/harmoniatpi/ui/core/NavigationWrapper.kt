@@ -8,9 +8,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes
+import com.android.harmoniatpi.ui.components.AnimationHorizontalEffect
+import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.CollabScreenRoute
 import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.HomeScreenRoute
 import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.LoginScreenRoute
+import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.NotificationScreenRoute
+import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.ProjectManagementScreenRoute
 import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.RegisterScreenRoute
 import com.android.harmoniatpi.ui.screens.collabScreen.CollabScreen
 import com.android.harmoniatpi.ui.screens.createProjectScreen.CreateProjectScreen
@@ -19,13 +22,18 @@ import com.android.harmoniatpi.ui.screens.loginScreen.LoginScreen
 import com.android.harmoniatpi.ui.screens.menuPrincipal.DrawerScreen
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.DrawerContent
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.viewmodel.DrawerContentViewModel
+import com.android.harmoniatpi.ui.screens.notificationScreen.NotificationsScreen
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.ProjectManagementScreen
-import com.android.harmoniatpi.ui.screens.recordingScreen.RecordingScreen
 import com.android.harmoniatpi.ui.screens.registerScreen.RegisterScreen
 import kotlinx.coroutines.launch
 
 @Composable
-fun NavigationWrapper(innerPadding: PaddingValues, drawerViewModel: DrawerContentViewModel) {
+fun NavigationWrapper(
+    innerPadding: PaddingValues,
+    drawerViewModel: DrawerContentViewModel,
+    startHarmoniaServices: () -> Unit,
+    stopHarmoniaServices: () -> Unit
+) {
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
@@ -34,6 +42,7 @@ fun NavigationWrapper(innerPadding: PaddingValues, drawerViewModel: DrawerConten
             LoginScreen(
                 navigateToHome = {
                     drawerViewModel.start()
+                    startHarmoniaServices()
                     navController.navigate(HomeScreenRoute)
                 },
                 navigateToRegister = { navController.navigate(RegisterScreenRoute) })
@@ -53,8 +62,12 @@ fun NavigationWrapper(innerPadding: PaddingValues, drawerViewModel: DrawerConten
                         onCloseDrawer = {
                             coroutineScope.launch { drawerState.close() }
                         },
+                        onNavigateToNotifications = {
+                            navController.navigate(NotificationScreenRoute)
+                        },
                         onLogOutNavigateToLogin = {
                             coroutineScope.launch { drawerState.close() }
+                            stopHarmoniaServices()
                             navController.navigate(LoginScreenRoute) {
                                 popUpTo(LoginScreenRoute) {
                                     inclusive = true
@@ -62,40 +75,53 @@ fun NavigationWrapper(innerPadding: PaddingValues, drawerViewModel: DrawerConten
                             }
                         }
                     )
-
                 }, screenContent = {
                     HomeScreen(
                         openDrawerState = {
                             coroutineScope.launch { drawerState.open() }
                         },
+                        drawerState = drawerState,
                         drawerViewModel = drawerViewModel,
-                        onNavigateToCreateProjet = { navController.navigate(NavigationRoutes.CreateProjectScreenRoute) }
+                        onNavigateToCreateProjet = { navController.navigate(NavigationRoutes.CreateProjectScreenRoute) },
+                        onNavigateToProjectManagement = {
+                            navController.navigate(
+                                ProjectManagementScreenRoute
+                            )
+                        },
+                        onNavigateToNotifications = { navController.navigate(NotificationScreenRoute) },
                     )
-
-                }
-            )
-
-        }
-
-        composable<NavigationRoutes.ProjectManagementScreenRoute> {
-            ProjectManagementScreen(
-                onNavigateToRecording = {
-                    navController.navigate(NavigationRoutes.RecordingScreenRoute)
-                },
-                onNavigateToCollab = {
-                    navController.navigate(NavigationRoutes.CollabScreenRoute)
                 }
             )
         }
 
-        // pantalla grabacion
-        composable<NavigationRoutes.RecordingScreenRoute> { RecordingScreen() }
+        
+        composable<ProjectManagementScreenRoute> { 
+            AnimationHorizontalEffect(onBackNavigation = { navController.popBackStack() }) {
+                ProjectManagementScreen(
+                    onNavigateToRecording = {
+                        navController.navigate(NavigationRoutes.RecordingScreenRoute)
+                    },
+                    onNavigateToCollab = {
+                        navController.navigate(CollabScreenRoute)
+                    }
+                )
+            }
+        }
 
-        composable<NavigationRoutes.CollabScreenRoute> { CollabScreen() }
+       
+        composable<CollabScreenRoute> {
+            AnimationHorizontalEffect(onBackNavigation = { navController.popBackStack() }) { CollabScreen() }
+        }
 
-
+       
         composable<NavigationRoutes.CreateProjectScreenRoute> {
             CreateProjectScreen(onBack={ navController.popBackStack() })
+        }
+
+        composable<NotificationScreenRoute> {
+            AnimationHorizontalEffect {
+                NotificationsScreen(onBack = { navController.popBackStack() })
+            }
         }
     }
 }

@@ -8,9 +8,13 @@ import com.android.harmoniatpi.domain.usecases.GetUserPreferencesUseCase
 import com.android.harmoniatpi.domain.usecases.LogOutFirebaseUseCase
 import com.android.harmoniatpi.domain.usecases.SetUserPreferencesUseCase
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.OptionsMenu
+import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.ProfileImageUser
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.SharedMenuUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -22,20 +26,34 @@ class DrawerContentViewModel @Inject constructor(
     private val setUserPreferencesUseCase: SetUserPreferencesUseCase
 ) : ViewModel() {
     val uiState = sharedMenuUiState.uiState
-
+    private val _userPhotoPath = MutableStateFlow(ProfileImageUser())
+    val userPhotoPath = _userPhotoPath.asStateFlow()
     fun initUserPreferences() {
         viewModelScope.launch {
             val currentUser: UserPreferences? = getUserPreferencesUseCase()
             if (currentUser != null) {
+                _userPhotoPath.update {
+                    it.copy(
+                        path = currentUser.userPhotoPath,
+                        version = it.version + 1
+                    )
+                }
                 sharedMenuUiState.updateState {
                     it.copy(
-                        userEmail = currentUser.userName,
-                        userName = uiState.value.userName,
-                        userLastName = uiState.value.userLastName,
+                        userEmail = currentUser.userEmail,
+                        userName = currentUser.userName,
+                        userLastName = currentUser.userLastName,
+                        userPhotoPath = currentUser.userPhotoPath,
+                        userPhotoPathRemote = currentUser.userPhotoPathRemote,
                         userID = currentUser.userID,
                         appTheme = currentUser.appTheme,
                         notificationsList = currentUser.notificationList,
-                        newNotification = currentUser.newNotification
+                        newNotification = currentUser.newNotification,
+                        friendsList = currentUser.friendsList,
+                        projectsList = currentUser.projectsList,
+                        myPostsList = currentUser.myPostsList,
+                        friendRequestReceived = currentUser.friendRequestReceived,
+                        friendRequestSent = currentUser.friendRequestSent
                     )
                 }
             }
@@ -51,13 +69,10 @@ class DrawerContentViewModel @Inject constructor(
     }
 
 
-    fun toggleTheme() {
+    fun toggleTheme(theme: AppTheme) {
         sharedMenuUiState.updateState {
             it.copy(
-                appTheme = when (it.appTheme) {
-                    AppTheme.LIGHT -> AppTheme.DARK
-                    AppTheme.DARK -> AppTheme.LIGHT
-                }
+                appTheme = theme
             )
         }
     }
@@ -66,13 +81,20 @@ class DrawerContentViewModel @Inject constructor(
     fun updateUserPreferences() {
 
         val preferences = UserPreferences(
+            userID = uiState.value.userID,
             userEmail = uiState.value.userEmail,
+            userPhotoPath = uiState.value.userPhotoPath,
+            userPhotoPathRemote = uiState.value.userPhotoPathRemote,
             userName = uiState.value.userName,
             userLastName = uiState.value.userLastName,
-            userID = uiState.value.userID,
             appTheme = uiState.value.appTheme,
             notificationList = uiState.value.notificationsList,
-            newNotification = uiState.value.newNotification
+            newNotification = uiState.value.newNotification,
+            friendsList = uiState.value.friendsList,
+            projectsList = uiState.value.projectsList,
+            myPostsList = uiState.value.myPostsList,
+            friendRequestReceived = uiState.value.friendRequestReceived,
+            friendRequestSent = uiState.value.friendRequestSent
         )
         viewModelScope.launch(Dispatchers.IO) {
             setUserPreferencesUseCase(preferences)
@@ -92,6 +114,24 @@ class DrawerContentViewModel @Inject constructor(
 
     fun changeOptionsMenu(option: OptionsMenu) {
         sharedMenuUiState.updateState { it.copy(optionsMenu = option) }
+    }
+
+    fun saveUserPhoto(path: String) {
+        _userPhotoPath.update {
+            it.copy(
+                path = path,
+                version = it.version + 1
+            )
+        }
+        sharedMenuUiState.updateState {
+            it.copy(userPhotoPath = path)
+        }
+    }
+
+    fun sendNotification() {
+        viewModelScope.launch {
+            sharedMenuUiState.updateState { it.copy(showNewNotification = true) }
+        }
     }
 
 }
