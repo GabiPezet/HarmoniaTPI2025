@@ -33,5 +33,5 @@ sealed class BottomBarRoutes{
     @Serializable
     data object CommunityScreenRoute : BottomBarRoutes()
     @Serializable
-    data object ProjectsScreenRoute : BottomBarRoutes()
+    data object RehearsalRoomRoute : BottomBarRoutes()
 }

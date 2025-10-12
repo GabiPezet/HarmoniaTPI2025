@@ -1,5 +1,6 @@
 package com.android.harmoniatpi.ui.screens.rehearsalRoomScreen.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -29,9 +30,10 @@ import androidx.compose.ui.unit.sp
 import com.android.harmoniatpi.domain.model.project.Project
 
 @Composable
-fun ProjectCard(project: Project) {
+fun ProjectCard(project: Project,onClick: () -> Unit) {
     Card(
         modifier = Modifier
+            .clickable { onClick() }
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),

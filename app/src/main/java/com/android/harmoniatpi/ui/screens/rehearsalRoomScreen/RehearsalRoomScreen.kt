@@ -23,6 +23,7 @@ import com.android.harmoniatpi.ui.screens.rehearsalRoomScreen.viewmodel.ProjectL
 
 @Composable
 fun RehearsalRoomScreen(
+    onNavigateToProjectDetail: () -> Unit,
     onNavigateToCreateProjet: () -> Unit,
     viewModel: ProjectListViewModel = hiltViewModel()
 ) {
@@ -52,8 +53,14 @@ fun RehearsalRoomScreen(
 
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(projects) { project ->
-                    ProjectCard(project) }
-            }
+                    // 2. Llama a ProjectCard con la acción onClick
+                    ProjectCard(
+                        project = project,
+                        onClick = onNavigateToProjectDetail
+                            // Asumiendo que tu objeto 'project' tiene un 'id'
+                        )
+                }
         }
     }
+}
 }

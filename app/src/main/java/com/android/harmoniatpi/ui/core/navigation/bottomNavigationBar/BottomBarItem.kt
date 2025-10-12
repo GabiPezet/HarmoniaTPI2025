@@ -34,7 +34,7 @@ sealed class BottomBarItem {
 
     data object ProjectsTab : BottomBarItem() {
         override val route: BottomBarRoutes
-            get() = BottomBarRoutes.ProjectsScreenRoute
+            get() = BottomBarRoutes.RehearsalRoomRoute
         override val titleRes: String
             get() = "Proyectos"
         override val icon: @Composable () -> Unit
