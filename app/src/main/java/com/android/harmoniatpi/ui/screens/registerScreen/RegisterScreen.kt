@@ -1,6 +1,5 @@
 package com.android.harmoniatpi.ui.screens.registerScreen
 
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -148,7 +147,6 @@ fun RegisterScreen(
                         },
                         onError = { error ->
                             Toast.makeText(context, "Error: $error", Toast.LENGTH_LONG).show()
-                            Log.d("FirestoreDebug", " Error: $error")
                         }
                     )
                 },
@@ -160,9 +158,7 @@ fun RegisterScreen(
                 enabled = uiState.isFormValid && !uiState.isLoading,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
-                    disabledContainerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+                    disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                 )
             ) {
                 if (uiState.isLoading) {
@@ -175,6 +171,7 @@ fun RegisterScreen(
                     Text(
                         if (uiState.registerEnabled) "REGISTRARSE" else "BIENVENIDO A HARMONIA",
                         style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.secondary,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -195,6 +192,7 @@ fun RegisterScreen(
                 TextButton(onClick = onBackToLogin) {
                     Text(
                         "Inicia sesión",
+                        color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -214,6 +212,7 @@ fun ScreenTitle(title: String, modifier: Modifier = Modifier) {
             text = title,
             style = MaterialTheme.typography.headlineLarge.copy(
                 fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.8f)
             )
         )
     }

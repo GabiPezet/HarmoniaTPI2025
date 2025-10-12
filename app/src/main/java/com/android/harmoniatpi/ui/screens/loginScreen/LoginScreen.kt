@@ -3,7 +3,6 @@ package com.android.harmoniatpi.ui.screens.loginScreen
 import android.Manifest.permission
 import android.os.Build
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
@@ -63,7 +62,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.android.harmoniatpi.R
 import com.android.harmoniatpi.data.local.ext.findActivity
 import com.android.harmoniatpi.ui.components.HarmoniaTextField
-import com.android.harmoniatpi.ui.components.InternetDisableScreen
 import com.android.harmoniatpi.ui.components.LoginBackGroundHeader
 import com.android.harmoniatpi.ui.screens.loginScreen.components.PreviewScreen
 import com.android.harmoniatpi.ui.screens.loginScreen.util.hasPermissions
@@ -83,8 +81,8 @@ fun LoginScreen(
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
-    val username = rememberSaveable { mutableStateOf("") }
-    val password = rememberSaveable { mutableStateOf("") }
+    val username = rememberSaveable { mutableStateOf("pepeArgento@gmail.com") }
+    val password = rememberSaveable { mutableStateOf("123456") }
     val permissions = buildList {
         add(permission.RECORD_AUDIO)
         add(permission.CAMERA)
@@ -121,7 +119,6 @@ fun LoginScreen(
         }
     }
 
-
     LaunchedEffect(Unit) {
         if (!context.hasPermissions(permissions)) {
             permissionLauncher.launch(permissions.toTypedArray())
@@ -139,19 +136,6 @@ fun LoginScreen(
     Column(modifier = Modifier.fillMaxSize()) {
         if (uiState.previewScreen) {
             PreviewScreen(goToLogin = { viewModel.navigateToLogin() })
-        } else if (uiState.showNoInternetScreen) {
-            InternetDisableScreen(
-                colorText = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.testTag("InternetDisableScreen")
-            ) {
-                viewModel.checkInternetAvailable()
-                if (!uiState.isInternetAvailable) {
-                    Toast.makeText(
-                        context,
-                        context.getString(R.string.login_screen_offlineMessage), Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
         } else {
 
             Box(modifier = Modifier.fillMaxSize()) {
@@ -159,11 +143,9 @@ fun LoginScreen(
                 LoginBackGroundHeader()
 
                 // Column con fondo semi-transparente o gradiente para mejor legibilidad
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp)
-                ) {
+                Column(modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp)) {
                     Spacer(modifier = Modifier.weight(1f))
                     Column(modifier = Modifier.weight(2f)) {
                         Box(modifier = Modifier.weight(0.1f)) {
@@ -285,8 +267,8 @@ private fun GoogleSignInButton(
             .testTag("GOOGLE_SIGNIN_BUTTON"),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)),
         colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.secondary,
+            containerColor = MaterialTheme.colorScheme.onPrimary
         )
     ) {
         Image(
@@ -299,6 +281,7 @@ private fun GoogleSignInButton(
             text = "Continuar con Google",
             modifier = Modifier.padding(vertical = 8.dp),
             style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)
         )
     }
 }
@@ -341,7 +324,9 @@ private fun LoginButton(
     onClick: () -> Unit
 ) {
     val containerColor =
-        if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f)
+        if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(
+            alpha = 0.6f
+        )
     val contentColor =
         if (enabled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimary
     Button(

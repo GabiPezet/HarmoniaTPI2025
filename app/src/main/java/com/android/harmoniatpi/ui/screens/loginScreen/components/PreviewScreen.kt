@@ -2,6 +2,7 @@ package com.android.harmoniatpi.ui.screens.loginScreen.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -48,6 +49,7 @@ fun PreviewScreen(goToLogin: () -> Unit) {
             text = "Comienza a crear música en conjunto con personas de todo el mundo. Crece en comunidad.",
             modifier = Modifier.padding(horizontal = 24.dp),
             style = MaterialTheme.typography.bodyLarge.copy(
+                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.4f),
                 lineHeight = 24.sp
             )
         )
@@ -65,6 +67,7 @@ fun PreviewScreen(goToLogin: () -> Unit) {
                 modifier = Modifier.padding(end = 16.dp),
                 text = "Comencemos",
                 style = MaterialTheme.typography.titleMedium.copy(
+                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f),
                     fontWeight = FontWeight.Medium
                 )
             )
@@ -74,7 +77,7 @@ fun PreviewScreen(goToLogin: () -> Unit) {
                 modifier = Modifier
                     .size(56.dp)
                     .background(
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        color = MaterialTheme.colorScheme.primary,
                         shape = CircleShape
                     )
             ) {

@@ -9,6 +9,5 @@ data class LoginUiState(
     val isLoading : Boolean = false,
     val helpDeskContact: Boolean = false,
     val isInitialized: Boolean = false,
-    val previewScreen : Boolean = true,
-    val showNoInternetScreen : Boolean = false
+    val previewScreen : Boolean = true
 )

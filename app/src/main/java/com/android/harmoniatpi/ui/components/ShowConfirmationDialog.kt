@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,10 +48,10 @@ fun ShowConfirmationDialog(
     dismissOnBackPress: Boolean = true,
     dismissOnClickOutside: Boolean = true
 ) {
+    val containerColor = MaterialTheme.colorScheme.primary
 
     if (show) {
         AlertDialog(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer,
             onDismissRequest = onDismiss,
             modifier = Modifier
                 .border(
@@ -59,6 +60,7 @@ fun ShowConfirmationDialog(
                     shape = MaterialTheme.shapes.extraLarge
                 ),
             shape = MaterialTheme.shapes.extraLarge,
+            containerColor = MaterialTheme.colorScheme.onSecondaryContainer,
             tonalElevation = 8.dp,
             properties = DialogProperties(
                 dismissOnBackPress = dismissOnBackPress,
@@ -69,8 +71,11 @@ fun ShowConfirmationDialog(
                 Button(
                     onClick = onConfirm,
                     shape = MaterialTheme.shapes.small,
-
-                    ) {
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = containerColor,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
+                ) {
                     Text(
                         text = confirmText,
                         style = MaterialTheme.typography.titleMedium
@@ -83,6 +88,10 @@ fun ShowConfirmationDialog(
                 Button(
                     onClick = onDismiss,
                     shape = MaterialTheme.shapes.small,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = containerColor,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
                 ) {
                     Text(
                         text = dismissText,
@@ -96,8 +105,8 @@ fun ShowConfirmationDialog(
                     text = title,
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.titleLarge,
-
-                    )
+                    color = MaterialTheme.colorScheme.secondary
+                )
 
             },
             text = {
@@ -105,6 +114,7 @@ fun ShowConfirmationDialog(
                     text = message,
                     fontWeight = FontWeight.SemiBold,
                     style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.secondary
                 )
 
             }

@@ -20,9 +20,8 @@ import androidx.compose.ui.Modifier
 import com.android.harmoniatpi.ui.components.ShowConfirmationDialog
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.MenuUiState
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.OptionsMenu
-import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.contentMainMenu.ContentMainMenu
-import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userPreferencesScreen.UserPreferencesScreen
-import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.UserProfile
+import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.ContentMainMenu
+import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.UserPreferencesScreen
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.viewmodel.DrawerContentViewModel
 
 @SuppressLint("ContextCastToActivity")
@@ -32,7 +31,6 @@ fun DrawerContent(
     drawerViewModel: DrawerContentViewModel,
     drawerState: DrawerState,
     onCloseDrawer: () -> Unit,
-    onNavigateToNotifications: () -> Unit,
     onLogOutNavigateToLogin: () -> Unit,
 ) {
     val scrollState = rememberScrollState()
@@ -69,7 +67,7 @@ fun DrawerContent(
             uiState = uiState,
             drawerState = drawerState,
             onCloseDrawer = onCloseDrawer,
-            onNavigateToNotifications = {onNavigateToNotifications()},
+            onNavigateToNotifications = {},
             scrollState = scrollState,
             innerPadding = innerPadding,
             showCloseSessionDialog = { showCloseSessionDialog = true }
@@ -105,13 +103,6 @@ fun DrawerScreenContent(
 
         OptionsMenu.USER_PREFERENCES_SCREEN -> {
             UserPreferencesScreen(
-                viewModel = drawerViewModel,
-                uiState = uiState
-            )
-        }
-
-        OptionsMenu.USER_PROFILE -> {
-            UserProfile(
                 viewModel = drawerViewModel,
                 uiState = uiState,
                 innerPadding = innerPadding

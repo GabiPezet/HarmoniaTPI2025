@@ -18,7 +18,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarColors
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,18 +50,12 @@ fun Toolbar(
     val scope = rememberCoroutineScope()
 
     CenterAlignedTopAppBar(
-        colors = TopAppBarColors(
-            containerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
-            titleContentColor = MaterialTheme.colorScheme.secondary,
-            navigationIconContentColor = MaterialTheme.colorScheme.secondary,
-            actionIconContentColor = MaterialTheme.colorScheme.secondary,
-            scrolledContainerColor = MaterialTheme.colorScheme.secondaryContainer
-        ),
         title = {
             if (isInternetAvailable) {
                 Text(
                     text = title.uppercase(Locale.getDefault()),
                     fontSize = 20.sp,
+                    color = MaterialTheme.colorScheme.secondary,
                     style = MaterialTheme.typography.titleLarge
                 )
             } else {
@@ -98,7 +92,7 @@ fun Toolbar(
                 Icon(
                     imageVector = if (showMenuPrincipal) Icons.Default.Menu else Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = if (showMenuPrincipal) "Abrir menú" else "Volver",
-                    tint = MaterialTheme.colorScheme.secondary
+                    tint = MaterialTheme.colorScheme.primary
                 )
             }
         },
@@ -125,7 +119,7 @@ fun Toolbar(
                                         .offset(
                                             x = 2.dp,
                                             y = (-2).dp
-                                        )
+                                        ) // ajuste fino sobre la campana
                                 )
                             }
                         }
@@ -134,6 +128,11 @@ fun Toolbar(
 
             }
         },
-
+        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+            containerColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            titleContentColor = MaterialTheme.colorScheme.onPrimary,
+            navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+            actionIconContentColor = MaterialTheme.colorScheme.onPrimary
         )
+    )
 }

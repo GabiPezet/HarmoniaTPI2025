@@ -1,8 +1,8 @@
-package com.android.harmoniatpi.domain.interfaces
+package com.android.harmoniatpi.data.audio.record
 
 import java.io.File
 
-interface AudioRecorderRepository {
+interface AudioRecorder {
     fun startRecording(outputFile: File): Result<Unit>
     fun stopRecording()
 }
