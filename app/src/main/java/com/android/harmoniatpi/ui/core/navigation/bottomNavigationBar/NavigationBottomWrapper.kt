@@ -22,7 +22,7 @@ fun NavigationBottomWrapper(
         composable<BottomBarRoutes.Tab3Screen> { Tab3Screen() }
         composable<BottomBarRoutes.RehearsalRoomRoute> {
             RehearsalRoomScreen(
-                onNavigateToCreateProjet = {onNavigateToCreateProjet()} //solo para prueba
+                onNavigateToCreateProjet = {onNavigateToCreateProjet()}
             )
         }
 
