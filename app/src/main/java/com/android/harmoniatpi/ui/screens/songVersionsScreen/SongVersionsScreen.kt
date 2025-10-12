@@ -317,12 +317,12 @@ fun CustomPlayerControls(
                     modifier = Modifier
                         // 1. Aumentamos el tamaño del thumb para que sea más prominente
                         .size(20.dp)
-                        .background(Color.White, shape = CircleShape)
+                        .background(MaterialTheme.colorScheme.onPrimary, shape = CircleShape)
                         .border(
                             border = BorderStroke(1.dp, Color.Black),
                             shape = CircleShape
                         ),
-                    tint = MaterialTheme.colorScheme.onPrimary,
+                    tint = MaterialTheme.colorScheme.primary,
                 )
             },
 
@@ -547,7 +547,7 @@ fun SongVersionsScreenPreview() {
         UserVersion("v5", "Sebastián Prato", null, "Mi versión de El paso...", "", "projV5")
     )
 
-    HarmoniaTPITheme(true) {
+    HarmoniaTPITheme(false) {
         SongVersionsScreen(
             originalSong = sampleOriginalSong,
             derivedVersions = sampleDerivedVersions,
