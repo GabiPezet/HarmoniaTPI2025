@@ -5,4 +5,5 @@ data class TrackUi(
     val path: String,
     val title: String,
     val selected: Boolean,
+    val waveForm: List<Float>? = null
 )

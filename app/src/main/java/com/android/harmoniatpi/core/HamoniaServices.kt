@@ -33,7 +33,7 @@ class HamoniaServices : Service() {
     @Inject
     lateinit var checkIsInternetAvailableUseCase: CheckIsInternetAvailableUseCase
 
-    private val serviceScope = CoroutineScope(Job() + Dispatchers.IO)
+//    private val serviceScope = CoroutineScope(Job() + Dispatchers.IO)
 
     private var notificationJob: Job? = null
     private var uiStateObserverJob: Job? = null
@@ -81,7 +81,7 @@ class HamoniaServices : Service() {
             NotificationCompat.Builder(this, getString(R.string.harmonia_service_sync_channel))
                 .setContentTitle(getString(R.string.harmonia_service_sincronizacion_activa))
                 .setContentText(getString(R.string.harmonia_service_actualizando_datos_en_segundo_plano))
-                .setSmallIcon(R.drawable.ic_harmonyicon)
+                .setSmallIcon(R.drawable.ic_iconserviceapp)
                 .setOngoing(true)
                 .build()
 

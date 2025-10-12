@@ -81,7 +81,12 @@ class NotificationsViewModel @Inject constructor(
             userLastName = sharedMenuUiState.uiState.value.userLastName,
             appTheme = sharedMenuUiState.uiState.value.appTheme,
             notificationList = sharedMenuUiState.uiState.value.notificationsList,
-            newNotification = sharedMenuUiState.uiState.value.newNotification
+            newNotification = sharedMenuUiState.uiState.value.newNotification,
+            friendsList = sharedMenuUiState.uiState.value.friendsList,
+            projectsList = sharedMenuUiState.uiState.value.projectsList,
+            myPostsList = sharedMenuUiState.uiState.value.myPostsList,
+            friendRequestReceived = sharedMenuUiState.uiState.value.friendRequestReceived,
+            friendRequestSent = sharedMenuUiState.uiState.value.friendRequestSent
         )
 
         viewModelScope.launch {

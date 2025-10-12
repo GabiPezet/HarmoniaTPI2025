@@ -74,7 +74,7 @@ fun PreviewScreen(goToLogin: () -> Unit) {
                 modifier = Modifier
                     .size(56.dp)
                     .background(
-                        color = MaterialTheme.colorScheme.primary,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
                         shape = CircleShape
                     )
             ) {
