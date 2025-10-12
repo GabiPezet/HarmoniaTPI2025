@@ -102,7 +102,7 @@ fun CircularProgressBar(message: String) {
                 fontSize = 24.sp,
                 text = message + ".".repeat(dotCount),
                 style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.secondary,
+                color = MaterialTheme.colorScheme.onSecondary,
                 fontWeight = FontWeight.ExtraBold
             )
 
