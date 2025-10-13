@@ -29,6 +29,7 @@ import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.viewmod
 fun ProjectsScreen(
     onNavigateToProjectDetail: () -> Unit,
     onNavigateToCreateProjet: () -> Unit,
+    onNavigateToVersion: () -> Unit,
     viewModel: ProjectListViewModel = hiltViewModel()
 ) {
     val projects by viewModel.projects.collectAsState()
@@ -62,7 +63,7 @@ fun ProjectsScreen(
                     ProjectCard(
                         project = project,
                         onClick = onNavigateToProjectDetail,
-                        onNavigateToVersions = onNavigateToCreateProjet
+                        onNavigateToVersions = onNavigateToVersion
                     )
                 }
             }

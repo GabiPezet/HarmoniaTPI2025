@@ -16,7 +16,7 @@ fun NavigationBottomWrapper(
     onExitApp: () -> Unit,
     onNavigateToProjectManagement: () -> Unit,
     onNavigateToProjectDetail: () -> Unit,
-
+    onNavigateToVersion: () -> Unit,
 ) {
     NavHost(
         navController = navController,
@@ -26,7 +26,8 @@ fun NavigationBottomWrapper(
         composable<BottomBarRoutes.RehearsalRoomRoute> {
             ProjectsScreen(
                 onNavigateToCreateProjet = {onNavigateToProjectManagement()},
-                onNavigateToProjectDetail = {onNavigateToProjectDetail()}
+                onNavigateToProjectDetail = {onNavigateToProjectDetail()},
+                onNavigateToVersion = {onNavigateToVersion()}
             )
         }
 
