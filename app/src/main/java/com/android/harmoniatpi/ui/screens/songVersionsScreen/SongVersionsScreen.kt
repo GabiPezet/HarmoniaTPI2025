@@ -66,6 +66,7 @@ import com.android.harmoniatpi.ui.core.theme.HarmoniaTPITheme
 import com.android.harmoniatpi.ui.screens.songVersionsScreen.model.DerivedVersion
 import com.android.harmoniatpi.ui.screens.songVersionsScreen.model.Song
 import com.android.harmoniatpi.ui.screens.songVersionsScreen.model.SongVersionsUiState
+import com.android.harmoniatpi.ui.screens.songVersionsScreen.util.formatMillisToTimeString
 import com.android.harmoniatpi.ui.screens.songVersionsScreen.viewModel.SongVersionsViewModel
 
 
@@ -101,12 +102,17 @@ fun SongVersionsContent(
         modifier = modifier,
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("HARMONIA", fontWeight = FontWeight.Bold) },
+                title = {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_harmonyicon),
+                        contentDescription = "Slider Thumb",
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Atrás"
+                            contentDescription = "Atrás",
                         )
                     }
                 },
@@ -504,14 +510,6 @@ fun DerivedVersionItem(
     }
 }
 
-// --- Función Helper para formatear tiempo (ejemplo básico) ---
-fun formatMillisToTimeString(millis: Long): String {
-    val totalSeconds = millis / 1000
-    val minutes = totalSeconds / 60
-    val seconds = totalSeconds % 60
-    return String.format("%d:%02d", minutes, seconds)
-}
-
 @Preview(showBackground = true, showSystemUi = false, name = "Light Mode")
 @Composable
 fun SongVersionsScreenPreview() {
@@ -552,7 +550,7 @@ fun SongVersionsScreenPreview() {
     )
 
     // Tu tema de la app
-    HarmoniaTPITheme(true) {
+    HarmoniaTPITheme(false) {
         SongVersionsContent(
             uiState = previewState,
             onPlayOriginal = { isPlaying = !isPlaying },
