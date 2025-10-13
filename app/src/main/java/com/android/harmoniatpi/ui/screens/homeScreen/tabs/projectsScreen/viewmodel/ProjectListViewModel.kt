@@ -12,7 +12,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ProjectListViewModel @Inject constructor(
-    private val projectRepository: ProjectRepository
+    projectRepository: ProjectRepository
 ) : ViewModel() {
     val projects: StateFlow<List<Project>> =
         projectRepository.getAllProjects()
