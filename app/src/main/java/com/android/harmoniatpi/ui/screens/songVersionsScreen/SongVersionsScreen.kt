@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -28,6 +29,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -39,8 +41,10 @@ import androidx.compose.material3.SliderState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -56,106 +60,106 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.android.harmoniatpi.R
 import com.android.harmoniatpi.ui.core.theme.HarmoniaTPITheme
+import com.android.harmoniatpi.ui.screens.songVersionsScreen.model.DerivedVersion
+import com.android.harmoniatpi.ui.screens.songVersionsScreen.model.Song
+import com.android.harmoniatpi.ui.screens.songVersionsScreen.model.SongVersionsUiState
+import com.android.harmoniatpi.ui.screens.songVersionsScreen.viewModel.SongVersionsViewModel
 
 
-// --- Modelos de Datos (Ejemplo) ---
-data class Song(
-    val id: String,
-    val title: String,
-    val artistName: String,
-    val versionType: String, // "Versión Original", "Versión Derivada"
-    val artistImageUrl: String?, // URL o placeholder
-    val audioUrl: String, // Para reproducción
-    val durationMillis: Long,
-    val projectId: String? = null // Para "Abrir proyecto"
-)
-
-data class UserVersion(
-    val id: String,
-    val userName: String,
-    val userImageUrl: String?,
-    val songTitle: String, // Podría ser el mismo o una variación
-    val audioUrl: String,
-    val projectId: String?
-)
-
-// --- Composable Principal ---
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SongVersionsScreen(
-    // Deberías pasar un ViewModel o lambdas para manejar eventos y datos
-    originalSong: Song,
-    derivedVersions: List<UserVersion>,
-    onPlayOriginal: (Song) -> Unit,
-    onOpenOriginalProject: (Song) -> Unit,
-    onPlayDerived: (UserVersion) -> Unit,
-    onOpenDerivedProject: (UserVersion) -> Unit,
+    viewModel: SongVersionsViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit,
 ) {
-    var sliderProgress by remember { mutableFloatStateOf(0f) }
+    val uiState by viewModel.uiState.collectAsState()
 
+    SongVersionsContent(
+        uiState = uiState,
+        onPlayOriginal = viewModel::onPlayPauseOriginal,
+        onOpenOriginalProject = viewModel::onOpenProject,
+        onPlayDerived = viewModel::onPlayPauseDerived,
+        onSliderChange = viewModel::onSliderChange,
+        onNavigateBack = onNavigateBack
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SongVersionsContent(
+    uiState: SongVersionsUiState,
+    onPlayOriginal: () -> Unit,
+    onOpenOriginalProject: (String?) -> Unit,
+    onPlayDerived: (String) -> Unit,
+    onSliderChange: (Float) -> Unit,
+    onNavigateBack: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Scaffold(
+        modifier = modifier,
         topBar = {
             CenterAlignedTopAppBar(
-                title = {
-                    Text("HARMONIA", fontWeight = FontWeight.Bold)
-                },
+                title = { Text("HARMONIA", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Menú"
+                            contentDescription = "Atrás"
                         )
                     }
                 },
             )
         },
-
-        ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
-                SongHeader(songTitle = originalSong.title, artistName = originalSong.artistName)
-                Spacer(modifier = Modifier.height(16.dp))
-                OriginalSongPlayer(
-                    song = originalSong,
-                    onPlayClick = { onPlayOriginal(originalSong) },
-                    onOpenProjectClick = { onOpenOriginalProject(originalSong) },
-                    currentProgress = sliderProgress,
-                    onSliderValueChange = { newProgress ->
-                        sliderProgress = newProgress
-                    }
-                )
-                Spacer(modifier = Modifier.height(32.dp))
-                Text(
-                    text = "VERSIONES DERIVADAS",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
+    ) { paddingValues ->
+        if (uiState.isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
             }
+        } else if (uiState.originalSong != null) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                val originalSong = uiState.originalSong
 
-            items(derivedVersions) { version ->
-                DerivedVersionItem(
-                    version = version,
-                    onPlayClick = { onPlayDerived(version) },
-                    onOpenProjectClick = { onOpenDerivedProject(version) },
-                    modifier = Modifier.padding(vertical = 4.dp)
-                )
-            }
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    SongHeader(songTitle = originalSong.title, artistName = originalSong.artistName)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OriginalSongPlayer(
+                        song = originalSong,
+                        isPlaying = uiState.isOriginalPlaying,
+                        currentProgress = uiState.currentPlaybackProgress,
+                        onPlayClick = onPlayOriginal,
+                        onOpenProjectClick = { onOpenOriginalProject(originalSong.projectId) },
+                        onSliderValueChange = onSliderChange
+                    )
+                    Spacer(modifier = Modifier.height(32.dp))
+                    Text(
+                        text = "VERSIONES DERIVADAS",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
 
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
+                items(uiState.derivedVersions) { version ->
+                    DerivedVersionItem(
+                        version = version,
+                        isPlaying = uiState.playingDerivedVersionId == version.id,
+                        onPlayClick = { onPlayDerived(version.id) },
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+                }
             }
         }
     }
@@ -185,7 +189,7 @@ fun SongHeader(songTitle: String, artistName: String, modifier: Modifier = Modif
             Text(
                 text = artistName,
                 style = MaterialTheme.typography.titleLarge,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
             )
 
         }
@@ -196,6 +200,7 @@ fun SongHeader(songTitle: String, artistName: String, modifier: Modifier = Modif
 @Composable
 fun OriginalSongPlayer(
     song: Song,
+    isPlaying: Boolean,
     onPlayClick: () -> Unit,
     onOpenProjectClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -265,9 +270,9 @@ fun OriginalSongPlayer(
         ) {
 
             CircularPlay(
-                onPlay = {/*llamar vm.play()*/ },
-                onPause = {/*llamar vm.pause()*/ },
-                isPlaying = false /*pasar el state*/,
+                onPlay = onPlayClick,
+                onPause = onPlayClick,
+                isPlaying = isPlaying,
                 modifier = Modifier
                     .size(48.dp),
                 background = MaterialTheme.colorScheme.secondary,
@@ -315,11 +320,10 @@ fun CustomPlayerControls(
                     painter = painterResource(R.drawable.ic_harmonyicon),
                     contentDescription = "Slider Thumb",
                     modifier = Modifier
-                        // 1. Aumentamos el tamaño del thumb para que sea más prominente
                         .size(20.dp)
                         .background(MaterialTheme.colorScheme.onPrimary, shape = CircleShape)
                         .border(
-                            border = BorderStroke(1.dp, Color.Black),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                             shape = CircleShape
                         ),
                     tint = MaterialTheme.colorScheme.primary,
@@ -346,7 +350,6 @@ fun CustomPlayerControls(
                 style = MaterialTheme.typography.labelSmall,
             )
             Text(
-                // Simulo el tiempo restante como en tu imagen
                 text = formatMillisToTimeString(song.durationMillis - (currentProgress * song.durationMillis).toLong()),
                 style = MaterialTheme.typography.labelSmall,
             )
@@ -377,7 +380,6 @@ private fun CircularPlay(
         )
     }
 }
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -427,9 +429,9 @@ private fun CustomTrack(
 
 @Composable
 fun DerivedVersionItem(
-    version: UserVersion,
+    version: DerivedVersion,
+    isPlaying: Boolean,
     onPlayClick: () -> Unit,
-    onOpenProjectClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -491,9 +493,9 @@ fun DerivedVersionItem(
             Spacer(modifier = Modifier.width(16.dp))
             */
             CircularPlay(
-                onPlay = {/*llamar vm.play()*/ },
-                onPause = {/*llamar vm.pause()*/ },
-                isPlaying = false /*pasar el state*/,
+                onPlay = onPlayClick,
+                onPause = onPlayClick,
+                isPlaying = isPlaying,
                 modifier = Modifier.size(30.dp),
                 background = MaterialTheme.colorScheme.tertiary,
                 iconColor = MaterialTheme.colorScheme.onTertiary
@@ -510,52 +512,54 @@ fun formatMillisToTimeString(millis: Long): String {
     return String.format("%d:%02d", minutes, seconds)
 }
 
-
-// --- Preview ---
-@Preview(showBackground = true, showSystemUi = false)
+@Preview(showBackground = true, showSystemUi = false, name = "Light Mode")
 @Composable
 fun SongVersionsScreenPreview() {
-    val sampleOriginalSong = Song(
-        id = "1",
-        title = "El paso del tiempo",
-        artistName = "Jane Smith",
-        versionType = "Versión Original",
-        artistImageUrl = null,
-        audioUrl = "",
-        durationMillis = (8 * 60 + 36) * 1000L, // 8:36
-        projectId = "proj1"
-    )
+    var currentProgress by remember { mutableFloatStateOf(0f) }
+    var isPlaying by remember { mutableStateOf(true) }
+
     val sampleDerivedVersions = listOf(
-        UserVersion(
-            "v1",
-            "Brian Perez",
-            null,
-            "El paso del tiempo (Brian's cover)",
-            "",
-            "projV1"
-        ),
-        UserVersion(
-            "v2",
-            "Adelaida Rojas",
-            null,
-            "El paso del tiempo (Adelaida's version)",
-            "",
-            "projV2"
-        ),
-        UserVersion("v3", "Nico Rizzo", null, "El paso del tiempo - Remix", "", "projV3"),
-        UserVersion("v4", "Charly Giménez", null, "El paso del tiempo Acústico", "", null),
-        UserVersion("v5", "Sebastián Prato", null, "Mi versión de El paso...", "", "projV5")
+        DerivedVersion("v1", "Lucas Martínez", "url/v1", "projectA"),
+        DerivedVersion("v2", "Sofía González", "url/v2", "projectB"),
+        DerivedVersion("v3", "Mateo López", "url/v3", "projectC"),
+        DerivedVersion("v4", "Valentina Torres", "url/v4", "projectD"),
+        DerivedVersion("v5", "Julián Fernández", "url/v5", "projectE"),
+        DerivedVersion("v6", "Emma Herrera", "url/v6", "projectF"),
+        DerivedVersion("v7", "Tomás Ramírez", "url/v7", "projectG"),
+        DerivedVersion("v8", "Camila Díaz", "url/v8", "projectH"),
+        DerivedVersion("v9", "Nicolás Castro", "url/v9", "projectI"),
+        DerivedVersion("v10", "Martina Vidal", "url/v10", "projectJ"),
+        DerivedVersion("v11", "Samuel Reyes", "url/v11", "projectK"),
+        DerivedVersion("v12", "Isabella Cruz", "url/v12", "projectL")
     )
 
-    HarmoniaTPITheme(false) {
-        SongVersionsScreen(
-            originalSong = sampleOriginalSong,
-            derivedVersions = sampleDerivedVersions,
-            onPlayOriginal = {},
+    val previewState = SongVersionsUiState(
+        originalSong = Song(
+            id = "1",
+            title = "El paso del tiempo",
+            artistName = "Jane Smith",
+            versionType = "Original",
+            projectId = "proj1",
+            durationMillis = (8 * 60 + 36) * 1000L,
+            artistImageUrl = "",
+            audioUrl = ""
+
+        ),
+        derivedVersions = sampleDerivedVersions,
+        currentPlaybackProgress = currentProgress,
+        isOriginalPlaying = isPlaying,
+        isLoading = false
+    )
+
+    // Tu tema de la app
+    HarmoniaTPITheme(true) {
+        SongVersionsContent(
+            uiState = previewState,
+            onPlayOriginal = { isPlaying = !isPlaying },
             onOpenOriginalProject = {},
             onPlayDerived = {},
-            onOpenDerivedProject = {},
-            onNavigateBack = {},
+            onSliderChange = { newProgress -> currentProgress = newProgress },
+            onNavigateBack = {}
         )
     }
 }
