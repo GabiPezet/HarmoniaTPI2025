@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileInputStream
 import javax.inject.Inject
+import kotlin.math.roundToLong
 
 /**
  * Utiliza AudioTrack para reproducir archivos .pcm.
@@ -29,6 +30,7 @@ class PcmAudioPlayer @Inject constructor() : AudioPlayer {
     private val sampleRate = 44100
     private val channel = AudioFormat.CHANNEL_OUT_MONO
     private val encoding = AudioFormat.ENCODING_PCM_16BIT
+    private val bytesPerSample = 2 // 16-bit PCM
     private val bufferSize = AudioTrack.getMinBufferSize(sampleRate, channel, encoding)
     private val audioTrack = AudioTrack.Builder()
         .setAudioAttributes(
@@ -49,7 +51,20 @@ class PcmAudioPlayer @Inject constructor() : AudioPlayer {
 
     private var onPlaybackCompletedCallback: (() -> Unit)? = null
 
+    private fun msToByteOffset(ms: Long): Long {
+        val samples = (ms * sampleRate / 1000f).roundToLong()
+        return samples * bytesPerSample
+    }
+
     override fun play(): Result<Unit> {
+        return playRange(0L, Long.MAX_VALUE)
+    }
+
+    override fun playSegment(startMs: Long, endMs: Long): Result<Unit> {
+        return playRange(startMs, endMs)
+    }
+
+    private fun playRange(startMs: Long, endMs: Long): Result<Unit> { // Función auxiliar unificada
         if (playJob != null && audioTrack.playState == AudioTrack.PLAYSTATE_PLAYING) {
             return Result.failure(IllegalStateException("Playback already in progress"))
         }
@@ -57,31 +72,57 @@ class PcmAudioPlayer @Inject constructor() : AudioPlayer {
         if (audioTrack.state != AudioTrack.STATE_INITIALIZED) {
             return Result.failure(IllegalStateException("Error initializing AudioTrack"))
         }
+
+        // defino pos inicial y final con bytes
+        val startByteOffset = if (endMs == Long.MAX_VALUE) lastPos else msToByteOffset(startMs)
+        val endByteOffset = if (endMs == Long.MAX_VALUE) file?.length() ?: Long.MAX_VALUE else msToByteOffset(endMs)
+
+        if (startByteOffset >= endByteOffset) {
+            Log.e(TAG, "Rango de reproducción inválido o vacío: $startMs ms a $endMs ms")
+            return Result.failure(IllegalArgumentException("Rango de reproducción inválido."))
+        }
+
         audioTrack.play()
-        if (playJob == null || playJob?.isCompleted == true || playJob?.isCancelled == true) {
-            playJob = scope.launch {
-                val buffer = ByteArray(bufferSize)
-                try {
-                    file?.let { f ->
-                        FileInputStream(f).use { fis ->
-                            fis.skip(lastPos)
-                            var read: Int
-                            while (fis.read(buffer).also { read = it } > 0 && isActive) {
-                                while (audioTrack.playState == AudioTrack.PLAYSTATE_PAUSED && isActive) {
-                                    delay(50)
+        playJob?.cancel() // cancelo lo anterior
+
+        playJob = scope.launch {
+            val buffer = ByteArray(bufferSize)
+            try {
+                file?.let { f ->
+                    FileInputStream(f).use { fis ->
+                        fis.skip(startByteOffset)
+                        lastPos = startByteOffset
+
+                        var read: Int
+                        while (fis.read(buffer).also { read = it } > 0 && isActive) {
+
+                            // compruebo
+                            if (lastPos + read > endByteOffset) {
+                                val remainingBytes = (endByteOffset - lastPos).toInt()
+                                if (remainingBytes > 0) {
+                                    audioTrack.write(buffer, 0, remainingBytes)
+                                    lastPos = endByteOffset
                                 }
-                                audioTrack.write(buffer, 0, read)
-                                lastPos += read
+                                break // Detener al alcanzar el fin del segmento
                             }
+
+                            while (audioTrack.playState == AudioTrack.PLAYSTATE_PAUSED && isActive) {
+                                delay(50)
+                            }
+
+                            audioTrack.write(buffer, 0, read)
+                            lastPos += read
                         }
                     }
-                    audioTrack.stop()
-                    audioTrack.flush()
-                    lastPos = 0
-                    onPlaybackCompletedCallback?.invoke()
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error during playback", e)
                 }
+
+                audioTrack.stop()
+                audioTrack.flush()
+                lastPos = 0
+                onPlaybackCompletedCallback?.invoke()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error during playback", e)
+                lastPos = 0L
             }
         }
 

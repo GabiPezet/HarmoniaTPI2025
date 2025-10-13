@@ -3,11 +3,33 @@ package com.android.harmoniatpi.domain.usecases
 import java.io.File
 import javax.inject.Inject
 
+data class WaveformResult(
+    val waveform: List<Float>,
+    val durationMs: Long
+)
+
 class GenerateWaveformUseCase @Inject constructor() {
-    operator fun invoke(path: String): List<Float> {
-        val pcmBytes = File(path).readBytes()
+
+    // Función principal modificada para devolver WaveformResult
+    operator fun invoke(path: String): WaveformResult {
+        val file = File(path)
+
+        // compruebo si el archivo existe y tiene contenido antes de leerlo
+        if (!file.exists() || file.length() == 0L) {
+            return WaveformResult(emptyList(), 0L)
+        }
+
+        val pcmBytes = file.readBytes()
+
         val pcmShortArray = byteArrayToShortArray(pcmBytes)
-        return pcmShortArrayToNormalizedWaveform(pcmShortArray)
+        val waveform = pcmShortArrayToNormalizedWaveform(pcmShortArray)
+
+        // CÁLCULO DE DURACIÓN (44100 muestras/segundo)
+        val totalSamples = pcmShortArray.size.toLong()
+        val sampleRate = 44100L
+        val durationMs = (totalSamples * 1000L) / sampleRate
+
+        return WaveformResult(waveform, durationMs)
     }
 
     private fun byteArrayToShortArray(pcmBytes: ByteArray): ShortArray {

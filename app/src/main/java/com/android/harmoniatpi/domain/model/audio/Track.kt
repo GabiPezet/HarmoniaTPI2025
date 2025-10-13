@@ -18,6 +18,7 @@ class Track @AssistedInject constructor(
 ) {
     val id = System.currentTimeMillis()
     val path = folderPath.plus("/$id.pcm")
+    val originalPath = folderPath.plus("/$id.pcm.original")
 
     init {
         player.setFile(path)
@@ -34,6 +35,16 @@ class Track @AssistedInject constructor(
             }
             .onFailure {
                 Log.e(TAG, "Error playing track $id", it)
+            }
+    }
+
+    fun playSegment(startMs: Long, endMs: Long) {
+        player.playSegment(startMs, endMs)
+            .onSuccess {
+                Log.i(TAG, "Track $id segment played: $startMs to $endMs")
+            }
+            .onFailure {
+                Log.e(TAG, "Error playing track segment $id", it)
             }
     }
 

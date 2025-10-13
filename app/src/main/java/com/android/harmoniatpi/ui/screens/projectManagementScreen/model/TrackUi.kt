@@ -5,5 +5,7 @@ data class TrackUi(
     val path: String,
     val title: String,
     val selected: Boolean,
-    val waveForm: List<Float>? = null
+    val waveForm: List<Float>? = null,
+    val durationMs: Long = 0L,
+    val isUndoAvailable: Boolean = false
 )
