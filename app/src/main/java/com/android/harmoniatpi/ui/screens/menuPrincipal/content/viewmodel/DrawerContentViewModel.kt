@@ -23,7 +23,7 @@ class DrawerContentViewModel @Inject constructor(
     private val logOutUseCase: LogOutFirebaseUseCase,
     private val sharedMenuUiState: SharedMenuUiState,
     private val getUserPreferencesUseCase: GetUserPreferencesUseCase,
-    private val setUserPreferencesUseCase: SetUserPreferencesUseCase
+    private val setUserPreferencesUseCase: SetUserPreferencesUseCase,
 ) : ViewModel() {
     val uiState = sharedMenuUiState.uiState
     private val _userPhotoPath = MutableStateFlow(ProfileImageUser())
@@ -49,6 +49,10 @@ class DrawerContentViewModel @Inject constructor(
                         appTheme = currentUser.appTheme,
                         notificationsList = currentUser.notificationList,
                         newNotification = currentUser.newNotification,
+                        instrument = currentUser.instrument,
+                        genres = currentUser.genres,
+                        location = currentUser.location,
+                        rating = currentUser.rating,
                         friendsList = currentUser.friendsList,
                         projectsList = currentUser.projectsList,
                         myPostsList = currentUser.myPostsList,
@@ -90,6 +94,10 @@ class DrawerContentViewModel @Inject constructor(
             appTheme = uiState.value.appTheme,
             notificationList = uiState.value.notificationsList,
             newNotification = uiState.value.newNotification,
+            instrument = uiState.value.instrument,
+            genres = uiState.value.genres,
+            location = uiState.value.location,
+            rating = uiState.value.rating,
             friendsList = uiState.value.friendsList,
             projectsList = uiState.value.projectsList,
             myPostsList = uiState.value.myPostsList,
@@ -98,6 +106,28 @@ class DrawerContentViewModel @Inject constructor(
         )
         viewModelScope.launch(Dispatchers.IO) {
             setUserPreferencesUseCase(preferences)
+        }
+    }
+
+    fun updateUserName(newName: String) {
+        sharedMenuUiState.updateState { it.copy(userName = newName) }
+    }
+
+    fun updateWorkProfile(instrument: String, genres: String, location: String) {
+        sharedMenuUiState.updateState {
+            it.copy(
+                instrument = instrument,
+                genres = genres,
+                location = location
+            )
+        }
+    }
+
+    fun updateRating(newRating: Float) {
+        // Aseguramos que el valor siempre esté entre 0 y 5
+        val clampedRating = newRating.coerceIn(0f, 5f)
+        sharedMenuUiState.updateState {
+            it.copy(rating = clampedRating)
         }
     }
 
