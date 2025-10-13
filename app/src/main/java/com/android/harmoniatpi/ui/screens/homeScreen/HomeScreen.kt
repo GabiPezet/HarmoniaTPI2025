@@ -43,6 +43,7 @@ fun HomeScreen(
     drawerViewModel: DrawerContentViewModel,
     onNavigateToProjectManagement: () -> Unit,
     onNavigateToNotifications: () -> Unit,
+    onNavigateToProjectDetail: () -> Unit,
     viewModel: HomeScreenViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -99,7 +100,8 @@ fun HomeScreen(
                     navControllerNavBar,
                     drawerState = drawerState,
                     onExitApp = { showExitAppDialog = true },
-                    onNavigateToProjectManagement = { onNavigateToProjectManagement() })
+                    onNavigateToProjectManagement = { onNavigateToProjectManagement() },
+                    onNavigateToProjectDetail = {onNavigateToProjectDetail()})
             }
 
         }
@@ -118,7 +120,7 @@ fun BottomNavigation(
     val currentDestination = navBackStackEntry?.destination
 
     NavigationBar(
-        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+        containerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
         tonalElevation = 16.dp
     ) {
         val currentScreen = currentDestination?.toString()?.substringAfterLast(".")
@@ -153,7 +155,7 @@ fun BottomNavigation(
                     indicatorColor = MaterialTheme.colorScheme.primary,
                     selectedIconColor = MaterialTheme.colorScheme.onPrimary,
                     unselectedIconColor = MaterialTheme.colorScheme.secondary,
-                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                    selectedTextColor = MaterialTheme.colorScheme.secondary,
                     unselectedTextColor = MaterialTheme.colorScheme.secondary
                 )
             )

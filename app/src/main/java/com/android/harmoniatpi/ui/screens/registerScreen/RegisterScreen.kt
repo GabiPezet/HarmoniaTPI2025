@@ -160,7 +160,7 @@ fun RegisterScreen(
                 enabled = uiState.isFormValid && !uiState.isLoading,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
-                    disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                    disabledContainerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                     disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
                 )

@@ -14,16 +14,19 @@ fun NavigationBottomWrapper(
     navController: NavHostController,
     drawerState: DrawerState,
     onExitApp: () -> Unit,
-    onNavigateToProjectManagement: () -> Unit
+    onNavigateToProjectManagement: () -> Unit,
+    onNavigateToProjectDetail: () -> Unit,
+
 ) {
     NavHost(
         navController = navController,
         startDestination = BottomBarRoutes.CommunityScreenRoute
     ) {
         composable<BottomBarRoutes.CommunityScreenRoute> { CommunityScreen(onExitApp = onExitApp,drawerState = drawerState) }
-        composable<BottomBarRoutes.ProjectsScreenRoute> {
+        composable<BottomBarRoutes.RehearsalRoomRoute> {
             ProjectsScreen(
-                onNavigateToProjectManagement = { onNavigateToProjectManagement() } //solo para prueba
+                onNavigateToCreateProjet = {onNavigateToProjectManagement()},
+                onNavigateToProjectDetail = {onNavigateToProjectDetail()}
             )
         }
 

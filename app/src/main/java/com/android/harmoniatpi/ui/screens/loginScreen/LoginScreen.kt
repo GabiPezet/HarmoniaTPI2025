@@ -83,8 +83,8 @@ fun LoginScreen(
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
-    val username = rememberSaveable { mutableStateOf("") }
-    val password = rememberSaveable { mutableStateOf("") }
+    val username = rememberSaveable { mutableStateOf("klyxdevs@gmail.com") }
+    val password = rememberSaveable { mutableStateOf("123456") }
     val permissions = buildList {
         add(permission.RECORD_AUDIO)
         add(permission.CAMERA)
@@ -341,9 +341,7 @@ private fun LoginButton(
     onClick: () -> Unit
 ) {
     val containerColor =
-        if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(
-            alpha = 0.6f
-        )
+        if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f)
     val contentColor =
         if (enabled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimary
     Button(
