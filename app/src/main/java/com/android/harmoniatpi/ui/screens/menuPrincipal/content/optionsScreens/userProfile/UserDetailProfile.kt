@@ -22,12 +22,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -36,6 +42,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
@@ -49,31 +56,43 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.rememberAsyncImagePainter
+import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.viewmodel.ProjectListViewModel
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.MenuUiState
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.OptionsMenu
+import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.CompactSymmetricButtons
+import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.MediaProjectList
+import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.ProfileNavButton
+import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.ProfileTab
+import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.WorkProfileCard
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.viewmodel.DrawerContentViewModel
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun UserProfile(
+fun UserDetailProfile(
     viewModel: DrawerContentViewModel,
+    projectListViewModel: ProjectListViewModel = hiltViewModel(),
     uiState: MenuUiState,
-    innerPadding: PaddingValues
+    innerPadding: PaddingValues,
 ) {
     val context = LocalContext.current
     var photoUri by rememberSaveable { mutableStateOf<Uri?>(null) }
     var showSheet by remember { mutableStateOf(false) }
     val userPhotoPath by viewModel.userPhotoPath.collectAsState()
-
+    var selectedTab by remember { mutableStateOf(ProfileTab.WORK) }
+    var isEditing by remember { mutableStateOf(false) }
+    var name by remember(uiState.userName) { mutableStateOf(uiState.userName) }
+    val projects by projectListViewModel.projects.collectAsState()
 
     val takePictureLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
@@ -110,9 +129,7 @@ fun UserProfile(
         if (!imageFile.exists()) imageFile.createNewFile()
 
         return FileProvider.getUriForFile(
-            context,
-            "${context.packageName}.fileprovider",
-            imageFile
+            context, "${context.packageName}.fileprovider", imageFile
         )
     }
 
@@ -125,32 +142,27 @@ fun UserProfile(
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = "PERFIL",
-                        style = MaterialTheme.typography.titleLarge.copy(
+                        text = "PERFIL", style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.SemiBold
-                        ),
-                        fontSize = 24.sp
+                        ), fontSize = 24.sp
                     )
-                },
-                navigationIcon = {
+                }, navigationIcon = {
                     IconButton(onClick = {
                         viewModel.changeOptionsMenu(OptionsMenu.MAIN_CONTENT_SCREEN)
                     }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = null,
+                            contentDescription = "Volver al menú anterior",
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                }, colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.secondary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.secondary
+                    titleContentColor = MaterialTheme.colorScheme.onBackground,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onBackground
                 )
             )
         },
-
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -159,6 +171,7 @@ fun UserProfile(
                 .padding(innerPadding),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Spacer(modifier = Modifier.height(16.dp))
             Box(contentAlignment = Alignment.BottomEnd) {
                 if (userPhotoPath.path.isBlank()) {
                     Icon(
@@ -183,49 +196,137 @@ fun UserProfile(
                     modifier = Modifier
                         .offset(x = (-8).dp, y = (-8).dp)
                         .background(
-                            color = MaterialTheme.colorScheme.primary,
-                            shape = CircleShape
+                            color = MaterialTheme.colorScheme.primary, shape = CircleShape
                         )
                 ) {
                     Icon(
                         imageVector = Icons.Default.CameraAlt,
                         contentDescription = "Cambiar foto",
-                        tint = Color.White
+                        tint = MaterialTheme.colorScheme.onPrimary
                     )
                 }
             }
+            Spacer(modifier = Modifier.height(16.dp))
 
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                if (isEditing) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        OutlinedTextField(
+                            value = name,
+                            onValueChange = { name = it },
+                            label = { Text("Nombre de usuario") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            isError = name.isBlank(),
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                            keyboardActions = KeyboardActions(
+                                onDone = {
+                                    if (name.isNotBlank()) {
+                                        viewModel.updateUserName(name)
+                                        viewModel.updateUserPreferences()
+                                        isEditing = false
+                                    }
+                                }
+                            )
+                        )
+                        if (name.isBlank()) {
+                            Text(
+                                text = "El nombre no puede estar vacío",
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(start = 16.dp)
+                            )
+                        }
+                    }
+
+                    IconButton(
+                        onClick = {
+                            viewModel.updateUserName(name)
+                            viewModel.updateUserPreferences()
+                            isEditing = false
+                        },
+                        enabled = name.isNotBlank()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Done,
+                            contentDescription = "Guardar nombre",
+                            tint = if (name.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                        )
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp)
+                    ) {
+                        Text(
+                            text = uiState.userName.ifEmpty { "Sin nombre" },
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.align(Alignment.Center),
+                            textAlign = TextAlign.Center
+                        )
+                        IconButton(
+                            onClick = { isEditing = true },
+                            modifier = Modifier.align(Alignment.CenterEnd)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Editar nombre",
+                                tint = MaterialTheme.colorScheme.secondary
+                            )
+                        }
+                    }
+                }
+            }
             Spacer(modifier = Modifier.height(24.dp))
-            Text(
-                text = "ID: ${uiState.userID}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.secondary
-            )
+            CompactSymmetricButtons()
             Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = uiState.userName.ifEmpty { "Pepe" },
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.secondary
-            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                ProfileNavButton(
+                    icon = Icons.Default.School,
+                    label = "Perfil laboral",
+                    selected = selectedTab == ProfileTab.WORK,
+                    onClick = { selectedTab = ProfileTab.WORK })
+                Spacer(modifier = Modifier.width(24.dp))
+                ProfileNavButton(
+                    icon = Icons.Default.Movie,
+                    label = "Multimedia",
+                    selected = selectedTab == ProfileTab.MEDIA,
+                    onClick = { selectedTab = ProfileTab.MEDIA })
+            }
             Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = uiState.userLastName.ifEmpty { "ArgEnTo" },
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.secondary
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = uiState.userEmail.ifEmpty { "email" },
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.secondary
-            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+            ) {
+                when (selectedTab) {
+                    ProfileTab.WORK -> WorkProfileCard(uiState = uiState, viewModel = viewModel)
+                    ProfileTab.MEDIA -> MediaProjectList(projects = projects)
+                }
+            }
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 
     if (showSheet) {
         ModalBottomSheet(
             onDismissRequest = { showSheet = false },
-            containerColor = MaterialTheme.colorScheme.onSecondaryContainer
+            containerColor = MaterialTheme.colorScheme.surface
         ) {
             Column(
                 modifier = Modifier
@@ -301,7 +402,6 @@ fun UserProfile(
                         )
                     }
                 }
-
                 Spacer(modifier = Modifier.height(16.dp))
             }
         }

@@ -53,6 +53,10 @@ class NotificationManagerOcasaUseCase @Inject constructor(
             appTheme = sharedMenuUiState.uiState.value.appTheme,
             notificationList = sharedMenuUiState.uiState.value.notificationsList,
             newNotification = sharedMenuUiState.uiState.value.newNotification,
+            instrument = sharedMenuUiState.uiState.value.instrument,
+            genres = sharedMenuUiState.uiState.value.genres,
+            location = sharedMenuUiState.uiState.value.location,
+            rating = sharedMenuUiState.uiState.value.rating
         )
 
         withContext(Dispatchers.IO) {

@@ -16,6 +16,7 @@ import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.LoginScreenRo
 import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.NotificationScreenRoute
 import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.ProjectManagementScreenRoute
 import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.RegisterScreenRoute
+import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.SongVersionsScreenRoute
 import com.android.harmoniatpi.ui.screens.collabScreen.CollabScreen
 import com.android.harmoniatpi.ui.screens.createProjectScreen.CreateProjectScreen
 import com.android.harmoniatpi.ui.screens.homeScreen.HomeScreen
@@ -26,6 +27,7 @@ import com.android.harmoniatpi.ui.screens.menuPrincipal.content.viewmodel.Drawer
 import com.android.harmoniatpi.ui.screens.notificationScreen.NotificationsScreen
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.ProjectManagementScreen
 import com.android.harmoniatpi.ui.screens.registerScreen.RegisterScreen
+import com.android.harmoniatpi.ui.screens.songVersionsScreen.SongVersionsScreen
 import kotlinx.coroutines.launch
 
 @Composable
@@ -90,7 +92,8 @@ fun NavigationWrapper(
                             )
                         },
                         onNavigateToNotifications = { navController.navigate(NotificationScreenRoute) },
-                        onNavigateToProjectDetail = {navController.navigate(ProjectManagementScreenRoute)}
+                        onNavigateToProjectDetail = {navController.navigate(ProjectManagementScreenRoute)},
+                        onNavigateToVersion = {navController.navigate(SongVersionsScreenRoute)}
                     )
                 }
             )
@@ -118,5 +121,9 @@ fun NavigationWrapper(
         composable<CreateProjectScreenRoute> {
             CreateProjectScreen(onBack={ navController.popBackStack() })
         }
+
+        composable<SongVersionsScreenRoute> {
+            SongVersionsScreen(onNavigateBack = { navController.popBackStack() })
     }
+}
 }

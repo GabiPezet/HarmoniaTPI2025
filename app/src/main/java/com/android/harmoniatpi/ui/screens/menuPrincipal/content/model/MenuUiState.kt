@@ -32,7 +32,11 @@ data class MenuUiState(
     val friendRequestSent: List<FriendRequestSending> = emptyList(),
     val newNotification: Boolean = false,
     val showNewNotification : Boolean = false,
-    val internetAvailable : Boolean = true
+    val internetAvailable : Boolean = true,
+    val instrument: String = "",
+    val genres: String = "",
+    val location : String = "",
+    val rating : Float =  0.0f,
 )
 
 @Singleton
@@ -46,8 +50,8 @@ class SharedMenuUiState @Inject constructor() {
 }
 
 enum class OptionsMenu {
-    USER_PROFILE,
     USER_PREFERENCES_SCREEN,
-    MAIN_CONTENT_SCREEN
+    MAIN_CONTENT_SCREEN,
+    USER_PROFILE
 }
 

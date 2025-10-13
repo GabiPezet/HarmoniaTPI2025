@@ -44,6 +44,7 @@ fun HomeScreen(
     onNavigateToProjectManagement: () -> Unit,
     onNavigateToNotifications: () -> Unit,
     onNavigateToProjectDetail: () -> Unit,
+    onNavigateToVersion: () -> Unit,
     viewModel: HomeScreenViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -101,7 +102,9 @@ fun HomeScreen(
                     drawerState = drawerState,
                     onExitApp = { showExitAppDialog = true },
                     onNavigateToProjectManagement = { onNavigateToProjectManagement() },
-                    onNavigateToProjectDetail = {onNavigateToProjectDetail()})
+                    onNavigateToProjectDetail = {onNavigateToProjectDetail()},
+                    onNavigateToVersion = {onNavigateToVersion()})
+
             }
 
         }

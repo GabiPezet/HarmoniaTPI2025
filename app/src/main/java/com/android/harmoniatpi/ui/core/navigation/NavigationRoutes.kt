@@ -25,6 +25,10 @@ sealed class NavigationRoutes() {
     @Serializable
     data object NotificationScreenRoute : NavigationRoutes()
 
+    @Serializable
+    data object SongVersionsScreenRoute : NavigationRoutes()
+
+
 }
 
 // BottomNav
