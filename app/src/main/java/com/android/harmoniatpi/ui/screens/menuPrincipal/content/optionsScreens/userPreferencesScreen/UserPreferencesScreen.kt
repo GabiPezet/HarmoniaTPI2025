@@ -1,6 +1,7 @@
 package com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userPreferencesScreen
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,6 +20,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -53,6 +55,13 @@ fun UserPreferencesScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
+                colors = TopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.secondary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.secondary,
+                    scrolledContainerColor = MaterialTheme.colorScheme.background,
+                    actionIconContentColor = MaterialTheme.colorScheme.secondary
+                ),
                 title = {
                     Text(
                         text = "CONFIGURACIÓN",
@@ -76,6 +85,7 @@ fun UserPreferencesScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
         ) {
@@ -86,7 +96,10 @@ fun UserPreferencesScreen(
                 elevation = CardDefaults.cardElevation(
                     defaultElevation = 4.dp // sombra
                 ),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                )
             ) {
 
 

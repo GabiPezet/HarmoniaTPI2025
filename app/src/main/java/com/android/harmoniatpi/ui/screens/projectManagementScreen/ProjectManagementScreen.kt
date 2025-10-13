@@ -1,5 +1,6 @@
 package com.android.harmoniatpi.ui.screens.projectManagementScreen
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -10,8 +11,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -19,6 +24,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -33,6 +40,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.android.harmoniatpi.ui.components.ProyectControlButtonRow
 import com.android.harmoniatpi.ui.components.TrackItem
+import com.android.harmoniatpi.ui.components.TrimAudioDialog
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.viewmodel.ProjectManagementScreenViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -45,9 +54,21 @@ fun ProjectManagementScreen(
     val sheetState = rememberModalBottomSheetState()
     var showSheet by remember { mutableStateOf(false) }
     val state by viewModel.state.collectAsState()
+    val sharedScrollState = rememberScrollState()
+    var trackForTrimming by remember { mutableStateOf<TrackUi?>(null) }
 
     Scaffold(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
+        topBar = { //Impl de top bar
+            TopAppBar(
+                title = { Text("Gestión de Proyectos") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                    }
+                }
+            )
+        }
     ) { padding ->
 
         Column(
@@ -61,20 +82,34 @@ fun ProjectManagementScreen(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .wrapContentHeight(),
+                    .wrapContentHeight()
+                    .padding(horizontal = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                state.tracks.forEach { track ->
-                    item {
-                        TrackItem(
-                            track = track,
-                            onClick = { viewModel.selectTrack(track.id) },
-                            onDelete = { viewModel.deleteTrack() }
-                        )
-                    }
+                items(state.tracks, key = { it.id }) { track ->
+                    TrackItem(
+                        track = track,
+                        onClick = { viewModel.selectTrack(track.id) },
+                        onDelete = { viewModel.deleteTrack() },
+                        onTrim = {
+                            if (track.waveForm.isNullOrEmpty() || track.durationMs < 50L) {
+                                // TODO: Usar Toast para feedback al usuario
+                                Log.d("Trim", "Pista sin audio o muy corta para recortar.")
+                            } else {
+                                trackForTrimming = track
+                            }
+                        },
+                        onUndo = {
+                            viewModel.undoTrim(track.id)
+                        },
+                        scrollState = sharedScrollState,
+                        timelineWidth = state.timelineWidth,
+                        isBeingRecorded = state.isRecording && track.selected
+                    )
                 }
             }
+
 
             IconButton(
                 onClick = {
@@ -147,5 +182,23 @@ fun ProjectManagementScreen(
                 }
             }
         }
+    }
+
+    trackForTrimming?.let { trackToTrim ->
+        TrimAudioDialog(
+            track = trackToTrim,
+            previewTrackId = state.previewTrackId,
+            onDismiss = { trackForTrimming = null },
+            onConfirmTrim = { id, start, end ->
+                viewModel.trimAudio(id, start, end)
+                trackForTrimming = null
+            },
+            onPreviewTrim = { id, start, end ->
+                viewModel.previewTrim(id, start, end)
+            },
+            onStopPreview = { id ->
+                viewModel.stopPreviewTrim(id)
+            }
+        )
     }
 }

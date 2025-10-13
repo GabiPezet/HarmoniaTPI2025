@@ -44,7 +44,7 @@ fun InternetDisableScreen(colorText: Color, modifier: Modifier, tryAgain: () -> 
             Icon(
                 imageVector = Icons.Filled.Warning,
                 contentDescription = stringResource(R.string.content_description_no_internet_icon),
-                tint = MaterialTheme.colorScheme.tertiary,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
                     .size(120.dp)
                     .padding(16.dp)
@@ -72,7 +72,7 @@ fun InternetDisableScreen(colorText: Color, modifier: Modifier, tryAgain: () -> 
             Button(
                 onClick = tryAgain,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = colorText
                 ),
                 shape = RoundedCornerShape(12.dp),

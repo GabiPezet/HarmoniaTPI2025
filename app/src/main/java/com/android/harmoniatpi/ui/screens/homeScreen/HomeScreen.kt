@@ -3,8 +3,10 @@ package com.android.harmoniatpi.ui.screens.homeScreen
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.DrawerState
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -41,6 +43,7 @@ fun HomeScreen(
     drawerViewModel: DrawerContentViewModel,
     onNavigateToProjectManagement: () -> Unit,
     onNavigateToNotifications: () -> Unit,
+    onNavigateToProjectDetail: () -> Unit,
     viewModel: HomeScreenViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -97,7 +100,8 @@ fun HomeScreen(
                     navControllerNavBar,
                     drawerState = drawerState,
                     onExitApp = { showExitAppDialog = true },
-                    onNavigateToProjectManagement = { onNavigateToProjectManagement() })
+                    onNavigateToProjectManagement = { onNavigateToProjectManagement() },
+                    onNavigateToProjectDetail = {onNavigateToProjectDetail()})
             }
 
         }
@@ -116,6 +120,7 @@ fun BottomNavigation(
     val currentDestination = navBackStackEntry?.destination
 
     NavigationBar(
+        containerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
         tonalElevation = 16.dp
     ) {
         val currentScreen = currentDestination?.toString()?.substringAfterLast(".")
@@ -146,6 +151,13 @@ fun BottomNavigation(
                     )
                 },
                 interactionSource = null,
+                colors = NavigationBarItemDefaults.colors(
+                    indicatorColor = MaterialTheme.colorScheme.primary,
+                    selectedIconColor = MaterialTheme.colorScheme.onPrimary,
+                    unselectedIconColor = MaterialTheme.colorScheme.secondary,
+                    selectedTextColor = MaterialTheme.colorScheme.secondary,
+                    unselectedTextColor = MaterialTheme.colorScheme.secondary
+                )
             )
         }
 

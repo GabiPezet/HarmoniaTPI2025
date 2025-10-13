@@ -44,10 +44,16 @@ class DrawerContentViewModel @Inject constructor(
                         userName = currentUser.userName,
                         userLastName = currentUser.userLastName,
                         userPhotoPath = currentUser.userPhotoPath,
+                        userPhotoPathRemote = currentUser.userPhotoPathRemote,
                         userID = currentUser.userID,
                         appTheme = currentUser.appTheme,
                         notificationsList = currentUser.notificationList,
-                        newNotification = currentUser.newNotification
+                        newNotification = currentUser.newNotification,
+                        friendsList = currentUser.friendsList,
+                        projectsList = currentUser.projectsList,
+                        myPostsList = currentUser.myPostsList,
+                        friendRequestReceived = currentUser.friendRequestReceived,
+                        friendRequestSent = currentUser.friendRequestSent
                     )
                 }
             }
@@ -75,14 +81,20 @@ class DrawerContentViewModel @Inject constructor(
     fun updateUserPreferences() {
 
         val preferences = UserPreferences(
-            userEmail = uiState.value.userEmail,
-            userName = uiState.value.userName,
-            userPhotoPath = uiState.value.userPhotoPath,
-            userLastName = uiState.value.userLastName,
             userID = uiState.value.userID,
+            userEmail = uiState.value.userEmail,
+            userPhotoPath = uiState.value.userPhotoPath,
+            userPhotoPathRemote = uiState.value.userPhotoPathRemote,
+            userName = uiState.value.userName,
+            userLastName = uiState.value.userLastName,
             appTheme = uiState.value.appTheme,
             notificationList = uiState.value.notificationsList,
-            newNotification = uiState.value.newNotification
+            newNotification = uiState.value.newNotification,
+            friendsList = uiState.value.friendsList,
+            projectsList = uiState.value.projectsList,
+            myPostsList = uiState.value.myPostsList,
+            friendRequestReceived = uiState.value.friendRequestReceived,
+            friendRequestSent = uiState.value.friendRequestSent
         )
         viewModelScope.launch(Dispatchers.IO) {
             setUserPreferencesUseCase(preferences)
@@ -113,6 +125,12 @@ class DrawerContentViewModel @Inject constructor(
         }
         sharedMenuUiState.updateState {
             it.copy(userPhotoPath = path)
+        }
+    }
+
+    fun sendNotification() {
+        viewModelScope.launch {
+            sharedMenuUiState.updateState { it.copy(showNewNotification = true) }
         }
     }
 

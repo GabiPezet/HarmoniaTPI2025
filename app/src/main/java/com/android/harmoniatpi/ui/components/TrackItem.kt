@@ -1,8 +1,17 @@
 package com.android.harmoniatpi.ui.components
 
+import androidx.compose.animation.animateColor
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,9 +22,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Undo
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -32,43 +43,63 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.android.harmoniatpi.R
 import com.android.harmoniatpi.ui.core.theme.HarmoniaTPITheme
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
+import kotlin.math.sin
 
 @Composable
 fun TrackItem(
     track: TrackUi,
     onClick: () -> Unit,
     onDelete: () -> Unit,
-    modifier: Modifier = Modifier
+    onTrim: () -> Unit,
+    onUndo: () -> Unit,
+    scrollState: ScrollState,
+    isBeingRecorded: Boolean,
+    modifier: Modifier = Modifier,
+    timelineWidth: Int,
 ) {
     var showOptions by remember { mutableStateOf(false) }
+
+    val infiniteTransition = rememberInfiniteTransition(label = "")
+    val animatedBorderColor by infiniteTransition.animateColor(
+        initialValue = Color.Red,
+        targetValue = MaterialTheme.colorScheme.background,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "Recording border color animation"
+    )
 
     Row(
         modifier = modifier
             .clip(RoundedCornerShape(16.dp))
             .background(color = Color.Transparent)
             .fillMaxWidth()
-            .height(100.dp)
-            .clickable(onClick = onClick),
+            .height(100.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Surface(
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.background,
-            border = if (track.selected) {
-                BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
-            } else {
-                null
+            border = when {
+                isBeingRecorded -> BorderStroke(2.dp, animatedBorderColor)
+                track.selected -> BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+                else -> null
             },
             modifier = Modifier
                 .fillMaxHeight()
                 .width(100.dp)
+                .clickable(onClick = onClick)
         ) {
             Column(
                 modifier = Modifier
@@ -80,7 +111,6 @@ fun TrackItem(
                 Text(
                     text = track.title,
                     modifier = Modifier.weight(1f),
-                    color = MaterialTheme.colorScheme.secondary
                 )
                 Box {
                     IconButton(onClick = {
@@ -90,102 +120,97 @@ fun TrackItem(
                         Icon(
                             imageVector = Icons.Default.MoreVert,
                             contentDescription = "Mostrar opciones de la pista",
-                            tint = MaterialTheme.colorScheme.secondary
                         )
                     }
                     TrackOptionsMenu(
                         visible = showOptions,
                         onDismiss = { showOptions = false },
-                        onDelete = onDelete
+                        onDelete = onDelete,
+                        onTrim = onTrim,
+                        onUndo = onUndo,
+                        isUndoAvailable = track.isUndoAvailable
                     )
                 }
             }
         }
-        DbWaveForm(
-            modifier = Modifier.fillMaxSize()
+        DbWaveform(
+            modifier = Modifier.fillMaxSize(),
+            waveform = track.waveForm ?: listOf(),
+            scrollState = scrollState,
+            timelineWidth = timelineWidth
         )
     }
 }
 
 @Composable
 private fun TrackOptionsMenu(
-    visible: Boolean, onDismiss: () -> Unit, onDelete: () -> Unit, modifier: Modifier = Modifier
+    visible: Boolean,
+    onDismiss: () -> Unit,
+    onDelete: () -> Unit,
+    onTrim: () -> Unit,
+    onUndo: () -> Unit,
+    isUndoAvailable: Boolean,
+    modifier: Modifier = Modifier
 ) {
     DropdownMenu(
         expanded = visible, onDismissRequest = onDismiss, modifier = modifier
     ) {
         DropdownMenuItem(
             text = {
-                Text(
-                    text = "Silenciar",
-                    color = MaterialTheme.colorScheme.secondary
-                )
+                Text(text = "Silenciar")
             },
             leadingIcon = {
                 Icon(
                     painter = painterResource(R.drawable.mute_icon),
-                    contentDescription = "Silenciar",
-                    tint = MaterialTheme.colorScheme.secondary
+                    contentDescription = "Silenciar"
                 )
             },
             onClick = {}
         )
         DropdownMenuItem(
             text = {
-                Text(
-                    text = "Volumen",
-                    color = MaterialTheme.colorScheme.secondary
-                )
-            }, leadingIcon = {
+                Text(text = "Volumen")
+            },
+            leadingIcon = {
                 Icon(
                     painter = painterResource(R.drawable.mix_icon),
-                    contentDescription = "Volumen",
-                    tint = MaterialTheme.colorScheme.secondary
+                    contentDescription = "Volumen"
                 )
             },
             onClick = {}
         )
         DropdownMenuItem(
             text = {
-                Text(
-                    text = "Paneo",
-                    color = MaterialTheme.colorScheme.secondary
-                )
-            }, leadingIcon = {
+                Text(text = "Paneo")
+            },
+            leadingIcon = {
                 Icon(
                     painter = painterResource(R.drawable.pan_icon),
-                    contentDescription = "Paneo",
-                    tint = MaterialTheme.colorScheme.secondary
+                    contentDescription = "Paneo"
                 )
             },
             onClick = {}
         )
         DropdownMenuItem(
             text = {
-                Text(
-                    text = "Editar",
-                    color = MaterialTheme.colorScheme.secondary
-                )
-            }, leadingIcon = {
+                Text(text = "Editar")
+            },
+            leadingIcon = {
                 Icon(
                     painter = painterResource(R.drawable.edit_icon),
-                    contentDescription = "Editar",
-                    tint = MaterialTheme.colorScheme.secondary
+                    contentDescription = "Editar"
                 )
             },
             onClick = {}
         )
         DropdownMenuItem(
             text = {
-                Text(
-                    text = "Efectos",
-                    color = MaterialTheme.colorScheme.secondary
-                )
-            }, leadingIcon = {
+                Text(text = "Efectos")
+            },
+            leadingIcon = {
                 Icon(
                     painter = painterResource(R.drawable.fx_icon),
-                    contentDescription = "Efectos",
-                    tint = MaterialTheme.colorScheme.secondary
+                    contentDescription = "Efectos"
                 )
             },
             onClick = {}
@@ -193,16 +218,28 @@ private fun TrackOptionsMenu(
 
         DropdownMenuItem(
             text = {
-                Text(
-                    text = "Eliminar",
-                    color = MaterialTheme.colorScheme.secondary
+                Text(text = "Recortar")
+            },
+            leadingIcon = {
+                Icon(
+                    painter = painterResource(R.drawable.edit_icon),
+                    contentDescription = "Recortar"
                 )
+            },
+            onClick = {
+                onDismiss()
+                onTrim()
+            }
+        )
+
+        DropdownMenuItem(
+            text = {
+                Text(text = "Eliminar")
             },
             leadingIcon = {
                 Icon(
                     painter = painterResource(R.drawable.delete_icon),
-                    contentDescription = "Efectos",
-                    tint = MaterialTheme.colorScheme.secondary
+                    contentDescription = "Efectos"
                 )
             },
             onClick = {
@@ -210,20 +247,70 @@ private fun TrackOptionsMenu(
                 onDelete()
             }
         )
+
+        if (isUndoAvailable) {
+            DropdownMenuItem(
+                text = {
+                    Text(text = "Deshacer Recorte")
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Undo,
+                        contentDescription = "Deshacer recorte"
+                    )
+                },
+                onClick = {
+                    onDismiss()
+                    onUndo()
+                }
+            )
+        }
+
     }
 }
 
 @Composable
-private fun DbWaveForm(modifier: Modifier = Modifier) {
+fun DbWaveform(
+    waveform: List<Float>,
+    scrollState: ScrollState,
+    timelineWidth: Int,
+    modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.onPrimaryContainer
+) {
+
     Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surface,
         modifier = modifier
+            .horizontalScroll(scrollState),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.primaryContainer,
     ) {
         Box(
-            modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
+            modifier = Modifier.padding(vertical = 8.dp),
         ) {
-            Text(text = "Waveform")
+            Canvas(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width((waveform.size / 2).dp)
+            ) {
+
+                val centerY = size.height / 2
+                val stepX = size.width / waveform.size
+
+                val path = Path().apply {
+                    moveTo(0f, centerY)
+                    waveform.forEachIndexed { index, value ->
+                        val x = index * stepX
+                        val y = centerY - (value * centerY)
+                        lineTo(x, y)
+                    }
+                }
+
+                drawPath(
+                    path = path,
+                    color = color,
+                    style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
+                )
+            }
         }
     }
 }
@@ -231,11 +318,22 @@ private fun DbWaveForm(modifier: Modifier = Modifier) {
 @Preview
 @Composable
 private fun TrackPrev() {
+    // Simulamos una onda con valores entre 0 y 1
+    val fakeWaveform = List(300) { index ->
+        val angle = index * 0.1f
+        sin(angle) // <-- Solo sin(angle) para generar valores entre -1 y 1
+    }
+
     HarmoniaTPITheme(false) {
         TrackItem(
-            track = TrackUi(0, "", "Nombre", true),
+            track = TrackUi(0, "", "Nombre", true, fakeWaveform),
             onClick = {},
-            onDelete = {}
+            onDelete = {},
+            onTrim = {},
+            onUndo = {},
+            scrollState = rememberScrollState(),
+            isBeingRecorded = true,
+            timelineWidth = 500,
         )
     }
 }
