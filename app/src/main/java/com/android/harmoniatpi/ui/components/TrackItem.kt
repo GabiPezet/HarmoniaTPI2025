@@ -26,6 +26,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Undo
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -58,6 +59,8 @@ fun TrackItem(
     track: TrackUi,
     onClick: () -> Unit,
     onDelete: () -> Unit,
+    onTrim: () -> Unit,
+    onUndo: () -> Unit,
     scrollState: ScrollState,
     isBeingRecorded: Boolean,
     modifier: Modifier = Modifier,
@@ -122,7 +125,10 @@ fun TrackItem(
                     TrackOptionsMenu(
                         visible = showOptions,
                         onDismiss = { showOptions = false },
-                        onDelete = onDelete
+                        onDelete = onDelete,
+                        onTrim = onTrim,
+                        onUndo = onUndo,
+                        isUndoAvailable = track.isUndoAvailable
                     )
                 }
             }
@@ -138,7 +144,13 @@ fun TrackItem(
 
 @Composable
 private fun TrackOptionsMenu(
-    visible: Boolean, onDismiss: () -> Unit, onDelete: () -> Unit, modifier: Modifier = Modifier
+    visible: Boolean,
+    onDismiss: () -> Unit,
+    onDelete: () -> Unit,
+    onTrim: () -> Unit,
+    onUndo: () -> Unit,
+    isUndoAvailable: Boolean,
+    modifier: Modifier = Modifier
 ) {
     DropdownMenu(
         expanded = visible, onDismissRequest = onDismiss, modifier = modifier
@@ -206,6 +218,22 @@ private fun TrackOptionsMenu(
 
         DropdownMenuItem(
             text = {
+                Text(text = "Recortar")
+            },
+            leadingIcon = {
+                Icon(
+                    painter = painterResource(R.drawable.edit_icon),
+                    contentDescription = "Recortar"
+                )
+            },
+            onClick = {
+                onDismiss()
+                onTrim()
+            }
+        )
+
+        DropdownMenuItem(
+            text = {
                 Text(text = "Eliminar")
             },
             leadingIcon = {
@@ -219,6 +247,25 @@ private fun TrackOptionsMenu(
                 onDelete()
             }
         )
+
+        if (isUndoAvailable) {
+            DropdownMenuItem(
+                text = {
+                    Text(text = "Deshacer Recorte")
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Undo,
+                        contentDescription = "Deshacer recorte"
+                    )
+                },
+                onClick = {
+                    onDismiss()
+                    onUndo()
+                }
+            )
+        }
+
     }
 }
 
@@ -282,6 +329,8 @@ private fun TrackPrev() {
             track = TrackUi(0, "", "Nombre", true, fakeWaveform),
             onClick = {},
             onDelete = {},
+            onTrim = {},
+            onUndo = {},
             scrollState = rememberScrollState(),
             isBeingRecorded = true,
             timelineWidth = 500,

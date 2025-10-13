@@ -20,7 +20,7 @@ val InfoGreenHarmonia= Color(0xFF0C9D61)
 */
 
 
-val primaryLight = Color(0xFFFF4B33)
+val primaryLight = Color(0xFFFF8117)
 val primaryContainerLight = Color(0xFFFFDEA3)
 val onPrimaryContainerLight = Color(0xFFFF8117)
 val secondaryLight = Color(0xFF000000)
