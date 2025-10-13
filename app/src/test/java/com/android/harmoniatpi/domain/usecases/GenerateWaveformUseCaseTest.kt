@@ -25,14 +25,14 @@ class GenerateWaveformUseCaseTest {
         useCase = GenerateWaveformUseCase()
 
         // Ejecutamos el caso de uso con la ruta del archivo temporal
-        val waveform = useCase(tempFile.absolutePath)
+        val result = useCase(tempFile.absolutePath)
 
         // Verificamos el resultado
         // El tamaño esperado es de 2 picos (máximo y mínimo)
-        assertEquals(2, waveform.size)
+        assertEquals(2, result.waveform.size)
 
         // Verificamos que todos los valores estén en el rango normalizado de -1.0 a 1.0
-        waveform.forEach { value ->
+        result.waveform.forEach { value ->
             assertTrue("Value $value should be <= 1.0f", value <= 1.0f)
             assertTrue("Value $value should be >= -1.0f", value >= -1.0f)
         }
@@ -45,8 +45,8 @@ class GenerateWaveformUseCaseTest {
 
         useCase = GenerateWaveformUseCase()
 
-        val waveform = useCase(tempFile.absolutePath)
+        val result = useCase(tempFile.absolutePath)
 
-        assertTrue(waveform.isEmpty())
+        assertTrue(result.waveform.isEmpty())
     }
 }
