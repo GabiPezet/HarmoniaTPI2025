@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.getValue
@@ -13,8 +14,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.LibraryMusic
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.ProjectCard
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.ProjectTabSelector
@@ -27,19 +31,18 @@ fun ProjectsScreen(
     onNavigateToCreateProjet: () -> Unit,
     viewModel: ProjectListViewModel = hiltViewModel()
 ) {
-    val projects by viewModel.projects.collectAsState() // Opción A (usar `by`)
-
+    val projects by viewModel.projects.collectAsState()
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onNavigateToCreateProjet,
-                containerColor = Color(0xFFFBC658),
-                contentColor = Color.Black
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
-                Icon(Icons.Default.LibraryMusic, contentDescription = "Nuevo proyecto")
+                Icon(Icons.Default.Add, contentDescription = "Nuevo proyecto")
             }
         },
-        containerColor = Color(0xFFF5F5F5)
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
             modifier = Modifier
@@ -51,16 +54,20 @@ fun ProjectsScreen(
                 onTabSelected = {}
             )
 
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 80.dp)
+            ) {
                 items(projects) { project ->
-                    // 2. Llama a ProjectCard con la acción onClick
                     ProjectCard(
                         project = project,
-                        onClick = onNavigateToProjectDetail
-                        // Asumiendo que tu objeto 'project' tiene un 'id'
+                        onClick = onNavigateToProjectDetail,
+                        onNavigateToVersions = onNavigateToCreateProjet
                     )
                 }
+            }
         }
     }
 }
-}
+
+
