@@ -50,9 +50,8 @@ class SharedMenuUiState @Inject constructor() {
 }
 
 enum class OptionsMenu {
-    USER_PROFILE,
     USER_PREFERENCES_SCREEN,
     MAIN_CONTENT_SCREEN,
-    USER_PROFILE_DEMO
+    USER_PROFILE
 }
 

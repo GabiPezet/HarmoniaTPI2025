@@ -21,12 +21,12 @@ fun ProfileRow(label: String, value: String, leading: ImageVector) {
         Icon(
             imageVector = leading,
             contentDescription = label,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant // AHORA
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.width(12.dp))
         Column {
-            Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)) // AHORA
-            Text(value, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant) // AHORA
+            Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f))
+            Text(value, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

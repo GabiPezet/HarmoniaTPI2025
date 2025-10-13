@@ -5,10 +5,8 @@ import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,49 +20,35 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PhotoLibrary
-import androidx.compose.material.icons.filled.Place
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -72,7 +56,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -83,7 +66,6 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.rememberAsyncImagePainter
-import com.android.harmoniatpi.domain.model.project.Project
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.viewmodel.ProjectListViewModel
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.MenuUiState
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.OptionsMenu
@@ -91,14 +73,13 @@ import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.u
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.MediaProjectList
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.ProfileNavButton
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.ProfileTab
-import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.RatingBar
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.WorkProfileCard
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.viewmodel.DrawerContentViewModel
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun UserDetailProfileDemo(
+fun UserDetailProfile(
     viewModel: DrawerContentViewModel,
     projectListViewModel: ProjectListViewModel = hiltViewModel(),
     uiState: MenuUiState,
@@ -109,11 +90,8 @@ fun UserDetailProfileDemo(
     var showSheet by remember { mutableStateOf(false) }
     val userPhotoPath by viewModel.userPhotoPath.collectAsState()
     var selectedTab by remember { mutableStateOf(ProfileTab.WORK) }
-
-// Estados para controlar la edición del nombre
     var isEditing by remember { mutableStateOf(false) }
     var name by remember(uiState.userName) { mutableStateOf(uiState.userName) }
-
     val projects by projectListViewModel.projects.collectAsState()
 
     val takePictureLauncher = rememberLauncherForActivityResult(
@@ -185,13 +163,12 @@ fun UserDetailProfileDemo(
                 )
             )
         },
-    ) { paddingValues -> // AHORA: paddingValues asegura que el contenido no quede detrás de la TopBar.
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues) // Es crucial aplicar este padding.
+                .padding(paddingValues)
                 .padding(innerPadding),
-               // .verticalScroll(rememberScrollState()), // AHORA: La pantalla es desplazable.
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(16.dp))
@@ -225,13 +202,12 @@ fun UserDetailProfileDemo(
                     Icon(
                         imageVector = Icons.Default.CameraAlt,
                         contentDescription = "Cambiar foto",
-                        tint = MaterialTheme.colorScheme.onPrimary // AHORA: usa onPrimary para contraste
+                        tint = MaterialTheme.colorScheme.onPrimary
                     )
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
 
-            //Sección para mostrar y editar el nombre del usuario ---
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -293,12 +269,12 @@ fun UserDetailProfileDemo(
                             text = uiState.userName.ifEmpty { "Sin nombre" },
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.align(Alignment.Center), // Centra el texto en el Box
+                            modifier = Modifier.align(Alignment.Center),
                             textAlign = TextAlign.Center
                         )
                         IconButton(
                             onClick = { isEditing = true },
-                            modifier = Modifier.align(Alignment.CenterEnd) // Alinea el ícono a la derecha
+                            modifier = Modifier.align(Alignment.CenterEnd)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Edit,
@@ -350,7 +326,7 @@ fun UserDetailProfileDemo(
     if (showSheet) {
         ModalBottomSheet(
             onDismissRequest = { showSheet = false },
-            containerColor = MaterialTheme.colorScheme.surface // AHORA: usa colores del tema
+            containerColor = MaterialTheme.colorScheme.surface
         ) {
             Column(
                 modifier = Modifier

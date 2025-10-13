@@ -34,7 +34,7 @@ import com.android.harmoniatpi.domain.model.project.Project
 fun MediaProjectList(projects: List<Project>) {
     if (projects.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Aún no hay proyectos multimedia", color = MaterialTheme.colorScheme.onSurfaceVariant) // AHORA
+            Text("Aún no hay proyectos multimedia", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         return
     }
@@ -56,7 +56,7 @@ fun MediaProjectList(projects: List<Project>) {
                     Surface(
                         modifier = Modifier.size(56.dp),
                         shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHighest // AHORA
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
@@ -69,7 +69,7 @@ fun MediaProjectList(projects: List<Project>) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(p.title, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text(p.description, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2) // AHORA
+                        Text(p.description, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
                     }
                     IconButton(onClick = { /* Reproducir proyecto del usuario */ }) {
                         Icon(imageVector = Icons.Default.PlayArrow, contentDescription = "Play")

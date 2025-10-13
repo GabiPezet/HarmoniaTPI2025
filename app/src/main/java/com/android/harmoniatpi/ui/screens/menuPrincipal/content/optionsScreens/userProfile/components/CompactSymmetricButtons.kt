@@ -35,16 +35,16 @@ fun CompactSymmetricButtons(
     ) {
         val buttonModifier = Modifier
             .height(35.dp)
-            .weight(1f) // AHORA: Usar weight para que ambos botones ocupen el mismo espacio
+            .weight(1f)
 
         OutlinedButton(
             onClick = onLeftClick,
             modifier = buttonModifier,
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = MaterialTheme.colorScheme.primary // AHORA
+                contentColor = MaterialTheme.colorScheme.primary
             ),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary) // AHORA: El borde también usa el color del tema
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
         ) {
             Text(text = leftLabel, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
         }
@@ -56,9 +56,9 @@ fun CompactSymmetricButtons(
             modifier = buttonModifier,
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = MaterialTheme.colorScheme.primary // AHORA
+                contentColor = MaterialTheme.colorScheme.primary
             ),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary) // AHORA
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
         ) {
             Text(text = rightLabel, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
         }

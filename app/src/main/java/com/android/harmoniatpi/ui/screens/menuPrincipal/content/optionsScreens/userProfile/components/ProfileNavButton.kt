@@ -33,16 +33,16 @@ fun ProfileNavButton(icon: ImageVector, label: String, selected: Boolean, onClic
     ) {
         Surface(
             shape = RoundedCornerShape(12.dp),
-            color = containerColor, // AHORA: usa colores del tema
+            color = containerColor,
             shadowElevation = if (selected) 6.dp else 0.dp,
             tonalElevation = if (selected) 6.dp else 0.dp,
             modifier = Modifier.size(56.dp)
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Icon(imageVector = icon, contentDescription = label, tint = contentColor) // AHORA
+                Icon(imageVector = icon, contentDescription = label, tint = contentColor)
             }
         }
         Spacer(modifier = Modifier.height(8.dp))
-        Text(text = label, fontSize = 13.sp, color = textColor) // AHORA
+        Text(text = label, fontSize = 13.sp, color = textColor)
     }
 }

@@ -71,14 +71,14 @@ fun WorkProfileCard(
                     "Perfil Profesional",
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant // AHORA
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 if (!isEditing) {
                     IconButton(onClick = { isEditing = true }) {
                         Icon(
                             imageVector = Icons.Default.Edit,
                             contentDescription = "Editar perfil",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant // AHORA
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -86,7 +86,6 @@ fun WorkProfileCard(
             Spacer(modifier = Modifier.height(12.dp))
 
             if (isEditing) {
-                // MODO EDICIÓN
                 EditableProfileRow(
                     label = "Tu Instrumento:",
                     value = instrument,
@@ -109,7 +108,6 @@ fun WorkProfileCard(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // AHORA: Slider y RatingBar restaurados
                 Column(horizontalAlignment = Alignment.Start, modifier = Modifier.fillMaxWidth()) {
                     Text(
                         text = "Tu valoración: ${"%.1f".format(rating)} / 5.0",
