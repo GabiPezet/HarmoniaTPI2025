@@ -1,8 +1,11 @@
 package com.android.harmoniatpi.ui.screens.projectManagementScreen.viewmodel
 
+import android.content.Context
+import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.harmoniatpi.domain.usecases.AddTrackFromFileUseCase
 import com.android.harmoniatpi.domain.usecases.AddTrackUseCase
 import com.android.harmoniatpi.domain.usecases.DeleteTrackUseCase
 import com.android.harmoniatpi.domain.usecases.GenerateWaveformUseCase
@@ -23,10 +26,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import dagger.hilt.android.qualifiers.ApplicationContext
+
+import java.io.FileOutputStream
 import javax.inject.Inject
+
 
 @HiltViewModel
 class ProjectManagementScreenViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val startRecordingAudio: StartRecordingAudioUseCase,
     private val stopRecordingAudio: StopRecordingAudioUseCase,
     private val playAudio: PlayAudioUseCase,
@@ -38,7 +48,8 @@ class ProjectManagementScreenViewModel @Inject constructor(
     private val trimAudioTrack: TrimAudioTrackUseCase,
     private val undoTrimUseCase: UndoTrimUseCase,
     private val getIfAllTracksWherePlayed: GetIfAllTracksWherePlayedUseCase,
-    private val generateWaveform: GenerateWaveformUseCase
+    private val generateWaveform: GenerateWaveformUseCase,
+    private val addTrackFromFileUseCase: AddTrackFromFileUseCase,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ProyectScreenUiState())
     private var selectedTrack: TrackUi? = null
@@ -131,6 +142,39 @@ class ProjectManagementScreenViewModel @Inject constructor(
         }
     }
 
+    fun importTrackFromFile(uri: Uri) {
+        viewModelScope.launch {
+
+
+            val tempFile = File(context.cacheDir, "temp_import_${System.currentTimeMillis()}.tmp")
+
+            try {
+                withContext(Dispatchers.IO) {
+                    context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                        FileOutputStream(tempFile).use { outputStream ->
+                            inputStream.copyTo(outputStream)
+                        }
+                    }
+                }
+
+                addTrackFromFileUseCase(tempFile.absolutePath)
+                    .onSuccess {
+                        Log.i(TAG, "Pista importada y convertida exitosamente desde $uri")
+                    }
+                    .onFailure { e ->
+                        Log.e(TAG, "Error importando pista desde $uri: ${e.message}", e)
+                        // TODO: Mostrar Toast con error
+                    }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error resolviendo o copiando archivo de origen: ${e.message}", e)
+                // TODO: Mostrar Toast con error
+            } finally {
+                tempFile.delete()
+            }
+        }
+    }
+
+
     fun selectTrack(id: Long) {
         _state.update {
             it.copy(tracks = it.tracks.map { track ->
@@ -166,7 +210,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
                 }
                 .onFailure { e ->
                     Log.e(TAG, "Error undoing trim for track $trackId", e)
-                    updateTrackUiAfterModification(trackId) // Forzar actualización para limpiar el estado de 'Undo' si falló la restauración/limpieza
+                    updateTrackUiAfterModification(trackId) // Forzar actualizacion si falló
                 }
         }
     }
@@ -178,7 +222,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
             val originalPath = trackUi.path.replace(".pcm", ".pcm.original")
 
             val result = generateWaveform(trackUi.path)
-            val isUndoAvailable = File(originalPath).exists() // Determina el estado del botón Undo
+            val isUndoAvailable = File(originalPath).exists()
 
             _state.update { currentState ->
                 val updatedTracks = currentState.tracks.map { track ->
@@ -186,7 +230,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
                         track.copy(
                             waveForm = result.waveform,
                             durationMs = result.durationMs,
-                            isUndoAvailable = isUndoAvailable // <-- ESTADO DE UNDO
+                            isUndoAvailable = isUndoAvailable
                         )
                     } else {
                         track
@@ -203,7 +247,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
 
     fun previewTrim(trackId: Long, startMs: Long, endMs: Long) {
         viewModelScope.launch {
-            // Detener cualquier reproducción en curso
+            // Detener cualquier reproducción
             stopPlaying()
 
             val trackToPreview = getTracks().value.find { it.id == trackId }
@@ -237,7 +281,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
                     val updatedTracks = domainTracks.map { domainTrack ->
                         val path = domainTrack.path
                         val originalPath = path.replace(".pcm", ".pcm.original")
-                        val isUndoAvailable = File(originalPath).exists() // Comprueba estado al cargar
+                        val isUndoAvailable = File(originalPath).exists() 
 
                         val result = generateWaveform(path)
 

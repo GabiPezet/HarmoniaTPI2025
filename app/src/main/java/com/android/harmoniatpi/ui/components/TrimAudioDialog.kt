@@ -87,7 +87,7 @@ fun TrimAudioDialog(
                 )
                 Spacer(Modifier.height(16.dp))
 
-// Range Slider para seleccionar el inicio y el fin
+                // selector de inicio y fin
                 RangeSlider(
                     value = trimRange,
                     onValueChange = { newRange ->
