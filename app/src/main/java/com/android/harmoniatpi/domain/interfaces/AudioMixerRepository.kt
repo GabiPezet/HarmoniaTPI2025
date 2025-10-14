@@ -28,6 +28,13 @@ interface AudioMixerRepository {
     fun createTrack()
 
     /**
+     * Crea una nueva pista a partir de un archivo de audio existente.
+     * @param sourceFilePath Ruta del archivo de audio de origen.
+     */
+    suspend fun createTrackFromFile(sourceFilePath: String): Result<Unit>
+
+
+    /**
      * Elimina una pista.
      * @param id Id de la pista a eliminar.
      */
@@ -48,7 +55,6 @@ interface AudioMixerRepository {
      * @return Result<Unit> indicando el éxito o fallo de la operación.
      */
     fun undoTrim(id: Long): Result<Unit>
-
 
     /**
      * Obtiene las pistas actuales.

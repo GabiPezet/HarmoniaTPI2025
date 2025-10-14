@@ -1,6 +1,9 @@
 package com.android.harmoniatpi.ui.screens.projectManagementScreen
 
+import android.net.Uri
 import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -56,6 +59,15 @@ fun ProjectManagementScreen(
     val state by viewModel.state.collectAsState()
     val sharedScrollState = rememberScrollState()
     var trackForTrimming by remember { mutableStateOf<TrackUi?>(null) }
+
+    val pickAudioLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            showSheet = false
+            viewModel.importTrackFromFile(it)
+        }
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -159,16 +171,16 @@ fun ProjectManagementScreen(
                             Text("Nueva pista")
                         }
                         Spacer(Modifier.height(8.dp))
+
                         Button(
                             onClick = {
-                                showSheet = false
-                                // Lógica de pickear media iría acá
+                                pickAudioLauncher.launch("audio/*")
                             },
                             modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Abrir archivo")
-                        }
+                        ) { Text("Abrir archivo") }
+
                         Spacer(Modifier.height(8.dp))
+
                         Button(
                             onClick = {
                                 showSheet = false
