@@ -50,9 +50,8 @@ import com.android.harmoniatpi.ui.screens.projectManagementScreen.viewmodel.Proj
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProjectManagementScreen(
-    onNavigateToCollab: () -> Unit,
     viewModel: ProjectManagementScreenViewModel = hiltViewModel(),
-    onBack: () -> Unit = {}
+    onBack: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState()
     var showSheet by remember { mutableStateOf(false) }
@@ -184,7 +183,6 @@ fun ProjectManagementScreen(
                         Button(
                             onClick = {
                                 showSheet = false
-                                onNavigateToCollab()
                             },
                             modifier = Modifier.fillMaxWidth()
                         ) {

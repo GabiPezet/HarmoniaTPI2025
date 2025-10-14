@@ -52,7 +52,7 @@ import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.viewmod
 
 @Composable
 fun ProjectsScreen(
-    onNavigateToProjectDetail: () -> Unit,
+    onNavigateToProjectManagementScreen: () -> Unit,
     onNavigateToVersion: (Project) -> Unit,
     viewModel: ProjectViewModel = hiltViewModel()
 ) {
@@ -94,7 +94,7 @@ fun ProjectsScreen(
                                     project = project,
                                     onClick = {
                                         viewModel.setCurrentProject(project)
-                                        onNavigateToProjectDetail()
+                                        onNavigateToProjectManagementScreen()
                                     },
                                     onNavigateToVersions = { onNavigateToVersion(project) },
                                     onDeleteClick = { id -> viewModel.deleteProject(id) }

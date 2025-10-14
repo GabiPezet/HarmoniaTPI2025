@@ -9,14 +9,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.android.harmoniatpi.ui.components.AnimationHorizontalEffect
-import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.CollabScreenRoute
 import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.HomeScreenRoute
 import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.LoginScreenRoute
 import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.NotificationScreenRoute
 import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.ProjectManagementScreenRoute
 import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.RegisterScreenRoute
 import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.SongVersionsScreenRoute
-import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.CollabScreen
 import com.android.harmoniatpi.ui.screens.homeScreen.HomeScreen
 import com.android.harmoniatpi.ui.screens.loginScreen.LoginScreen
 import com.android.harmoniatpi.ui.screens.menuPrincipal.DrawerScreen
@@ -85,7 +83,11 @@ fun NavigationWrapper(
                         drawerState = drawerState,
                         drawerViewModel = drawerViewModel,
                         onNavigateToNotifications = { navController.navigate(NotificationScreenRoute) },
-                        onNavigateToProjectDetail = { navController.navigate(ProjectManagementScreenRoute) },
+                        onNavigateToProjectManagementScreen = {
+                            navController.navigate(
+                                ProjectManagementScreenRoute
+                            )
+                        },
                         onNavigateToVersion = { navController.navigate(SongVersionsScreenRoute) }
                     )
                 }
@@ -96,15 +98,12 @@ fun NavigationWrapper(
         composable<ProjectManagementScreenRoute> {
             AnimationHorizontalEffect(onBackNavigation = { navController.popBackStack() }) {
                 ProjectManagementScreen(
-                    onNavigateToCollab = {
-                        navController.navigate(CollabScreenRoute)
+                    onBack = {
+                        navController.popBackStack()
                     }
                 )
             }
         }
-
-        composable<CollabScreenRoute> { AnimationHorizontalEffect(onBackNavigation = { navController.popBackStack() }) { CollabScreen() } }
-
         composable<NotificationScreenRoute> {
             AnimationHorizontalEffect {
                 NotificationsScreen(onBack = { navController.popBackStack() })
