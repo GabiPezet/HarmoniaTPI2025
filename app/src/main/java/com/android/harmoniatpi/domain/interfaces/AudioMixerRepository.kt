@@ -66,4 +66,22 @@ interface AudioMixerRepository {
      * Verifica si todas las pistas han sido reproducidas.
      */
     suspend fun allTracksWerePlayed(): StateFlow<Boolean>
+
+    /**
+     * Mutea una pista.
+     * @param id Id de la pista a mutear.
+     */
+    fun muteTrack(id: Long)
+
+    /**
+     * Desmutea una pista.
+     * @param id Id de la pista a desmutear.
+     */
+    fun unMuteTrack(id: Long)
+
+    /**
+     * Verifica si una pista está muteada.
+     * @param id Id de la pista.
+     */
+    fun setTrackVolume(id: Long, volume: Float)
 }
