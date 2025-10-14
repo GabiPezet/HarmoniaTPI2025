@@ -96,6 +96,25 @@ class Track @AssistedInject constructor(
         return file.exists() && file.length() > 0
     }
 
+    fun mute() {
+        player.mute()
+        Log.i(TAG, "Track $id muted")
+    }
+
+    fun unMute() {
+        player.unMute()
+        Log.i(TAG, "Track $id unmuted")
+    }
+
+    fun isMuted(): Boolean = player.isMuted()
+
+    fun setVolume(volume: Float) {
+        player.setVolume(volume)
+    }
+
+    fun getVolume(): Float = player.getVolume()
+
+
     /**
      * Borra el archivo de la pista.
      * @return true si la eliminación fue exitosa, false en caso contrario.

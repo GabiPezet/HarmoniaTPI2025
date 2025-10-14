@@ -180,7 +180,8 @@ class AudioMixerRepositoryImpl @Inject constructor(
                         val buffer = ByteArray(bufferSize)
 
                         while (totalRead < bytesToRead) {
-                            val remaining = (bytesToRead - totalRead).toInt().coerceAtMost(bufferSize)
+                            val remaining =
+                                (bytesToRead - totalRead).toInt().coerceAtMost(bufferSize)
                             val readCount = fis.read(buffer, 0, remaining)
 
                             if (readCount <= 0) break
@@ -220,7 +221,10 @@ class AudioMixerRepositoryImpl @Inject constructor(
             val backupFile = File(track.originalPath)
 
             if (!backupFile.exists()) {
-                Log.w(TAG, "No hay copia de seguridad para deshacer el recorte en la pista ${track.id}")
+                Log.w(
+                    TAG,
+                    "No hay copia de seguridad para deshacer el recorte en la pista ${track.id}"
+                )
                 return Result.failure(FileNotFoundException("No hay copia de seguridad disponible."))
             }
 
@@ -247,9 +251,41 @@ class AudioMixerRepositoryImpl @Inject constructor(
     }
 
 
-
     override suspend fun getTracks(): StateFlow<List<Track>> = tracks.asStateFlow()
     override suspend fun allTracksWerePlayed(): StateFlow<Boolean> = tracksCompleted.asStateFlow()
+
+    override fun muteTrack(id: Long) {
+        tracks.update { current ->
+            current.map { track ->
+                if (track.id == id) {
+                    track.mute()
+                }
+                track
+            }
+        }
+    }
+
+    override fun unMuteTrack(id: Long) {
+        tracks.update { current ->
+            current.map { track ->
+                if (track.id == id) {
+                    track.unMute()
+                }
+                track
+            }
+        }
+    }
+
+    override fun setTrackVolume(id: Long, volume: Float) {
+        tracks.update { current ->
+            current.map { track ->
+                if (track.id == id) {
+                    track.setVolume(volume)
+                }
+                track
+            }
+        }
+    }
 
     private companion object {
         const val TAG = "AudioMixerRepository"

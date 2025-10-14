@@ -12,12 +12,15 @@ import com.android.harmoniatpi.domain.usecases.DeleteTrackUseCase
 import com.android.harmoniatpi.domain.usecases.GenerateWaveformUseCase
 import com.android.harmoniatpi.domain.usecases.GetIfAllTracksWherePlayedUseCase
 import com.android.harmoniatpi.domain.usecases.GetTracksUseCase
+import com.android.harmoniatpi.domain.usecases.MuteTrackUseCase
 import com.android.harmoniatpi.domain.usecases.PauseAudioUseCase
 import com.android.harmoniatpi.domain.usecases.PlayAudioUseCase
+import com.android.harmoniatpi.domain.usecases.SetTrackVolumeUseCase
 import com.android.harmoniatpi.domain.usecases.StartRecordingAudioUseCase
 import com.android.harmoniatpi.domain.usecases.StopAudioUseCase
 import com.android.harmoniatpi.domain.usecases.StopRecordingAudioUseCase
 import com.android.harmoniatpi.domain.usecases.TrimAudioTrackUseCase
+import com.android.harmoniatpi.domain.usecases.UnMuteTrackUseCase
 import com.android.harmoniatpi.domain.usecases.UndoTrimUseCase
 import com.android.harmoniatpi.domain.usecases.UpdateOrInsertProjectInDBUseCase
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.ProyectScreenUiState
@@ -52,7 +55,10 @@ class ProjectManagementScreenViewModel @Inject constructor(
     private val generateWaveform: GenerateWaveformUseCase,
     private val addTrackFromFileUseCase: AddTrackFromFileUseCase,
     private val holoJamCache: HoloJamCache,
-    private val updateOrInsertProjectInDBUseCase: UpdateOrInsertProjectInDBUseCase
+    private val updateOrInsertProjectInDBUseCase: UpdateOrInsertProjectInDBUseCase,
+    private val muteTrackUseCase: MuteTrackUseCase,
+    private val unMuteTrackUseCase: UnMuteTrackUseCase,
+    private val setTrackVolumeUseCase: SetTrackVolumeUseCase
 ) : ViewModel() {
     private val _state = MutableStateFlow(ProyectScreenUiState())
     private var selectedTrack: TrackUi? = null
@@ -281,6 +287,27 @@ class ProjectManagementScreenViewModel @Inject constructor(
         }
     }
 
+    fun muteTrack() {
+        selectedTrack?.let {
+            muteTrackUseCase(it.id)
+            updateTrackMuteState(it.id, true)
+        }
+    }
+
+    fun unMuteTrack() {
+        selectedTrack?.let {
+            unMuteTrackUseCase(it.id)
+            updateTrackMuteState(it.id, false)
+        }
+    }
+
+    fun setTrackVolume(volume: Float) {
+        selectedTrack?.let {
+            setTrackVolumeUseCase(it.id, volume)
+            updateTrackVolume(it.id, volume)
+        }
+    }
+
     private fun fetchTracks() {
         viewModelScope.launch {
             getTracks().collect { domainTracks ->
@@ -332,6 +359,25 @@ class ProjectManagementScreenViewModel @Inject constructor(
             }
         }
     }
+
+    private fun updateTrackMuteState(trackId: Long, isMuted: Boolean) {
+        _state.update { currentState ->
+            val updatedTracks = currentState.tracks.map { track ->
+                if (track.id == trackId) track.copy(isMuted = isMuted) else track
+            }
+            currentState.copy(tracks = updatedTracks)
+        }
+    }
+
+    private fun updateTrackVolume(trackId: Long, volume: Float) {
+        _state.update { currentState ->
+            val updatedTracks = currentState.tracks.map { track ->
+                if (track.id == trackId) track.copy(volume = volume) else track
+            }
+            currentState.copy(tracks = updatedTracks)
+        }
+    }
+
 
     private fun getUpdatedTimeline(updatedTracks: List<TrackUi>): Int {
         if (updatedTracks.isEmpty()) return 500

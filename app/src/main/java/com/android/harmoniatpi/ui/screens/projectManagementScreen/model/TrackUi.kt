@@ -7,5 +7,7 @@ data class TrackUi(
     val selected: Boolean,
     val waveForm: List<Float>? = null,
     val durationMs: Long = 0L,
-    val isUndoAvailable: Boolean = false
+    val isUndoAvailable: Boolean = false,
+    val isMuted: Boolean = false,
+    val volume: Float = 1f
 )
