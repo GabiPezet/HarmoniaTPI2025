@@ -1,11 +1,13 @@
 package com.android.harmoniatpi.data
 
+import com.android.harmoniatpi.data.database.dao.ProjectDao
 import com.android.harmoniatpi.data.database.dao.UserPreferencesDao
 import com.android.harmoniatpi.data.database.entities.UserPreferencesEntity
 import com.android.harmoniatpi.data.local.model.UserFirebaseModel
 import com.android.harmoniatpi.di.util.JsonUtils
 import com.android.harmoniatpi.domain.interfaces.Repository
 import com.android.harmoniatpi.domain.model.UserPreferences
+import com.android.harmoniatpi.domain.model.project.Project
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
@@ -19,7 +21,8 @@ class RepositoryImpl @Inject constructor(
     private val firebaseAuth: FirebaseAuth,
     private val userPreferencesDao: UserPreferencesDao,
     private val jsonUtils: JsonUtils,
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    private val projectDao: ProjectDao
 ) : Repository {
 
     override fun getFirebaseCurrentUser(): FirebaseUser? = firebaseAuth.currentUser
@@ -117,6 +120,22 @@ class RepositoryImpl @Inject constructor(
                 Result.failure(e)
             }
         }
+
+    override suspend fun getAllProjects(): List<Project> {
+        return projectDao.getAllProjects().map { it.toDomain(jsonUtils) }
+    }
+
+    override suspend fun deleteProject(projectId: String) {
+        projectDao.deleteById(projectId)
+    }
+
+    override suspend fun insertOrUpdateProject(project: Project) {
+        projectDao.insertOrUpdate(project.toDataBase(jsonUtils))
+    }
+
+    override suspend fun getProjectById(projectId: String): Project {
+        return projectDao.getProjectById(projectId)!!.toDomain(jsonUtils)
+    }
 
     private suspend fun syncFireStoreToLocal(userId: String) {
         val snapshot = firestore.collection("users").document(userId).get().await()

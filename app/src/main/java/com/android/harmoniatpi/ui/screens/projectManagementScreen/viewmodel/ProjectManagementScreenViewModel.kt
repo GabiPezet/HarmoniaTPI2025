@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.harmoniatpi.domain.usecases.AddTrackFromFileUseCase
+import com.android.harmoniatpi.domain.cache.HoloJamCache
 import com.android.harmoniatpi.domain.usecases.AddTrackUseCase
 import com.android.harmoniatpi.domain.usecases.DeleteTrackUseCase
 import com.android.harmoniatpi.domain.usecases.GenerateWaveformUseCase
@@ -18,6 +19,7 @@ import com.android.harmoniatpi.domain.usecases.StopAudioUseCase
 import com.android.harmoniatpi.domain.usecases.StopRecordingAudioUseCase
 import com.android.harmoniatpi.domain.usecases.TrimAudioTrackUseCase
 import com.android.harmoniatpi.domain.usecases.UndoTrimUseCase
+import com.android.harmoniatpi.domain.usecases.UpdateOrInsertProjectInDBUseCase
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.ProyectScreenUiState
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -50,12 +52,20 @@ class ProjectManagementScreenViewModel @Inject constructor(
     private val getIfAllTracksWherePlayed: GetIfAllTracksWherePlayedUseCase,
     private val generateWaveform: GenerateWaveformUseCase,
     private val addTrackFromFileUseCase: AddTrackFromFileUseCase,
+    private val generateWaveform: GenerateWaveformUseCase,
+    private val holoJamCache: HoloJamCache,
+    private val updateOrInsertProjectInDBUseCase: UpdateOrInsertProjectInDBUseCase
 ) : ViewModel() {
     private val _state = MutableStateFlow(ProyectScreenUiState())
     private var selectedTrack: TrackUi? = null
     val state = _state.asStateFlow()
 
     init {
+        _state.update {
+            it.copy(currentProjectSelected = holoJamCache.currentProjectSelected)
+        }.apply{
+            Log.i("KlyxDevs", "currentProjectSelected: ${state.value.currentProjectSelected}")
+        }
         fetchTracks()
         checkIfTracksWherePlayed()
     }
@@ -281,7 +291,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
                     val updatedTracks = domainTracks.map { domainTrack ->
                         val path = domainTrack.path
                         val originalPath = path.replace(".pcm", ".pcm.original")
-                        val isUndoAvailable = File(originalPath).exists() 
+                        val isUndoAvailable = File(originalPath).exists()
 
                         val result = generateWaveform(path)
 

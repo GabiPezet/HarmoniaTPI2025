@@ -1,4 +1,4 @@
-package com.android.harmoniatpi.ui.screens.collabScreen
+package com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize

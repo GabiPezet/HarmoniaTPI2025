@@ -1,14 +1,13 @@
 package com.android.harmoniatpi.domain.model
 
-import androidx.room.ColumnInfo
 import com.android.harmoniatpi.data.database.entities.UserPreferencesEntity
 import com.android.harmoniatpi.di.util.JsonUtils
+import com.android.harmoniatpi.domain.model.project.Project
 import com.android.harmoniatpi.domain.model.userPreferences.AppTheme
 import com.android.harmoniatpi.domain.model.userPreferences.Friend
 import com.android.harmoniatpi.domain.model.userPreferences.FriendRequestReceived
 import com.android.harmoniatpi.domain.model.userPreferences.FriendRequestSending
 import com.android.harmoniatpi.domain.model.userPreferences.Post
-import com.android.harmoniatpi.domain.model.userPreferences.Project
 import com.android.harmoniatpi.ui.screens.notificationScreen.model.NotificationHarmonia
 
 data class UserPreferences(
