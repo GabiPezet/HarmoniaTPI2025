@@ -14,7 +14,6 @@ fun NavigationBottomWrapper(
     navController: NavHostController,
     drawerState: DrawerState,
     onExitApp: () -> Unit,
-    onNavigateToProjectManagement: () -> Unit,
     onNavigateToProjectDetail: () -> Unit,
     onNavigateToVersion: () -> Unit,
 ) {
@@ -22,12 +21,16 @@ fun NavigationBottomWrapper(
         navController = navController,
         startDestination = BottomBarRoutes.CommunityScreenRoute
     ) {
-        composable<BottomBarRoutes.CommunityScreenRoute> { CommunityScreen(onExitApp = onExitApp,drawerState = drawerState) }
+        composable<BottomBarRoutes.CommunityScreenRoute> {
+            CommunityScreen(
+                onExitApp = onExitApp,
+                drawerState = drawerState
+            )
+        }
         composable<BottomBarRoutes.RehearsalRoomRoute> {
             ProjectsScreen(
-                onNavigateToCreateProjet = {onNavigateToProjectManagement()},
-                onNavigateToProjectDetail = {onNavigateToProjectDetail()},
-                onNavigateToVersion = {onNavigateToVersion()}
+                onNavigateToProjectDetail = { onNavigateToProjectDetail() },
+                onNavigateToVersion = { onNavigateToVersion() }
             )
         }
 
