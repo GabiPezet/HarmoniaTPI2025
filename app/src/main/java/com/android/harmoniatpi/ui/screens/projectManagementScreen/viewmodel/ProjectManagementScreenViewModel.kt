@@ -51,6 +51,8 @@ class ProjectManagementScreenViewModel @Inject constructor(
     init {
         _state.update {
             it.copy(currentProjectSelected = holoJamCache.currentProjectSelected)
+        }.apply{
+            Log.i("KlyxDevs", "currentProjectSelected: ${state.value.currentProjectSelected}")
         }
         fetchTracks()
         checkIfTracksWherePlayed()
