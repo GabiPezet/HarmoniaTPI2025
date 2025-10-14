@@ -5,8 +5,8 @@ import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.android.harmoniatpi.domain.usecases.AddTrackFromFileUseCase
 import com.android.harmoniatpi.domain.cache.HoloJamCache
+import com.android.harmoniatpi.domain.usecases.AddTrackFromFileUseCase
 import com.android.harmoniatpi.domain.usecases.AddTrackUseCase
 import com.android.harmoniatpi.domain.usecases.DeleteTrackUseCase
 import com.android.harmoniatpi.domain.usecases.GenerateWaveformUseCase
@@ -23,15 +23,14 @@ import com.android.harmoniatpi.domain.usecases.UpdateOrInsertProjectInDBUseCase
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.ProyectScreenUiState
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.io.File
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import dagger.hilt.android.qualifiers.ApplicationContext
-
+import java.io.File
 import java.io.FileOutputStream
 import javax.inject.Inject
 
@@ -52,7 +51,6 @@ class ProjectManagementScreenViewModel @Inject constructor(
     private val getIfAllTracksWherePlayed: GetIfAllTracksWherePlayedUseCase,
     private val generateWaveform: GenerateWaveformUseCase,
     private val addTrackFromFileUseCase: AddTrackFromFileUseCase,
-    private val generateWaveform: GenerateWaveformUseCase,
     private val holoJamCache: HoloJamCache,
     private val updateOrInsertProjectInDBUseCase: UpdateOrInsertProjectInDBUseCase
 ) : ViewModel() {
@@ -63,7 +61,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
     init {
         _state.update {
             it.copy(currentProjectSelected = holoJamCache.currentProjectSelected)
-        }.apply{
+        }.apply {
             Log.i("KlyxDevs", "currentProjectSelected: ${state.value.currentProjectSelected}")
         }
         fetchTracks()
