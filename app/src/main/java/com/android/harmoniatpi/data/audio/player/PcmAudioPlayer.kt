@@ -50,6 +50,8 @@ class PcmAudioPlayer @Inject constructor() : AudioPlayer {
         .build()
 
     private var onPlaybackCompletedCallback: (() -> Unit)? = null
+    private var isMuted = false
+    private var volume = 1f
 
     private fun msToByteOffset(ms: Long): Long {
         val samples = (ms * sampleRate / 1000f).roundToLong()
@@ -61,6 +63,14 @@ class PcmAudioPlayer @Inject constructor() : AudioPlayer {
     }
 
     override fun playSegment(startMs: Long, endMs: Long): Result<Unit> {
+        setAudioTrackVolume(1f)
+        playJob?.invokeOnCompletion {
+            if (isMuted) {
+                mute()
+            } else {
+                setAudioTrackVolume(volume)
+            }
+        }
         return playRange(startMs, endMs)
     }
 
@@ -75,7 +85,8 @@ class PcmAudioPlayer @Inject constructor() : AudioPlayer {
 
         // defino pos inicial y final con bytes
         val startByteOffset = if (endMs == Long.MAX_VALUE) lastPos else msToByteOffset(startMs)
-        val endByteOffset = if (endMs == Long.MAX_VALUE) file?.length() ?: Long.MAX_VALUE else msToByteOffset(endMs)
+        val endByteOffset =
+            if (endMs == Long.MAX_VALUE) file?.length() ?: Long.MAX_VALUE else msToByteOffset(endMs)
 
         if (startByteOffset >= endByteOffset) {
             Log.e(TAG, "Rango de reproducción inválido o vacío: $startMs ms a $endMs ms")
@@ -164,6 +175,34 @@ class PcmAudioPlayer @Inject constructor() : AudioPlayer {
 
     override fun setOnPlaybackCompletedCallback(callback: () -> Unit) {
         onPlaybackCompletedCallback = callback
+    }
+
+    override fun mute() {
+        isMuted = true
+        setAudioTrackVolume(0f)
+    }
+
+    override fun unMute() {
+        isMuted = false
+        setAudioTrackVolume(volume)
+    }
+
+    override fun isMuted(): Boolean = isMuted
+
+    override fun setVolume(volume: Float) {
+        this.volume = volume.coerceIn(0f, 1f)
+        setAudioTrackVolume(this.volume)
+    }
+
+    override fun getVolume(): Float = volume
+
+    private fun setAudioTrackVolume(value: Float) {
+        val result = audioTrack.setVolume(value)
+        if (result == AudioTrack.SUCCESS) {
+            Log.d(TAG, "AudioTrack volume set to $value")
+        } else {
+            Log.e(TAG, "Failed to set AudioTrack volume to $value")
+        }
     }
 
     companion object {

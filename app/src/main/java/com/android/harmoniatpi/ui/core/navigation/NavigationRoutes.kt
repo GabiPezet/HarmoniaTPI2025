@@ -15,12 +15,6 @@ sealed class NavigationRoutes() {
 
     @Serializable
     data object ProjectManagementScreenRoute : NavigationRoutes()
-
-    @Serializable
-    data object CollabScreenRoute : NavigationRoutes()
-
-    @Serializable
-    data object CreateProjectScreenRoute : NavigationRoutes()
     
     @Serializable
     data object NotificationScreenRoute : NavigationRoutes()

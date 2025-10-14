@@ -41,9 +41,8 @@ fun HomeScreen(
     openDrawerState: () -> Unit,
     drawerState: DrawerState,
     drawerViewModel: DrawerContentViewModel,
-    onNavigateToProjectManagement: () -> Unit,
     onNavigateToNotifications: () -> Unit,
-    onNavigateToProjectDetail: () -> Unit,
+    onNavigateToProjectManagementScreen: () -> Unit,
     onNavigateToVersion: () -> Unit,
     viewModel: HomeScreenViewModel = hiltViewModel()
 ) {
@@ -101,8 +100,7 @@ fun HomeScreen(
                     navControllerNavBar,
                     drawerState = drawerState,
                     onExitApp = { showExitAppDialog = true },
-                    onNavigateToProjectManagement = { onNavigateToProjectManagement() },
-                    onNavigateToProjectDetail = {onNavigateToProjectDetail()},
+                    onNavigateToProjectManagementScreen = {onNavigateToProjectManagementScreen()},
                     onNavigateToVersion = {onNavigateToVersion()})
 
             }

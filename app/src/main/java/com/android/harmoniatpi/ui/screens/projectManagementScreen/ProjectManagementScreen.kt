@@ -1,6 +1,9 @@
 package com.android.harmoniatpi.ui.screens.projectManagementScreen
 
+import android.net.Uri
 import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -16,7 +19,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -24,7 +26,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -47,15 +48,23 @@ import com.android.harmoniatpi.ui.screens.projectManagementScreen.viewmodel.Proj
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProjectManagementScreen(
-    onNavigateToCollab: () -> Unit,
     viewModel: ProjectManagementScreenViewModel = hiltViewModel(),
-    onBack: () -> Unit = {}
+    onBack: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState()
     var showSheet by remember { mutableStateOf(false) }
     val state by viewModel.state.collectAsState()
     val sharedScrollState = rememberScrollState()
     var trackForTrimming by remember { mutableStateOf<TrackUi?>(null) }
+
+    val pickAudioLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            showSheet = false
+            viewModel.importTrackFromFile(it)
+        }
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -105,7 +114,14 @@ fun ProjectManagementScreen(
                         },
                         scrollState = sharedScrollState,
                         timelineWidth = state.timelineWidth,
-                        isBeingRecorded = state.isRecording && track.selected
+                        isBeingRecorded = state.isRecording && track.selected,
+                        onMute = {
+                            if (track.isMuted) {
+                                viewModel.unMuteTrack()
+                            } else {
+                                viewModel.muteTrack()
+                            }
+                        }
                     )
                 }
             }
@@ -159,20 +175,19 @@ fun ProjectManagementScreen(
                             Text("Nueva pista")
                         }
                         Spacer(Modifier.height(8.dp))
+
                         Button(
                             onClick = {
-                                showSheet = false
-                                // Lógica de pickear media iría acá
+                                pickAudioLauncher.launch("audio/*")
                             },
                             modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Abrir archivo")
-                        }
+                        ) { Text("Abrir archivo") }
+
                         Spacer(Modifier.height(8.dp))
+
                         Button(
                             onClick = {
                                 showSheet = false
-                                onNavigateToCollab()
                             },
                             modifier = Modifier.fillMaxWidth()
                         ) {

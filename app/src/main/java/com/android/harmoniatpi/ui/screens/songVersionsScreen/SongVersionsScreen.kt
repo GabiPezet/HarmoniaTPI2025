@@ -29,7 +29,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -62,6 +61,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.android.harmoniatpi.R
+import com.android.harmoniatpi.ui.components.CircularProgressBar
 import com.android.harmoniatpi.ui.core.theme.HarmoniaTPITheme
 import com.android.harmoniatpi.ui.screens.songVersionsScreen.model.DerivedVersion
 import com.android.harmoniatpi.ui.screens.songVersionsScreen.model.Song
@@ -98,76 +98,79 @@ fun SongVersionsContent(
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_harmonyicon),
-                        contentDescription = "Slider Thumb",
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+    if (uiState.isLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressBar("Cargando...")
+        }
+    } else{
+        Scaffold(
+            modifier = modifier,
+            topBar = {
+                CenterAlignedTopAppBar(
+                    title = {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Atrás",
+                            painter = painterResource(R.drawable.ic_harmonyicon),
+                            contentDescription = "Slider Thumb",
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Atrás",
+                            )
+                        }
+                    },
+                )
+            },
+        ) { paddingValues ->
+            if (uiState.originalSong != null) {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                        .padding(horizontal = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    val originalSong = uiState.originalSong
+
+                    item {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        SongHeader(songTitle = originalSong.title, artistName = originalSong.artistName)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        OriginalSongPlayer(
+                            song = originalSong,
+                            isPlaying = uiState.isOriginalPlaying,
+                            currentProgress = uiState.currentPlaybackProgress,
+                            onPlayClick = onPlayOriginal,
+                            onOpenProjectClick = { onOpenOriginalProject(originalSong.projectId) },
+                            onSliderValueChange = onSliderChange
+                        )
+                        Spacer(modifier = Modifier.height(32.dp))
+                        Text(
+                            text = "VERSIONES DERIVADAS",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+
+                    items(uiState.derivedVersions) { version ->
+                        DerivedVersionItem(
+                            version = version,
+                            isPlaying = uiState.playingDerivedVersionId == version.id,
+                            onPlayClick = { onPlayDerived(version.id) },
+                            modifier = Modifier.padding(vertical = 4.dp)
                         )
                     }
-                },
-            )
-        },
-    ) { paddingValues ->
-        if (uiState.isLoading) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        } else if (uiState.originalSong != null) {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(horizontal = 16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                val originalSong = uiState.originalSong
-
-                item {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    SongHeader(songTitle = originalSong.title, artistName = originalSong.artistName)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    OriginalSongPlayer(
-                        song = originalSong,
-                        isPlaying = uiState.isOriginalPlaying,
-                        currentProgress = uiState.currentPlaybackProgress,
-                        onPlayClick = onPlayOriginal,
-                        onOpenProjectClick = { onOpenOriginalProject(originalSong.projectId) },
-                        onSliderValueChange = onSliderChange
-                    )
-                    Spacer(modifier = Modifier.height(32.dp))
-                    Text(
-                        text = "VERSIONES DERIVADAS",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-
-                items(uiState.derivedVersions) { version ->
-                    DerivedVersionItem(
-                        version = version,
-                        isPlaying = uiState.playingDerivedVersionId == version.id,
-                        onPlayClick = { onPlayDerived(version.id) },
-                        modifier = Modifier.padding(vertical = 4.dp)
-                    )
                 }
             }
         }
+
     }
 }
 

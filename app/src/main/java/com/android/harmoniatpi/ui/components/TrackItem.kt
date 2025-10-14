@@ -61,6 +61,7 @@ fun TrackItem(
     onDelete: () -> Unit,
     onTrim: () -> Unit,
     onUndo: () -> Unit,
+    onMute: () -> Unit,
     scrollState: ScrollState,
     isBeingRecorded: Boolean,
     modifier: Modifier = Modifier,
@@ -127,8 +128,10 @@ fun TrackItem(
                         onDismiss = { showOptions = false },
                         onDelete = onDelete,
                         onTrim = onTrim,
+                        onMute = onMute,
                         onUndo = onUndo,
-                        isUndoAvailable = track.isUndoAvailable
+                        isUndoAvailable = track.isUndoAvailable,
+                        isMuted = track.isMuted
                     )
                 }
             }
@@ -137,7 +140,7 @@ fun TrackItem(
             modifier = Modifier.fillMaxSize(),
             waveform = track.waveForm ?: listOf(),
             scrollState = scrollState,
-            timelineWidth = timelineWidth
+            isMuted = track.isMuted
         )
     }
 }
@@ -148,24 +151,29 @@ private fun TrackOptionsMenu(
     onDismiss: () -> Unit,
     onDelete: () -> Unit,
     onTrim: () -> Unit,
+    onMute: () -> Unit,
     onUndo: () -> Unit,
     isUndoAvailable: Boolean,
+    isMuted: Boolean,
     modifier: Modifier = Modifier
 ) {
     DropdownMenu(
         expanded = visible, onDismissRequest = onDismiss, modifier = modifier
     ) {
+        val muteOptionText = if (isMuted) "Activar" else "Silenciar"
+        val muteOptionIcon = if (isMuted) R.drawable.mute_icon else R.drawable.unmute_icon
+
         DropdownMenuItem(
             text = {
-                Text(text = "Silenciar")
+                Text(text = muteOptionText)
             },
             leadingIcon = {
                 Icon(
-                    painter = painterResource(R.drawable.mute_icon),
-                    contentDescription = "Silenciar"
+                    painter = painterResource(muteOptionIcon),
+                    contentDescription = muteOptionText
                 )
             },
-            onClick = {}
+            onClick = onMute
         )
         DropdownMenuItem(
             text = {
@@ -273,16 +281,18 @@ private fun TrackOptionsMenu(
 fun DbWaveform(
     waveform: List<Float>,
     scrollState: ScrollState,
-    timelineWidth: Int,
+    isMuted: Boolean,
     modifier: Modifier = Modifier,
     color: Color = MaterialTheme.colorScheme.onPrimaryContainer
 ) {
-
+    val waveformColor = if (isMuted) Color.LightGray else color
+    val backgroundColor =
+        if (isMuted) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.primaryContainer
     Surface(
         modifier = modifier
             .horizontalScroll(scrollState),
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.primaryContainer,
+        color = backgroundColor,
     ) {
         Box(
             modifier = Modifier.padding(vertical = 8.dp),
@@ -307,7 +317,7 @@ fun DbWaveform(
 
                 drawPath(
                     path = path,
-                    color = color,
+                    color = waveformColor,
                     style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
                 )
             }
@@ -331,6 +341,7 @@ private fun TrackPrev() {
             onDelete = {},
             onTrim = {},
             onUndo = {},
+            onMute = {},
             scrollState = rememberScrollState(),
             isBeingRecorded = true,
             timelineWidth = 500,

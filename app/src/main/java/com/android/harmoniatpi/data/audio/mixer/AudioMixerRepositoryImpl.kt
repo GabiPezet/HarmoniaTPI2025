@@ -1,15 +1,21 @@
 package com.android.harmoniatpi.data.audio.mixer
 
 import android.content.Context
+import android.net.Uri
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
+import com.android.harmoniatpi.data.audio.util.AudioConverter
 import com.android.harmoniatpi.di.TrackFactory
 import com.android.harmoniatpi.domain.interfaces.AudioMixerRepository
 import com.android.harmoniatpi.domain.model.audio.Track
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileNotFoundException
@@ -24,7 +30,8 @@ import kotlin.math.roundToLong
  */
 class AudioMixerRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val trackFactory: TrackFactory
+    private val trackFactory: TrackFactory,
+    private val audioConverter: AudioConverter
 ) : AudioMixerRepository {
     /**
      * Lista de pistas disponibles
@@ -47,6 +54,11 @@ class AudioMixerRepositoryImpl @Inject constructor(
         val totalTracks = validTracks.size
         completedCount.set(0)
         tracksCompleted.value = false
+
+        tracks.value.forEach {
+            it.stop()
+        }
+
 
         if (validTracks.isNotEmpty()) {
             Log.i(TAG, "Tracks with audio: $totalTracks")
@@ -90,6 +102,40 @@ class AudioMixerRepositoryImpl @Inject constructor(
         }
     }
 
+
+    @RequiresApi(Build.VERSION_CODES.Q)
+    override suspend fun createTrackFromFile(sourceFilePath: String): Result<Unit> = withContext(Dispatchers.IO) {
+        val sourceFile = File(sourceFilePath)
+        if (!sourceFile.exists()) {
+            return@withContext Result.failure(FileNotFoundException("Archivo de origen temporal no encontrado."))
+        }
+
+        val track = trackFactory.create(context.filesDir.absolutePath)
+        val destinationFile = File(track.path)
+
+        try {
+            val inputUri = Uri.fromFile(sourceFile)
+
+            audioConverter.convertToPcm(inputUri, destinationFile)
+                .onFailure { error ->
+                    sourceFile.delete()
+                    return@withContext Result.failure(error)
+                }
+
+            tracks.update { it + track }
+
+            sourceFile.delete()
+
+            return@withContext Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error importando/convirtiendo pista: ${e.message}", e)
+            destinationFile.delete()
+            sourceFile.delete()
+            return@withContext Result.failure(e)
+        }
+    }
+
+
     override fun trimTrack(id: Long, startMs: Long, endMs: Long): Result<Unit> {
         return tracks.value.find { it.id == id }?.let { track ->
             val originalFile = File(track.path)
@@ -107,7 +153,7 @@ class AudioMixerRepositoryImpl @Inject constructor(
                 }
 
                 val sampleRate = 44100
-                val bytesPerSample = 2 // 16-bit PCM
+                val bytesPerSample = 2 // pcm de 16 bit
 
                 val startSamples = (startMs * sampleRate / 1000f).roundToLong()
                 val endSamples = (endMs * sampleRate / 1000f).roundToLong()
@@ -134,7 +180,8 @@ class AudioMixerRepositoryImpl @Inject constructor(
                         val buffer = ByteArray(bufferSize)
 
                         while (totalRead < bytesToRead) {
-                            val remaining = (bytesToRead - totalRead).toInt().coerceAtMost(bufferSize)
+                            val remaining =
+                                (bytesToRead - totalRead).toInt().coerceAtMost(bufferSize)
                             val readCount = fis.read(buffer, 0, remaining)
 
                             if (readCount <= 0) break
@@ -174,7 +221,10 @@ class AudioMixerRepositoryImpl @Inject constructor(
             val backupFile = File(track.originalPath)
 
             if (!backupFile.exists()) {
-                Log.w(TAG, "No hay copia de seguridad para deshacer el recorte en la pista ${track.id}")
+                Log.w(
+                    TAG,
+                    "No hay copia de seguridad para deshacer el recorte en la pista ${track.id}"
+                )
                 return Result.failure(FileNotFoundException("No hay copia de seguridad disponible."))
             }
 
@@ -201,9 +251,41 @@ class AudioMixerRepositoryImpl @Inject constructor(
     }
 
 
-
     override suspend fun getTracks(): StateFlow<List<Track>> = tracks.asStateFlow()
     override suspend fun allTracksWerePlayed(): StateFlow<Boolean> = tracksCompleted.asStateFlow()
+
+    override fun muteTrack(id: Long) {
+        tracks.update { current ->
+            current.map { track ->
+                if (track.id == id) {
+                    track.mute()
+                }
+                track
+            }
+        }
+    }
+
+    override fun unMuteTrack(id: Long) {
+        tracks.update { current ->
+            current.map { track ->
+                if (track.id == id) {
+                    track.unMute()
+                }
+                track
+            }
+        }
+    }
+
+    override fun setTrackVolume(id: Long, volume: Float) {
+        tracks.update { current ->
+            current.map { track ->
+                if (track.id == id) {
+                    track.setVolume(volume)
+                }
+                track
+            }
+        }
+    }
 
     private companion object {
         const val TAG = "AudioMixerRepository"

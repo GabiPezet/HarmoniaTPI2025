@@ -28,6 +28,13 @@ interface AudioMixerRepository {
     fun createTrack()
 
     /**
+     * Crea una nueva pista a partir de un archivo de audio existente.
+     * @param sourceFilePath Ruta del archivo de audio de origen.
+     */
+    suspend fun createTrackFromFile(sourceFilePath: String): Result<Unit>
+
+
+    /**
      * Elimina una pista.
      * @param id Id de la pista a eliminar.
      */
@@ -49,7 +56,6 @@ interface AudioMixerRepository {
      */
     fun undoTrim(id: Long): Result<Unit>
 
-
     /**
      * Obtiene las pistas actuales.
      */
@@ -60,4 +66,22 @@ interface AudioMixerRepository {
      * Verifica si todas las pistas han sido reproducidas.
      */
     suspend fun allTracksWerePlayed(): StateFlow<Boolean>
+
+    /**
+     * Mutea una pista.
+     * @param id Id de la pista a mutear.
+     */
+    fun muteTrack(id: Long)
+
+    /**
+     * Desmutea una pista.
+     * @param id Id de la pista a desmutear.
+     */
+    fun unMuteTrack(id: Long)
+
+    /**
+     * Verifica si una pista está muteada.
+     * @param id Id de la pista.
+     */
+    fun setTrackVolume(id: Long, volume: Float)
 }
