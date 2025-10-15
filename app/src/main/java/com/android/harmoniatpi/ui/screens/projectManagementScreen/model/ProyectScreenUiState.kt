@@ -8,5 +8,6 @@ data class ProyectScreenUiState(
     val isPlaying: Boolean = false,
     val tracks: List<TrackUi> = emptyList(),
     val timelineWidth: Int = 500,
-    val previewTrackId: Long? = null
+    val previewTrackId: Long? = null,
+    val currentPlaybackMs: Long = 0L
 )

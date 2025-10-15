@@ -97,7 +97,7 @@ class AudioConverter @Inject constructor(
                 if (outputBufferId >= 0) {
                     val outputBuffer = decoder.getOutputBuffer(outputBufferId)
 
-                    // IMPORTANTE - aca se remuestrea si es necesario
+                    // esto es IMPORTANTE - aca se remuestrea si es necesario
                     val chunk = if (outputChannelCount == 2) {
 
                         mixStereoToMono(outputBuffer!!, bufferInfo.size)
@@ -113,7 +113,6 @@ class AudioConverter @Inject constructor(
                         outputBuffer?.get(rawChunk)
                         rawChunk
                     }
-
                     outputStream.write(chunk)
                     outputBuffer?.clear()
 

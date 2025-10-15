@@ -9,5 +9,6 @@ data class TrackUi(
     val durationMs: Long = 0L,
     val isUndoAvailable: Boolean = false,
     val isMuted: Boolean = false,
-    val volume: Float = 1f
+    val volume: Float = 1f,
+    val startOffsetMs: Long = 0L
 )

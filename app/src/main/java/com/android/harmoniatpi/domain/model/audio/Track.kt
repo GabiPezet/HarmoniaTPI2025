@@ -14,11 +14,12 @@ import java.io.File
  */
 class Track @AssistedInject constructor(
     @Assisted folderPath: String,
-    private val player: AudioPlayer
+    val player: AudioPlayer
 ) {
     val id = System.currentTimeMillis()
     val path = folderPath.plus("/$id.pcm")
     val originalPath = folderPath.plus("/$id.pcm.original")
+    var startOffsetMs: Long = 0L
 
     init {
         player.setFile(path)
@@ -28,8 +29,11 @@ class Track @AssistedInject constructor(
     /**
      * Reproduce la pista.
      */
-    fun play() {
-        player.play()
+    fun play(globalStartMs: Long = 0L) {
+
+        val playStartMs = (globalStartMs - startOffsetMs).coerceAtLeast(0L)
+
+        player.play(playStartMs)
             .onSuccess {
                 Log.i(TAG, "Track $id played")
             }
