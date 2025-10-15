@@ -5,16 +5,22 @@ import android.net.Uri
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
+import com.android.harmoniatpi.data.audio.player.PcmAudioPlayer
 import com.android.harmoniatpi.data.audio.util.AudioConverter
 import com.android.harmoniatpi.di.TrackFactory
 import com.android.harmoniatpi.domain.interfaces.AudioMixerRepository
 import com.android.harmoniatpi.domain.model.audio.Track
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileInputStream
@@ -49,9 +55,17 @@ class AudioMixerRepositoryImpl @Inject constructor(
      */
     private val completedCount = AtomicInteger(0)
 
+    private val currentPlaybackMs = MutableStateFlow(0L)
+    private var playbackJob: Job? = null
+    private val playerList: List<PcmAudioPlayer>
+        get() = tracks.value.map { it.player as PcmAudioPlayer }
+
+
     override fun play() {
         val validTracks = tracks.value.filter { it.hasAudio() }
         val totalTracks = validTracks.size
+        val globalStartMs = currentPlaybackMs.value
+
         completedCount.set(0)
         tracksCompleted.value = false
 
@@ -62,15 +76,20 @@ class AudioMixerRepositoryImpl @Inject constructor(
 
         if (validTracks.isNotEmpty()) {
             Log.i(TAG, "Tracks with audio: $totalTracks")
+
+
+            startPlaybackTracking()
             validTracks.forEach { track ->
                 track.setOnPlaybackCompletedCallback {
                     val count = completedCount.incrementAndGet()
                     Log.i(TAG, "Track ${track.id} completed. Count: $count")
                     if (count == totalTracks) {
+                        stopPlaybackTracking()
+                        currentPlaybackMs.value = 0L
                         tracksCompleted.value = true
                     }
                 }
-                track.play()
+                track.play(globalStartMs)
             }
         } else {
             Log.i(TAG, "No tracks with audio")
@@ -79,12 +98,15 @@ class AudioMixerRepositoryImpl @Inject constructor(
     }
 
     override fun pause() {
+        stopPlaybackTracking()
         tracks.value.forEach {
             it.pause()
         }
     }
 
     override fun stop() {
+        stopPlaybackTracking()
+        currentPlaybackMs.value = 0L
         tracks.value.forEach {
             it.stop()
         }
@@ -99,6 +121,51 @@ class AudioMixerRepositoryImpl @Inject constructor(
         tracks.value.find { it.id == id }?.let { track ->
             track.delete()
             tracks.update { it -> it.filterNot { track -> track.id == id } }
+        }
+    }
+
+
+    private fun startPlaybackTracking() {
+        playbackJob?.cancel()
+        playbackJob = CoroutineScope(Dispatchers.Default).launch {
+            while (isActive) {
+                // Toma la posición más avanzada
+                val currentMaxMs = playerList.maxOfOrNull { it.getCurrentPositionMs() } ?: 0L
+                currentPlaybackMs.value = currentMaxMs
+                delay(100)
+            }
+        }
+    }
+
+    private fun stopPlaybackTracking() {
+        playbackJob?.cancel()
+        playbackJob = null
+    }
+
+    override suspend fun getCurrentPlaybackPosition(): StateFlow<Long> = currentPlaybackMs.asStateFlow()
+
+    override fun seekTo(ms: Long) {
+        val wasPlaying = playerList.any { it.audioTrack.playState == android.media.AudioTrack.PLAYSTATE_PLAYING }
+
+        stopPlaybackTracking()
+        stop()
+
+        currentPlaybackMs.value = ms.coerceAtLeast(0L)
+
+        if (wasPlaying) {
+            play()
+        }
+    }
+
+    override fun setTrackOffset(id: Long, offsetMs: Long) {
+        tracks.update { current ->
+            current.map { track ->
+                if (track.id == id) {
+                    track.apply { startOffsetMs = offsetMs.coerceAtLeast(0L) }
+                } else {
+                    track
+                }
+            }
         }
     }
 

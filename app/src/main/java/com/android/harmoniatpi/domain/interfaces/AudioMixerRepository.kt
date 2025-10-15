@@ -84,4 +84,22 @@ interface AudioMixerRepository {
      * @param id Id de la pista.
      */
     fun setTrackVolume(id: Long, volume: Float)
+
+    /**
+    * Establece un desplazamiento de inicio para la pista.
+    * @param id Id de la pista.
+    * @param offsetMs El tiempo de desplazamiento en milisegundos.
+    */
+    fun setTrackOffset(id: Long, offsetMs: Long)
+
+    /**
+     * Obtiene la posición de reproducción actual en milisegundos.
+     */
+    suspend fun getCurrentPlaybackPosition(): StateFlow<Long>
+
+    /**
+     * Se mueve a una posición específica en la reproducción.
+     */
+    fun seekTo(ms: Long)
+
 }

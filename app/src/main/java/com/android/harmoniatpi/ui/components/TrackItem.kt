@@ -11,11 +11,15 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -35,24 +39,34 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.android.harmoniatpi.R
 import com.android.harmoniatpi.ui.core.theme.HarmoniaTPITheme
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
+import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
+import kotlin.math.roundToLong
 import kotlin.math.sin
+
+private const val MS_PER_DP_SCALE = 10f
 
 @Composable
 fun TrackItem(
@@ -64,6 +78,9 @@ fun TrackItem(
     onMute: () -> Unit,
     scrollState: ScrollState,
     isBeingRecorded: Boolean,
+    currentPlaybackMs: Long,
+    onSeekClick: (Long) -> Unit,
+    onOffsetChange: (Long, Long) -> Unit,
     modifier: Modifier = Modifier,
     timelineWidth: Int,
 ) {
@@ -79,6 +96,26 @@ fun TrackItem(
         ),
         label = "Recording border color animation"
     )
+
+    val density = LocalDensity.current
+
+    LaunchedEffect(currentPlaybackMs) {
+        if (currentPlaybackMs > 0 && scrollState.maxValue > 0) {
+
+            val playbackDp = (currentPlaybackMs / MS_PER_DP_SCALE).dp
+            val playbackPx = with(density) { playbackDp.toPx() }
+
+            //desplazamiento de track en reproduccion
+            val screenWidthPx = with(density) { 300.dp.toPx() }
+            val targetScrollPosition = (playbackPx - screenWidthPx / 3).coerceAtLeast(0f).roundToInt()
+
+            if (targetScrollPosition != scrollState.value) {
+                // Anima scroll
+                scrollState.animateScrollTo(targetScrollPosition)
+            }
+        }
+    }
+
 
     Row(
         modifier = modifier
@@ -136,12 +173,30 @@ fun TrackItem(
                 }
             }
         }
-        DbWaveform(
-            modifier = Modifier.fillMaxSize(),
-            waveform = track.waveForm ?: listOf(),
-            scrollState = scrollState,
-            isMuted = track.isMuted
-        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .horizontalScroll(scrollState)
+        ) {
+
+            Row(
+                modifier = Modifier
+                    .width(timelineWidth.dp)
+                    .fillMaxHeight(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                DbWaveform(
+                    modifier = Modifier.weight(1f),
+                    waveform = track.waveForm ?: listOf(),
+                    isMuted = track.isMuted,
+                    currentPlaybackMs = currentPlaybackMs,
+                    maxDurationMs = track.durationMs,
+                    startOffsetMs = track.startOffsetMs,
+                    onSeekClick = onSeekClick,
+                    onOffsetChange = { newOffset -> onOffsetChange(track.id, newOffset) }
+                )
+            }
+        }
     }
 }
 
@@ -280,46 +335,101 @@ private fun TrackOptionsMenu(
 @Composable
 fun DbWaveform(
     waveform: List<Float>,
-    scrollState: ScrollState,
     isMuted: Boolean,
+    currentPlaybackMs: Long,
+    maxDurationMs: Long,
+    startOffsetMs: Long,
+    onSeekClick: (Long) -> Unit,
+    onOffsetChange: (Long) -> Unit,
     modifier: Modifier = Modifier,
     color: Color = MaterialTheme.colorScheme.onPrimaryContainer
 ) {
     val waveformColor = if (isMuted) Color.LightGray else color
     val backgroundColor =
         if (isMuted) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.primaryContainer
+
+    val density = LocalDensity.current
+    val canvasWidthDp = (maxDurationMs / MS_PER_DP_SCALE).dp
+    var dragOffsetMs by remember { mutableStateOf(0L) }
+    val visualOffsetDp = (startOffsetMs / MS_PER_DP_SCALE).dp + (dragOffsetMs / MS_PER_DP_SCALE).dp
+
     Surface(
-        modifier = modifier
-            .horizontalScroll(scrollState),
+        modifier = modifier.fillMaxSize(),
         shape = RoundedCornerShape(16.dp),
         color = backgroundColor,
     ) {
+        // Contenedor principal para la línea de tiempo
         Box(
-            modifier = Modifier.padding(vertical = 8.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    //tap para elegir momento
+                    detectTapGestures(
+                        onTap = { offset ->
+                            val tappedMs = (offset.x / density.density * MS_PER_DP_SCALE).toLong()
+                            onSeekClick(tappedMs)
+                        }
+                    )
+                }
         ) {
+
+            Spacer(modifier = Modifier.width(visualOffsetDp.coerceAtLeast(0.dp)))
+
+            // canvas del waveform
             Canvas(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .width((waveform.size / 2).dp)
+                    .width(canvasWidthDp)
+                    .pointerInput(startOffsetMs) {
+                        // mantengo y arrastro ---EN IMPLEMENTACIÓN TODAVÍA---
+                        detectDragGesturesAfterLongPress(
+                            onDragStart = { dragOffsetMs = 0L },
+                            onDragEnd = {
+                                val finalOffsetMs = (startOffsetMs + dragOffsetMs).coerceAtLeast(0L)
+                                onOffsetChange(finalOffsetMs)
+                                dragOffsetMs = 0L
+                            },
+                            onDrag = { change, dragAmount ->
+                                change.consume()
+                                val dragMs = (dragAmount.x / density.density * MS_PER_DP_SCALE).toLong()
+                                val newOffsetCandidate = startOffsetMs + dragOffsetMs + dragMs
+                                if (newOffsetCandidate >= 0) {
+                                    dragOffsetMs += dragMs
+                                } else {
+                                    dragOffsetMs = -startOffsetMs
+                                }
+                            }
+                        )
+                    }
             ) {
+                if (waveform.isNotEmpty()) {
+                    val centerY = size.height / 2
+                    val stepX = size.width / waveform.size.toFloat()
+                    val path = Path().apply {
+                        moveTo(0f, centerY)
+                        waveform.forEachIndexed { index, value ->
+                            val x = index * stepX
+                            val y = centerY - (value * centerY)
+                            lineTo(x, y)
+                        }
+                    }
+                    drawPath(path, color = waveformColor, style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round))
+                }
+            }
 
-                val centerY = size.height / 2
-                val stepX = size.width / waveform.size
-
-                val path = Path().apply {
-                    moveTo(0f, centerY)
-                    waveform.forEachIndexed { index, value ->
-                        val x = index * stepX
-                        val y = centerY - (value * centerY)
-                        lineTo(x, y)
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                if (currentPlaybackMs > 0) {
+                    val xPos = (currentPlaybackMs / MS_PER_DP_SCALE) * density.density
+                    if (xPos >= 0 && xPos <= size.width) {
+                        drawLine(
+                            color = Color.Red,
+                            start = Offset(xPos, 0f),
+                            end = Offset(xPos, size.height),
+                            strokeWidth = 2.dp.toPx(),
+                            cap = StrokeCap.Round
+                        )
                     }
                 }
-
-                drawPath(
-                    path = path,
-                    color = waveformColor,
-                    style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
-                )
             }
         }
     }
@@ -336,7 +446,7 @@ private fun TrackPrev() {
 
     HarmoniaTPITheme(false) {
         TrackItem(
-            track = TrackUi(0, "", "Nombre", true, fakeWaveform),
+            track = TrackUi(0, "", "Nombre", true, fakeWaveform, durationMs = 3000L, startOffsetMs = 1000L),
             onClick = {},
             onDelete = {},
             onTrim = {},
@@ -345,6 +455,10 @@ private fun TrackPrev() {
             scrollState = rememberScrollState(),
             isBeingRecorded = true,
             timelineWidth = 500,
+            modifier = Modifier,
+            currentPlaybackMs = 1500L,
+            onSeekClick = {},
+            onOffsetChange = { _, _ -> }
         )
     }
 }
