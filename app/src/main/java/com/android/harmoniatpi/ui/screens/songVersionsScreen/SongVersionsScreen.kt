@@ -255,11 +255,11 @@ fun OriginalSongPlayer(
                 AsyncImage(
                     model = song.creator.avatarUrl,
                     placeholder = painterResource(id = R.drawable.holojamperfildefaultblackmode),
+                    error = painterResource(id = R.drawable.holojamperfildefaultblackmode),
                     contentDescription = "Imagen de artista: ${song.creator.name}",
                     modifier = Modifier
                         .size(80.dp)
                         .clip(CircleShape)
-                        .background(color = MaterialTheme.colorScheme.surfaceVariant)
                         .border(BorderStroke(2.dp, MaterialTheme.colorScheme.outline), CircleShape),
                     contentScale = ContentScale.Crop
                 )

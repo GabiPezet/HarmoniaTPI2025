@@ -38,7 +38,7 @@ class SongVersionsViewModel @Inject constructor() : ViewModel() {
             val originalSong = Song(
                 id = "original-01",
                 title = "El paso del tiempo",
-                creator = User(id = "creator-01", name = "Luna Beats", avatarUrl = "url_de_avatar"),
+                creator = User(id = "creator-01", name = "Luna Beats", avatarUrl = null ),
                 imageUrl = "url_de_imagen",
                 durationMillis = 464000L,
                 versionType = VersionType.ORIGINAL,
