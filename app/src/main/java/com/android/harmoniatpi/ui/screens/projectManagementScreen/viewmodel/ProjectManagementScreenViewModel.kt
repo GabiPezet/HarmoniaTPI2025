@@ -65,13 +65,44 @@ class ProjectManagementScreenViewModel @Inject constructor(
     val state = _state.asStateFlow()
 
     init {
+
+        val project = holoJamCache.currentProjectSelected
         _state.update {
-            it.copy(currentProjectSelected = holoJamCache.currentProjectSelected)
+            it.copy(currentProjectSelected = project)
         }.apply {
             Log.i("KlyxDevs", "currentProjectSelected: ${state.value.currentProjectSelected}")
         }
-        fetchTracks()
+
+        //Si el proyecto ya tiene pistas guardadas, reconstruirlas
+        if (!project?.urlAudioTracks.isNullOrEmpty()) {
+            val loadedTracks = project.urlAudioTracks.map { it.toTrackUi() }
+            _state.update { currentState ->
+                currentState.copy(tracks = loadedTracks)
+            }
+        } else {
+            // si no tiene pistas, suscribite al flujo normal
+            fetchTracks()
+        }
+
         checkIfTracksWherePlayed()
+    }
+
+    fun updateCurrentProjectWithTracks() {
+        val currentState = _state.value
+        val project = currentState.currentProjectSelected ?: return
+
+        val updatedProject = project.copy(
+            urlAudioTracks = currentState.tracks.map { it.toAudioTrack() }
+        )
+
+        _state.update {
+            it.copy(currentProjectSelected = updatedProject)
+        }
+
+        // Guardar en cache y/o base de datos
+        viewModelScope.launch {
+            updateOrInsertProjectInDBUseCase(updatedProject)
+        }
     }
 
     fun startRecording() {

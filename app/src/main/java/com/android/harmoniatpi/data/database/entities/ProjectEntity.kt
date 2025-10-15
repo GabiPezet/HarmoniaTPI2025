@@ -21,7 +21,7 @@ data class ProjectEntity(
     val likes: Int,
     val totalShared: Int,
     val comments: String,
-    val urlCompleteAudio: String,
+    val urlCompleteAudio: String?,
     val urlAudioTracks: String,
     val hashtags: String
 ) {
@@ -31,13 +31,15 @@ data class ProjectEntity(
         lastName = lastName,
         title = title,
         description = description,
-        duration = duration,
+        duration = duration.toLong(),
         createdAt = createdAt,
         status = status,
         likes = likes,
         totalShared = totalShared,
         comments = jsonUtils.decodeJsonToListObject<Comment>(comments),
-        urlCompleteAudio = jsonUtils.decodeJsonToObject<AudioTrack>(urlCompleteAudio),
+        urlCompleteAudio = if (urlCompleteAudio.isNullOrEmpty()) null else jsonUtils.decodeJsonToObject<AudioTrack>(
+            urlCompleteAudio
+        ),
         urlAudioTracks = jsonUtils.decodeJsonToListObject<AudioTrack>(urlAudioTracks),
         hashtags = jsonUtils.decodeJsonToListObject<String>(hashtags)
     )

@@ -85,17 +85,17 @@ class ProjectViewModel @Inject constructor(
                 val current = _uiState.value
                 val project = Project(
                     id = UUID.randomUUID().toString(),
-                    name = "Usuario",
-                    lastName = "",
+                    name = sharedMenuUiState.uiState.value.userName,
+                    lastName = sharedMenuUiState.uiState.value.userLastName,
                     title = current.title,
                     description = current.description,
-                    duration = "0:00",
+                    duration = 0L,
                     createdAt = LocalDateTime.now().toString(),
                     status = true,
                     likes = 0,
                     totalShared = 0,
                     comments = emptyList(),
-                    urlCompleteAudio = AudioTrack(path = "", audioWaveform = emptyList()),
+                    urlCompleteAudio = null,
                     urlAudioTracks = emptyList(),
                     hashtags = current.hashtags.split(",").map { it.trim() }
                 )

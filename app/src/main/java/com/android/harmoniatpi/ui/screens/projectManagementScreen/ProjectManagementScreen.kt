@@ -2,6 +2,7 @@ package com.android.harmoniatpi.ui.screens.projectManagementScreen
 
 import android.net.Uri
 import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -64,6 +65,11 @@ fun ProjectManagementScreen(
             showSheet = false
             viewModel.importTrackFromFile(it)
         }
+    }
+
+    BackHandler {
+        viewModel.updateCurrentProjectWithTracks()
+        onBack()
     }
 
     Scaffold(
