@@ -179,22 +179,35 @@ fun TrackItem(
                 .horizontalScroll(scrollState)
         ) {
 
-            Row(
+            Box(
                 modifier = Modifier
                     .width(timelineWidth.dp)
-                    .fillMaxHeight(),
-                verticalAlignment = Alignment.CenterVertically
+                    .fillMaxHeight()
             ) {
                 DbWaveform(
-                    modifier = Modifier.weight(1f),
-                    waveform = track.waveForm ?: listOf(),
+                    waveform = track.waveForm ?: emptyList(),
                     isMuted = track.isMuted,
-                    currentPlaybackMs = currentPlaybackMs,
                     maxDurationMs = track.durationMs,
                     startOffsetMs = track.startOffsetMs,
                     onSeekClick = onSeekClick,
-                    onOffsetChange = { newOffset -> onOffsetChange(track.id, newOffset) }
+                    onOffsetChange = { newOffset -> onOffsetChange(track.id, newOffset) },
                 )
+
+
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    if (currentPlaybackMs > 0) {
+                        val xPos = (currentPlaybackMs / MS_PER_DP_SCALE) * density.density
+                        if (xPos in 0f..size.width) { // Asegura que solo se dibuje dentro de los límites
+                            drawLine(
+                                color = Color.Red,
+                                start = Offset(xPos, 0f),
+                                end = Offset(xPos, size.height),
+                                strokeWidth = 2.dp.toPx(),
+                                cap = StrokeCap.Round
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -336,52 +349,38 @@ private fun TrackOptionsMenu(
 fun DbWaveform(
     waveform: List<Float>,
     isMuted: Boolean,
-    currentPlaybackMs: Long,
     maxDurationMs: Long,
     startOffsetMs: Long,
     onSeekClick: (Long) -> Unit,
     onOffsetChange: (Long) -> Unit,
-    modifier: Modifier = Modifier,
     color: Color = MaterialTheme.colorScheme.onPrimaryContainer
 ) {
     val waveformColor = if (isMuted) Color.LightGray else color
-    val backgroundColor =
-        if (isMuted) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.primaryContainer
-
+    val backgroundColor = if (isMuted) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.primaryContainer
     val density = LocalDensity.current
+
     val canvasWidthDp = (maxDurationMs / MS_PER_DP_SCALE).dp
     var dragOffsetMs by remember { mutableStateOf(0L) }
-    val visualOffsetDp = (startOffsetMs / MS_PER_DP_SCALE).dp + (dragOffsetMs / MS_PER_DP_SCALE).dp
+    val visualOffsetDp = ((startOffsetMs + dragOffsetMs) / MS_PER_DP_SCALE).dp
 
-    Surface(
-        modifier = modifier.fillMaxSize(),
-        shape = RoundedCornerShape(16.dp),
-        color = backgroundColor,
+
+    Box(
+        modifier = Modifier
+            .fillMaxHeight()
+            .padding(start = visualOffsetDp.coerceAtLeast(0.dp))
     ) {
-        // Contenedor principal para la línea de tiempo
-        Box(
+        Surface(
             modifier = Modifier
-                .fillMaxSize()
-                .pointerInput(Unit) {
-                    //tap para elegir momento
-                    detectTapGestures(
-                        onTap = { offset ->
-                            val tappedMs = (offset.x / density.density * MS_PER_DP_SCALE).toLong()
-                            onSeekClick(tappedMs)
-                        }
-                    )
-                }
+                .width(canvasWidthDp)
+                .fillMaxHeight(),
+            shape = RoundedCornerShape(16.dp),
+            color = backgroundColor
         ) {
-
-            Spacer(modifier = Modifier.width(visualOffsetDp.coerceAtLeast(0.dp)))
-
-            // canvas del waveform
             Canvas(
                 modifier = Modifier
-                    .fillMaxHeight()
-                    .width(canvasWidthDp)
+                    .fillMaxSize()
+                    //muevo el waveform con hold y drag
                     .pointerInput(startOffsetMs) {
-                        // mantengo y arrastro ---EN IMPLEMENTACIÓN TODAVÍA---
                         detectDragGesturesAfterLongPress(
                             onDragStart = { dragOffsetMs = 0L },
                             onDragEnd = {
@@ -393,6 +392,7 @@ fun DbWaveform(
                                 change.consume()
                                 val dragMs = (dragAmount.x / density.density * MS_PER_DP_SCALE).toLong()
                                 val newOffsetCandidate = startOffsetMs + dragOffsetMs + dragMs
+
                                 if (newOffsetCandidate >= 0) {
                                     dragOffsetMs += dragMs
                                 } else {
@@ -400,6 +400,13 @@ fun DbWaveform(
                                 }
                             }
                         )
+                    }
+                    //seek para elegir donde reproduzco
+                    .pointerInput(Unit) {
+                        detectTapGestures(onTap = { offset ->
+                            val tappedMs = startOffsetMs + (offset.x / density.density * MS_PER_DP_SCALE).toLong()
+                            onSeekClick(tappedMs)
+                        })
                     }
             ) {
                 if (waveform.isNotEmpty()) {
@@ -414,21 +421,6 @@ fun DbWaveform(
                         }
                     }
                     drawPath(path, color = waveformColor, style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round))
-                }
-            }
-
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                if (currentPlaybackMs > 0) {
-                    val xPos = (currentPlaybackMs / MS_PER_DP_SCALE) * density.density
-                    if (xPos >= 0 && xPos <= size.width) {
-                        drawLine(
-                            color = Color.Red,
-                            start = Offset(xPos, 0f),
-                            end = Offset(xPos, size.height),
-                            strokeWidth = 2.dp.toPx(),
-                            cap = StrokeCap.Round
-                        )
-                    }
                 }
             }
         }

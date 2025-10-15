@@ -378,11 +378,8 @@ class ProjectManagementScreenViewModel @Inject constructor(
                         val path = domainTrack.path
                         val originalPath = path.replace(".pcm", ".pcm.original")
                         val isUndoAvailable = File(originalPath).exists()
-
                         val result = generateWaveform(path)
-
-                        // Determinar el offset del track (si la API lo proporcionara)
-                        val offset = domainTrack.startOffsetMs // Asumiendo que el modelo de dominio Track ahora tiene esta propiedad
+                        val offset = domainTrack.startOffsetMs
 
                         // determina si es una pista existente o nueva
                         currentUiTracks.find { it.id == domainTrack.id }?.copy(
