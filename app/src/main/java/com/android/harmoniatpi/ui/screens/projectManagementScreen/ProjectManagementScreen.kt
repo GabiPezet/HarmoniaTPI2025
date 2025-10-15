@@ -121,7 +121,10 @@ fun ProjectManagementScreen(
                             } else {
                                 viewModel.muteTrack()
                             }
-                        }
+                        },
+                        currentPlaybackMs = state.currentPlaybackMs,
+                        onSeekClick = { ms -> viewModel.seekAndPlay(ms) },
+                        onOffsetChange = { trackId, newOffset -> viewModel.updateTrackOffset(trackId, newOffset) }
                     )
                 }
             }

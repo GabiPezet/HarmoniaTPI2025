@@ -7,7 +7,7 @@ interface AudioPlayer {
     /**
      * Reproduce el audio desde el archivo especificado mediante [setFile].
      */
-    fun play(): Result<Unit>
+    fun play(startMs: Long = 0L): Result<Unit>
 
 
     /**
