@@ -29,18 +29,16 @@ class Track @AssistedInject constructor(
     /**
      * Reproduce la pista.
      */
-    fun play(globalStartMs: Long = 0L) {
-
-        val playStartMs = (globalStartMs - startOffsetMs).coerceAtLeast(0L)
-
-        player.play(playStartMs)
+    fun play(internalStartMs: Long = 0L) {
+        player.play(internalStartMs)
             .onSuccess {
-                Log.i(TAG, "Track $id played")
+                Log.i(TAG, "Track $id played from internal position ${internalStartMs}ms")
             }
             .onFailure {
                 Log.e(TAG, "Error playing track $id", it)
             }
     }
+
 
     fun playSegment(startMs: Long, endMs: Long) {
         player.playSegment(startMs, endMs)
