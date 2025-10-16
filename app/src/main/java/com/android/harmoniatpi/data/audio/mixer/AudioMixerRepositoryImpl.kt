@@ -1,6 +1,7 @@
 package com.android.harmoniatpi.data.audio.mixer
 
 import android.content.Context
+import android.media.AudioTrack
 import android.net.Uri
 import android.os.Build
 import android.util.Log
@@ -56,60 +57,62 @@ class AudioMixerRepositoryImpl @Inject constructor(
     private val completedCount = AtomicInteger(0)
 
     private val currentPlaybackMs = MutableStateFlow(0L)
-    private var playbackJob: Job? = null
+    private var masterPlaybackJob: Job? = null
     private val playerList: List<PcmAudioPlayer>
         get() = tracks.value.map { it.player as PcmAudioPlayer }
 
 
     override fun play() {
+        masterPlaybackJob?.cancel()
+
         val validTracks = tracks.value.filter { it.hasAudio() }
-        val totalTracks = validTracks.size
-        val globalStartMs = currentPlaybackMs.value
-
-        completedCount.set(0)
-        tracksCompleted.value = false
-
-        tracks.value.forEach {
-            it.stop()
+        if (validTracks.isEmpty()) {
+            tracksCompleted.value = true
+            return
         }
 
-
-        if (validTracks.isNotEmpty()) {
-            Log.i(TAG, "Tracks with audio: $totalTracks")
-
-
+        val globalStartMs = currentPlaybackMs.value
+        completedCount.set(0)
+        tracksCompleted.value = false
+        masterPlaybackJob = CoroutineScope(Dispatchers.IO).launch {
             startPlaybackTracking()
+
             validTracks.forEach { track ->
-                track.setOnPlaybackCompletedCallback {
-                    val count = completedCount.incrementAndGet()
-                    Log.i(TAG, "Track ${track.id} completed. Count: $count")
-                    if (count == totalTracks) {
-                        stopPlaybackTracking()
-                        currentPlaybackMs.value = 0L
-                        tracksCompleted.value = true
+                launch {
+                    val delayMs = (track.startOffsetMs - globalStartMs).coerceAtLeast(0L)
+                    val internalPlayPos = (globalStartMs - track.startOffsetMs).coerceAtLeast(0L)
+
+                    if (delayMs > 0) {
+                        delay(delayMs)
+                    }
+
+                    if (isActive) {
+                        track.setOnPlaybackCompletedCallback {
+                            val count = completedCount.incrementAndGet()
+                            if (count >= validTracks.size) {
+                                stop() // Llama a stop para limpiar todo.
+                            }
+                        }
+
+                        track.play(internalPlayPos)
                     }
                 }
-                track.play(globalStartMs)
             }
-        } else {
-            Log.i(TAG, "No tracks with audio")
-            tracksCompleted.value = true
         }
     }
 
     override fun pause() {
+        masterPlaybackJob?.cancel()
         stopPlaybackTracking()
-        tracks.value.forEach {
-            it.pause()
-        }
+        tracks.value.forEach { it.pause() }
     }
 
     override fun stop() {
+        masterPlaybackJob?.cancel()
         stopPlaybackTracking()
         currentPlaybackMs.value = 0L
-        tracks.value.forEach {
-            it.stop()
-        }
+        tracks.value.forEach { it.stop() }
+        tracksCompleted.value = true
     }
 
     override fun createTrack() {
@@ -125,21 +128,27 @@ class AudioMixerRepositoryImpl @Inject constructor(
     }
 
 
+    private var playbackTrackingJob: Job? = null
     private fun startPlaybackTracking() {
-        playbackJob?.cancel()
-        playbackJob = CoroutineScope(Dispatchers.Default).launch {
+        playbackTrackingJob?.cancel()
+        playbackTrackingJob = CoroutineScope(Dispatchers.Default).launch {
             while (isActive) {
-                // Toma la posición más avanzada
-                val currentMaxMs = playerList.maxOfOrNull { it.getCurrentPositionMs() } ?: 0L
-                currentPlaybackMs.value = currentMaxMs
-                delay(100)
+                val activePlayers = playerList.filter { it.audioTrack.playState == AudioTrack.PLAYSTATE_PLAYING }
+                if (activePlayers.isNotEmpty()) {
+
+                    val maxPos = activePlayers.maxOfOrNull { player ->
+                        val track = tracks.value.find { it.player == player }
+                        (track?.startOffsetMs ?: 0L) + player.getCurrentPositionMs()
+                    } ?: currentPlaybackMs.value
+                    currentPlaybackMs.value = maxPos
+                }
+                delay(50)
             }
         }
     }
 
     private fun stopPlaybackTracking() {
-        playbackJob?.cancel()
-        playbackJob = null
+        playbackTrackingJob?.cancel()
     }
 
     override suspend fun getCurrentPlaybackPosition(): StateFlow<Long> = currentPlaybackMs.asStateFlow()
