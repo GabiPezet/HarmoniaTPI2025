@@ -59,6 +59,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.android.harmoniatpi.R
+import com.android.harmoniatpi.domain.model.audio.AudioSourceType
 import com.android.harmoniatpi.ui.core.theme.HarmoniaTPITheme
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import kotlinx.coroutines.launch
@@ -438,7 +439,7 @@ private fun TrackPrev() {
 
     HarmoniaTPITheme(false) {
         TrackItem(
-            track = TrackUi(0, "", "Nombre", true, fakeWaveform, durationMs = 3000L, startOffsetMs = 1000L),
+            track = TrackUi(0, "", "Nombre", true, fakeWaveform, durationMs = 3000L, startOffsetMs = 1000L, sourceType = AudioSourceType.INSTRUMENT),
             onClick = {},
             onDelete = {},
             onTrim = {},

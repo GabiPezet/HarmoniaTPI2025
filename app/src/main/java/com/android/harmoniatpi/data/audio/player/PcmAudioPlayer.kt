@@ -37,7 +37,7 @@ class PcmAudioPlayer @Inject constructor() : AudioPlayer {
     val audioTrack = AudioTrack.Builder()
         .setAudioAttributes(
             AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_MEDIA)
+                .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
                 .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                 .build()
         )

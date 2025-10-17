@@ -1,5 +1,6 @@
 package com.android.harmoniatpi.domain.interfaces
 
+import com.android.harmoniatpi.domain.model.audio.AudioSourceType
 import com.android.harmoniatpi.domain.model.audio.Track
 import kotlinx.coroutines.flow.StateFlow
 
@@ -24,8 +25,9 @@ interface AudioMixerRepository {
 
     /**
      * Crea una nueva pista.
+     * @param sourceType El tipo de fuente de audio (Voz o Instrumento).
      */
-    fun createTrack()
+    fun createTrack(sourceType: AudioSourceType)
 
     /**
      * Crea una nueva pista a partir de un archivo de audio existente.

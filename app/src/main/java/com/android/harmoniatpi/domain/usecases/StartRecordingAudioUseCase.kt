@@ -7,5 +7,6 @@ import javax.inject.Inject
 class StartRecordingAudioUseCase @Inject constructor(
     private val audioRecorderRepository: AudioRecorderRepository
 ) {
-    operator fun invoke(outputFileName: String) = audioRecorderRepository.startRecording(outputFileName)
+    operator fun invoke(outputFileName: String, audioSource: Int) =
+        audioRecorderRepository.startRecording(outputFileName, audioSource)
 }

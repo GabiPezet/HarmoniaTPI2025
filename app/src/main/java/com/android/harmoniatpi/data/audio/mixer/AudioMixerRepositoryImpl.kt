@@ -10,6 +10,7 @@ import com.android.harmoniatpi.data.audio.player.PcmAudioPlayer
 import com.android.harmoniatpi.data.audio.util.AudioConverter
 import com.android.harmoniatpi.di.TrackFactory
 import com.android.harmoniatpi.domain.interfaces.AudioMixerRepository
+import com.android.harmoniatpi.domain.model.audio.AudioSourceType
 import com.android.harmoniatpi.domain.model.audio.Track
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
@@ -115,8 +116,8 @@ class AudioMixerRepositoryImpl @Inject constructor(
         tracksCompleted.value = true
     }
 
-    override fun createTrack() {
-        val track = trackFactory.create(context.filesDir.absolutePath)
+    override fun createTrack(sourceType: AudioSourceType) {
+        val track = trackFactory.create(context.filesDir.absolutePath, sourceType)
         tracks.update { it + track }
     }
 
@@ -154,7 +155,7 @@ class AudioMixerRepositoryImpl @Inject constructor(
     override suspend fun getCurrentPlaybackPosition(): StateFlow<Long> = currentPlaybackMs.asStateFlow()
 
     override fun seekTo(ms: Long) {
-        val wasPlaying = playerList.any { it.audioTrack.playState == android.media.AudioTrack.PLAYSTATE_PLAYING }
+        val wasPlaying = playerList.any { it.audioTrack.playState == AudioTrack.PLAYSTATE_PLAYING }
 
         stopPlaybackTracking()
         stop()
@@ -186,7 +187,10 @@ class AudioMixerRepositoryImpl @Inject constructor(
             return@withContext Result.failure(FileNotFoundException("Archivo de origen temporal no encontrado."))
         }
 
-        val track = trackFactory.create(context.filesDir.absolutePath)
+        val track = trackFactory.create(
+            context.filesDir.absolutePath,
+            sourceType = AudioSourceType.INSTRUMENT,
+        )
         val destinationFile = File(track.path)
 
         try {

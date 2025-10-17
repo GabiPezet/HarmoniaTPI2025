@@ -2,6 +2,7 @@ package com.android.harmoniatpi.ui.screens.projectManagementScreen
 
 import android.net.Uri
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -23,6 +24,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -37,8 +39,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.android.harmoniatpi.domain.model.audio.AudioSourceType
 import com.android.harmoniatpi.ui.components.ProyectControlButtonRow
 import com.android.harmoniatpi.ui.components.TrackItem
 import com.android.harmoniatpi.ui.components.TrimAudioDialog
@@ -54,6 +58,7 @@ fun ProjectManagementScreen(
     val sheetState = rememberModalBottomSheetState()
     var showSheet by remember { mutableStateOf(false) }
     val state by viewModel.state.collectAsState()
+    val context = LocalContext.current
     val sharedScrollState = rememberScrollState()
     var trackForTrimming by remember { mutableStateOf<TrackUi?>(null) }
 
@@ -103,7 +108,7 @@ fun ProjectManagementScreen(
                         onDelete = { viewModel.deleteTrack() },
                         onTrim = {
                             if (track.waveForm.isNullOrEmpty() || track.durationMs < 50L) {
-                                // TODO: Usar Toast para feedback al usuario
+                                Toast.makeText(context, "Pista muy corta para recortar. Debería durar más de 50ms", Toast.LENGTH_LONG).show()
                                 Log.d("Trim", "Pista sin audio o muy corta para recortar.")
                             } else {
                                 trackForTrimming = track
@@ -111,6 +116,7 @@ fun ProjectManagementScreen(
                         },
                         onUndo = {
                             viewModel.undoTrim(track.id)
+                            Toast.makeText(context, "Deshacer efectuado correctamente.", Toast.LENGTH_LONG).show()
                         },
                         scrollState = sharedScrollState,
                         timelineWidth = state.timelineWidth,
@@ -151,7 +157,10 @@ fun ProjectManagementScreen(
                 onSkipPrevious = { viewModel.stopPlaying() },
                 onPlay = { viewModel.play() },
                 onPause = { viewModel.pause() },
-                startRecording = { viewModel.startRecording() },
+                startRecording = {
+                    Toast.makeText(context, "Para una mejor calidad, usa auriculares.", Toast.LENGTH_LONG).show()
+                    viewModel.startRecording()
+                                 },
                 stopRecording = { viewModel.stopRecording() },
                 isRecording = state.isRecording,
                 isPlaying = state.isPlaying,
@@ -168,16 +177,30 @@ fun ProjectManagementScreen(
                             .fillMaxWidth()
                             .padding(16.dp)
                     ) {
+                        Text("¿Qué quieres grabar?", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 8.dp))
+
                         Button(
                             onClick = {
                                 showSheet = false
-                                viewModel.addNewTrack()
+                                viewModel.addNewTrack(AudioSourceType.VOICE)
                             },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("Nueva pista")
+                            Text("Voz (con aislamiento)")
                         }
                         Spacer(Modifier.height(8.dp))
+
+                        Button(
+                            onClick = {
+                                showSheet = false
+                                viewModel.addNewTrack(AudioSourceType.INSTRUMENT)
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Instrumento (alta fidelidad)")
+                        }
+
+                        Spacer(Modifier.height(16.dp))
 
                         Button(
                             onClick = {
@@ -194,7 +217,7 @@ fun ProjectManagementScreen(
                             },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("Biblioteca de colaboraciones")
+                            Text("Biblioteca de Recursos")
                         }
                     }
                 }

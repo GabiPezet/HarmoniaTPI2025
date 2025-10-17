@@ -1,11 +1,14 @@
 package com.android.harmoniatpi.ui.screens.projectManagementScreen.viewmodel
 
 import android.content.Context
+import android.media.MediaRecorder
 import android.net.Uri
 import android.util.Log
+import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.harmoniatpi.domain.cache.HoloJamCache
+import com.android.harmoniatpi.domain.model.audio.AudioSourceType
 import com.android.harmoniatpi.domain.usecases.AddTrackFromFileUseCase
 import com.android.harmoniatpi.domain.usecases.AddTrackUseCase
 import com.android.harmoniatpi.domain.usecases.DeleteTrackUseCase
@@ -101,16 +104,30 @@ class ProjectManagementScreenViewModel @Inject constructor(
 
     fun startRecording() {
         selectedTrack = state.value.tracks.find { it.selected }
-        selectedTrack?.let { track ->
-            startRecordingAudio(track.path)
+        selectedTrack?.let { trackToRecord ->
+
+            val audioSource = if (trackToRecord.sourceType == AudioSourceType.VOICE) {
+                MediaRecorder.AudioSource.VOICE_COMMUNICATION
+            } else {
+                MediaRecorder.AudioSource.MIC
+            }
+
+            muteTrackUseCase(trackToRecord.id)
+            updateTrackMuteState(trackToRecord.id, true)
+
+            playAudio()
+            _state.update { it.copy(isPlaying = true) }
+
+            startRecordingAudio(trackToRecord.path, audioSource)
                 .onSuccess {
-                    Log.i(TAG, "Grabación comenzada")
-                    _state.update {
-                        it.copy(isRecording = true)
-                    }
+                    Log.i(TAG, "Grabación comenzada en la pista ${trackToRecord.id} mientras se reproduce el resto.")
+                    _state.update { it.copy(isRecording = true) }
                 }
                 .onFailure {
                     Log.e(TAG, "Error al comenzar la grabación", it)
+                    stopPlaying()
+                    unMuteTrackUseCase(trackToRecord.id)
+                    updateTrackMuteState(trackToRecord.id, false)
                 }
         }
     }
@@ -119,19 +136,21 @@ class ProjectManagementScreenViewModel @Inject constructor(
         stopRecordingAudio()
             .onSuccess {
                 Log.i(TAG, "Grabación detenida")
+                stopPlaying()
 
-                selectedTrack?.let { track ->
+                selectedTrack?.let { recordedTrack ->
+                    unMuteTrackUseCase(recordedTrack.id)
+                    updateTrackMuteState(recordedTrack.id, false)
+
                     viewModelScope.launch {
-                        // update: guardamos el waveform
-                        val result = generateWaveform(track.path)
+                        val result = generateWaveform(recordedTrack.path)
                         _state.update { currentState ->
                             val updatedTracks = currentState.tracks.map { trackUi ->
-                                if (trackUi.id == track.id) trackUi.copy(
+                                if (trackUi.id == recordedTrack.id) trackUi.copy(
                                     waveForm = result.waveform,
                                     durationMs = result.durationMs
                                 ) else trackUi
                             }
-
                             val timelineWidth = getUpdatedTimeline(updatedTracks)
                             currentState.copy(
                                 tracks = updatedTracks,
@@ -144,9 +163,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
             .onFailure {
                 Log.e(TAG, "Error al detener la grabación", it)
             }
-        _state.update {
-            it.copy(isRecording = false)
-        }
+        _state.update { it.copy(isRecording = false) }
     }
 
     fun play() {
@@ -171,8 +188,8 @@ class ProjectManagementScreenViewModel @Inject constructor(
         }
     }
 
-    fun addNewTrack() {
-        addTrack()
+    fun addNewTrack(sourceType: AudioSourceType) {
+        addTrack(sourceType)
     }
 
     fun deleteTrack() {
@@ -199,14 +216,15 @@ class ProjectManagementScreenViewModel @Inject constructor(
                 addTrackFromFileUseCase(tempFile.absolutePath)
                     .onSuccess {
                         Log.i(TAG, "Pista importada y convertida exitosamente desde $uri")
+                        Toast.makeText(context, "Pista importada exitosamente.", Toast.LENGTH_LONG).show()
                     }
                     .onFailure { e ->
                         Log.e(TAG, "Error importando pista desde $uri: ${e.message}", e)
-                        // TODO: Mostrar Toast con error
+                        Toast.makeText(context, "Hubo un error importando pista.", Toast.LENGTH_LONG).show()
                     }
             } catch (e: Exception) {
                 Log.e(TAG, "Error resolviendo o copiando archivo de origen: ${e.message}", e)
-                // TODO: Mostrar Toast con error
+                Toast.makeText(context, "Error en la resolución de pista.", Toast.LENGTH_LONG).show()
             } finally {
                 tempFile.delete()
             }
@@ -286,7 +304,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
 
     fun previewTrim(trackId: Long, startMs: Long, endMs: Long) {
         viewModelScope.launch {
-            // Detener cualquier reproducción
+            // Detener cualquier reproducción para probar trim
             stopPlaying()
 
             val trackToPreview = getTracks().value.find { it.id == trackId }
@@ -388,7 +406,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
                             waveForm = result.waveform,
                             durationMs = result.durationMs,
                             isUndoAvailable = isUndoAvailable,
-                            startOffsetMs = offset // Usar el offset
+                            startOffsetMs = offset
                         ) ?: TrackUi(
                             title = "Voz",
                             selected = false,
@@ -397,7 +415,8 @@ class ProjectManagementScreenViewModel @Inject constructor(
                             waveForm = result.waveform,
                             durationMs = result.durationMs,
                             isUndoAvailable = isUndoAvailable,
-                            startOffsetMs = offset // Inicializar con offset
+                            startOffsetMs = offset,
+                            sourceType = domainTrack.sourceType
                         )
                     }
                     val timelineWidth = getUpdatedTimeline(updatedTracks)

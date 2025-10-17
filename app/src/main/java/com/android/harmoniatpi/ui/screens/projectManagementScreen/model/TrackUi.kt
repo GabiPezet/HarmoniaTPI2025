@@ -1,5 +1,7 @@
 package com.android.harmoniatpi.ui.screens.projectManagementScreen.model
 
+import com.android.harmoniatpi.domain.model.audio.AudioSourceType
+
 data class TrackUi(
     val id: Long,
     val path: String,
@@ -10,5 +12,6 @@ data class TrackUi(
     val isUndoAvailable: Boolean = false,
     val isMuted: Boolean = false,
     val volume: Float = 1f,
-    val startOffsetMs: Long = 0L
+    val startOffsetMs: Long = 0L,
+    val sourceType: AudioSourceType
 )

@@ -13,7 +13,8 @@ import java.io.File
  * @property player Instancia de AudioPlayer para reproducir, pausar o parar la pista.
  */
 class Track @AssistedInject constructor(
-    @Assisted folderPath: String,
+    @Assisted("folderPath") folderPath: String,
+    @Assisted("sourceType") val sourceType: AudioSourceType,
     val player: AudioPlayer
 ) {
     val id = System.currentTimeMillis()
@@ -23,7 +24,7 @@ class Track @AssistedInject constructor(
 
     init {
         player.setFile(path)
-        Log.i(TAG, "Track $id created")
+        Log.i(TAG, "Track $id created with source type: $sourceType")
     }
 
     /**
