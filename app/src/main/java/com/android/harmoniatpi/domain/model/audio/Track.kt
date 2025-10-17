@@ -16,14 +16,11 @@ class Track @AssistedInject constructor(
     @Assisted("folder") folderPath: String,
     @Assisted("existing") existingFilePath: String?,
     @Assisted("id") idExist: Long?,
-    private val player: AudioPlayer
+    val player: AudioPlayer
 ) {
     val id = idExist ?: System.currentTimeMillis()
     val path = existingFilePath ?: "$folderPath/$id.pcm"
     val originalPath = "$path.original"
-    val id = System.currentTimeMillis()
-    val path = folderPath.plus("/$id.pcm")
-    val originalPath = folderPath.plus("/$id.pcm.original")
     var startOffsetMs: Long = 0L
 
     init {

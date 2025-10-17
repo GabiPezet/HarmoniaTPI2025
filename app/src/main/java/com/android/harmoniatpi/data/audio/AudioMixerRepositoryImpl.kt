@@ -149,7 +149,8 @@ class AudioMixerRepositoryImpl @Inject constructor(
         playbackTrackingJob?.cancel()
         playbackTrackingJob = CoroutineScope(Dispatchers.Default).launch {
             while (isActive) {
-                val activePlayers = playerList.filter { it.audioTrack.playState == AudioTrack.PLAYSTATE_PLAYING }
+                val activePlayers =
+                    playerList.filter { it.audioTrack.playState == AudioTrack.PLAYSTATE_PLAYING }
                 if (activePlayers.isNotEmpty()) {
 
                     val maxPos = activePlayers.maxOfOrNull { player ->
@@ -167,10 +168,12 @@ class AudioMixerRepositoryImpl @Inject constructor(
         playbackTrackingJob?.cancel()
     }
 
-    override suspend fun getCurrentPlaybackPosition(): StateFlow<Long> = currentPlaybackMs.asStateFlow()
+    override suspend fun getCurrentPlaybackPosition(): StateFlow<Long> =
+        currentPlaybackMs.asStateFlow()
 
     override fun seekTo(ms: Long) {
-        val wasPlaying = playerList.any { it.audioTrack.playState == android.media.AudioTrack.PLAYSTATE_PLAYING }
+        val wasPlaying =
+            playerList.any { it.audioTrack.playState == android.media.AudioTrack.PLAYSTATE_PLAYING }
 
         stopPlaybackTracking()
         stop()
@@ -380,13 +383,13 @@ class AudioMixerRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun loadPcmTrack(file: File,id: Long) {
+    override suspend fun loadPcmTrack(file: File, id: Long) {
         if (!file.exists()) {
             Log.e(TAG, "PCM file not found: ${file.absolutePath}")
             return
         }
 
-        val track = trackFactory.create(file.parent!!, file.absolutePath,id)
+        val track = trackFactory.create(file.parent!!, file.absolutePath, id)
         tracks.update { it + track }
         Log.i(TAG, "Track restored from PCM: ${file.name} with path ${track.path}")
     }

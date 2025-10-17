@@ -10,11 +10,15 @@ import com.android.harmoniatpi.domain.usecases.AddTrackFromFileUseCase
 import com.android.harmoniatpi.domain.usecases.AddTrackUseCase
 import com.android.harmoniatpi.domain.usecases.DeleteTrackUseCase
 import com.android.harmoniatpi.domain.usecases.GenerateWaveformUseCase
+import com.android.harmoniatpi.domain.usecases.GetCurrentPlaybackPositionUseCase
 import com.android.harmoniatpi.domain.usecases.GetIfAllTracksWherePlayedUseCase
 import com.android.harmoniatpi.domain.usecases.GetTracksUseCase
+import com.android.harmoniatpi.domain.usecases.LoadProjectTrackUseCase
 import com.android.harmoniatpi.domain.usecases.MuteTrackUseCase
 import com.android.harmoniatpi.domain.usecases.PauseAudioUseCase
 import com.android.harmoniatpi.domain.usecases.PlayAudioUseCase
+import com.android.harmoniatpi.domain.usecases.SeekToUseCase
+import com.android.harmoniatpi.domain.usecases.SetTrackOffsetUseCase
 import com.android.harmoniatpi.domain.usecases.SetTrackVolumeUseCase
 import com.android.harmoniatpi.domain.usecases.StartRecordingAudioUseCase
 import com.android.harmoniatpi.domain.usecases.StopAudioUseCase
@@ -28,6 +32,7 @@ import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -62,9 +67,8 @@ class ProjectManagementScreenViewModel @Inject constructor(
     private val setTrackVolumeUseCase: SetTrackVolumeUseCase,
     private val getCurrentPlaybackPosition: GetCurrentPlaybackPositionUseCase,
     private val seekToUseCase: SeekToUseCase,
+    private val loadProjectTrackUseCase: LoadProjectTrackUseCase,
     private val setTrackOffsetUseCase: SetTrackOffsetUseCase
-    private val setTrackVolumeUseCase: SetTrackVolumeUseCase,
-    private val loadProjectTrackUseCase: LoadProjectTrackUseCase
 ) : ViewModel() {
     private val _state = MutableStateFlow(ProyectScreenUiState())
     private var selectedTrack: TrackUi? = null
@@ -147,7 +151,6 @@ class ProjectManagementScreenViewModel @Inject constructor(
     }
 
 
-
     private fun getUpdatedTimeline(updatedTracks: List<TrackUi>): Int {
         if (updatedTracks.isEmpty()) return 500 // Valor base
 
@@ -161,9 +164,6 @@ class ProjectManagementScreenViewModel @Inject constructor(
         return timelineWidthInDp.coerceAtLeast(500)
     }
 
-
-
-    }
 
     fun updateCurrentProjectWithTracks() {
         val currentState = _state.value
@@ -279,8 +279,6 @@ class ProjectManagementScreenViewModel @Inject constructor(
 
     fun importTrackFromFile(uri: Uri) {
         viewModelScope.launch {
-
-
             val tempFile = File(context.cacheDir, "temp_import_${System.currentTimeMillis()}.tmp")
 
             try {
@@ -464,7 +462,6 @@ class ProjectManagementScreenViewModel @Inject constructor(
     }
 
 
-
     private fun fetchTracks() {
         viewModelScope.launch {
             getTracks().collect { domainTracks ->
@@ -474,8 +471,8 @@ class ProjectManagementScreenViewModel @Inject constructor(
                         val path = domainTrack.path
                         val originalPath = path.replace(".pcm", ".pcm.original")
                         val isUndoAvailable = File(originalPath).exists()
-
                         val result = generateWaveform(path)
+                        val offset = domainTrack.startOffsetMs
 
                         // determina si es una pista existente o nueva
                         currentUiTracks.find { it.id == domainTrack.id }?.copy(
@@ -537,15 +534,8 @@ class ProjectManagementScreenViewModel @Inject constructor(
         }
     }
 
-
-    private fun getUpdatedTimeline(updatedTracks: List<TrackUi>): Int {
-        if (updatedTracks.isEmpty()) return 500
-        val maxWaveformSize = updatedTracks.maxOf { it.waveForm?.size ?: 0 }
-        val timelineWidth = if (maxWaveformSize > 0) maxWaveformSize / 2 else 500
-        return timelineWidth
-    }
-
     private companion object {
         const val TAG = "AudioTestsViewModel"
     }
+
 }
