@@ -102,7 +102,7 @@ fun ProjectManagementScreen(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                items(state.tracks, key = { it.id }) { track ->
+                items(state.tracks) { track ->
                     TrackItem(
                         track = track,
                         onClick = { viewModel.selectTrack(track.id) },

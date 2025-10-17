@@ -13,16 +13,18 @@ import java.io.File
  * @property player Instancia de AudioPlayer para reproducir, pausar o parar la pista.
  */
 class Track @AssistedInject constructor(
-    @Assisted folderPath: String,
+    @Assisted("folder") folderPath: String,
+    @Assisted("existing") existingFilePath: String?,
+    @Assisted("id") idExist: Long?,
     private val player: AudioPlayer
 ) {
-    val id = System.currentTimeMillis()
-    val path = folderPath.plus("/$id.pcm")
-    val originalPath = folderPath.plus("/$id.pcm.original")
+    val id = idExist ?: System.currentTimeMillis()
+    val path = existingFilePath ?: "$folderPath/$id.pcm"
+    val originalPath = "$path.original"
 
     init {
         player.setFile(path)
-        Log.i(TAG, "Track $id created")
+        Log.i(TAG, "Track $id created with path $path")
     }
 
     /**
@@ -113,7 +115,6 @@ class Track @AssistedInject constructor(
     }
 
     fun getVolume(): Float = player.getVolume()
-
 
     /**
      * Borra el archivo de la pista.

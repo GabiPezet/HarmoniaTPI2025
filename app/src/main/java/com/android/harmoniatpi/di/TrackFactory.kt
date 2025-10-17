@@ -1,6 +1,7 @@
 package com.android.harmoniatpi.di
 
 import com.android.harmoniatpi.domain.model.audio.Track
+import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 
 /**
@@ -9,5 +10,9 @@ import dagger.assisted.AssistedFactory
  */
 @AssistedFactory
 interface TrackFactory {
-    fun create(folderPath: String): Track
+    fun create(
+        @Assisted("folder") folderPath: String,
+        @Assisted("existing") existingFilePath: String? = null,
+        @Assisted("id") idExist : Long? = null
+    ): Track
 }

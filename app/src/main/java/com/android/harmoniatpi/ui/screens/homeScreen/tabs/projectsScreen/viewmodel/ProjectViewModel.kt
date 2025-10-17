@@ -3,7 +3,6 @@ package com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.viewmo
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.harmoniatpi.domain.cache.HoloJamCache
-import com.android.harmoniatpi.domain.model.project.AudioTrack
 import com.android.harmoniatpi.domain.model.project.Project
 import com.android.harmoniatpi.domain.usecases.DeleteProjectByIdFromDBUseCase
 import com.android.harmoniatpi.domain.usecases.GetAllProjectsFromDBUseCase
@@ -39,11 +38,15 @@ class ProjectViewModel @Inject constructor(
     // --- Cargar todos los proyectos de la base de datos
     fun loadProjects() {
         viewModelScope.launch {
-            val projects = getAllProjectsFromDBUseCase()
-            _uiState.update {
-                it.copy(listProjects = projects)
-            }
-            sharedMenuUiState.updateState { it.copy(listProjects = projects) }
+            getAllProjectsFromDBUseCase()
+                .collect { projects ->
+                    _uiState.update {
+                        it.copy(listProjects = projects)
+                    }
+                    sharedMenuUiState.updateState {
+                        it.copy(listProjects = projects)
+                    }
+                }
         }
     }
 

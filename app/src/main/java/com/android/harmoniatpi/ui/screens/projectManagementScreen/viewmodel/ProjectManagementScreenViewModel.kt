@@ -12,6 +12,7 @@ import com.android.harmoniatpi.domain.usecases.DeleteTrackUseCase
 import com.android.harmoniatpi.domain.usecases.GenerateWaveformUseCase
 import com.android.harmoniatpi.domain.usecases.GetIfAllTracksWherePlayedUseCase
 import com.android.harmoniatpi.domain.usecases.GetTracksUseCase
+import com.android.harmoniatpi.domain.usecases.LoadProjectTrackUseCase
 import com.android.harmoniatpi.domain.usecases.MuteTrackUseCase
 import com.android.harmoniatpi.domain.usecases.PauseAudioUseCase
 import com.android.harmoniatpi.domain.usecases.PlayAudioUseCase
@@ -28,6 +29,7 @@ import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -58,14 +60,14 @@ class ProjectManagementScreenViewModel @Inject constructor(
     private val updateOrInsertProjectInDBUseCase: UpdateOrInsertProjectInDBUseCase,
     private val muteTrackUseCase: MuteTrackUseCase,
     private val unMuteTrackUseCase: UnMuteTrackUseCase,
-    private val setTrackVolumeUseCase: SetTrackVolumeUseCase
+    private val setTrackVolumeUseCase: SetTrackVolumeUseCase,
+    private val loadProjectTrackUseCase: LoadProjectTrackUseCase
 ) : ViewModel() {
     private val _state = MutableStateFlow(ProyectScreenUiState())
     private var selectedTrack: TrackUi? = null
     val state = _state.asStateFlow()
 
     init {
-
         val project = holoJamCache.currentProjectSelected
         _state.update {
             it.copy(currentProjectSelected = project)
@@ -73,24 +75,78 @@ class ProjectManagementScreenViewModel @Inject constructor(
             Log.i("KlyxDevs", "currentProjectSelected: ${state.value.currentProjectSelected}")
         }
 
-        //Si el proyecto ya tiene pistas guardadas, reconstruirlas
-        if (!project?.urlAudioTracks.isNullOrEmpty()) {
-            val loadedTracks = project.urlAudioTracks.map { it.toTrackUi() }
-            _state.update { currentState ->
-                currentState.copy(tracks = loadedTracks)
-            }
-        } else {
-            // si no tiene pistas, suscribite al flujo normal
+        viewModelScope.launch {
             fetchTracks()
+            if (!project?.urlAudioTracks.isNullOrEmpty()) {
+                Log.i("KlyxDevs", " Restaurando pistas del proyecto guardado...")
+
+                loadProjectTrackUseCase.clearAllTracks()
+
+                val loadedTracks = project.urlAudioTracks.map { it.toTrackUi() }
+                _state.update { currentState ->
+                    currentState.copy(tracks = loadedTracks)
+                }
+
+                // Reinyectar las pistas en el motor de audio (AudioMixerRepository)
+                project.urlAudioTracks.forEach { audioTrack ->
+                    val path = audioTrack.path
+                    val file = File(path)
+
+                    if (file.exists()) {
+                        Log.i("KlyxDevs", " Archivo encontrado en $path — restaurando pista...")
+
+                        loadProjectTrackUseCase(path, audioTrack.id)
+                            .onSuccess {
+                                Log.i(
+                                    "KlyxDevs",
+                                    " Pista restaurada correctamente: ${audioTrack.id}"
+                                )
+                            }
+                            .onFailure { e ->
+                                Log.e(
+                                    "KlyxDevs",
+                                    " Error restaurando pista ${audioTrack.id}: ${e.message}"
+                                )
+                            }
+                    } else {
+                        Log.w(
+                            "KlyxDevs",
+                            " Archivo no encontrado para pista ${audioTrack.id}: $path"
+                        )
+                    }
+                }
+
+
+                delay(500)
+                _state.update { current ->
+                    val updatedTracks = current.tracks.map { trackUi ->
+                        val result = generateWaveform(trackUi.path)
+                        trackUi.copy(
+                            waveForm = result.waveform,
+                            durationMs = result.durationMs
+                        )
+                    }
+                    val timelineWidth = getUpdatedTimeline(updatedTracks)
+                    current.copy(tracks = updatedTracks, timelineWidth = timelineWidth)
+                }
+
+                Log.i("KlyxDevs", " Todas las pistas fueron restauradas y listas para reproducir.")
+            } else {
+                Log.i("KlyxDevs", " Proyecto sin pistas previas — iniciando flujo normal.")
+
+            }
+
+            checkIfTracksWherePlayed()
         }
 
-        checkIfTracksWherePlayed()
     }
 
     fun updateCurrentProjectWithTracks() {
         val currentState = _state.value
         val project = currentState.currentProjectSelected ?: return
-
+        currentState.tracks.forEach {
+            Log.i("KlyxDevs", "updateCurrentProjectWithTracks TRACKS: ${it.path}")
+        }
         val updatedProject = project.copy(
             urlAudioTracks = currentState.tracks.map { it.toAudioTrack() }
         )
@@ -102,6 +158,9 @@ class ProjectManagementScreenViewModel @Inject constructor(
         // Guardar en cache y/o base de datos
         viewModelScope.launch {
             updateOrInsertProjectInDBUseCase(updatedProject)
+            updatedProject.urlAudioTracks.forEach {
+                Log.i("KlyxDevs", "updateCurrentProjectWithTracks AUDIOTRACKS: ${it.path}")
+            }
         }
     }
 
@@ -114,6 +173,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
                     _state.update {
                         it.copy(isRecording = true)
                     }
+                    Log.i("KlyxDevs", "startRecordingAudio: ${track.path}")
                 }
                 .onFailure {
                     Log.e(TAG, "Error al comenzar la grabación", it)
@@ -184,6 +244,13 @@ class ProjectManagementScreenViewModel @Inject constructor(
     fun deleteTrack() {
         selectedTrack?.let {
             deleteTrack(it.id)
+        }.apply {
+            _state.update {
+                it.copy(tracks = it.tracks.filter { track -> track.id != selectedTrack?.id })
+            }
+            viewModelScope.launch {
+                updateCurrentProjectWithTracks()
+            }
         }
     }
 
