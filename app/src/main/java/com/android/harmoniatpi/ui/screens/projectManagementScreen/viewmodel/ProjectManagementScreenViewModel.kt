@@ -461,6 +461,10 @@ class ProjectManagementScreenViewModel @Inject constructor(
         seekToUseCase(ms)
     }
 
+    fun clearAllTracks() {
+        loadProjectTrackUseCase.clearAllTracks()
+    }
+
 
     private fun fetchTracks() {
         viewModelScope.launch {
