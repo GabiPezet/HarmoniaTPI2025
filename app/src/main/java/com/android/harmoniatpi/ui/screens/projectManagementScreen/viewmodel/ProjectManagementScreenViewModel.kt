@@ -1,11 +1,14 @@
 package com.android.harmoniatpi.ui.screens.projectManagementScreen.viewmodel
 
 import android.content.Context
+import android.media.MediaRecorder
 import android.net.Uri
 import android.util.Log
+import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.harmoniatpi.domain.cache.HoloJamCache
+import com.android.harmoniatpi.domain.model.audio.AudioSourceType
 import com.android.harmoniatpi.domain.usecases.AddTrackFromFileUseCase
 import com.android.harmoniatpi.domain.usecases.AddTrackUseCase
 import com.android.harmoniatpi.domain.usecases.DeleteTrackUseCase
@@ -73,81 +76,39 @@ class ProjectManagementScreenViewModel @Inject constructor(
     private val _state = MutableStateFlow(ProyectScreenUiState())
     private var selectedTrack: TrackUi? = null
     val state = _state.asStateFlow()
+    private val originalVolumes = mutableMapOf<Long, Float>()
+
 
     init {
-        val project = holoJamCache.currentProjectSelected
-        _state.update {
-            it.copy(currentProjectSelected = project)
-        }.apply {
-            Log.i("KlyxDevs", "currentProjectSelected: ${state.value.currentProjectSelected}")
-        }
-
-        viewModelScope.launch {
-            fetchTracks()
-            if (!project?.urlAudioTracks.isNullOrEmpty()) {
-                Log.i("KlyxDevs", " Restaurando pistas del proyecto guardado...")
-
-                loadProjectTrackUseCase.clearAllTracks()
-
-                val loadedTracks = project.urlAudioTracks.map { it.toTrackUi() }
-                _state.update { currentState ->
-                    currentState.copy(tracks = loadedTracks)
-                }
-
-                // Reinyectar las pistas en el motor de audio (AudioMixerRepository)
-                project.urlAudioTracks.forEach { audioTrack ->
-                    val path = audioTrack.path
-                    val file = File(path)
-
-                    if (file.exists()) {
-                        Log.i("KlyxDevs", " Archivo encontrado en $path — restaurando pista...")
-
-                        loadProjectTrackUseCase(path, audioTrack.id)
-                            .onSuccess {
-                                Log.i(
-                                    "KlyxDevs",
-                                    " Pista restaurada correctamente: ${audioTrack.id}"
-                                )
-                            }
-                            .onFailure { e ->
-                                Log.e(
-                                    "KlyxDevs",
-                                    " Error restaurando pista ${audioTrack.id}: ${e.message}"
-                                )
-                            }
-                    } else {
-                        Log.w(
-                            "KlyxDevs",
-                            " Archivo no encontrado para pista ${audioTrack.id}: $path"
-                        )
-                    }
-                }
-
-
-                delay(500)
-                _state.update { current ->
-                    val updatedTracks = current.tracks.map { trackUi ->
-                        val result = generateWaveform(trackUi.path)
-                        trackUi.copy(
-                            waveForm = result.waveform,
-                            durationMs = result.durationMs
-                        )
-                    }
-                    val timelineWidth = getUpdatedTimeline(updatedTracks)
-                    current.copy(tracks = updatedTracks, timelineWidth = timelineWidth)
-                }
-
-                Log.i("KlyxDevs", " Todas las pistas fueron restauradas y listas para reproducir.")
-            } else {
-                Log.i("KlyxDevs", " Proyecto sin pistas previas — iniciando flujo normal.")
-
-            }
-
-            checkIfTracksWherePlayed()
-        }
+        startPlaybackObserver()
         fetchTracks()
         checkIfTracksWherePlayed()
-        startPlaybackObserver()
+        loadProjectFromCache()
+    }
+
+    private fun loadProjectFromCache() {
+        val project = holoJamCache.currentProjectSelected
+        _state.update { it.copy(currentProjectSelected = project) }
+
+        if (project != null && !project.urlAudioTracks.isNullOrEmpty()) {
+            viewModelScope.launch {
+                Log.i("KlyxDevs", "Restaurando pistas del proyecto guardado...")
+                loadProjectTrackUseCase.clearAllTracks()
+
+                project.urlAudioTracks.forEach { audioTrack ->
+                    val file = File(audioTrack.path)
+                    if (file.exists()) {
+                        loadProjectTrackUseCase(audioTrack.path, audioTrack.id, audioTrack.sourceType)
+                            .onSuccess { Log.i("KlyxDevs", "Pista restaurada en el mixer: ${audioTrack.id}") }
+                            .onFailure { e -> Log.e("KlyxDevs", "Error restaurando pista ${audioTrack.id}: ${e.message}") }
+                    } else {
+                        Log.w("KlyxDevs", "Archivo no encontrado para pista ${audioTrack.id}: ${audioTrack.path}")
+                    }
+                }
+            }
+        } else {
+            Log.i("KlyxDevs", "Proyecto nuevo o sin pistas guardadas.")
+        }
     }
 
 
@@ -190,16 +151,33 @@ class ProjectManagementScreenViewModel @Inject constructor(
 
     fun startRecording() {
         selectedTrack = state.value.tracks.find { it.selected }
-        selectedTrack?.let { track ->
-            startRecordingAudio(track.path)
+        selectedTrack?.let { trackToRecord ->
+
+            originalVolumes.clear()
+            val tracksToPlay = state.value.tracks.filter { it.id != trackToRecord.id }
+
+            tracksToPlay.forEach { track ->
+                originalVolumes[track.id] = track.volume
+                setTrackVolumeUseCase(track.id, 0.03f)
+            }
+
+
+            val audioSource = if (trackToRecord.sourceType == AudioSourceType.VOICE) {
+                MediaRecorder.AudioSource.VOICE_COMMUNICATION
+            } else {
+                MediaRecorder.AudioSource.MIC
+            }
+
+            playAudio(excludeTrackId = trackToRecord.id)
+            _state.update { it.copy(isPlaying = true) }
+
+            startRecordingAudio(trackToRecord.path, audioSource)
                 .onSuccess {
-                    Log.i(TAG, "Grabación comenzada")
-                    _state.update {
-                        it.copy(isRecording = true)
-                    }
+                    _state.update { it.copy(isRecording = true) }
                 }
                 .onFailure {
-                    Log.e(TAG, "Error al comenzar la grabación", it)
+                    stopPlaying()
+                    restoreOriginalVolumes()
                 }
         }
     }
@@ -208,19 +186,23 @@ class ProjectManagementScreenViewModel @Inject constructor(
         stopRecordingAudio()
             .onSuccess {
                 Log.i(TAG, "Grabación detenida")
+                stopPlaying()
+                restoreOriginalVolumes()
 
-                selectedTrack?.let { track ->
+                selectedTrack?.let { recordedTrack ->
                     viewModelScope.launch {
-                        // update: guardamos el waveform
-                        val result = generateWaveform(track.path)
+                        val result = generateWaveform(recordedTrack.path)
                         _state.update { currentState ->
                             val updatedTracks = currentState.tracks.map { trackUi ->
-                                if (trackUi.id == track.id) trackUi.copy(
-                                    waveForm = result.waveform,
-                                    durationMs = result.durationMs
-                                ) else trackUi
+                                if (trackUi.id == recordedTrack.id) {
+                                    trackUi.copy(
+                                        waveForm = result.waveform,
+                                        durationMs = result.durationMs
+                                    )
+                                } else {
+                                    trackUi
+                                }
                             }
-
                             val timelineWidth = getUpdatedTimeline(updatedTracks)
                             currentState.copy(
                                 tracks = updatedTracks,
@@ -232,10 +214,16 @@ class ProjectManagementScreenViewModel @Inject constructor(
             }
             .onFailure {
                 Log.e(TAG, "Error al detener la grabación", it)
+                restoreOriginalVolumes()
             }
-        _state.update {
-            it.copy(isRecording = false)
+        _state.update { it.copy(isRecording = false) }
+    }
+
+    private fun restoreOriginalVolumes() {
+        originalVolumes.forEach { (trackId, volume) ->
+            setTrackVolumeUseCase(trackId, volume)
         }
+        originalVolumes.clear()
     }
 
     fun play() {
@@ -260,8 +248,8 @@ class ProjectManagementScreenViewModel @Inject constructor(
         }
     }
 
-    fun addNewTrack() {
-        addTrack()
+    fun addNewTrack(sourceType: AudioSourceType) {
+        addTrack(sourceType)
     }
 
     fun deleteTrack() {
@@ -293,14 +281,15 @@ class ProjectManagementScreenViewModel @Inject constructor(
                 addTrackFromFileUseCase(tempFile.absolutePath)
                     .onSuccess {
                         Log.i(TAG, "Pista importada y convertida exitosamente desde $uri")
+                        Toast.makeText(context, "Pista importada exitosamente", Toast.LENGTH_SHORT).show()
                     }
                     .onFailure { e ->
                         Log.e(TAG, "Error importando pista desde $uri: ${e.message}", e)
-                        // TODO: Mostrar Toast con error
+                        Toast.makeText(context, "Error al importar la pista", Toast.LENGTH_SHORT).show()
                     }
             } catch (e: Exception) {
                 Log.e(TAG, "Error resolviendo o copiando archivo de origen: ${e.message}", e)
-                // TODO: Mostrar Toast con error
+                Toast.makeText(context, "Error al procesar el archivo", Toast.LENGTH_SHORT).show()
             } finally {
                 tempFile.delete()
             }
@@ -325,11 +314,13 @@ class ProjectManagementScreenViewModel @Inject constructor(
         viewModelScope.launch {
             trimAudioTrack(trackId, startMs, endMs)
                 .onSuccess {
+                    Toast.makeText(context, "Pista recortada", Toast.LENGTH_SHORT).show()
                     Log.i(TAG, "Audio trim successful for track $trackId")
                     updateTrackUiAfterModification(trackId)
                 }
                 .onFailure {
                     Log.e(TAG, "Error trimming audio for track $trackId", it)
+                    Toast.makeText(context, "Error al recortar la pista", Toast.LENGTH_SHORT).show()
                 }
         }
     }
@@ -340,9 +331,11 @@ class ProjectManagementScreenViewModel @Inject constructor(
                 .onSuccess {
                     Log.i(TAG, "Undo trim successful for track $trackId")
                     updateTrackUiAfterModification(trackId)
+                    Toast.makeText(context, "Recorte deshecho", Toast.LENGTH_SHORT).show()
                 }
                 .onFailure { e ->
                     Log.e(TAG, "Error undoing trim for track $trackId", e)
+                    Toast.makeText(context, "No se pudo deshacer el recorte", Toast.LENGTH_SHORT).show()
                     updateTrackUiAfterModification(trackId) // Forzar actualizacion si falló
                 }
         }
@@ -469,41 +462,29 @@ class ProjectManagementScreenViewModel @Inject constructor(
     private fun fetchTracks() {
         viewModelScope.launch {
             getTracks().collect { domainTracks ->
-                val currentUiTracks = _state.value.tracks
-                _state.update { currentState ->
-                    val updatedTracks = domainTracks.map { domainTrack ->
-                        val path = domainTrack.path
-                        val originalPath = path.replace(".pcm", ".pcm.original")
-                        val isUndoAvailable = File(originalPath).exists()
-                        val result = generateWaveform(path)
-                        val offset = domainTrack.startOffsetMs
+                val savedTracks = _state.value.currentProjectSelected?.urlAudioTracks ?: emptyList()
 
-                        // determina si es una pista existente o nueva
-                        currentUiTracks.find { it.id == domainTrack.id }?.copy(
-                            id = domainTrack.id,
-                            path = domainTrack.path,
-                            waveForm = result.waveform,
-                            durationMs = result.durationMs,
-                            isUndoAvailable = isUndoAvailable,
-                            startOffsetMs = offset // Usar el offset
-                        ) ?: TrackUi(
-                            title = "Voz",
-                            selected = false,
-                            id = domainTrack.id,
-                            path = domainTrack.path,
-                            waveForm = result.waveform,
-                            durationMs = result.durationMs,
-                            isUndoAvailable = isUndoAvailable,
-                            startOffsetMs = offset // Inicializar con offset
-                        )
-                    }
-                    val timelineWidth = getUpdatedTimeline(updatedTracks)
+                val updatedTracks = domainTracks.map { domainTrack ->
+                    val savedTrack = savedTracks.find { it.id == domainTrack.id }
+                    val title = if (domainTrack.sourceType == AudioSourceType.VOICE) "Voz" else "Instrumento"
 
-                    currentState.copy(
-                        tracks = updatedTracks,
-                        timelineWidth = timelineWidth
+                    TrackUi(
+                        id = domainTrack.id,
+                        path = domainTrack.path,
+                        title = savedTrack?.title ?: title,
+                        selected = state.value.tracks.find { it.id == domainTrack.id }?.selected ?: false,
+                        sourceType = domainTrack.sourceType,
+                        waveForm = savedTrack?.waveForm ?: generateWaveform(domainTrack.path).waveform,
+                        durationMs = savedTrack?.durationMs ?: generateWaveform(domainTrack.path).durationMs,
+                        isUndoAvailable = File(domainTrack.originalPath).exists(),
+                        startOffsetMs = savedTrack?.startOffsetMs ?: domainTrack.startOffsetMs,
+                        isMuted = savedTrack?.isMuted ?: domainTrack.isMuted(),
+                        volume = savedTrack?.volume ?: domainTrack.getVolume()
                     )
                 }
+
+                val timelineWidth = getUpdatedTimeline(updatedTracks)
+                _state.update { it.copy(tracks = updatedTracks, timelineWidth = timelineWidth) }
             }
         }
     }

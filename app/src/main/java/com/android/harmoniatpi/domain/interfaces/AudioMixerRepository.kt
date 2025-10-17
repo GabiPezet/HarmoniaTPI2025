@@ -1,5 +1,6 @@
 package com.android.harmoniatpi.domain.interfaces
 
+import com.android.harmoniatpi.domain.model.audio.AudioSourceType
 import com.android.harmoniatpi.domain.model.audio.Track
 import kotlinx.coroutines.flow.StateFlow
 import java.io.File
@@ -11,7 +12,7 @@ interface AudioMixerRepository {
     /**
      * Reproduce las pistas.
      */
-    fun play()
+    fun play(excludeTrackId: Long? = null)
 
     /**
      * Pausa la reproducción de las pistas.
@@ -26,7 +27,7 @@ interface AudioMixerRepository {
     /**
      * Crea una nueva pista.
      */
-    fun createTrack()
+    fun createTrack(sourceType: AudioSourceType)
 
     /**
      * Crea una nueva pista a partir de un archivo de audio existente.
@@ -104,7 +105,7 @@ interface AudioMixerRepository {
     fun seekTo(ms: Long)
 
 
-    suspend fun loadPcmTrack(file: File,id: Long)
+    suspend fun loadPcmTrack(file: File, id: Long, sourceType: AudioSourceType)
 
     fun clearAllTracks()
 }

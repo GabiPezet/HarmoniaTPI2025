@@ -4,6 +4,9 @@ import android.Manifest
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
+import android.media.audiofx.AcousticEchoCanceler
+import android.media.audiofx.AutomaticGainControl
+import android.media.audiofx.NoiseSuppressor
 import android.util.Log
 import androidx.annotation.RequiresPermission
 import com.android.harmoniatpi.domain.interfaces.AudioRecorder
@@ -38,7 +41,7 @@ class PcmAudioRecorder @Inject constructor() : AudioRecorder {
     }
 
     @RequiresPermission(Manifest.permission.RECORD_AUDIO)
-    override fun startRecording(): Result<Unit> {
+    override fun startRecording(audioSource: Int): Result<Unit> {
         Log.i(TAG, "Starting recording. Path: ${outputFile?.path}")
         if (recordingJob != null) {
             Log.w(TAG, "Recording already in progress")
@@ -46,13 +49,33 @@ class PcmAudioRecorder @Inject constructor() : AudioRecorder {
         }
 
         audioRecord = AudioRecord(
-            MediaRecorder.AudioSource.MIC, sampleRate, channelConfig, audioFormat, bufferSize
+            audioSource,
+            sampleRate,
+            channelConfig,
+            audioFormat,
+            bufferSize
         )
 
         if (audioRecord?.state != AudioRecord.STATE_INITIALIZED) {
             audioRecord = null
             return Result.failure(IllegalStateException("Error initializing AudioRecord"))
         }
+
+        try {
+            val audioSessionId = audioRecord!!.audioSessionId
+            if (AutomaticGainControl.isAvailable()) {
+                AutomaticGainControl.create(audioSessionId)?.enabled = false
+            }
+            if (NoiseSuppressor.isAvailable()) {
+                NoiseSuppressor.create(audioSessionId)?.enabled = false
+            }
+            if (AcousticEchoCanceler.isAvailable()) {
+                AcousticEchoCanceler.create(audioSessionId)?.enabled = true
+            }
+        } catch (e: Exception) {
+            Log.e("PcmAudioRecorder", "Error configuring audio effects", e)
+        }
+
 
         audioRecord?.startRecording()
         Log.i(TAG, "Recording started")
