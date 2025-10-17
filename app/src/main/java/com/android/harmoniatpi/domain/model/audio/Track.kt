@@ -16,6 +16,7 @@ class Track @AssistedInject constructor(
     @Assisted("folder") folderPath: String,
     @Assisted("existing") existingFilePath: String?,
     @Assisted("id") idExist: Long?,
+    @Assisted("sourceType") val sourceType: AudioSourceType,
     val player: AudioPlayer
 ) {
     val id = idExist ?: System.currentTimeMillis()

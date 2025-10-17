@@ -10,11 +10,13 @@ import com.android.harmoniatpi.data.audio.player.PcmAudioPlayer
 import com.android.harmoniatpi.data.audio.util.AudioConverter
 import com.android.harmoniatpi.di.TrackFactory
 import com.android.harmoniatpi.domain.interfaces.AudioMixerRepository
+import com.android.harmoniatpi.domain.model.audio.AudioSourceType
 import com.android.harmoniatpi.domain.model.audio.Track
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -62,11 +64,15 @@ class AudioMixerRepositoryImpl @Inject constructor(
         get() = tracks.value.map { it.player as PcmAudioPlayer }
 
 
-    override fun play() {
-        masterPlaybackJob?.cancel()
+    override fun play(excludeTrackId: Long?) {
 
-        val validTracks = tracks.value.filter { it.hasAudio() }
-        if (validTracks.isEmpty()) {
+        masterPlaybackJob?.cancel()
+        val tracksToPlay = tracks.value.filter { it.hasAudio() && it.id != excludeTrackId && !it.isMuted() }
+
+        if (tracksToPlay.isEmpty()) {
+            if (tracks.value.any { it.hasAudio() }) {
+                startPlaybackTracking()
+            }
             tracksCompleted.value = true
             return
         }
@@ -74,10 +80,10 @@ class AudioMixerRepositoryImpl @Inject constructor(
         val globalStartMs = currentPlaybackMs.value
         completedCount.set(0)
         tracksCompleted.value = false
-        masterPlaybackJob = CoroutineScope(Dispatchers.IO).launch {
+        masterPlaybackJob = CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
             startPlaybackTracking()
 
-            validTracks.forEach { track ->
+            tracksToPlay.forEach { track ->
                 launch {
                     val delayMs = (track.startOffsetMs - globalStartMs).coerceAtLeast(0L)
                     val internalPlayPos = (globalStartMs - track.startOffsetMs).coerceAtLeast(0L)
@@ -89,11 +95,10 @@ class AudioMixerRepositoryImpl @Inject constructor(
                     if (isActive) {
                         track.setOnPlaybackCompletedCallback {
                             val count = completedCount.incrementAndGet()
-                            if (count >= validTracks.size) {
-                                stop() // Llama a stop para limpiar todo.
+                            if (count >= tracksToPlay.size) {
+                                stop()
                             }
                         }
-
                         track.play(internalPlayPos)
                     }
                 }
@@ -115,7 +120,7 @@ class AudioMixerRepositoryImpl @Inject constructor(
         tracksCompleted.value = true
     }
 
-    override fun createTrack() {
+    override fun createTrack(sourceType: AudioSourceType) {
         val id = System.currentTimeMillis()
         val file = File(context.filesDir, "$id.pcm")
 
@@ -127,7 +132,8 @@ class AudioMixerRepositoryImpl @Inject constructor(
         val track = trackFactory.create(
             folderPath = context.filesDir.absolutePath,
             existingFilePath = file.absolutePath,
-            idExist = id
+            idExist = id,
+            sourceType = sourceType
         )
 
         tracks.update { it + track }
@@ -206,25 +212,24 @@ class AudioMixerRepositoryImpl @Inject constructor(
                 return@withContext Result.failure(FileNotFoundException("Archivo de origen temporal no encontrado."))
             }
 
-            val track = trackFactory.create(context.filesDir.absolutePath)
+            val track = trackFactory.create(
+                folderPath = context.filesDir.absolutePath,
+                sourceType = AudioSourceType.INSTRUMENT
+            )
             val destinationFile = File(track.path)
 
             try {
                 val inputUri = Uri.fromFile(sourceFile)
-
                 audioConverter.convertToPcm(inputUri, destinationFile)
                     .onFailure { error ->
                         sourceFile.delete()
                         return@withContext Result.failure(error)
                     }
-
                 tracks.update { it + track }
-
                 sourceFile.delete()
-
                 return@withContext Result.success(Unit)
             } catch (e: Exception) {
-                Log.e(TAG, "Error importando/convirtiendo pista: ${e.message}", e)
+                Log.e("AudioMixer", "Error importando/convirtiendo pista: ${e.message}", e)
                 destinationFile.delete()
                 sourceFile.delete()
                 return@withContext Result.failure(e)
@@ -383,13 +388,13 @@ class AudioMixerRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun loadPcmTrack(file: File, id: Long) {
+    override suspend fun loadPcmTrack(file: File, id: Long, sourceType: AudioSourceType) {
         if (!file.exists()) {
             Log.e(TAG, "PCM file not found: ${file.absolutePath}")
             return
         }
 
-        val track = trackFactory.create(file.parent!!, file.absolutePath, id)
+        val track = trackFactory.create(file.parent!!, file.absolutePath, id, sourceType = sourceType)
         tracks.update { it + track }
         Log.i(TAG, "Track restored from PCM: ${file.name} with path ${track.path}")
     }
