@@ -8,7 +8,7 @@ interface AudioRecorderRepository {
      * Inicia la grabación de audio.
      * @param outputFilePath Ruta del archivo de salida.
      */
-    fun startRecording(outputFilePath: String): Result<Unit>
+    fun startRecording(outputFilePath: String, audioSource: Int): Result<Unit>
 
     /**
      * Para la grabación de audio.

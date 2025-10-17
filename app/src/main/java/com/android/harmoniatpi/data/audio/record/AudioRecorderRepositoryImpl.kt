@@ -9,13 +9,12 @@ import javax.inject.Inject
 /**
  * Repositorio para operaciones de grabación de audio. Utiliza un AudioRecorder para la grabación.
  */
-class AudioRecorderRepositoryImpl
-@Inject constructor(private val recorder: AudioRecorder) : AudioRecorderRepository {
+class AudioRecorderRepositoryImpl @Inject constructor(private val recorder: AudioRecorder) : AudioRecorderRepository {
 
     @RequiresPermission(Manifest.permission.RECORD_AUDIO)
-    override fun startRecording(outputFilePath: String): Result<Unit> {
+    override fun startRecording(outputFilePath: String, audioSource: Int): Result<Unit> {
         recorder.setOutputFile(outputFilePath)
-        return recorder.startRecording()
+        return recorder.startRecording(audioSource)
     }
 
     override fun stopRecording() = recorder.stopRecording()
