@@ -2,7 +2,6 @@ package com.android.harmoniatpi.ui.screens.songVersionsScreen
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -61,11 +60,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.android.harmoniatpi.R
+import com.android.harmoniatpi.domain.model.song.DerivedVersion
+import com.android.harmoniatpi.domain.model.song.Song
+import com.android.harmoniatpi.domain.model.song.VersionType
+import com.android.harmoniatpi.domain.model.user.User
 import com.android.harmoniatpi.ui.components.CircularProgressBar
 import com.android.harmoniatpi.ui.core.theme.HarmoniaTPITheme
-import com.android.harmoniatpi.ui.screens.songVersionsScreen.model.DerivedVersion
-import com.android.harmoniatpi.ui.screens.songVersionsScreen.model.Song
 import com.android.harmoniatpi.ui.screens.songVersionsScreen.model.SongVersionsUiState
 import com.android.harmoniatpi.ui.screens.songVersionsScreen.util.formatMillisToTimeString
 import com.android.harmoniatpi.ui.screens.songVersionsScreen.viewModel.SongVersionsViewModel
@@ -146,27 +148,27 @@ fun SongVersionsContent(
                 ) {
                     val originalSong = uiState.originalSong
 
-                    item {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        SongHeader(songTitle = originalSong.title, artistName = originalSong.artistName)
-                        Spacer(modifier = Modifier.height(16.dp))
-                        OriginalSongPlayer(
-                            song = originalSong,
-                            isPlaying = uiState.isOriginalPlaying,
-                            currentProgress = uiState.currentPlaybackProgress,
-                            onPlayClick = onPlayOriginal,
-                            onOpenProjectClick = { onOpenOriginalProject(originalSong.projectId) },
-                            onSliderValueChange = onSliderChange
-                        )
-                        Spacer(modifier = Modifier.height(32.dp))
-                        Text(
-                            text = "VERSIONES DERIVADAS",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    SongHeader(song = originalSong)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OriginalSongPlayer(
+                        song = originalSong,
+                        isPlaying = uiState.isOriginalPlaying,
+                        currentProgress = uiState.currentPlaybackProgress,
+                        onPlayClick = onPlayOriginal,
+                        onOpenProjectClick = { onOpenOriginalProject(originalSong.projectId) },
+                        onSliderValueChange = onSliderChange
+                    )
+                    Spacer(modifier = Modifier.height(32.dp))
+                    Text(
+                        text = "VERSIONES DERIVADAS",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
 
                     items(uiState.derivedVersions) { version ->
                         DerivedVersionItem(
@@ -184,14 +186,16 @@ fun SongVersionsContent(
 }
 
 @Composable
-fun SongHeader(songTitle: String, artistName: String, modifier: Modifier = Modifier) {
+fun SongHeader(song: Song, modifier: Modifier = Modifier) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier.fillMaxWidth()
     ) {
-        Image(
-            painter = painterResource(id = R.drawable.image_song_default),
-            contentDescription = "Imagen de song",
+        AsyncImage(
+            model = song.imageUrl,
+            contentDescription = "Carátula de la canción ${song.title}",
+            placeholder = painterResource(id = R.drawable.holojamdefaultsonglightmode),
+            error = painterResource(id = R.drawable.holojamdefaultsonglightmode),
             modifier = Modifier
                 .size(80.dp)
                 .clip(shape = RoundedCornerShape(12.dp)),
@@ -200,12 +204,12 @@ fun SongHeader(songTitle: String, artistName: String, modifier: Modifier = Modif
         Spacer(modifier = Modifier.width(16.dp))
         Column {
             Text(
-                text = songTitle,
+                text = song.title,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = artistName,
+                text = song.creator.name,
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
             )
@@ -244,12 +248,12 @@ fun OriginalSongPlayer(
                 Text(text = song.title, style = MaterialTheme.typography.titleLarge)
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = song.artistName,
+                    text = song.creator.name,
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
                 )
                 Text(
-                    text = song.versionType,
+                    text = song.versionType.name,
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
                 )
@@ -257,13 +261,14 @@ fun OriginalSongPlayer(
             Spacer(modifier = Modifier.width(12.dp))
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 // Reemplazar con Coil o Glide para cargar imágenes desde URL y borrar background
-                Image(
-                    painter = painterResource(id = R.drawable.outline_account_circle_24),
-                    contentDescription = "Imagen de artista: ${song.artistName}",
+                AsyncImage(
+                    model = song.creator.avatarUrl,
+                    placeholder = painterResource(id = R.drawable.holojamperfildefaultblackmode),
+                    error = painterResource(id = R.drawable.holojamperfildefaultblackmode),
+                    contentDescription = "Imagen de artista: ${song.creator.name}",
                     modifier = Modifier
                         .size(80.dp)
                         .clip(CircleShape)
-                        .background(color = MaterialTheme.colorScheme.surfaceVariant)
                         .border(BorderStroke(2.dp, MaterialTheme.colorScheme.outline), CircleShape),
                     contentScale = ContentScale.Crop
                 )
@@ -467,18 +472,18 @@ fun DerivedVersionItem(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            //"Reemplazar con Coil o Glide para cargar imágenes desde URL y borrar background")
-            Image(
-                painter = painterResource(id = R.drawable.outline_account_circle_24),
-                contentDescription = "Artista: ${version.userName}",
+            AsyncImage(
+                model = version.creator.avatarUrl,
+                placeholder = painterResource(id = R.drawable.holojamperfildefaultblackmode),
+                contentDescription = "Avatar de artista: ${version.creator.name}",
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
                     .background(color = MaterialTheme.colorScheme.surfaceVariant)
-                    .border(BorderStroke(1.dp, MaterialTheme.colorScheme.outline), CircleShape),
-
+                    .border(BorderStroke(2.dp, MaterialTheme.colorScheme.outline), CircleShape),
                 contentScale = ContentScale.Crop
             )
+
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 TextButton(
@@ -488,7 +493,7 @@ fun DerivedVersionItem(
                     )
                 ) {
                     Text(
-                        text = version.userName,
+                        text = version.creator.name,
                         maxLines = 2,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
@@ -529,38 +534,123 @@ fun SongVersionsScreenPreview() {
     var isPlaying by remember { mutableStateOf(true) }
 
     val sampleDerivedVersions = listOf(
-        DerivedVersion("v1", "Lucas Martínez", "url/v1", "projectA"),
-        DerivedVersion("v2", "Sofía González", "url/v2", "projectB"),
-        DerivedVersion("v3", "Mateo López", "url/v3", "projectC"),
-        DerivedVersion("v4", "Valentina Torres", "url/v4", "projectD"),
-        DerivedVersion("v5", "Julián Fernández", "url/v5", "projectE"),
-        DerivedVersion("v6", "Emma Herrera", "url/v6", "projectF"),
-        DerivedVersion("v7", "Tomás Ramírez", "url/v7", "projectG"),
-        DerivedVersion("v8", "Camila Díaz", "url/v8", "projectH"),
-        DerivedVersion("v9", "Nicolás Castro", "url/v9", "projectI"),
-        DerivedVersion("v10", "Martina Vidal", "url/v10", "projectJ"),
-        DerivedVersion("v11", "Samuel Reyes", "url/v11", "projectK"),
-        DerivedVersion("v12", "Isabella Cruz", "url/v12", "projectL")
+        DerivedVersion(
+            "v1",
+            User(
+                "u1",
+                "Luna Beats",
+                "https://images.unsplash.com/photo-1492684223066-81342ee5ff30"
+            ), "projectA"
+        ),
+        DerivedVersion(
+            "v2",
+            User(
+                "u2",
+                "Echo Rivera",
+                "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91"
+            ),
+            "projectB"
+        ),
+        DerivedVersion(
+            "v3",
+            User(
+                "u3",
+                "Kai Harmonix",
+                "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e"
+            ),
+            "projectC"
+        ),
+        DerivedVersion(
+            "v4",
+            User(
+                "u4",
+                "Selene Nova",
+                "https://images.unsplash.com/photo-1524504388940-b1c1722653e1"
+            ),
+            "projectD"
+        ),
+        DerivedVersion(
+            "v5",
+            User("u5", "Aria Flow", "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61"),
+            "projectE"
+        ),
+        DerivedVersion(
+            "v6",
+            User(
+                "u6",
+                "Noah Frequenza",
+                "https://images.unsplash.com/photo-1494790108377-be9c29b29330"
+            ),
+            "projectF"
+        ),
+        DerivedVersion(
+            "v7",
+            User("u7", "Zion Wave", "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d"),
+            "projectG"
+        ),
+        DerivedVersion(
+            "v8",
+            User(
+                "u8",
+                "Vera Pulse",
+                "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e"
+            ),
+            "projectH"
+        ),
+        DerivedVersion(
+            "v9",
+            User(
+                "u9",
+                "Milo Resonance",
+                "https://images.unsplash.com/photo-1521119989659-a83eee488004"
+            ),
+            "projectI"
+        ),
+        DerivedVersion(
+            "v10",
+            User(
+                "u10",
+                "Nia Groove",
+                "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde"
+            ),
+            "projectJ"
+        ),
+        DerivedVersion(
+            "v11",
+            User(
+                "u11",
+                "Riley Sound",
+                "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde"
+            ),
+            "projectK"
+        ),
+        DerivedVersion(
+            "v12",
+            User("u12", "Ivy Echo", "https://images.unsplash.com/photo-1544005313-94ddf0286df2"),
+            "projectL"
+        )
     )
 
     val previewState = SongVersionsUiState(
         originalSong = Song(
             id = "1",
             title = "El paso del tiempo",
-            artistName = "Jane Smith",
-            versionType = "Original",
+            creator = User(
+                "creator1",
+                "Atlas Nova",
+                "https://images.unsplash.com/photo-1517841905240-472988babdf9"
+            ),
+            imageUrl = "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4",
+            audioUrl = "",
             projectId = "proj1",
             durationMillis = (8 * 60 + 36) * 1000L,
-            artistImageUrl = "",
-            audioUrl = ""
-
+            versionType = VersionType.ORIGINAL,
         ),
         derivedVersions = sampleDerivedVersions,
         currentPlaybackProgress = currentProgress,
         isOriginalPlaying = isPlaying,
         isLoading = false
     )
-
     // Tu tema de la app
     HarmoniaTPITheme(false) {
         SongVersionsContent(
@@ -571,5 +661,23 @@ fun SongVersionsScreenPreview() {
             onSliderChange = { newProgress -> currentProgress = newProgress },
             onNavigateBack = {}
         )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SongHeaderPreview() {
+    val sampleCreator = User(id = "1", name = "Luna Beats", avatarUrl = null)
+    val sampleSong = Song(
+        id = "101",
+        title = "Alfonsina y el Mar",
+        creator = sampleCreator,
+        imageUrl = null,// Probamos con la imagen por defecto,
+        audioUrl = "",
+        projectId = null,
+        durationMillis = 180000
+    )
+    MaterialTheme {
+        SongHeader(song = sampleSong, modifier = Modifier.padding(16.dp))
     }
 }
