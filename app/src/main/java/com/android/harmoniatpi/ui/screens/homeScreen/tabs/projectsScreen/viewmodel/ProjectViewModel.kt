@@ -6,6 +6,7 @@ import com.android.harmoniatpi.domain.cache.HoloJamCache
 import com.android.harmoniatpi.domain.model.project.Project
 import com.android.harmoniatpi.domain.usecases.DeleteProjectByIdFromDBUseCase
 import com.android.harmoniatpi.domain.usecases.GetAllProjectsFromDBUseCase
+import com.android.harmoniatpi.domain.usecases.GetProjectsByUserUseCase
 import com.android.harmoniatpi.domain.usecases.UpdateOrInsertProjectInDBUseCase
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.model.ProjectTab
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.model.ProjectUiState
@@ -22,6 +23,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ProjectViewModel @Inject constructor(
     private val getAllProjectsFromDBUseCase: GetAllProjectsFromDBUseCase,
+    private val getProjectsByUserUseCase: GetProjectsByUserUseCase,
     private val insertProjectInDBUseCase: UpdateOrInsertProjectInDBUseCase,
     private val deleteProjectByIdFromDBUseCase: DeleteProjectByIdFromDBUseCase,
     private val sharedMenuUiState: SharedMenuUiState,
@@ -32,8 +34,10 @@ class ProjectViewModel @Inject constructor(
     val uiState = _uiState.asStateFlow()
 
     init {
-        loadProjects()
+        loadMyProjects()
     }
+
+
 
     // --- Cargar todos los proyectos de la base de datos
     fun loadProjects() {
@@ -49,12 +53,28 @@ class ProjectViewModel @Inject constructor(
                 }
         }
     }
+    // Filtrando por usuario
+    fun loadMyProjects() {
+        val currentUserId = sharedMenuUiState.uiState.value.userID
+        if (currentUserId.isBlank()) {
+            _uiState.update { it.copy(listProjects = emptyList()) }
+            return
+        }
+
+        viewModelScope.launch {
+            getProjectsByUserUseCase(currentUserId)
+                .collect { projects ->
+                    _uiState.update { it.copy(listProjects = projects) }
+                    sharedMenuUiState.updateState { it.copy(projectsList = projects) }
+                }
+        }
+    }
 
     // --- Borrar un proyecto por ID
     fun deleteProject(id: String) {
         viewModelScope.launch {
             deleteProjectByIdFromDBUseCase(id)
-            loadProjects()
+            loadMyProjects()
         }
     }
 
@@ -81,6 +101,11 @@ class ProjectViewModel @Inject constructor(
     ) {
         if (!_uiState.value.isFormValid) return
 
+        val currentUserId = sharedMenuUiState.uiState.value.userID
+        if (currentUserId.isBlank()) {
+            onError("Error: Usuario no identificado.")
+            return
+        }
         _uiState.update { it.copy(isLoading = true) }
 
         viewModelScope.launch {
@@ -88,6 +113,7 @@ class ProjectViewModel @Inject constructor(
                 val current = _uiState.value
                 val project = Project(
                     id = UUID.randomUUID().toString(),
+                    ownerId = currentUserId,
                     name = sharedMenuUiState.uiState.value.userName,
                     lastName = sharedMenuUiState.uiState.value.userLastName,
                     title = current.title,
@@ -104,7 +130,7 @@ class ProjectViewModel @Inject constructor(
                 )
 
                 insertProjectInDBUseCase(project)
-                loadProjects()
+                loadMyProjects()
 
                 _uiState.update {
                     it.copy(

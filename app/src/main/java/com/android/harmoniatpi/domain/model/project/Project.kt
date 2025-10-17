@@ -6,6 +6,7 @@ import com.android.harmoniatpi.domain.model.userPreferences.Comment
 
 data class Project(
     val id: String,
+    val ownerId: String,
     val name: String,
     val lastName: String,
     val title: String,
@@ -22,6 +23,7 @@ data class Project(
 ) {
     fun toDataBase(jsonUtils: JsonUtils) = ProjectEntity(
         id = id,
+        ownerId = ownerId,
         name = name,
         lastName = lastName,
         title = title,

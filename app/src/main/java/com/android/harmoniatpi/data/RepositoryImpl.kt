@@ -127,6 +127,10 @@ class RepositoryImpl @Inject constructor(
         return projectDao.getAllProjects().map { list -> list.map { it.toDomain(jsonUtils) } }
     }
 
+    override fun getAllProjectsByUser(ownerId: String): Flow<List<Project>> {
+        return projectDao.getAllProjectsByUser(ownerId).map { list -> list.map { it.toDomain(jsonUtils) } }
+    }
+
     override suspend fun deleteProject(projectId: String) {
         projectDao.deleteById(projectId)
     }

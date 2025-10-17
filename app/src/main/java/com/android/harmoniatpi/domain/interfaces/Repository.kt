@@ -1,5 +1,6 @@
 package com.android.harmoniatpi.domain.interfaces
 
+import com.android.harmoniatpi.data.database.entities.ProjectEntity
 import com.android.harmoniatpi.domain.model.UserPreferences
 import com.android.harmoniatpi.domain.model.project.Project
 import com.google.firebase.auth.FirebaseUser
@@ -26,6 +27,8 @@ interface Repository {
     suspend fun signInWithGoogle(idToken: String): Result<FirebaseUser>
 
     fun getAllProjects ():Flow<List<Project>>
+
+    fun getAllProjectsByUser(ownerId: String): Flow<List<Project>>
 
     suspend fun deleteProject(projectId: String)
 

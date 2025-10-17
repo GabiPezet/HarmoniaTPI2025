@@ -13,6 +13,9 @@ interface ProjectDao {
     @Query("SELECT * FROM project")
     fun getAllProjects(): Flow<List<ProjectEntity>>
 
+    @Query("SELECT * FROM project WHERE ownerId = :ownerId")
+    fun getAllProjectsByUser(ownerId: String): Flow<List<ProjectEntity>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrUpdate(project: ProjectEntity)
 
