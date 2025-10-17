@@ -1,4 +1,4 @@
-package com.android.harmoniatpi.data.audio.mixer
+package com.android.harmoniatpi.data.audio
 
 import android.content.Context
 import android.media.AudioTrack
@@ -116,8 +116,24 @@ class AudioMixerRepositoryImpl @Inject constructor(
     }
 
     override fun createTrack() {
-        val track = trackFactory.create(context.filesDir.absolutePath)
+        val id = System.currentTimeMillis()
+        val file = File(context.filesDir, "$id.pcm")
+
+        // 🔹 Crea el archivo físico vacío
+        if (!file.exists()) {
+            file.createNewFile()
+        }
+
+        val track = trackFactory.create(
+            folderPath = context.filesDir.absolutePath,
+            existingFilePath = file.absolutePath,
+            idExist = id
+        )
+
         tracks.update { it + track }
+
+        Log.i("AudioMixerRepository", "🎶 Nueva pista creada: ${file.absolutePath}")
+        Log.i("AudioMixerRepository", "🎶 Nueva pista creada: ${tracks.value}")
     }
 
     override fun removeTrack(id: Long) {
@@ -180,36 +196,37 @@ class AudioMixerRepositoryImpl @Inject constructor(
 
 
     @RequiresApi(Build.VERSION_CODES.Q)
-    override suspend fun createTrackFromFile(sourceFilePath: String): Result<Unit> = withContext(Dispatchers.IO) {
-        val sourceFile = File(sourceFilePath)
-        if (!sourceFile.exists()) {
-            return@withContext Result.failure(FileNotFoundException("Archivo de origen temporal no encontrado."))
+    override suspend fun createTrackFromFile(sourceFilePath: String): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            val sourceFile = File(sourceFilePath)
+            if (!sourceFile.exists()) {
+                return@withContext Result.failure(FileNotFoundException("Archivo de origen temporal no encontrado."))
+            }
+
+            val track = trackFactory.create(context.filesDir.absolutePath)
+            val destinationFile = File(track.path)
+
+            try {
+                val inputUri = Uri.fromFile(sourceFile)
+
+                audioConverter.convertToPcm(inputUri, destinationFile)
+                    .onFailure { error ->
+                        sourceFile.delete()
+                        return@withContext Result.failure(error)
+                    }
+
+                tracks.update { it + track }
+
+                sourceFile.delete()
+
+                return@withContext Result.success(Unit)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error importando/convirtiendo pista: ${e.message}", e)
+                destinationFile.delete()
+                sourceFile.delete()
+                return@withContext Result.failure(e)
+            }
         }
-
-        val track = trackFactory.create(context.filesDir.absolutePath)
-        val destinationFile = File(track.path)
-
-        try {
-            val inputUri = Uri.fromFile(sourceFile)
-
-            audioConverter.convertToPcm(inputUri, destinationFile)
-                .onFailure { error ->
-                    sourceFile.delete()
-                    return@withContext Result.failure(error)
-                }
-
-            tracks.update { it + track }
-
-            sourceFile.delete()
-
-            return@withContext Result.success(Unit)
-        } catch (e: Exception) {
-            Log.e(TAG, "Error importando/convirtiendo pista: ${e.message}", e)
-            destinationFile.delete()
-            sourceFile.delete()
-            return@withContext Result.failure(e)
-        }
-    }
 
 
     override fun trimTrack(id: Long, startMs: Long, endMs: Long): Result<Unit> {
@@ -327,7 +344,7 @@ class AudioMixerRepositoryImpl @Inject constructor(
     }
 
 
-    override suspend fun getTracks(): StateFlow<List<Track>> = tracks.asStateFlow()
+    override fun getTracks(): StateFlow<List<Track>> = tracks.asStateFlow()
     override suspend fun allTracksWerePlayed(): StateFlow<Boolean> = tracksCompleted.asStateFlow()
 
     override fun muteTrack(id: Long) {
@@ -362,6 +379,23 @@ class AudioMixerRepositoryImpl @Inject constructor(
             }
         }
     }
+
+    override suspend fun loadPcmTrack(file: File,id: Long) {
+        if (!file.exists()) {
+            Log.e(TAG, "PCM file not found: ${file.absolutePath}")
+            return
+        }
+
+        val track = trackFactory.create(file.parent!!, file.absolutePath,id)
+        tracks.update { it + track }
+        Log.i(TAG, "Track restored from PCM: ${file.name} with path ${track.path}")
+    }
+
+    override fun clearAllTracks() {
+        tracks.update { emptyList() }
+        Log.i("AudioMixerRepository", "🧹 Tracks limpiados del repositorio")
+    }
+
 
     private companion object {
         const val TAG = "AudioMixerRepository"

@@ -2,6 +2,7 @@ package com.android.harmoniatpi.ui.screens.projectManagementScreen
 
 import android.net.Uri
 import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -86,6 +87,11 @@ fun ProjectManagementScreen(
         }
     }
 
+    BackHandler {
+        viewModel.updateCurrentProjectWithTracks()
+        onBack()
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = { //Impl de top bar
@@ -129,7 +135,7 @@ fun ProjectManagementScreen(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                items(state.tracks, key = { it.id }) { track ->
+                items(state.tracks) { track ->
                     TrackItem(
                         track = track,
                         onClick = { viewModel.selectTrack(track.id) },

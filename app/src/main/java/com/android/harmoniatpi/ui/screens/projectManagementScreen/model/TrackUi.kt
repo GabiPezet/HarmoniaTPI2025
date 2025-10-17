@@ -1,5 +1,7 @@
 package com.android.harmoniatpi.ui.screens.projectManagementScreen.model
 
+import com.android.harmoniatpi.domain.model.project.AudioTrack
+
 data class TrackUi(
     val id: Long,
     val path: String,
@@ -12,3 +14,19 @@ data class TrackUi(
     val volume: Float = 1f,
     val startOffsetMs: Long = 0L
 )
+    val volume: Float = 1f
+){
+    fun toAudioTrack(): AudioTrack {
+        return AudioTrack(
+            id = id,
+            path = path,
+            title = title,
+            selected = selected,
+            waveForm = waveForm,
+            durationMs = durationMs,
+            isUndoAvailable = isUndoAvailable,
+            isMuted = isMuted,
+            volume = volume
+        )
+    }
+}
