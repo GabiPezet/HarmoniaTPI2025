@@ -15,12 +15,13 @@ sealed class NavigationRoutes() {
 
     @Serializable
     data object ProjectManagementScreenRoute : NavigationRoutes()
-
-    @Serializable
-    data object CollabScreenRoute : NavigationRoutes()
-
+    
     @Serializable
     data object NotificationScreenRoute : NavigationRoutes()
+
+    @Serializable
+    data object SongVersionsScreenRoute : NavigationRoutes()
+
 
 }
 
@@ -30,5 +31,5 @@ sealed class BottomBarRoutes{
     @Serializable
     data object CommunityScreenRoute : BottomBarRoutes()
     @Serializable
-    data object ProjectsScreenRoute : BottomBarRoutes()
+    data object RehearsalRoomRoute : BottomBarRoutes()
 }

@@ -1,19 +1,38 @@
 package com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.android.harmoniatpi.domain.model.userPreferences.Post
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.model.CommunityUiState
+import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.SharedMenuUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import javax.inject.Inject
 
 @HiltViewModel
-class CommunityViewModel @Inject constructor() : ViewModel() {
+class CommunityViewModel @Inject constructor(
+    private val sharedMenuUiState: SharedMenuUiState
+) : ViewModel() {
     private val _uiState = MutableStateFlow(CommunityUiState())
     val uiState = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            sharedMenuUiState.uiState.collect { uiState ->
+                _uiState.update {
+                    it.copy(
+                        userName = uiState.userName,
+                        userLastName = uiState.userLastName
+                    )
+                }
+
+            }
+        }
+    }
 
     fun onNewPostClicked() {
         _uiState.update { it.copy(showCreateDialog = true) }

@@ -8,8 +8,8 @@ import com.android.harmoniatpi.di.util.JsonUtils
 import com.android.harmoniatpi.domain.model.userPreferences.Friend
 import com.android.harmoniatpi.domain.model.userPreferences.FriendRequestReceived
 import com.android.harmoniatpi.domain.model.userPreferences.FriendRequestSending
-import com.android.harmoniatpi.domain.model.userPreferences.Project
 import com.android.harmoniatpi.domain.model.UserPreferences
+import com.android.harmoniatpi.domain.model.project.Project
 import com.android.harmoniatpi.domain.model.userPreferences.AppTheme
 import com.android.harmoniatpi.domain.model.userPreferences.Post
 import com.android.harmoniatpi.ui.screens.notificationScreen.model.NotificationHarmonia
@@ -35,6 +35,13 @@ data class UserPreferencesEntity(
     @ColumnInfo
     val newNotification: Boolean = false,
     @ColumnInfo
+    val instrument: String = "",
+    @ColumnInfo
+    val genres: String = "",
+    @ColumnInfo
+    val location: String = "",
+    @ColumnInfo
+    val rating: Float = 0.0f,
     val friendsList: String = "",
     @ColumnInfo
     val projectsList: String = "",
@@ -59,6 +66,11 @@ data class UserPreferencesEntity(
             emptyList()
         },
         newNotification = newNotification,
+        instrument = instrument,
+        genres = genres,
+        location = location,
+        rating = rating,
+
         friendsList = if (friendsList.isNotBlank()) {
             jsonUtils.decodeJsonToListObject<Friend>(friendsList)
         } else {

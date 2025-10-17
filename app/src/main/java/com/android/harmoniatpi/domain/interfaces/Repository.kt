@@ -1,7 +1,9 @@
 package com.android.harmoniatpi.domain.interfaces
 
 import com.android.harmoniatpi.domain.model.UserPreferences
+import com.android.harmoniatpi.domain.model.project.Project
 import com.google.firebase.auth.FirebaseUser
+import kotlinx.coroutines.flow.Flow
 
 interface Repository {
     fun getFirebaseCurrentUser(): FirebaseUser?
@@ -22,4 +24,12 @@ interface Repository {
     ): Result<FirebaseUser>
 
     suspend fun signInWithGoogle(idToken: String): Result<FirebaseUser>
+
+    fun getAllProjects ():Flow<List<Project>>
+
+    suspend fun deleteProject(projectId: String)
+
+    suspend fun insertOrUpdateProject(project: Project)
+
+    suspend fun getProjectById(projectId: String): Project
 }
