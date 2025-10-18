@@ -1,6 +1,5 @@
 package com.android.harmoniatpi.ui.screens.songVersionsScreen.viewModel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.harmoniatpi.domain.interfaces.ExoAudioPlayerRepository
