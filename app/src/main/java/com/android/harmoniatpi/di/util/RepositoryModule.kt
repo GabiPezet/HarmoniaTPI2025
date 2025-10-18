@@ -14,7 +14,4 @@ import dagger.hilt.components.SingletonComponent
 object RepositoryModule {
     @Provides
     fun provideRepository(impl: RepositoryImpl): Repository = impl
-
-    @Provides
-    fun provideSongRepository (impl: SongRepositoryImpl): SongRepository = impl
 }
