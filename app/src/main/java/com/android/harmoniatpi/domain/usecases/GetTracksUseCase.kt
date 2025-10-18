@@ -4,5 +4,5 @@ import com.android.harmoniatpi.domain.interfaces.AudioMixerRepository
 import javax.inject.Inject
 
 class GetTracksUseCase @Inject constructor(private val mixer: AudioMixerRepository) {
-    suspend operator fun invoke() = mixer.getTracks()
+    operator fun invoke() = mixer.getTracks()
 }

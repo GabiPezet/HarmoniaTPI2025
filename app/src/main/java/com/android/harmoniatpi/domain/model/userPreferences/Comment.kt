@@ -6,6 +6,5 @@ data class Comment(
     val lastName : String,
     val comment : String,
     val photoUrlUser : String,
-    val likes : Int,
-    val subComment : List<Comment>
+    val likes : Int
 )

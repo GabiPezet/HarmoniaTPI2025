@@ -112,7 +112,11 @@ data class UserPreferencesEntity(
         projectsList = projectsList,
         myPostsList = myPostsList,
         friendRequestReceived = friendRequestReceived,
-        friendRequestSent = friendRequestSent
+        friendRequestSent = friendRequestSent,
+        instrument = this.instrument,
+        genres = this.genres,
+        location = this.location,
+        rating = this.rating
     )
 
 }

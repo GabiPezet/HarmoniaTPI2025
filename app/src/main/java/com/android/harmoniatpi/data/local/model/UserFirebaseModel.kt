@@ -17,7 +17,11 @@ data class UserFirebaseModel(
     val projectsList: String = "",
     val myPostsList: String = "",
     val friendRequestReceived: String = "",
-    val friendRequestSent: String = ""
+    val friendRequestSent: String = "",
+    val instrument: String = "",
+    val genres: String = "",
+    val location: String = "",
+    val rating: Float = 0.0f
 ) {
     fun toEntity(): UserPreferencesEntity = UserPreferencesEntity(
         userID = userID,
@@ -33,6 +37,10 @@ data class UserFirebaseModel(
         projectsList = projectsList,
         myPostsList = myPostsList,
         friendRequestReceived = friendRequestReceived,
-        friendRequestSent = friendRequestSent
+        friendRequestSent = friendRequestSent,
+        instrument = instrument,
+        genres = genres,
+        location = location,
+        rating = rating
     )
 }

@@ -1,8 +1,8 @@
 package com.android.harmoniatpi.ui.screens.songVersionsScreen
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -39,6 +39,7 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.SliderState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -60,16 +61,33 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.android.harmoniatpi.R
+import com.android.harmoniatpi.domain.model.song.DerivedVersion
+import com.android.harmoniatpi.domain.model.song.Song
+import com.android.harmoniatpi.domain.model.user.User
 import com.android.harmoniatpi.ui.components.CircularProgressBar
 import com.android.harmoniatpi.ui.core.theme.HarmoniaTPITheme
-import com.android.harmoniatpi.ui.screens.songVersionsScreen.model.DerivedVersion
-import com.android.harmoniatpi.ui.screens.songVersionsScreen.model.Song
+import com.android.harmoniatpi.ui.screens.songVersionsScreen.model.PlaybackState
 import com.android.harmoniatpi.ui.screens.songVersionsScreen.model.SongVersionsUiState
 import com.android.harmoniatpi.ui.screens.songVersionsScreen.util.formatMillisToTimeString
 import com.android.harmoniatpi.ui.screens.songVersionsScreen.viewModel.SongVersionsViewModel
 
-
+/**
+ * Composable **stateful** (con estado) para la pantalla de detalles de canciones.
+ *
+ * Esta función actúa como el **punto de entrada** a la pantalla. Se encarga de:
+ * 1. Obtener la instancia del [SongVersionsViewModel] usando Hilt (`hiltViewModel()`).
+ * 2. Observar y recolectar el [SongVersionsUiState] expuesto por el ViewModel.
+ * 3. Pasar el estado y las referencias a las funciones del ViewModel al composable
+ * stateless [SongVersionsContent], que se encarga del renderizado de la UI.
+ *
+ * Esta separación permite mantener la lógica de estado y la obtención de datos
+ * desacoplada de la lógica de presentación pura.
+ *
+ * @param viewModel Instancia del ViewModel gestionada por Hilt.
+ * @param onNavigateBack Lambda para manejar la acción de navegación hacia atrás.
+ */
 @Composable
 fun SongVersionsScreen(
     viewModel: SongVersionsViewModel = hiltViewModel(),
@@ -86,6 +104,33 @@ fun SongVersionsScreen(
         onNavigateBack = onNavigateBack
     )
 }
+
+/**
+ * Composable **stateless** (sin estado) para el contenido de la pantalla de detalles de canciones.
+ *
+ * Esta función se encarga exclusivamente de **dibujar la interfaz de usuario** basándose en el [uiState]
+ * proporcionado y de **notificar las interacciones del usuario** a través de las funciones lambda
+ * (ej: [onPlayOriginal], [onSliderChange]).
+ *
+ * **No contiene lógica de negocio ni gestiona su propio estado.**
+ *
+ * **¿Por qué dos Composable (`SongVersionsScreen` y `SongVersionsContent`)?**
+ * Esta separación sigue el patrón **Stateful vs. Stateless**.
+ * - `SongVersionsScreen` (Stateful): Es el composable "inteligente". Obtiene el `ViewModel`
+ * (usando `hiltViewModel()`), recolecta el `UiState` y conecta los eventos de la UI
+ * con las funciones del `ViewModel`.
+ * - `SongVersionsContent` (Stateless): Es el composable "tonto". Solo recibe datos y lambdas.
+ * Esto lo hace **altamente reutilizable y fácil de previsualizar y testear**
+ * en aislamiento, ya que no depende de `ViewModel` ni de Hilt.
+ *
+ * @param uiState El estado actual de la pantalla, que contiene toda la información a mostrar.
+ * @param onPlayOriginal Lambda que se invoca cuando se presiona el botón de play/pausa de la canción original.
+ * @param onOpenOriginalProject Lambda que se invoca al presionar "Abrir proyecto" en la canción original.
+ * @param onPlayDerived Lambda que se invoca cuando se presiona el botón de play/pausa de una versión derivada.
+ * @param onSliderChange Lambda que se invoca cuando el usuario interactúa con el slider de progreso.
+ * @param onNavigateBack Lambda que se invoca al presionar el botón de navegación hacia atrás.
+ * @param modifier Modificador de Compose para personalizar la apariencia o comportamiento.
+ */
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -105,8 +150,9 @@ fun SongVersionsContent(
         ) {
             CircularProgressBar("Cargando...")
         }
-    } else{
+    } else {
         Scaffold(
+
             modifier = modifier,
             topBar = {
                 CenterAlignedTopAppBar(
@@ -124,10 +170,17 @@ fun SongVersionsContent(
                             )
                         }
                     },
+                    colors = TopAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
+                        titleContentColor = MaterialTheme.colorScheme.secondary,
+                        navigationIconContentColor = MaterialTheme.colorScheme.secondary,
+                        actionIconContentColor = MaterialTheme.colorScheme.secondary,
+                        scrolledContainerColor = MaterialTheme.colorScheme.secondaryContainer
+                    ),
                 )
             },
         ) { paddingValues ->
-            if (uiState.originalSong != null) {
+            if (uiState.song != null) {
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
@@ -135,16 +188,16 @@ fun SongVersionsContent(
                         .padding(horizontal = 16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    val originalSong = uiState.originalSong
+                    val originalSong = uiState.song
 
                     item {
                         Spacer(modifier = Modifier.height(16.dp))
-                        SongHeader(songTitle = originalSong.title, artistName = originalSong.artistName)
+                        SongHeader(song = originalSong)
                         Spacer(modifier = Modifier.height(16.dp))
-                        OriginalSongPlayer(
+                        PrincipalSongPlayer(
                             song = originalSong,
-                            isPlaying = uiState.isOriginalPlaying,
-                            currentProgress = uiState.currentPlaybackProgress,
+                            isPlaying = uiState.playingSongId == originalSong.id && uiState.playbackState.isPlaying,
+                            playbackState = uiState.playbackState,
                             onPlayClick = onPlayOriginal,
                             onOpenProjectClick = { onOpenOriginalProject(originalSong.projectId) },
                             onSliderValueChange = onSliderChange
@@ -160,10 +213,14 @@ fun SongVersionsContent(
                     }
 
                     items(uiState.derivedVersions) { version ->
+                        val isThisPlaying =
+                            uiState.playingSongId == version.id && uiState.playbackState.isPlaying
                         DerivedVersionItem(
                             version = version,
-                            isPlaying = uiState.playingDerivedVersionId == version.id,
+                            isPlaying = isThisPlaying,
+                            playbackState = uiState.playbackState,
                             onPlayClick = { onPlayDerived(version.id) },
+                            onSliderChange = onSliderChange,
                             modifier = Modifier.padding(vertical = 4.dp)
                         )
                     }
@@ -174,15 +231,20 @@ fun SongVersionsContent(
     }
 }
 
+/**
+ * Composable para mostrar la información de una canción.[Song]
+ */
 @Composable
-fun SongHeader(songTitle: String, artistName: String, modifier: Modifier = Modifier) {
+fun SongHeader(song: Song, modifier: Modifier = Modifier) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier.fillMaxWidth()
     ) {
-        Image(
-            painter = painterResource(id = R.drawable.image_song_default),
-            contentDescription = "Imagen de song",
+        AsyncImage(
+            model = song.imageUrl,
+            contentDescription = "Carátula de la canción ${song.title}",
+            placeholder = painterResource(id = R.drawable.holojamdefaultsonglightmode),
+            error = painterResource(id = R.drawable.holojamdefaultsonglightmode),
             modifier = Modifier
                 .size(80.dp)
                 .clip(shape = RoundedCornerShape(12.dp)),
@@ -191,12 +253,12 @@ fun SongHeader(songTitle: String, artistName: String, modifier: Modifier = Modif
         Spacer(modifier = Modifier.width(16.dp))
         Column {
             Text(
-                text = songTitle,
+                text = song.title,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = artistName,
+                text = song.creator.name,
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
             )
@@ -205,16 +267,19 @@ fun SongHeader(songTitle: String, artistName: String, modifier: Modifier = Modif
     }
 }
 
+/**
+ * Composable para mostrar la información de una canción base [Song]
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun OriginalSongPlayer(
+fun PrincipalSongPlayer(
     song: Song,
     isPlaying: Boolean,
+    playbackState: PlaybackState,
     onPlayClick: () -> Unit,
     onOpenProjectClick: () -> Unit,
+    onSliderValueChange: (Float) -> Unit,
     modifier: Modifier = Modifier,
-    currentProgress: Float,
-    onSliderValueChange: (Float) -> Unit
 ) {
     Card(
         shape = RoundedCornerShape(16.dp),
@@ -235,12 +300,12 @@ fun OriginalSongPlayer(
                 Text(text = song.title, style = MaterialTheme.typography.titleLarge)
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = song.artistName,
+                    text = song.creator.name,
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
                 )
                 Text(
-                    text = song.versionType,
+                    text = song.versionType.name,
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
                 )
@@ -248,13 +313,14 @@ fun OriginalSongPlayer(
             Spacer(modifier = Modifier.width(12.dp))
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 // Reemplazar con Coil o Glide para cargar imágenes desde URL y borrar background
-                Image(
-                    painter = painterResource(id = R.drawable.outline_account_circle_24),
-                    contentDescription = "Imagen de artista: ${song.artistName}",
+                AsyncImage(
+                    model = song.creator.avatarUrl,
+                    placeholder = painterResource(id = R.drawable.holojamperfildefaultblackmode),
+                    error = painterResource(id = R.drawable.holojamperfildefaultblackmode),
+                    contentDescription = "Imagen de artista: ${song.creator.name}",
                     modifier = Modifier
                         .size(80.dp)
                         .clip(CircleShape)
-                        .background(color = MaterialTheme.colorScheme.surfaceVariant)
                         .border(BorderStroke(2.dp, MaterialTheme.colorScheme.outline), CircleShape),
                     contentScale = ContentScale.Crop
                 )
@@ -288,10 +354,17 @@ fun OriginalSongPlayer(
                 iconColor = MaterialTheme.colorScheme.onSecondary
             )
 
+            val displayDurationMs =
+                if (isPlaying) playbackState.totalDurationMs else song.durationMillis
+            val displayPositionMs = if (isPlaying) playbackState.currentPositionMs else 0L
+            val currentProgress = if (displayDurationMs > 0) {
+                displayPositionMs.toFloat() / displayDurationMs.toFloat()
+            } else 0f
 
-            CustomPlayerControls(
-                song = song,
+            PlayerSliderControls(
+                durationMillis = displayDurationMs,
                 currentProgress = currentProgress,
+                currentPositionMs = displayPositionMs,
                 onSliderValueChange = onSliderValueChange,
                 modifier = Modifier.weight(1f)
             )
@@ -299,12 +372,15 @@ fun OriginalSongPlayer(
     }
 }
 
-
+/**
+ * Composable para mostrar la información de una canción base [Song]. Duración, progreso.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CustomPlayerControls(
-    song: Song,
+fun PlayerSliderControls(
+    durationMillis: Long,
     currentProgress: Float,
+    currentPositionMs: Long,
     onSliderValueChange: (Float) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -355,17 +431,22 @@ fun CustomPlayerControls(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = formatMillisToTimeString((currentProgress * song.durationMillis).toLong()),
+                text = formatMillisToTimeString(currentPositionMs),
                 style = MaterialTheme.typography.labelSmall,
             )
+            //Text(
+            //text = formatMillisToTimeString(durationMillis - (currentProgress * durationMillis).toLong()),
             Text(
-                text = formatMillisToTimeString(song.durationMillis - (currentProgress * song.durationMillis).toLong()),
+                text = formatMillisToTimeString(durationMillis),
                 style = MaterialTheme.typography.labelSmall,
             )
         }
     }
 }
 
+/**
+ * Composable para mostrar un botón de play/pause.
+ */
 @Composable
 private fun CircularPlay(
     onPlay: () -> Unit,
@@ -390,6 +471,9 @@ private fun CircularPlay(
     }
 }
 
+/**
+ * Composable para mostrar un track personalizado.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CustomTrack(
@@ -436,11 +520,16 @@ private fun CustomTrack(
     }
 }
 
+/**
+ * Composable para mostrar un track personalizado. Una versión derivada-
+ */
 @Composable
 fun DerivedVersionItem(
     version: DerivedVersion,
     isPlaying: Boolean,
+    playbackState: PlaybackState,
     onPlayClick: () -> Unit,
+    onSliderChange: (Float) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -452,107 +541,87 @@ fun DerivedVersionItem(
             contentColor = MaterialTheme.colorScheme.onSurfaceVariant
         )
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            //"Reemplazar con Coil o Glide para cargar imágenes desde URL y borrar background")
-            Image(
-                painter = painterResource(id = R.drawable.outline_account_circle_24),
-                contentDescription = "Artista: ${version.userName}",
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(color = MaterialTheme.colorScheme.surfaceVariant)
-                    .border(BorderStroke(1.dp, MaterialTheme.colorScheme.outline), CircleShape),
-
-                contentScale = ContentScale.Crop
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                TextButton(
-                    onClick = { TODO("ir a perfil del artista seleccionado") },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                ) {
-                    Text(
-                        text = version.userName,
-                        maxLines = 2,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            }
-
-            //Habilitar para el siguiente mvp si es necesario
-            /*TextButton(
-                onClick = { if (version.projectId != null) onOpenProjectClick() },
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+            Row(
+                modifier = Modifier,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Abrir proyecto",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer,
-                    fontWeight = FontWeight.SemiBold,
-                    textDecoration = TextDecoration.Underline
+                AsyncImage(
+                    model = version.creator.avatarUrl,
+                    placeholder = painterResource(id = R.drawable.holojamperfildefaultblackmode),
+                    contentDescription = "Avatar de artista: ${version.creator.name}",
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(color = MaterialTheme.colorScheme.surfaceVariant)
+                        .border(BorderStroke(2.dp, MaterialTheme.colorScheme.outline), CircleShape),
+                    contentScale = ContentScale.Crop
+                )
+
+                Spacer(modifier = Modifier.width(16.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    TextButton(
+                        onClick = { TODO("ir a perfil del artista seleccionado") },
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    ) {
+                        Text(
+                            text = version.creator.name,
+                            maxLines = 2,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+
+                CircularPlay(
+                    onPlay = onPlayClick,
+                    onPause = onPlayClick,
+                    isPlaying = isPlaying,
+                    modifier = Modifier.size(30.dp),
+                    background = MaterialTheme.colorScheme.tertiary,
+                    iconColor = MaterialTheme.colorScheme.onTertiary
                 )
             }
-            Spacer(modifier = Modifier.width(16.dp))
-            */
-            CircularPlay(
-                onPlay = onPlayClick,
-                onPause = onPlayClick,
-                isPlaying = isPlaying,
-                modifier = Modifier.size(30.dp),
-                background = MaterialTheme.colorScheme.tertiary,
-                iconColor = MaterialTheme.colorScheme.onTertiary
-            )
+            AnimatedVisibility(visible = isPlaying) {
+                val displayDurationMs =
+                    if (isPlaying) playbackState.totalDurationMs else version.durationMillis
+                        ?: 0L
+                val displayPositionMs = if (isPlaying) playbackState.currentPositionMs else 0L
+                val currentProgress = if (displayDurationMs > 0) {
+                    displayPositionMs.toFloat() / displayDurationMs.toFloat()
+                } else 0f
+
+                PlayerSliderControls(
+                    durationMillis = displayDurationMs,
+                    currentProgress = currentProgress,
+                    currentPositionMs = displayPositionMs,
+                    onSliderValueChange = onSliderChange,
+                    modifier = Modifier.padding()
+                )
+            }
         }
     }
 }
 
+/**
+ * Composable para mostrar la información de una canción base [Song]. Duración, progreso.
+ */
 @Preview(showBackground = true, showSystemUi = false, name = "Light Mode")
 @Composable
 fun SongVersionsScreenPreview() {
     var currentProgress by remember { mutableFloatStateOf(0f) }
     var isPlaying by remember { mutableStateOf(true) }
 
-    val sampleDerivedVersions = listOf(
-        DerivedVersion("v1", "Lucas Martínez", "url/v1", "projectA"),
-        DerivedVersion("v2", "Sofía González", "url/v2", "projectB"),
-        DerivedVersion("v3", "Mateo López", "url/v3", "projectC"),
-        DerivedVersion("v4", "Valentina Torres", "url/v4", "projectD"),
-        DerivedVersion("v5", "Julián Fernández", "url/v5", "projectE"),
-        DerivedVersion("v6", "Emma Herrera", "url/v6", "projectF"),
-        DerivedVersion("v7", "Tomás Ramírez", "url/v7", "projectG"),
-        DerivedVersion("v8", "Camila Díaz", "url/v8", "projectH"),
-        DerivedVersion("v9", "Nicolás Castro", "url/v9", "projectI"),
-        DerivedVersion("v10", "Martina Vidal", "url/v10", "projectJ"),
-        DerivedVersion("v11", "Samuel Reyes", "url/v11", "projectK"),
-        DerivedVersion("v12", "Isabella Cruz", "url/v12", "projectL")
-    )
 
     val previewState = SongVersionsUiState(
-        originalSong = Song(
-            id = "1",
-            title = "El paso del tiempo",
-            artistName = "Jane Smith",
-            versionType = "Original",
-            projectId = "proj1",
-            durationMillis = (8 * 60 + 36) * 1000L,
-            artistImageUrl = "",
-            audioUrl = ""
-
-        ),
-        derivedVersions = sampleDerivedVersions,
-        currentPlaybackProgress = currentProgress,
-        isOriginalPlaying = isPlaying,
+        song = createMockSong(),
+        derivedVersions = createMockDerivedVersions(),
+        playbackState = PlaybackState(),
         isLoading = false
     )
 
-    // Tu tema de la app
     HarmoniaTPITheme(false) {
         SongVersionsContent(
             uiState = previewState,
@@ -562,5 +631,15 @@ fun SongVersionsScreenPreview() {
             onSliderChange = { newProgress -> currentProgress = newProgress },
             onNavigateBack = {}
         )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SongHeaderPreview() {
+    val sampleCreator = User(id = "1", name = "Luna Beats", avatarUrl = null)
+    val sampleSong = createMockSong()
+    MaterialTheme {
+        SongHeader(song = sampleSong, modifier = Modifier.padding(16.dp))
     }
 }

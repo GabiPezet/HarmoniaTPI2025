@@ -1,6 +1,7 @@
-package com.android.harmoniatpi.data.audio.mixer
+package com.android.harmoniatpi.data.audio
 
 import android.content.Context
+import android.media.AudioTrack
 import android.net.Uri
 import android.os.Build
 import android.util.Log
@@ -9,11 +10,13 @@ import com.android.harmoniatpi.data.audio.player.PcmAudioPlayer
 import com.android.harmoniatpi.data.audio.util.AudioConverter
 import com.android.harmoniatpi.di.TrackFactory
 import com.android.harmoniatpi.domain.interfaces.AudioMixerRepository
+import com.android.harmoniatpi.domain.model.audio.AudioSourceType
 import com.android.harmoniatpi.domain.model.audio.Track
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -56,65 +59,87 @@ class AudioMixerRepositoryImpl @Inject constructor(
     private val completedCount = AtomicInteger(0)
 
     private val currentPlaybackMs = MutableStateFlow(0L)
-    private var playbackJob: Job? = null
+    private var masterPlaybackJob: Job? = null
     private val playerList: List<PcmAudioPlayer>
         get() = tracks.value.map { it.player as PcmAudioPlayer }
 
 
-    override fun play() {
-        val validTracks = tracks.value.filter { it.hasAudio() }
-        val totalTracks = validTracks.size
-        val globalStartMs = currentPlaybackMs.value
+    override fun play(excludeTrackId: Long?) {
 
-        completedCount.set(0)
-        tracksCompleted.value = false
+        masterPlaybackJob?.cancel()
+        val tracksToPlay = tracks.value.filter { it.hasAudio() && it.id != excludeTrackId && !it.isMuted() }
 
-        tracks.value.forEach {
-            it.stop()
+        if (tracksToPlay.isEmpty()) {
+            if (tracks.value.any { it.hasAudio() }) {
+                startPlaybackTracking()
+            }
+            tracksCompleted.value = true
+            return
         }
 
-
-        if (validTracks.isNotEmpty()) {
-            Log.i(TAG, "Tracks with audio: $totalTracks")
-
-
+        val globalStartMs = currentPlaybackMs.value
+        completedCount.set(0)
+        tracksCompleted.value = false
+        masterPlaybackJob = CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
             startPlaybackTracking()
-            validTracks.forEach { track ->
-                track.setOnPlaybackCompletedCallback {
-                    val count = completedCount.incrementAndGet()
-                    Log.i(TAG, "Track ${track.id} completed. Count: $count")
-                    if (count == totalTracks) {
-                        stopPlaybackTracking()
-                        currentPlaybackMs.value = 0L
-                        tracksCompleted.value = true
+
+            tracksToPlay.forEach { track ->
+                launch {
+                    val delayMs = (track.startOffsetMs - globalStartMs).coerceAtLeast(0L)
+                    val internalPlayPos = (globalStartMs - track.startOffsetMs).coerceAtLeast(0L)
+
+                    if (delayMs > 0) {
+                        delay(delayMs)
+                    }
+
+                    if (isActive) {
+                        track.setOnPlaybackCompletedCallback {
+                            val count = completedCount.incrementAndGet()
+                            if (count >= tracksToPlay.size) {
+                                stop()
+                            }
+                        }
+                        track.play(internalPlayPos)
                     }
                 }
-                track.play(globalStartMs)
             }
-        } else {
-            Log.i(TAG, "No tracks with audio")
-            tracksCompleted.value = true
         }
     }
 
     override fun pause() {
+        masterPlaybackJob?.cancel()
         stopPlaybackTracking()
-        tracks.value.forEach {
-            it.pause()
-        }
+        tracks.value.forEach { it.pause() }
     }
 
     override fun stop() {
+        masterPlaybackJob?.cancel()
         stopPlaybackTracking()
         currentPlaybackMs.value = 0L
-        tracks.value.forEach {
-            it.stop()
-        }
+        tracks.value.forEach { it.stop() }
+        tracksCompleted.value = true
     }
 
-    override fun createTrack() {
-        val track = trackFactory.create(context.filesDir.absolutePath)
+    override fun createTrack(sourceType: AudioSourceType) {
+        val id = System.currentTimeMillis()
+        val file = File(context.filesDir, "$id.pcm")
+
+        // 🔹 Crea el archivo físico vacío
+        if (!file.exists()) {
+            file.createNewFile()
+        }
+
+        val track = trackFactory.create(
+            folderPath = context.filesDir.absolutePath,
+            existingFilePath = file.absolutePath,
+            idExist = id,
+            sourceType = sourceType
+        )
+
         tracks.update { it + track }
+
+        Log.i("AudioMixerRepository", "🎶 Nueva pista creada: ${file.absolutePath}")
+        Log.i("AudioMixerRepository", "🎶 Nueva pista creada: ${tracks.value}")
     }
 
     override fun removeTrack(id: Long) {
@@ -125,27 +150,36 @@ class AudioMixerRepositoryImpl @Inject constructor(
     }
 
 
+    private var playbackTrackingJob: Job? = null
     private fun startPlaybackTracking() {
-        playbackJob?.cancel()
-        playbackJob = CoroutineScope(Dispatchers.Default).launch {
+        playbackTrackingJob?.cancel()
+        playbackTrackingJob = CoroutineScope(Dispatchers.Default).launch {
             while (isActive) {
-                // Toma la posición más avanzada
-                val currentMaxMs = playerList.maxOfOrNull { it.getCurrentPositionMs() } ?: 0L
-                currentPlaybackMs.value = currentMaxMs
-                delay(100)
+                val activePlayers =
+                    playerList.filter { it.audioTrack.playState == AudioTrack.PLAYSTATE_PLAYING }
+                if (activePlayers.isNotEmpty()) {
+
+                    val maxPos = activePlayers.maxOfOrNull { player ->
+                        val track = tracks.value.find { it.player == player }
+                        (track?.startOffsetMs ?: 0L) + player.getCurrentPositionMs()
+                    } ?: currentPlaybackMs.value
+                    currentPlaybackMs.value = maxPos
+                }
+                delay(50)
             }
         }
     }
 
     private fun stopPlaybackTracking() {
-        playbackJob?.cancel()
-        playbackJob = null
+        playbackTrackingJob?.cancel()
     }
 
-    override suspend fun getCurrentPlaybackPosition(): StateFlow<Long> = currentPlaybackMs.asStateFlow()
+    override suspend fun getCurrentPlaybackPosition(): StateFlow<Long> =
+        currentPlaybackMs.asStateFlow()
 
     override fun seekTo(ms: Long) {
-        val wasPlaying = playerList.any { it.audioTrack.playState == android.media.AudioTrack.PLAYSTATE_PLAYING }
+        val wasPlaying =
+            playerList.any { it.audioTrack.playState == android.media.AudioTrack.PLAYSTATE_PLAYING }
 
         stopPlaybackTracking()
         stop()
@@ -171,36 +205,36 @@ class AudioMixerRepositoryImpl @Inject constructor(
 
 
     @RequiresApi(Build.VERSION_CODES.Q)
-    override suspend fun createTrackFromFile(sourceFilePath: String): Result<Unit> = withContext(Dispatchers.IO) {
-        val sourceFile = File(sourceFilePath)
-        if (!sourceFile.exists()) {
-            return@withContext Result.failure(FileNotFoundException("Archivo de origen temporal no encontrado."))
+    override suspend fun createTrackFromFile(sourceFilePath: String): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            val sourceFile = File(sourceFilePath)
+            if (!sourceFile.exists()) {
+                return@withContext Result.failure(FileNotFoundException("Archivo de origen temporal no encontrado."))
+            }
+
+            val track = trackFactory.create(
+                folderPath = context.filesDir.absolutePath,
+                sourceType = AudioSourceType.INSTRUMENT
+            )
+            val destinationFile = File(track.path)
+
+            try {
+                val inputUri = Uri.fromFile(sourceFile)
+                audioConverter.convertToPcm(inputUri, destinationFile)
+                    .onFailure { error ->
+                        sourceFile.delete()
+                        return@withContext Result.failure(error)
+                    }
+                tracks.update { it + track }
+                sourceFile.delete()
+                return@withContext Result.success(Unit)
+            } catch (e: Exception) {
+                Log.e("AudioMixer", "Error importando/convirtiendo pista: ${e.message}", e)
+                destinationFile.delete()
+                sourceFile.delete()
+                return@withContext Result.failure(e)
+            }
         }
-
-        val track = trackFactory.create(context.filesDir.absolutePath)
-        val destinationFile = File(track.path)
-
-        try {
-            val inputUri = Uri.fromFile(sourceFile)
-
-            audioConverter.convertToPcm(inputUri, destinationFile)
-                .onFailure { error ->
-                    sourceFile.delete()
-                    return@withContext Result.failure(error)
-                }
-
-            tracks.update { it + track }
-
-            sourceFile.delete()
-
-            return@withContext Result.success(Unit)
-        } catch (e: Exception) {
-            Log.e(TAG, "Error importando/convirtiendo pista: ${e.message}", e)
-            destinationFile.delete()
-            sourceFile.delete()
-            return@withContext Result.failure(e)
-        }
-    }
 
 
     override fun trimTrack(id: Long, startMs: Long, endMs: Long): Result<Unit> {
@@ -318,7 +352,7 @@ class AudioMixerRepositoryImpl @Inject constructor(
     }
 
 
-    override suspend fun getTracks(): StateFlow<List<Track>> = tracks.asStateFlow()
+    override fun getTracks(): StateFlow<List<Track>> = tracks.asStateFlow()
     override suspend fun allTracksWerePlayed(): StateFlow<Boolean> = tracksCompleted.asStateFlow()
 
     override fun muteTrack(id: Long) {
@@ -353,6 +387,23 @@ class AudioMixerRepositoryImpl @Inject constructor(
             }
         }
     }
+
+    override suspend fun loadPcmTrack(file: File, id: Long, sourceType: AudioSourceType) {
+        if (!file.exists()) {
+            Log.e(TAG, "PCM file not found: ${file.absolutePath}")
+            return
+        }
+
+        val track = trackFactory.create(file.parent!!, file.absolutePath, id, sourceType = sourceType)
+        tracks.update { it + track }
+        Log.i(TAG, "Track restored from PCM: ${file.name} with path ${track.path}")
+    }
+
+    override fun clearAllTracks() {
+        tracks.update { emptyList() }
+        Log.i("AudioMixerRepository", "🧹 Tracks limpiados del repositorio")
+    }
+
 
     private companion object {
         const val TAG = "AudioMixerRepository"

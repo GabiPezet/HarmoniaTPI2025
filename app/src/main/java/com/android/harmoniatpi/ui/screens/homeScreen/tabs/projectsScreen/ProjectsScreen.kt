@@ -89,7 +89,7 @@ fun ProjectsScreen(
                                 .weight(1f),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            items(uiState.listProjects, key = { it.id }) { project ->
+                            items(uiState.listProjects) { project ->
                                 ProjectCard(
                                     project = project,
                                     onClick = {

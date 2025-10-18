@@ -1,7 +1,9 @@
 package com.android.harmoniatpi.domain.interfaces
 
+import com.android.harmoniatpi.domain.model.audio.AudioSourceType
 import com.android.harmoniatpi.domain.model.audio.Track
 import kotlinx.coroutines.flow.StateFlow
+import java.io.File
 
 /**
  * Interfaz para operaciones de múltiples pistas de audio.
@@ -10,7 +12,7 @@ interface AudioMixerRepository {
     /**
      * Reproduce las pistas.
      */
-    fun play()
+    fun play(excludeTrackId: Long? = null)
 
     /**
      * Pausa la reproducción de las pistas.
@@ -25,7 +27,7 @@ interface AudioMixerRepository {
     /**
      * Crea una nueva pista.
      */
-    fun createTrack()
+    fun createTrack(sourceType: AudioSourceType)
 
     /**
      * Crea una nueva pista a partir de un archivo de audio existente.
@@ -59,7 +61,7 @@ interface AudioMixerRepository {
     /**
      * Obtiene las pistas actuales.
      */
-    suspend fun getTracks(): StateFlow<List<Track>>
+    fun getTracks(): StateFlow<List<Track>>
 
 
     /**
@@ -102,4 +104,8 @@ interface AudioMixerRepository {
      */
     fun seekTo(ms: Long)
 
+
+    suspend fun loadPcmTrack(file: File, id: Long, sourceType: AudioSourceType)
+
+    fun clearAllTracks()
 }
