@@ -8,5 +8,6 @@ data class CommunityUiState(
     val userName: String = "",
     val userLastName: String = "",
     val userID : String = "",
+    val userPhotoPathRemote : String = "",
     val posts: List<Post> = emptyList()
 )

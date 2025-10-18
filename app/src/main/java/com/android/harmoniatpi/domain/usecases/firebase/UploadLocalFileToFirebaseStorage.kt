@@ -1,4 +1,4 @@
-package com.android.harmoniatpi.domain.usecases
+package com.android.harmoniatpi.domain.usecases.firebase
 
 import android.util.Log
 import com.android.harmoniatpi.domain.interfaces.Repository

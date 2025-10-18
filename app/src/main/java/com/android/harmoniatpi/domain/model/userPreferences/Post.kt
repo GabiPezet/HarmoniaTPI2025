@@ -1,20 +1,73 @@
 package com.android.harmoniatpi.domain.model.userPreferences
 
+import com.android.harmoniatpi.data.database.entities.MyPostEntity
+import com.android.harmoniatpi.data.local.model.PostFirebaseModel
+import com.android.harmoniatpi.di.util.JsonUtils
+
 data class Post(
     val id: String,
-    val userID : String,
+    val userID: String,
+    val userImagePathURL: String = "",
     val title: String,
     val description: String,
     val name: String,
     val lasName: String,
-    val hashtags: List<String>,
-    val idProject : String = "",
-    val urlCompleteAudio: String,
+    val hashtags: List<String> = emptyList(),
+    val idProject: String = "",
+    val urlCompleteAudio: String = "",
     val urlAudioTracks: List<String> = emptyList(),
-    val imageUrl : String = "",
+    val imageUrl: String = "",
     val createdAt: String,
-    val likes: Int,
+    val likes: Int = 0,
     val comments: List<Comment> = emptyList(),
-    val totalShared: Int,
-    val clonedOption: Boolean = false
-)
+    val totalShared: Int = 0,
+    val clonedOption: Boolean = false,
+    val hasNewComment: Boolean = false,
+    val hasNewLike: Boolean = false
+) {
+    fun toPostFirebaseModel(jsonUtils: JsonUtils): PostFirebaseModel {
+        return PostFirebaseModel(
+            id = id,
+            userID = userID,
+            title = title,
+            description = description,
+            name = name,
+            lasName = lasName,
+            hashtags = jsonUtils.encodeToJson(hashtags),
+            idProject = idProject,
+            urlCompleteAudio = urlCompleteAudio,
+            urlAudioTracks = jsonUtils.encodeToJson(urlAudioTracks),
+            imageUrl = imageUrl,
+            createdAt = createdAt,
+            likes = likes,
+            comments = comments.map { it.toCommentFirebaseModel() },
+            totalShared = totalShared,
+            clonedOption = clonedOption
+        )
+    }
+
+    fun toDataBase(
+        jsonUtils: JsonUtils,
+        hasNewComment: Boolean = false,
+        hasNewLike: Boolean = false
+    ) = MyPostEntity(
+        id = id,
+        userID = userID,
+        title = title,
+        description = description,
+        name = name,
+        lasName = lasName,
+        hashtags = jsonUtils.encodeToJson(hashtags),
+        idProject = idProject,
+        urlCompleteAudio = urlCompleteAudio,
+        urlAudioTracks = jsonUtils.encodeToJson(urlAudioTracks),
+        imageUrl = imageUrl,
+        createdAt = createdAt,
+        likes = likes,
+        comments = jsonUtils.encodeToJson(comments),
+        totalShared = totalShared,
+        clonedOption = clonedOption,
+        hasNewComment = hasNewComment,
+        hasNewLike = hasNewLike
+    )
+}

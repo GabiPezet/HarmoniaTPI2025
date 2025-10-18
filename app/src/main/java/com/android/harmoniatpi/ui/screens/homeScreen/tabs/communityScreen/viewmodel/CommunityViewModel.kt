@@ -2,9 +2,12 @@ package com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.viewm
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.harmoniatpi.domain.model.userPreferences.Comment
 import com.android.harmoniatpi.domain.model.userPreferences.Post
-import com.android.harmoniatpi.domain.usecases.GetAllPostFromFirebaseDataBaseUseCase
-import com.android.harmoniatpi.domain.usecases.InsertNewPostFirebaseDataBaseUseCase
+import com.android.harmoniatpi.domain.usecases.firebase.DeletePostFirebaseDataBaseUseCase
+import com.android.harmoniatpi.domain.usecases.firebase.GetAllPostFromFirebaseDataBaseUseCase
+import com.android.harmoniatpi.domain.usecases.firebase.InsertNewPostFirebaseDataBaseUseCase
+import com.android.harmoniatpi.domain.usecases.firebase.UpdatePostFirebaseDataBaseUseCase
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.model.CommunityUiState
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.SharedMenuUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,7 +22,9 @@ import javax.inject.Inject
 class CommunityViewModel @Inject constructor(
     private val sharedMenuUiState: SharedMenuUiState,
     private val insertNewPostFirebaseDataBaseUseCase: InsertNewPostFirebaseDataBaseUseCase,
-    private val getAllPostFromFirebaseDataBaseUseCase: GetAllPostFromFirebaseDataBaseUseCase
+    private val getAllPostFromFirebaseDataBaseUseCase: GetAllPostFromFirebaseDataBaseUseCase,
+    private val updatePostFirebaseDataBaseUseCase: UpdatePostFirebaseDataBaseUseCase,
+    private val deletePostFirebaseDataBaseUseCase: DeletePostFirebaseDataBaseUseCase
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(CommunityUiState())
     val uiState = _uiState.asStateFlow()
@@ -31,14 +36,15 @@ class CommunityViewModel @Inject constructor(
                     it.copy(
                         userName = uiState.userName,
                         userLastName = uiState.userLastName,
-                        userID = uiState.userID
+                        userID = uiState.userID,
+                        userPhotoPathRemote = uiState.userPhotoPathRemote
                     )
                 }
             }
         }
 
         viewModelScope.launch {
-            getAllPostFromFirebaseDataBaseUseCase().collect { posts ->
+            getAllPostFromFirebaseDataBaseUseCase(_uiState.value.userID).collect { posts ->
                 _uiState.update { it.copy(posts = posts) }
             }
         }
@@ -74,5 +80,33 @@ class CommunityViewModel @Inject constructor(
             insertNewPostFirebaseDataBaseUseCase(newPost)
         }
 
+    }
+
+    fun updateLikes(post: Post) {
+        val newPost = post.copy(likes = post.likes + 1)
+        viewModelScope.launch {
+            updatePostFirebaseDataBaseUseCase(newPost)
+        }
+    }
+
+    fun updateComments(post: Post, comment: String) {
+        val newComment = Comment(
+            id = System.currentTimeMillis().toString(),
+            name = _uiState.value.userName,
+            lastName = _uiState.value.userLastName,
+            comment = comment,
+            photoUrlUser = _uiState.value.userPhotoPathRemote
+        )
+        val newPost = post.copy(comments = post.comments + newComment)
+        viewModelScope.launch {
+            updatePostFirebaseDataBaseUseCase(newPost)
+        }
+
+    }
+
+    fun deleteMyPost(postID: String) {
+        viewModelScope.launch {
+            deletePostFirebaseDataBaseUseCase(postID)
+        }
     }
 }

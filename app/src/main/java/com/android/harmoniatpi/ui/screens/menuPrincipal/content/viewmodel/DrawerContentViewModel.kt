@@ -6,9 +6,9 @@ import androidx.lifecycle.viewModelScope
 import com.android.harmoniatpi.domain.model.UserPreferences
 import com.android.harmoniatpi.domain.model.userPreferences.AppTheme
 import com.android.harmoniatpi.domain.usecases.GetUserPreferencesUseCase
-import com.android.harmoniatpi.domain.usecases.LogOutFirebaseUseCase
+import com.android.harmoniatpi.domain.usecases.firebase.LogOutFirebaseUseCase
 import com.android.harmoniatpi.domain.usecases.SetUserPreferencesUseCase
-import com.android.harmoniatpi.domain.usecases.UploadLocalFileToFirebaseStorage
+import com.android.harmoniatpi.domain.usecases.firebase.UploadLocalFileToFirebaseStorage
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.OptionsMenu
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.ProfileImageUser
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.SharedMenuUiState
@@ -162,25 +162,25 @@ class DrawerContentViewModel @Inject constructor(
         sharedMenuUiState.updateState {
             it.copy(userPhotoPath = path)
         }
-
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-            Log.i("FirebaseStorage", "Entrando en viewModelScope")
-            val localPath = path
-            val remotePath = "profile_pictures/${uiState.value.userID}.jpg"
-            Log.i("FirebaseStorage", "LocalPath: $localPath, RemotePath: $remotePath")
+                Log.i("FirebaseStorage", "Entrando en viewModelScope")
+                val localPath = path
+                val remotePath = "profile_pictures/${uiState.value.userID}.jpg"
+                Log.i("FirebaseStorage", "LocalPath: $localPath, RemotePath: $remotePath")
 
-            val result = uploadLocalFileToFirebaseStorage(localPath, remotePath)
-            result.onSuccess { url ->
-                sharedMenuUiState.updateState {
-                    it.copy(userPhotoPathRemote = url)
+                val result = uploadLocalFileToFirebaseStorage(localPath, remotePath)
+                result.onSuccess { url ->
+                    sharedMenuUiState.updateState {
+                        it.copy(userPhotoPathRemote = url)
+                    }
+                    updateUserPreferences()
+                    Log.i("FirebaseStorage", "URL: $url")
+                }.onFailure { e ->
+                    Log.i("FirebaseStorage", "Error subiendo imagen", e)
                 }
-                updateUserPreferences()
-                Log.i("FirebaseStorage", "URL: $url")
-            }.onFailure { e ->
-                Log.i("FirebaseStorage", "Error subiendo imagen", e)
             }
-        }}
+        }
     }
 
     fun sendNotification() {
