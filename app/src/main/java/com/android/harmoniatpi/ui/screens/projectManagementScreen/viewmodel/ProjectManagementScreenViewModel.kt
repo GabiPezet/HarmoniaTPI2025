@@ -90,7 +90,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
         val project = holoJamCache.currentProjectSelected
         _state.update { it.copy(currentProjectSelected = project) }
 
-        if (project != null && !project.urlAudioTracks.isNullOrEmpty()) {
+        if (project != null && project.urlAudioTracks.isNotEmpty()) {
             viewModelScope.launch {
                 Log.i("KlyxDevs", "Restaurando pistas del proyecto guardado...")
                 loadProjectTrackUseCase.clearAllTracks()
