@@ -4,9 +4,9 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.harmoniatpi.domain.usecases.CheckIsInternetAvailableUseCase
-import com.android.harmoniatpi.domain.usecases.GetFirebaseCurrentUserUseCase
-import com.android.harmoniatpi.domain.usecases.LoginInFirebaseUseCase
-import com.android.harmoniatpi.domain.usecases.LoginWithGoogleUseCase
+import com.android.harmoniatpi.domain.usecases.firebase.GetFirebaseCurrentUserUseCase
+import com.android.harmoniatpi.domain.usecases.firebase.LoginInFirebaseUseCase
+import com.android.harmoniatpi.domain.usecases.firebase.LoginWithGoogleUseCase
 import com.android.harmoniatpi.ui.screens.loginScreen.model.LoginUiState
 import com.android.harmoniatpi.ui.screens.loginScreen.util.checkUserNick
 import com.android.harmoniatpi.ui.screens.loginScreen.util.checkValidPassword
