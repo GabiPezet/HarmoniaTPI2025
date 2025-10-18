@@ -10,10 +10,10 @@ data class PostFirebaseModel(
     val description: String = "",
     val name: String = "",
     val lasName: String = "",
-    val hashtags: String = "", // JSON String
+    val hashtags: String = "",
     val idProject: String = "",
     val urlCompleteAudio: String = "",
-    val urlAudioTracks: String = "", // JSON String
+    val urlAudioTracks: String = "",
     val imageUrl: String = "",
     val createdAt: String = "",
     val likes: Int = 0,
@@ -40,28 +40,5 @@ data class PostFirebaseModel(
             totalShared = totalShared,
             clonedOption = clonedOption
         )
-    }
-
-    companion object {
-        fun fromDomain(post: Post, jsonUtils: JsonUtils): PostFirebaseModel {
-            return PostFirebaseModel(
-                id = post.id,
-                userID = post.userID,
-                title = post.title,
-                description = post.description,
-                name = post.name,
-                lasName = post.lasName,
-                hashtags = jsonUtils.encodeToJson(post.hashtags),
-                idProject = post.idProject,
-                urlCompleteAudio = post.urlCompleteAudio,
-                urlAudioTracks = jsonUtils.encodeToJson(post.urlAudioTracks),
-                imageUrl = post.imageUrl,
-                createdAt = post.createdAt,
-                likes = post.likes,
-                comments = post.comments.map { CommentFirebaseModel.fromDomain(it) },
-                totalShared = post.totalShared,
-                clonedOption = post.clonedOption
-            )
-        }
     }
 }

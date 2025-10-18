@@ -7,19 +7,13 @@ data class CommentFirebaseModel(
     val name: String = "",
     val lastName: String = "",
     val comment: String = "",
-    val photoUrlUser: String = "",
-    val likes: Int = 0
+    val photoUrlUser: String = ""
 ) {
-    fun toDomain() = Comment(id, name, lastName, comment, photoUrlUser, likes)
-
-    companion object {
-        fun fromDomain(comment: Comment) = CommentFirebaseModel(
-            id = comment.id,
-            name = comment.name,
-            lastName = comment.lastName,
-            comment = comment.comment,
-            photoUrlUser = comment.photoUrlUser,
-            likes = comment.likes
-        )
-    }
+    fun toDomain() = Comment(
+        id = id,
+        name = name,
+        lastName = lastName,
+        comment = comment,
+        photoUrlUser = photoUrlUser
+    )
 }

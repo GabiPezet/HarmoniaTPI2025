@@ -1,8 +1,11 @@
 package com.android.harmoniatpi.data
 
 import android.net.Uri
+import android.util.Log
+import com.android.harmoniatpi.data.database.dao.MyPostDao
 import com.android.harmoniatpi.data.database.dao.ProjectDao
 import com.android.harmoniatpi.data.database.dao.UserPreferencesDao
+import com.android.harmoniatpi.data.database.entities.MyPostEntity
 import com.android.harmoniatpi.data.database.entities.UserPreferencesEntity
 import com.android.harmoniatpi.data.local.model.PostFirebaseModel
 import com.android.harmoniatpi.data.local.model.UserFirebaseModel
@@ -20,11 +23,14 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -36,6 +42,7 @@ class RepositoryImpl @Inject constructor(
     private val jsonUtils: JsonUtils,
     private val firestore: FirebaseFirestore,
     private val projectDao: ProjectDao,
+    private val myPostDao: MyPostDao,
     private val database: FirebaseDatabase,
     private val storage: FirebaseStorage
 ) : Repository {
@@ -156,14 +163,46 @@ class RepositoryImpl @Inject constructor(
         return projectDao.getProjectById(projectId)!!.toDomain(jsonUtils)
     }
 
-    override fun getAllPostsFlow(): Flow<List<Post>> = callbackFlow {
+    override fun getAllPostsFlowRealTimeDB(userID: String): Flow<List<Post>> = callbackFlow {
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val posts = snapshot.children.mapNotNull { child ->
                     val firebasePost = child.getValue(PostFirebaseModel::class.java)
                     firebasePost?.toDomain(jsonUtils)
                 }
+
                 trySend(posts)
+
+                // Sincronizar Room en segundo plano
+                CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        val localPosts = getMyPosts().first()
+                        val myRemotePosts = posts.filter { it.userID == userID }
+
+                        myRemotePosts.forEach { remotePost ->
+                            val localPost = localPosts.find { it.id == remotePost.id }
+
+                            if (localPost == null) {
+                                insertMyPost(remotePost.toDataBase(jsonUtils))
+                            } else {
+                                val hasNewLike = remotePost.likes != localPost.likes
+                                val hasNewComment =
+                                    remotePost.comments.size != localPost.comments.size
+
+                                if (hasNewLike || hasNewComment) {
+                                    val updatedEntity = remotePost.toDataBase(
+                                        jsonUtils,
+                                        hasNewComment = hasNewComment,
+                                        hasNewLike = hasNewLike
+                                    )
+                                    updateMyPost(updatedEntity)
+                                }
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.e("KlyxDevs", "Error sincronizando posts locales", e)
+                    }
+                }
             }
 
             override fun onCancelled(error: DatabaseError) {
@@ -176,25 +215,27 @@ class RepositoryImpl @Inject constructor(
         awaitClose { postsRef.removeEventListener(listener) }
     }
 
-    override suspend fun insertPost(post: Post) {
+    override suspend fun insertPostRealTimeDB(post: Post) {
         val postId =
             if (post.id.isNotEmpty()) post.id else database.reference.child("posts").push().key!!
-        val postModel = PostFirebaseModel.fromDomain(post.copy(id = postId), jsonUtils)
+        val postModel = post.toPostFirebaseModel(jsonUtils)
         database.reference.child("posts").child(postId).setValue(postModel)
     }
 
-    override suspend fun updatePost(post: Post) {
-        val postModel = PostFirebaseModel.fromDomain(post, jsonUtils)
+    override suspend fun updatePostRealTimeDB(post: Post) {
+        val postModel = post.toPostFirebaseModel(jsonUtils)
         database.reference.child("posts").child(post.id).setValue(postModel)
     }
 
-    override suspend fun deletePostById(id: String) {
-        database.reference.child("posts").child(id).removeValue()
+    override suspend fun deletePostByIdRealTimeDB(id: String) {
+        database.reference.child("posts").child(id).removeValue().apply {
+            myPostDao.deletePostById(id)
+        }
     }
 
     override suspend fun uploadLocalFileToFirebaseStorage(
         localFilePath: String,
-        remotePath: String // ejemplo: "profile_pictures/user_${firebaseAuth.uid}.jpg"
+        remotePath: String
     ): Result<String> = withContext(Dispatchers.IO) {
         try {
             val file = File(localFilePath)
@@ -214,6 +255,22 @@ class RepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    override fun getMyPosts(): Flow<List<Post>> {
+        return myPostDao.getMyPosts().map { list -> list.map { it.toDomain(jsonUtils) } }
+    }
+
+    override suspend fun insertMyPost(post: MyPostEntity) {
+        myPostDao.insertPost(post)
+    }
+
+    override suspend fun updateMyPost(post: MyPostEntity) {
+        myPostDao.updatePost(post)
+    }
+
+    override suspend fun deleteMyPostById(id: String) {
+        myPostDao.deletePostById(id)
     }
 
     private suspend fun syncFireStoreToLocal(userId: String) {

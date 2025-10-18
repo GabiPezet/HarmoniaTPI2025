@@ -6,9 +6,9 @@ import androidx.lifecycle.viewModelScope
 import com.android.harmoniatpi.domain.model.UserPreferences
 import com.android.harmoniatpi.domain.model.userPreferences.AppTheme
 import com.android.harmoniatpi.domain.usecases.GetUserPreferencesUseCase
-import com.android.harmoniatpi.domain.usecases.LogOutFirebaseUseCase
+import com.android.harmoniatpi.domain.usecases.firebase.LogOutFirebaseUseCase
 import com.android.harmoniatpi.domain.usecases.SetUserPreferencesUseCase
-import com.android.harmoniatpi.domain.usecases.UploadLocalFileToFirebaseStorage
+import com.android.harmoniatpi.domain.usecases.firebase.UploadLocalFileToFirebaseStorage
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.OptionsMenu
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.ProfileImageUser
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.SharedMenuUiState
