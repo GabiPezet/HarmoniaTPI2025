@@ -56,7 +56,12 @@ class NotificationManagerOcasaUseCase @Inject constructor(
             instrument = sharedMenuUiState.uiState.value.instrument,
             genres = sharedMenuUiState.uiState.value.genres,
             location = sharedMenuUiState.uiState.value.location,
-            rating = sharedMenuUiState.uiState.value.rating
+            rating = sharedMenuUiState.uiState.value.rating,
+            friendsList = sharedMenuUiState.uiState.value.friendsList,
+            projectsList = sharedMenuUiState.uiState.value.projectsList,
+            myPostsList = sharedMenuUiState.uiState.value.myPostsList,
+            friendRequestReceived = sharedMenuUiState.uiState.value.friendRequestReceived,
+            friendRequestSent = sharedMenuUiState.uiState.value.friendRequestSent
         )
 
         withContext(Dispatchers.IO) {
