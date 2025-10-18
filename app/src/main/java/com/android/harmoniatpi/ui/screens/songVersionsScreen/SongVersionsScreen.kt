@@ -39,6 +39,7 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.SliderState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -151,6 +152,7 @@ fun SongVersionsContent(
         }
     } else {
         Scaffold(
+
             modifier = modifier,
             topBar = {
                 CenterAlignedTopAppBar(
@@ -168,6 +170,13 @@ fun SongVersionsContent(
                             )
                         }
                     },
+                    colors = TopAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
+                        titleContentColor = MaterialTheme.colorScheme.secondary,
+                        navigationIconContentColor = MaterialTheme.colorScheme.secondary,
+                        actionIconContentColor = MaterialTheme.colorScheme.secondary,
+                        scrolledContainerColor = MaterialTheme.colorScheme.secondaryContainer
+                    ),
                 )
             },
         ) { paddingValues ->

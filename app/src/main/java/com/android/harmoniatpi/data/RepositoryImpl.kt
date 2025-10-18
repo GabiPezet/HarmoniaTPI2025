@@ -13,6 +13,8 @@ import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -121,8 +123,8 @@ class RepositoryImpl @Inject constructor(
             }
         }
 
-    override suspend fun getAllProjects(): List<Project> {
-        return projectDao.getAllProjects().map { it.toDomain(jsonUtils) }
+    override fun getAllProjects(): Flow<List<Project>> {
+        return projectDao.getAllProjects().map { list -> list.map { it.toDomain(jsonUtils) } }
     }
 
     override suspend fun deleteProject(projectId: String) {
