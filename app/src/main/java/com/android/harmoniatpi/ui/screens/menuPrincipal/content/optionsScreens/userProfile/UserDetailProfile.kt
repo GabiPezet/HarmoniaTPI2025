@@ -169,23 +169,33 @@ fun UserDetailProfile(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
             Box(contentAlignment = Alignment.BottomEnd) {
-                if (userPhotoPath.path.isBlank()) {
-                    Icon(
-                        imageVector = Icons.Default.AccountCircle,
-                        contentDescription = "Foto de perfil",
-                        tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f),
-                        modifier = Modifier.size(150.dp)
-                    )
-                } else {
+                if (uiState.userPhotoPathRemote.isNotBlank()) {
                     Image(
-                        painter = rememberAsyncImagePainter(userPhotoPath.path),
+                        painter = rememberAsyncImagePainter(uiState.userPhotoPathRemote),
                         contentDescription = "Foto de perfil",
                         modifier = Modifier
                             .size(150.dp)
                             .clip(CircleShape),
                         contentScale = ContentScale.Crop
                     )
-                }
+                } else
+                    if (userPhotoPath.path.isBlank()) {
+                        Icon(
+                            imageVector = Icons.Default.AccountCircle,
+                            contentDescription = "Foto de perfil",
+                            tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f),
+                            modifier = Modifier.size(150.dp)
+                        )
+                    } else {
+                        Image(
+                            painter = rememberAsyncImagePainter(userPhotoPath.path),
+                            contentDescription = "Foto de perfil",
+                            modifier = Modifier
+                                .size(150.dp)
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
 
                 IconButton(
                     onClick = { showSheet = true },

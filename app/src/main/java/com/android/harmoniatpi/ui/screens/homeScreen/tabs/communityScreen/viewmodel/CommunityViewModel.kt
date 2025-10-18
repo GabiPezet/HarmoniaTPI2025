@@ -3,6 +3,8 @@ package com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.viewm
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.harmoniatpi.domain.model.userPreferences.Post
+import com.android.harmoniatpi.domain.usecases.GetAllPostFromFirebaseDataBaseUseCase
+import com.android.harmoniatpi.domain.usecases.InsertNewPostFirebaseDataBaseUseCase
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.model.CommunityUiState
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.SharedMenuUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -15,7 +17,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class CommunityViewModel @Inject constructor(
-    private val sharedMenuUiState: SharedMenuUiState
+    private val sharedMenuUiState: SharedMenuUiState,
+    private val insertNewPostFirebaseDataBaseUseCase: InsertNewPostFirebaseDataBaseUseCase,
+    private val getAllPostFromFirebaseDataBaseUseCase: GetAllPostFromFirebaseDataBaseUseCase
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(CommunityUiState())
     val uiState = _uiState.asStateFlow()
@@ -26,10 +30,16 @@ class CommunityViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         userName = uiState.userName,
-                        userLastName = uiState.userLastName
+                        userLastName = uiState.userLastName,
+                        userID = uiState.userID
                     )
                 }
+            }
+        }
 
+        viewModelScope.launch {
+            getAllPostFromFirebaseDataBaseUseCase().collect { posts ->
+                _uiState.update { it.copy(posts = posts) }
             }
         }
     }
@@ -45,11 +55,13 @@ class CommunityViewModel @Inject constructor(
     fun addPost(title: String, description: String, hashtags: List<String>) {
         val newPost = Post(
             id = System.currentTimeMillis().toString(),
+            userID = _uiState.value.userID,
             title = title,
             description = description,
             name = _uiState.value.userName,
             lasName = _uiState.value.userLastName,
             hashtags = hashtags,
+            idProject = "",
             urlCompleteAudio = "",
             urlAudioTracks = emptyList(),
             createdAt = LocalDateTime.now().toString(),
@@ -58,12 +70,9 @@ class CommunityViewModel @Inject constructor(
             comments = emptyList(),
             clonedOption = false
         )
-
-        _uiState.update {
-            it.copy(
-                posts = it.posts + newPost,
-                showCreateDialog = false
-            )
+        viewModelScope.launch {
+            insertNewPostFirebaseDataBaseUseCase(newPost)
         }
+
     }
 }

@@ -35,7 +35,6 @@ import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -90,7 +89,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
         val project = holoJamCache.currentProjectSelected
         _state.update { it.copy(currentProjectSelected = project) }
 
-        if (project != null && !project.urlAudioTracks.isNullOrEmpty()) {
+        if (project != null && project.urlAudioTracks.isNotEmpty()) {
             viewModelScope.launch {
                 Log.i("KlyxDevs", "Restaurando pistas del proyecto guardado...")
                 loadProjectTrackUseCase.clearAllTracks()

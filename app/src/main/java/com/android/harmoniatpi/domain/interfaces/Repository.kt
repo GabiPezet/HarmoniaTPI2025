@@ -2,6 +2,7 @@ package com.android.harmoniatpi.domain.interfaces
 
 import com.android.harmoniatpi.domain.model.UserPreferences
 import com.android.harmoniatpi.domain.model.project.Project
+import com.android.harmoniatpi.domain.model.userPreferences.Post
 import com.google.firebase.auth.FirebaseUser
 import kotlinx.coroutines.flow.Flow
 
@@ -32,4 +33,17 @@ interface Repository {
     suspend fun insertOrUpdateProject(project: Project)
 
     suspend fun getProjectById(projectId: String): Project
+
+    fun getAllPostsFlow(): Flow<List<Post>>
+
+    suspend fun insertPost(post: Post)
+
+    suspend fun updatePost(post: Post)
+
+    suspend fun deletePostById(id: String)
+
+    suspend fun uploadLocalFileToFirebaseStorage(
+        localFilePath: String,
+        remotePath: String
+    ): Result<String>
 }
