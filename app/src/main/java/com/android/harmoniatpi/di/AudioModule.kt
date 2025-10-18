@@ -1,6 +1,6 @@
 package com.android.harmoniatpi.di
 
-import com.android.harmoniatpi.data.audio.mixer.AudioMixerRepositoryImpl
+import com.android.harmoniatpi.data.audio.AudioMixerRepositoryImpl
 import com.android.harmoniatpi.domain.interfaces.AudioPlayer
 import com.android.harmoniatpi.data.audio.player.PcmAudioPlayer
 import com.android.harmoniatpi.domain.interfaces.AudioRecorder

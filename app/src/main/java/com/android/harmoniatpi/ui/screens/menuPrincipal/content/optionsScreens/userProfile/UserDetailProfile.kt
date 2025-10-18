@@ -64,9 +64,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
-import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.rememberAsyncImagePainter
-import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.viewmodel.ProjectListViewModel
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.MenuUiState
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.OptionsMenu
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.CompactSymmetricButtons
@@ -81,7 +79,6 @@ import java.io.File
 @Composable
 fun UserDetailProfile(
     viewModel: DrawerContentViewModel,
-    projectListViewModel: ProjectListViewModel = hiltViewModel(),
     uiState: MenuUiState,
     innerPadding: PaddingValues,
 ) {
@@ -92,7 +89,6 @@ fun UserDetailProfile(
     var selectedTab by remember { mutableStateOf(ProfileTab.WORK) }
     var isEditing by remember { mutableStateOf(false) }
     var name by remember(uiState.userName) { mutableStateOf(uiState.userName) }
-    val projects by projectListViewModel.projects.collectAsState()
 
     val takePictureLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
@@ -256,7 +252,9 @@ fun UserDetailProfile(
                         Icon(
                             imageVector = Icons.Default.Done,
                             contentDescription = "Guardar nombre",
-                            tint = if (name.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                            tint = if (name.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(
+                                alpha = 0.38f
+                            )
                         )
                     }
                 } else {
@@ -316,7 +314,7 @@ fun UserDetailProfile(
             ) {
                 when (selectedTab) {
                     ProfileTab.WORK -> WorkProfileCard(uiState = uiState, viewModel = viewModel)
-                    ProfileTab.MEDIA -> MediaProjectList(projects = projects)
+                    ProfileTab.MEDIA -> MediaProjectList(projects = uiState.listProjects)
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))

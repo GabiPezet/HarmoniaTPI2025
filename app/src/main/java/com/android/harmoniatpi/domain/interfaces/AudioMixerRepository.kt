@@ -1,7 +1,9 @@
 package com.android.harmoniatpi.domain.interfaces
 
+import com.android.harmoniatpi.domain.model.audio.AudioSourceType
 import com.android.harmoniatpi.domain.model.audio.Track
 import kotlinx.coroutines.flow.StateFlow
+import java.io.File
 
 /**
  * Interfaz para operaciones de múltiples pistas de audio.
@@ -10,7 +12,7 @@ interface AudioMixerRepository {
     /**
      * Reproduce las pistas.
      */
-    fun play()
+    fun play(excludeTrackId: Long? = null)
 
     /**
      * Pausa la reproducción de las pistas.
@@ -25,7 +27,14 @@ interface AudioMixerRepository {
     /**
      * Crea una nueva pista.
      */
-    fun createTrack()
+    fun createTrack(sourceType: AudioSourceType)
+
+    /**
+     * Crea una nueva pista a partir de un archivo de audio existente.
+     * @param sourceFilePath Ruta del archivo de audio de origen.
+     */
+    suspend fun createTrackFromFile(sourceFilePath: String): Result<Unit>
+
 
     /**
      * Elimina una pista.
@@ -49,15 +58,54 @@ interface AudioMixerRepository {
      */
     fun undoTrim(id: Long): Result<Unit>
 
-
     /**
      * Obtiene las pistas actuales.
      */
-    suspend fun getTracks(): StateFlow<List<Track>>
+    fun getTracks(): StateFlow<List<Track>>
 
 
     /**
      * Verifica si todas las pistas han sido reproducidas.
      */
     suspend fun allTracksWerePlayed(): StateFlow<Boolean>
+
+    /**
+     * Mutea una pista.
+     * @param id Id de la pista a mutear.
+     */
+    fun muteTrack(id: Long)
+
+    /**
+     * Desmutea una pista.
+     * @param id Id de la pista a desmutear.
+     */
+    fun unMuteTrack(id: Long)
+
+    /**
+     * Verifica si una pista está muteada.
+     * @param id Id de la pista.
+     */
+    fun setTrackVolume(id: Long, volume: Float)
+
+    /**
+    * Establece un desplazamiento de inicio para la pista.
+    * @param id Id de la pista.
+    * @param offsetMs El tiempo de desplazamiento en milisegundos.
+    */
+    fun setTrackOffset(id: Long, offsetMs: Long)
+
+    /**
+     * Obtiene la posición de reproducción actual en milisegundos.
+     */
+    suspend fun getCurrentPlaybackPosition(): StateFlow<Long>
+
+    /**
+     * Se mueve a una posición específica en la reproducción.
+     */
+    fun seekTo(ms: Long)
+
+
+    suspend fun loadPcmTrack(file: File, id: Long, sourceType: AudioSourceType)
+
+    fun clearAllTracks()
 }

@@ -13,30 +13,35 @@ import java.io.File
  * @property player Instancia de AudioPlayer para reproducir, pausar o parar la pista.
  */
 class Track @AssistedInject constructor(
-    @Assisted folderPath: String,
-    private val player: AudioPlayer
+    @Assisted("folder") folderPath: String,
+    @Assisted("existing") existingFilePath: String?,
+    @Assisted("id") idExist: Long?,
+    @Assisted("sourceType") val sourceType: AudioSourceType,
+    val player: AudioPlayer
 ) {
-    val id = System.currentTimeMillis()
-    val path = folderPath.plus("/$id.pcm")
-    val originalPath = folderPath.plus("/$id.pcm.original")
+    val id = idExist ?: System.currentTimeMillis()
+    val path = existingFilePath ?: "$folderPath/$id.pcm"
+    val originalPath = "$path.original"
+    var startOffsetMs: Long = 0L
 
     init {
         player.setFile(path)
-        Log.i(TAG, "Track $id created")
+        Log.i(TAG, "Track $id created with path $path")
     }
 
     /**
      * Reproduce la pista.
      */
-    fun play() {
-        player.play()
+    fun play(internalStartMs: Long = 0L) {
+        player.play(internalStartMs)
             .onSuccess {
-                Log.i(TAG, "Track $id played")
+                Log.i(TAG, "Track $id played from internal position ${internalStartMs}ms")
             }
             .onFailure {
                 Log.e(TAG, "Error playing track $id", it)
             }
     }
+
 
     fun playSegment(startMs: Long, endMs: Long) {
         player.playSegment(startMs, endMs)
@@ -95,6 +100,24 @@ class Track @AssistedInject constructor(
         val file = File(path)
         return file.exists() && file.length() > 0
     }
+
+    fun mute() {
+        player.mute()
+        Log.i(TAG, "Track $id muted")
+    }
+
+    fun unMute() {
+        player.unMute()
+        Log.i(TAG, "Track $id unmuted")
+    }
+
+    fun isMuted(): Boolean = player.isMuted()
+
+    fun setVolume(volume: Float) {
+        player.setVolume(volume)
+    }
+
+    fun getVolume(): Float = player.getVolume()
 
     /**
      * Borra el archivo de la pista.

@@ -14,6 +14,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileInputStream
+import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
 import kotlin.math.roundToLong
 
@@ -31,8 +32,9 @@ class PcmAudioPlayer @Inject constructor() : AudioPlayer {
     private val channel = AudioFormat.CHANNEL_OUT_MONO
     private val encoding = AudioFormat.ENCODING_PCM_16BIT
     private val bytesPerSample = 2 // 16-bit PCM
+    private val currentPosMs = AtomicLong(0L)
     private val bufferSize = AudioTrack.getMinBufferSize(sampleRate, channel, encoding)
-    private val audioTrack = AudioTrack.Builder()
+    val audioTrack = AudioTrack.Builder()
         .setAudioAttributes(
             AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_MEDIA)
@@ -50,17 +52,27 @@ class PcmAudioPlayer @Inject constructor() : AudioPlayer {
         .build()
 
     private var onPlaybackCompletedCallback: (() -> Unit)? = null
+    private var isMuted = false
+    private var volume = 1f
 
     private fun msToByteOffset(ms: Long): Long {
         val samples = (ms * sampleRate / 1000f).roundToLong()
         return samples * bytesPerSample
     }
 
-    override fun play(): Result<Unit> {
-        return playRange(0L, Long.MAX_VALUE)
+    override fun play(startMs: Long): Result<Unit> {
+        return playRange(startMs, Long.MAX_VALUE)
     }
 
     override fun playSegment(startMs: Long, endMs: Long): Result<Unit> {
+        setAudioTrackVolume(1f)
+        playJob?.invokeOnCompletion {
+            if (isMuted) {
+                mute()
+            } else {
+                setAudioTrackVolume(volume)
+            }
+        }
         return playRange(startMs, endMs)
     }
 
@@ -74,8 +86,9 @@ class PcmAudioPlayer @Inject constructor() : AudioPlayer {
         }
 
         // defino pos inicial y final con bytes
-        val startByteOffset = if (endMs == Long.MAX_VALUE) lastPos else msToByteOffset(startMs)
-        val endByteOffset = if (endMs == Long.MAX_VALUE) file?.length() ?: Long.MAX_VALUE else msToByteOffset(endMs)
+        val startByteOffset = msToByteOffset(startMs)
+        val endByteOffset =
+            if (endMs == Long.MAX_VALUE) file?.length() ?: Long.MAX_VALUE else msToByteOffset(endMs)
 
         if (startByteOffset >= endByteOffset) {
             Log.e(TAG, "Rango de reproducción inválido o vacío: $startMs ms a $endMs ms")
@@ -85,44 +98,51 @@ class PcmAudioPlayer @Inject constructor() : AudioPlayer {
         audioTrack.play()
         playJob?.cancel() // cancelo lo anterior
 
+        currentPosMs.set(startMs)
+
         playJob = scope.launch {
             val buffer = ByteArray(bufferSize)
             try {
                 file?.let { f ->
                     FileInputStream(f).use { fis ->
                         fis.skip(startByteOffset)
-                        lastPos = startByteOffset
+
+                        var bytesReadFromStart = startByteOffset
 
                         var read: Int
                         while (fis.read(buffer).also { read = it } > 0 && isActive) {
 
                             // compruebo
-                            if (lastPos + read > endByteOffset) {
-                                val remainingBytes = (endByteOffset - lastPos).toInt()
+                            if (bytesReadFromStart + read > endByteOffset) {
+                                val remainingBytes = (endByteOffset - bytesReadFromStart).toInt()
                                 if (remainingBytes > 0) {
                                     audioTrack.write(buffer, 0, remainingBytes)
-                                    lastPos = endByteOffset
+                                    bytesReadFromStart = endByteOffset
                                 }
                                 break // Detener al alcanzar el fin del segmento
                             }
 
                             while (audioTrack.playState == AudioTrack.PLAYSTATE_PAUSED && isActive) {
+
                                 delay(50)
                             }
 
                             audioTrack.write(buffer, 0, read)
-                            lastPos += read
+                            bytesReadFromStart += read
+
+                            val currentSamples = (bytesReadFromStart / bytesPerSample)
+                            currentPosMs.set(currentSamples * 1000L / sampleRate)
                         }
                     }
                 }
 
                 audioTrack.stop()
                 audioTrack.flush()
-                lastPos = 0
+                currentPosMs.set(0L)
                 onPlaybackCompletedCallback?.invoke()
             } catch (e: Exception) {
                 Log.e(TAG, "Error during playback", e)
-                lastPos = 0L
+                currentPosMs.set(0L)
             }
         }
 
@@ -138,7 +158,7 @@ class PcmAudioPlayer @Inject constructor() : AudioPlayer {
     override fun stop() {
         playJob?.cancel()
         playJob = null
-        lastPos = 0L
+        currentPosMs.set(0L)
         try {
             if (audioTrack.playState != AudioTrack.PLAYSTATE_STOPPED) {
                 audioTrack.stop()
@@ -165,6 +185,36 @@ class PcmAudioPlayer @Inject constructor() : AudioPlayer {
     override fun setOnPlaybackCompletedCallback(callback: () -> Unit) {
         onPlaybackCompletedCallback = callback
     }
+
+    override fun mute() {
+        isMuted = true
+        setAudioTrackVolume(0f)
+    }
+
+    override fun unMute() {
+        isMuted = false
+        setAudioTrackVolume(volume)
+    }
+
+    override fun isMuted(): Boolean = isMuted
+
+    override fun setVolume(volume: Float) {
+        this.volume = volume.coerceIn(0f, 1f)
+        setAudioTrackVolume(this.volume)
+    }
+
+    override fun getVolume(): Float = volume
+
+    private fun setAudioTrackVolume(value: Float) {
+        val result = audioTrack.setVolume(value)
+        if (result == AudioTrack.SUCCESS) {
+            Log.d(TAG, "AudioTrack volume set to $value")
+        } else {
+            Log.e(TAG, "Failed to set AudioTrack volume to $value")
+        }
+    }
+
+    fun getCurrentPositionMs(): Long = currentPosMs.get()
 
     companion object {
         private const val TAG = "PcmAudioPlayer"
