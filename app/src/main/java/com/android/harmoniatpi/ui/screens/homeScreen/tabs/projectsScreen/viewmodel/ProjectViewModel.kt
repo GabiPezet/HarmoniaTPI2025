@@ -26,7 +26,7 @@ class ProjectViewModel @Inject constructor(
     private val getProjectsByUserUseCase: GetProjectsByUserUseCase,
     private val insertProjectInDBUseCase: UpdateOrInsertProjectInDBUseCase,
     private val deleteProjectByIdFromDBUseCase: DeleteProjectByIdFromDBUseCase,
-    private val sharedMenuUiState: SharedMenuUiState,
+    internal val sharedMenuUiState: SharedMenuUiState,
     private val holoJamCache: HoloJamCache
 ) : ViewModel() {
 
@@ -70,11 +70,32 @@ class ProjectViewModel @Inject constructor(
         }
     }
 
+    fun forkProject(project: Project) {
+        val currentUserId = sharedMenuUiState.uiState.value.userID
+        if (currentUserId.isBlank()) return
+
+        if (project.ownerId == currentUserId) {
+            return
+        }
+        // Evita añadir duplicados si el usuario ya le dio a guardar
+        if (project.forkedByUserIds.contains(currentUserId)) return
+
+        viewModelScope.launch {
+            // Crea una nueva lista de IDs añadiendo el actual
+            val updatedForkedIds = project.forkedByUserIds + currentUserId
+
+            // Crea una copia del proyecto con la lista actualizada
+            val updatedProject = project.copy(forkedByUserIds = updatedForkedIds)
+
+            // Guarda el proyecto actualizado en la base de datos
+            insertProjectInDBUseCase(updatedProject)
+        }
+    }
+
     // --- Borrar un proyecto por ID
     fun deleteProject(id: String) {
         viewModelScope.launch {
             deleteProjectByIdFromDBUseCase(id)
-            loadMyProjects()
         }
     }
 
@@ -126,7 +147,8 @@ class ProjectViewModel @Inject constructor(
                     comments = emptyList(),
                     urlCompleteAudio = null,
                     urlAudioTracks = emptyList(),
-                    hashtags = current.hashtags.split(",").map { it.trim() }
+                    hashtags = current.hashtags.split(",").map { it.trim() },
+                    forkedByUserIds = emptyList()
                 )
 
                 insertProjectInDBUseCase(project)
@@ -165,6 +187,11 @@ class ProjectViewModel @Inject constructor(
 
     fun onTabSelected(tab: ProjectTab) {
         _uiState.update { it.copy(tabSelected = tab) }
+        if (tab == ProjectTab.MY_PROJECTS) {
+            loadMyProjects()
+        } else {
+            loadProjects()
+        }
     }
 
     fun setCurrentProject(project: Project) {

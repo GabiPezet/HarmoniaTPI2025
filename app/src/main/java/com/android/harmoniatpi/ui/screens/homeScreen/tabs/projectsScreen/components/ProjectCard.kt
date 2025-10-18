@@ -11,11 +11,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.ModeComment
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
@@ -34,14 +36,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.android.harmoniatpi.domain.model.project.Project
+import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.model.ProjectTab
 
 @Composable
 fun ProjectCard(
     project: Project,
+    selectedTab: ProjectTab,
+    currentUserId: String,
     onClick: () -> Unit,
     onNavigateToVersions: () -> Unit,
-    onDeleteClick: (String) -> Unit
+    onDeleteClick: (String) -> Unit,
+    onForkClick: (Project) -> Unit
 ) {
+    val isMyProject = project.ownerId == currentUserId
+    val forksByOthers = project.forkedByUserIds.filter { it != project.ownerId }
+    val hasBeenForkedByOthers = forksByOthers.isNotEmpty()
+    val hasCurrentUserForked = project.forkedByUserIds.contains(currentUserId)
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -64,14 +75,17 @@ fun ProjectCard(
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
-                IconButton(
-                    onClick = { onDeleteClick(project.id) }
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Eliminar proyecto",
-                        tint = MaterialTheme.colorScheme.error
-                    )
+                // Solo muestra el botón de borrar si es MI proyecto y estoy en MI pestaña
+                if (isMyProject && selectedTab == ProjectTab.MY_PROJECTS) {
+                    IconButton(
+                        onClick = { onDeleteClick(project.id) }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Eliminar proyecto",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
             }
 
@@ -94,28 +108,60 @@ fun ProjectCard(
 
             Spacer(Modifier.height(12.dp))
 
-            // 🔹 Botón "Escuchar versiones"
-            Button(
-                onClick = onNavigateToVersions,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.LibraryMusic,
-                    contentDescription = null,
-                    modifier = Modifier.size(ButtonDefaults.IconSize)
-                )
-                Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                Text(
-                    text = "ESCUCHAR VERSIONES",
-                    style = MaterialTheme.typography.labelLarge
-                )
+            // 🔹 Lógica de botones condicionales
+            when (selectedTab) {
+                ProjectTab.MY_PROJECTS -> {
+                    // El dueño del proyecto solo ve "Escuchar Versiones" si OTRO usuario ha forkeado.
+                    if (hasBeenForkedByOthers) {
+                        Button(
+                            onClick = { onNavigateToVersions() }, // 🟢 FIX 4: Corregido de mi error anterior
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.LibraryMusic,
+                                contentDescription = null,
+                                modifier = Modifier.size(ButtonDefaults.IconSize)
+                            )
+                            Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+                            Text(
+                                text = "ESCUCHAR VERSIONES",
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                        }
+                    }
+                }
+                ProjectTab.COLLABS -> {
+                    // En Colaboraciones, no mostramos el botón de "Guardar" en nuestros propios proyectos.
+                    if (!isMyProject) {
+                        Button(
+                            onClick = { onForkClick(project) },
+                            enabled = !hasCurrentUserForked,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(
+                                imageVector = if (hasCurrentUserForked) Icons.Default.Check else Icons.Default.Save,
+                                contentDescription = null,
+                                modifier = Modifier.size(ButtonDefaults.IconSize)
+                            )
+                            Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+                            Text(text = if (hasCurrentUserForked) "GUARDADO" else "GUARDAR CAMBIOS")
+                        }
+                    }
+                }
             }
 
             Spacer(Modifier.height(12.dp))
+
+            // Muestra la fila de avatares solo si otros han forkeado.
+            if (hasBeenForkedByOthers) {
+                // Pasamos la lista filtrada para no mostrar al dueño del proyecto.
+                ForkedByUsersRow(forkedByUserIds = forksByOthers)
+                Spacer(Modifier.height(12.dp))
+            }
 
             // 🔹 Fila de acciones inferiores
             Row(
@@ -141,3 +187,4 @@ fun ProjectCard(
         }
     }
 }
+

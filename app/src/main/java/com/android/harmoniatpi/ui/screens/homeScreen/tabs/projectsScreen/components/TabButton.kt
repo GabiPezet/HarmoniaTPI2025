@@ -32,7 +32,7 @@ fun TabButton(
         tonalElevation = if (selected) 4.dp else 0.dp,
         shadowElevation = if (selected) 4.dp else 0.dp,
         border = BorderStroke(1.dp, Color.Gray),
-        shape = RoundedCornerShape(15.dp),
+        shape = RoundedCornerShape(cornerRadius), // Usar el parámetro
     ) {
         Box(
             modifier = Modifier.fillMaxSize(),
