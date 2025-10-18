@@ -242,14 +242,15 @@ class RepositoryImpl @Inject constructor(
             if (!file.exists()) {
                 return@withContext Result.failure(Exception("El archivo no existe en: $localFilePath"))
             }
-
+            // Crea un File Template vacio para cargar la URI que quedará en el dispositivo local
+            // hasta realizar el Upload a Storage
             val fileUri = Uri.fromFile(file)
             val ref = storage.reference.child(remotePath)
 
-            // Sube el archivo
+            // Realiza el Upload de la imagen del usuario al STORAGE
             ref.putFile(fileUri).await()
 
-            // Obtiene la URL pública
+            // Devuelve la URL de la imagen del usuario cargada en el STORAGE
             val downloadUrl = ref.downloadUrl.await().toString()
             Result.success(downloadUrl)
         } catch (e: Exception) {
