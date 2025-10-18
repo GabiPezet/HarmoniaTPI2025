@@ -20,7 +20,8 @@ data class Project(
     val urlCompleteAudio: AudioTrack? = null,
     val urlAudioTracks: List<AudioTrack> = emptyList(),
     val hashtags: List<String>,
-    val forkedByUserIds: List<String> = emptyList()
+    val forkedByUserIds: List<String> = emptyList(),
+    val originalProjectId: String? = null
 ) {
     fun toDataBase(jsonUtils: JsonUtils) = ProjectEntity(
         id = id,
@@ -38,6 +39,7 @@ data class Project(
         urlCompleteAudio = if (urlCompleteAudio != null) jsonUtils.encodeToJson(urlCompleteAudio) else null,
         urlAudioTracks = jsonUtils.encodeToJson(urlAudioTracks),
         hashtags = jsonUtils.encodeToJson(hashtags),
-        forkedByUserIds = jsonUtils.encodeToJson(forkedByUserIds)
+        forkedByUserIds = jsonUtils.encodeToJson(forkedByUserIds),
+        originalProjectId = originalProjectId
     )
 }

@@ -12,6 +12,7 @@ import com.android.harmoniatpi.domain.model.project.Project
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.CollabScreen
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.MyProjectsLayout
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.CreateProjectDialog
+import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.EditProjectDialog
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.ProjectTabSelector
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.model.ProjectTab
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.viewmodel.ProjectViewModel
@@ -22,14 +23,12 @@ fun ProjectsScreen(
     onNavigateToVersion: (Project) -> Unit,
     viewModel: ProjectViewModel = hiltViewModel()
 ) {
-    // 1. Recolectamos ambos estados
     val uiState by viewModel.uiState.collectAsState()
     val sharedState by viewModel.sharedMenuUiState.uiState.collectAsState()
 
-    // 2. El estado del formulario vive aquí
-    var showForm by remember { mutableStateOf(false) }
+    var showCreateForm by remember { mutableStateOf(false) }
+    var projectToEdit by remember { mutableStateOf<Project?>(null) } // ➕ AÑADE ESTE ESTADO
 
-    // 3. Creamos una lambda única para manejar el clic en un proyecto
     val handleProjectClick = { project: Project ->
         viewModel.setCurrentProject(project)
         onNavigateToProjectManagementScreen()
@@ -40,35 +39,44 @@ fun ProjectsScreen(
             selectedTab = uiState.tabSelected,
             onTabSelected = { viewModel.onTabSelected(it) })
 
-        // 4. Lógica "Router" limpia y CORRECTA
         if (uiState.tabSelected == ProjectTab.MY_PROJECTS) {
-            // Mostramos el layout de "Mis Proyectos"
             MyProjectsLayout(
-                uiState = uiState,
+                projects = uiState.myProjects,
                 sharedStateUserID = sharedState.userID,
-                onShowForm = { showForm = true },
-                onProjectClick = handleProjectClick, // Pasamos la lambda
+                onShowForm = { showCreateForm = true },
+                onProjectClick = handleProjectClick,
                 onNavigateToVersion = onNavigateToVersion,
-                viewModel = viewModel
+                viewModel = viewModel,
+                onEditClick = { projectToEdit = it }
             )
         } else {
-            // Mostramos la pantalla de "Colaboraciones"
             CollabScreen(
-                projects = uiState.listProjects,
+                projects = uiState.allProjects,
                 currentUserId = sharedState.userID,
-                onProjectClick = handleProjectClick, // Pasamos la misma lambda
+                onProjectClick = handleProjectClick,
                 onNavigateToVersions = onNavigateToVersion,
-                onForkClick = { project -> viewModel.forkProject(project) }
+                onForkClick = { project -> viewModel.cloneProject(project) },
+                onEditClick = { projectToEdit = it },
+                onDeleteClick = { id -> viewModel.deleteProject(id) }
             )
         }
     }
 
-    // 5. El diálogo se muestra sobre todo lo demás
-    if (showForm) {
+    // Diálogo para crear
+    if (showCreateForm) {
         CreateProjectDialog(
             uiState = uiState,
             viewModel = viewModel,
-            onDismiss = { showForm = false }
+            onDismiss = { showCreateForm = false }
+        )
+    }
+
+    // ➕ Diálogo para editar
+    projectToEdit?.let { project ->
+        EditProjectDialog(
+            project = project,
+            viewModel = viewModel,
+            onDismiss = { projectToEdit = null }
         )
     }
 }

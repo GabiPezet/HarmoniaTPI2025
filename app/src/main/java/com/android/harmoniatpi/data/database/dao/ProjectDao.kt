@@ -13,7 +13,7 @@ interface ProjectDao {
     @Query("SELECT * FROM project")
     fun getAllProjects(): Flow<List<ProjectEntity>>
 
-    @Query("SELECT * FROM project WHERE ownerId = :ownerId")
+    @Query("SELECT * FROM project WHERE ownerId = :ownerId AND originalProjectId IS NULL")
     fun getAllProjectsByUser(ownerId: String): Flow<List<ProjectEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

@@ -6,6 +6,7 @@ import com.android.harmoniatpi.domain.cache.HoloJamCache
 import com.android.harmoniatpi.domain.model.project.Project
 import com.android.harmoniatpi.domain.usecases.DeleteProjectByIdFromDBUseCase
 import com.android.harmoniatpi.domain.usecases.GetAllProjectsFromDBUseCase
+import com.android.harmoniatpi.domain.usecases.GetProjectByIdUseCase
 import com.android.harmoniatpi.domain.usecases.GetProjectsByUserUseCase
 import com.android.harmoniatpi.domain.usecases.UpdateOrInsertProjectInDBUseCase
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.model.ProjectTab
@@ -24,6 +25,7 @@ import javax.inject.Inject
 class ProjectViewModel @Inject constructor(
     private val getAllProjectsFromDBUseCase: GetAllProjectsFromDBUseCase,
     private val getProjectsByUserUseCase: GetProjectsByUserUseCase,
+    private val getProjectByIdUseCase: GetProjectByIdUseCase,
     private val insertProjectInDBUseCase: UpdateOrInsertProjectInDBUseCase,
     private val deleteProjectByIdFromDBUseCase: DeleteProjectByIdFromDBUseCase,
     internal val sharedMenuUiState: SharedMenuUiState,
@@ -35,20 +37,18 @@ class ProjectViewModel @Inject constructor(
 
     init {
         loadMyProjects()
+        loadCollabProjects()
     }
 
 
 
     // --- Cargar todos los proyectos de la base de datos
-    fun loadProjects() {
+    fun loadAllProjects() {
         viewModelScope.launch {
             getAllProjectsFromDBUseCase()
                 .collect { projects ->
                     _uiState.update {
-                        it.copy(listProjects = projects)
-                    }
-                    sharedMenuUiState.updateState {
-                        it.copy(listProjects = projects)
+                        it.copy(allProjects = projects)
                     }
                 }
         }
@@ -57,45 +57,147 @@ class ProjectViewModel @Inject constructor(
     fun loadMyProjects() {
         val currentUserId = sharedMenuUiState.uiState.value.userID
         if (currentUserId.isBlank()) {
-            _uiState.update { it.copy(listProjects = emptyList()) }
+            _uiState.update { it.copy(myProjects = emptyList()) }
             return
         }
 
         viewModelScope.launch {
             getProjectsByUserUseCase(currentUserId)
                 .collect { projects ->
-                    _uiState.update { it.copy(listProjects = projects) }
-                    sharedMenuUiState.updateState { it.copy(projectsList = projects) }
+                    // Actualiza solo la lista de "mis proyectos"
+                    _uiState.update { it.copy(myProjects = projects) }
                 }
         }
     }
 
-    fun forkProject(project: Project) {
+    fun cloneProject(projectToClone: Project) {
+        val currentUserId = sharedMenuUiState.uiState.value.userID
+        if (currentUserId.isBlank() || projectToClone.ownerId == currentUserId) return
+
+        viewModelScope.launch {
+            try {
+                // 1. Crea el clon
+                val clonedProject = projectToClone.copy(
+                    id = UUID.randomUUID().toString(),
+                    ownerId = currentUserId,
+                    originalProjectId = projectToClone.id,
+                    forkedByUserIds = emptyList()
+                )
+
+                // 2. Inserta el clon en la BBDD
+                insertProjectInDBUseCase(clonedProject)
+
+                // 🟢 FIX: Actualiza el proyecto original AHORA
+                // 3. Obtiene el proyecto original
+                val originalProject = getProjectByIdUseCase(projectToClone.id)
+
+                // 4. Si el usuario no está ya en la lista, lo añade
+                if (!originalProject.forkedByUserIds.contains(currentUserId)) {
+                    val updatedForkedIds = originalProject.forkedByUserIds + currentUserId
+                    val updatedOriginal = originalProject.copy(
+                        forkedByUserIds = updatedForkedIds
+                    )
+                    insertProjectInDBUseCase(updatedOriginal)
+                }
+
+            } catch (e: Exception) {
+                // Manejar error si es necesario
+            }
+        }
+    }
+
+    fun saveProjectEdits(
+        projectToSave: Project,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        val currentUserId = sharedMenuUiState.uiState.value.userID
+        if (currentUserId.isBlank()) {
+            onError("Usuario no válido")
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                _uiState.update { it.copy(isLoading = true) }
+
+                // 1. Guarda el proyecto editado (ej. "Cancion dos")
+                insertProjectInDBUseCase(projectToSave)
+
+                // 🟢 FIX: Ya no necesitamos actualizar el original aquí.
+                // Esa lógica se movió a 'cloneProject'.
+
+                _uiState.update { it.copy(isLoading = false) }
+                onSuccess()
+
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoading = false) }
+                onError(e.message ?: "Error desconocido")
+            }
+        }
+    }
+    // 🟢 Esta función ahora filtra la lista para Colaboraciones
+    fun loadCollabProjects() {
         val currentUserId = sharedMenuUiState.uiState.value.userID
         if (currentUserId.isBlank()) return
 
-        if (project.ownerId == currentUserId) {
-            return
-        }
-        // Evita añadir duplicados si el usuario ya le dio a guardar
-        if (project.forkedByUserIds.contains(currentUserId)) return
-
         viewModelScope.launch {
-            // Crea una nueva lista de IDs añadiendo el actual
-            val updatedForkedIds = project.forkedByUserIds + currentUserId
+            getAllProjectsFromDBUseCase()
+                .collect { allProjectsList ->
 
-            // Crea una copia del proyecto con la lista actualizada
-            val updatedProject = project.copy(forkedByUserIds = updatedForkedIds)
+                    // Filtramos la lista para Colaboraciones
+                    val collabList = allProjectsList.filter { project ->
+                        // Condición 1: Es un clon que yo he creado
+                        val isMyClone = project.originalProjectId != null && project.ownerId == currentUserId
+                        // Condición 2: Es un original que NO es mío
+                        val isOtherUsersOriginal = project.originalProjectId == null && project.ownerId != currentUserId
 
-            // Guarda el proyecto actualizado en la base de datos
-            insertProjectInDBUseCase(updatedProject)
+                        isMyClone || isOtherUsersOriginal
+                    }
+
+                    _uiState.update {
+                        it.copy(
+                            // 'allProjects' ahora es la lista filtrada
+                            allProjects = collabList
+                        )
+                    }
+                }
         }
     }
 
     // --- Borrar un proyecto por ID
     fun deleteProject(id: String) {
+        val currentUserId = sharedMenuUiState.uiState.value.userID
+        if (currentUserId.isBlank()) return
+
         viewModelScope.launch {
-            deleteProjectByIdFromDBUseCase(id)
+            try {
+                // 1. Obtenemos el proyecto ANTES de borrarlo
+                val projectToDelete = getProjectByIdUseCase(id)
+
+                // 2. Lo borramos
+                deleteProjectByIdFromDBUseCase(id)
+
+                // 3. Verificamos si era un clon nuestro
+                if (projectToDelete.originalProjectId != null && projectToDelete.ownerId == currentUserId) {
+
+                    // 4. Si era un clon, buscamos el original
+                    val originalProject = try {
+                        getProjectByIdUseCase(projectToDelete.originalProjectId)
+                    } catch (e: Exception) { null } // El original ya no existe
+
+                    // 5. Si el original existe y nos tiene en su lista, nos quitamos
+                    if (originalProject != null && originalProject.forkedByUserIds.contains(currentUserId)) {
+                        val updatedForkedIds = originalProject.forkedByUserIds.filter { it != currentUserId }
+                        val updatedOriginal = originalProject.copy(
+                            forkedByUserIds = updatedForkedIds
+                        )
+                        insertProjectInDBUseCase(updatedOriginal)
+                    }
+                }
+            } catch (e: Exception) {
+                // Manejar error si no se pudo encontrar el proyecto a borrar
+            }
         }
     }
 
@@ -152,7 +254,7 @@ class ProjectViewModel @Inject constructor(
                 )
 
                 insertProjectInDBUseCase(project)
-                loadMyProjects()
+
 
                 _uiState.update {
                     it.copy(
@@ -190,7 +292,7 @@ class ProjectViewModel @Inject constructor(
         if (tab == ProjectTab.MY_PROJECTS) {
             loadMyProjects()
         } else {
-            loadProjects()
+            loadCollabProjects() // Llamamos a la nueva función filtrada
         }
     }
 

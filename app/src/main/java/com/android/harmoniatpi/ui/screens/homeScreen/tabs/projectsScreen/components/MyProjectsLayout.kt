@@ -24,12 +24,13 @@ import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.viewmod
 import androidx.compose.foundation.lazy.items
 @Composable
 fun MyProjectsLayout(
-    uiState: ProjectUiState,
+    projects: List<Project>, // 🟢 FIX: Recibe la lista directamente
     sharedStateUserID: String,
     onShowForm: () -> Unit,
     onProjectClick: (Project) -> Unit,
     onNavigateToVersion: (Project) -> Unit,
-    viewModel: ProjectViewModel
+    viewModel: ProjectViewModel,
+    onEditClick: (Project) -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -39,7 +40,7 @@ fun MyProjectsLayout(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            if (uiState.listProjects.isEmpty()) {
+            if (projects.isEmpty()) {
                 Text(
                     text = "Todavía no has creado ningún proyecto",
                     style = MaterialTheme.typography.bodyLarge,
@@ -54,7 +55,7 @@ fun MyProjectsLayout(
                         .weight(1f),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(uiState.listProjects) { project ->
+                    items(projects) { project ->
                         ProjectCard(
                             project = project,
                             selectedTab = ProjectTab.MY_PROJECTS,
@@ -62,7 +63,8 @@ fun MyProjectsLayout(
                             onClick = { onProjectClick(project) },
                             onNavigateToVersions = { onNavigateToVersion(project) },
                             onDeleteClick = { id -> viewModel.deleteProject(id) },
-                            onForkClick = { proj -> viewModel.forkProject(proj) }
+                            onForkClick = { proj -> viewModel.cloneProject(proj) }, // 📞 Llama a 'cloneProject'
+                            onEditClick = onEditClick // ➕ PASA EL PARÁMETRO
                         )
                     }
                 }
