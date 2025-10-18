@@ -2,6 +2,7 @@ package com.android.harmoniatpi.ui.screens.projectManagementScreen
 
 import android.net.Uri
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -12,7 +13,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -48,6 +48,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.SpanStyle
@@ -58,6 +59,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.android.harmoniatpi.domain.model.audio.AudioSourceType
 import com.android.harmoniatpi.ui.components.ProyectControlButtonRow
 import com.android.harmoniatpi.ui.components.TrackItem
 import com.android.harmoniatpi.ui.components.TrimAudioDialog
@@ -75,7 +77,7 @@ fun ProjectManagementScreen(
     val state by viewModel.state.collectAsState()
     val sharedScrollState = rememberScrollState()
     var trackForTrimming by remember { mutableStateOf<TrackUi?>(null) }
-
+    val context = LocalContext.current
     val pickAudioLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -88,6 +90,7 @@ fun ProjectManagementScreen(
     BackHandler {
         viewModel.updateCurrentProjectWithTracks()
         onBack()
+        viewModel.clearAllTracks()
     }
 
     Scaffold(
@@ -99,6 +102,7 @@ fun ProjectManagementScreen(
                     IconButton(onClick = {
                         viewModel.updateCurrentProjectWithTracks()
                         onBack()
+                        viewModel.clearAllTracks()
                     }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
@@ -143,7 +147,7 @@ fun ProjectManagementScreen(
                         onDelete = { viewModel.deleteTrack() },
                         onTrim = {
                             if (track.waveForm.isNullOrEmpty() || track.durationMs < 50L) {
-                                // TODO: Usar Toast para feedback al usuario
+                                Toast.makeText(context, "La pista no tiene audio para recortar", Toast.LENGTH_SHORT).show()
                                 Log.d("Trim", "Pista sin audio o muy corta para recortar.")
                             } else {
                                 trackForTrimming = track
@@ -201,7 +205,9 @@ fun ProjectManagementScreen(
                 onSkipPrevious = { viewModel.stopPlaying() },
                 onPlay = { viewModel.play() },
                 onPause = { viewModel.pause() },
-                startRecording = { viewModel.startRecording() },
+                startRecording = {
+                    Toast.makeText(context, "Para una mejor calidad, usa auriculares.", Toast.LENGTH_LONG).show()
+                    viewModel.startRecording() },
                 stopRecording = { viewModel.stopRecording() },
                 isRecording = state.isRecording,
                 isPlaying = state.isPlaying,
@@ -214,37 +220,27 @@ fun ProjectManagementScreen(
                     sheetState = sheetState
                 ) {
                     Column(
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
+                        Modifier.fillMaxWidth().padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Button(
-                            onClick = {
-                                showSheet = false
-                                viewModel.addNewTrack()
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Nueva pista")
+                        Text("Añadir Pista", style = MaterialTheme.typography.titleLarge)
+
+                        Button(onClick = {
+                            showSheet = false
+                            viewModel.addNewTrack(AudioSourceType.VOICE)
+                        }, modifier = Modifier.fillMaxWidth()) {
+                            Text("🎤 Grabar Voz (con cancelación de eco)")
                         }
-                        Spacer(Modifier.height(8.dp))
 
-                        Button(
-                            onClick = {
-                                pickAudioLauncher.launch("audio/*")
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) { Text("Abrir archivo") }
+                        Button(onClick = {
+                            showSheet = false
+                            viewModel.addNewTrack(AudioSourceType.INSTRUMENT)
+                        }, modifier = Modifier.fillMaxWidth()) {
+                            Text("🎸 Grabar Instrumento (alta fidelidad)")
+                        }
 
-                        Spacer(Modifier.height(8.dp))
-
-                        Button(
-                            onClick = {
-                                showSheet = false
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Biblioteca de colaboraciones")
+                        Button(onClick = { pickAudioLauncher.launch("audio/*") }, modifier = Modifier.fillMaxWidth()) {
+                            Text("📁 Importar desde archivo")
                         }
                     }
                 }

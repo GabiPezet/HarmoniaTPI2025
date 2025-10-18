@@ -13,7 +13,7 @@ interface AudioRecorder {
     /**
      * Inicia la grabación de audio.
      */
-    fun startRecording(): Result<Unit>
+    fun startRecording(audioSource: Int): Result<Unit>
 
     /**
      * Para la grabación de audio.

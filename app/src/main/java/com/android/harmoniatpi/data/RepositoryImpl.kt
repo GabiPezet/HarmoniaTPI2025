@@ -1,22 +1,33 @@
 package com.android.harmoniatpi.data
 
+import android.net.Uri
 import com.android.harmoniatpi.data.database.dao.ProjectDao
 import com.android.harmoniatpi.data.database.dao.UserPreferencesDao
 import com.android.harmoniatpi.data.database.entities.UserPreferencesEntity
+import com.android.harmoniatpi.data.local.model.PostFirebaseModel
 import com.android.harmoniatpi.data.local.model.UserFirebaseModel
 import com.android.harmoniatpi.di.util.JsonUtils
 import com.android.harmoniatpi.domain.interfaces.Repository
 import com.android.harmoniatpi.domain.model.UserPreferences
 import com.android.harmoniatpi.domain.model.project.Project
+import com.android.harmoniatpi.domain.model.userPreferences.Post
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import java.io.File
 import javax.inject.Inject
 
 class RepositoryImpl @Inject constructor(
@@ -24,7 +35,9 @@ class RepositoryImpl @Inject constructor(
     private val userPreferencesDao: UserPreferencesDao,
     private val jsonUtils: JsonUtils,
     private val firestore: FirebaseFirestore,
-    private val projectDao: ProjectDao
+    private val projectDao: ProjectDao,
+    private val database: FirebaseDatabase,
+    private val storage: FirebaseStorage
 ) : Repository {
 
     override fun getFirebaseCurrentUser(): FirebaseUser? = firebaseAuth.currentUser
@@ -55,7 +68,8 @@ class RepositoryImpl @Inject constructor(
         withContext(Dispatchers.IO) {
             try {
                 val authResult = firebaseAuth.signInWithEmailAndPassword(email, password).await()
-                val user = authResult.user ?: return@withContext Result.failure(Exception("User is null"))
+                val user =
+                    authResult.user ?: return@withContext Result.failure(Exception("User is null"))
 
 //                syncFireStoreToLocal(user.uid)
 
@@ -73,8 +87,10 @@ class RepositoryImpl @Inject constructor(
     ): Result<FirebaseUser> =
         withContext(Dispatchers.IO) {
             try {
-                val authResult = firebaseAuth.createUserWithEmailAndPassword(email, password).await()
-                val user = authResult.user ?: return@withContext Result.failure(Exception("User is null"))
+                val authResult =
+                    firebaseAuth.createUserWithEmailAndPassword(email, password).await()
+                val user =
+                    authResult.user ?: return@withContext Result.failure(Exception("User is null"))
 
                 // Crear local
                 val userPrefs = UserPreferencesEntity(
@@ -100,7 +116,8 @@ class RepositoryImpl @Inject constructor(
             try {
                 val credential = GoogleAuthProvider.getCredential(idToken, null)
                 val authResult = firebaseAuth.signInWithCredential(credential).await()
-                val user = authResult.user ?: return@withContext Result.failure(Exception("User is null"))
+                val user =
+                    authResult.user ?: return@withContext Result.failure(Exception("User is null"))
 
                 // Si no existe documento en Firestore -> crear
                 val userDoc = firestore.collection("users").document(user.uid).get().await()
@@ -137,6 +154,66 @@ class RepositoryImpl @Inject constructor(
 
     override suspend fun getProjectById(projectId: String): Project {
         return projectDao.getProjectById(projectId)!!.toDomain(jsonUtils)
+    }
+
+    override fun getAllPostsFlow(): Flow<List<Post>> = callbackFlow {
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val posts = snapshot.children.mapNotNull { child ->
+                    val firebasePost = child.getValue(PostFirebaseModel::class.java)
+                    firebasePost?.toDomain(jsonUtils)
+                }
+                trySend(posts)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                close(error.toException())
+            }
+        }
+
+        val postsRef = database.reference.child("posts")
+        postsRef.addValueEventListener(listener)
+        awaitClose { postsRef.removeEventListener(listener) }
+    }
+
+    override suspend fun insertPost(post: Post) {
+        val postId =
+            if (post.id.isNotEmpty()) post.id else database.reference.child("posts").push().key!!
+        val postModel = PostFirebaseModel.fromDomain(post.copy(id = postId), jsonUtils)
+        database.reference.child("posts").child(postId).setValue(postModel)
+    }
+
+    override suspend fun updatePost(post: Post) {
+        val postModel = PostFirebaseModel.fromDomain(post, jsonUtils)
+        database.reference.child("posts").child(post.id).setValue(postModel)
+    }
+
+    override suspend fun deletePostById(id: String) {
+        database.reference.child("posts").child(id).removeValue()
+    }
+
+    override suspend fun uploadLocalFileToFirebaseStorage(
+        localFilePath: String,
+        remotePath: String // ejemplo: "profile_pictures/user_${firebaseAuth.uid}.jpg"
+    ): Result<String> = withContext(Dispatchers.IO) {
+        try {
+            val file = File(localFilePath)
+            if (!file.exists()) {
+                return@withContext Result.failure(Exception("El archivo no existe en: $localFilePath"))
+            }
+
+            val fileUri = Uri.fromFile(file)
+            val ref = storage.reference.child(remotePath)
+
+            // Sube el archivo
+            ref.putFile(fileUri).await()
+
+            // Obtiene la URL pública
+            val downloadUrl = ref.downloadUrl.await().toString()
+            Result.success(downloadUrl)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     private suspend fun syncFireStoreToLocal(userId: String) {
