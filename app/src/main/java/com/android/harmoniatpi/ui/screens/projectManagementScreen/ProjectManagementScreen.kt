@@ -91,6 +91,7 @@ fun ProjectManagementScreen(
     BackHandler {
         viewModel.updateCurrentProjectWithTracks()
         onBack()
+        viewModel.clearAllTracks()
     }
 
     Scaffold(
@@ -102,6 +103,7 @@ fun ProjectManagementScreen(
                     IconButton(onClick = {
                         viewModel.updateCurrentProjectWithTracks()
                         onBack()
+                        viewModel.clearAllTracks()
                     }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
