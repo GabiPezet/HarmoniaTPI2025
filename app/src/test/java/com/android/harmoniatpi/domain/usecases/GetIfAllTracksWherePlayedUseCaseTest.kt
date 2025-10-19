@@ -1,6 +1,7 @@
 package com.android.harmoniatpi.domain.usecases
 
 import com.android.harmoniatpi.domain.interfaces.AudioMixerRepository
+import com.android.harmoniatpi.domain.usecases.audioUseCases.GetIfAllTracksWherePlayedUseCase
 import io.mockk.coEvery
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.junit4.MockKRule

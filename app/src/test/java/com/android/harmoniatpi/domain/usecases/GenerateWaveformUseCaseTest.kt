@@ -1,5 +1,6 @@
 package com.android.harmoniatpi.domain.usecases
 
+import com.android.harmoniatpi.domain.usecases.audioUseCases.GenerateWaveformUseCase
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule

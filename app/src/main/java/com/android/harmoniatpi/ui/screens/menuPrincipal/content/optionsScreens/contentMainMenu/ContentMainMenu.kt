@@ -29,6 +29,7 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
@@ -135,6 +136,12 @@ fun ContentMainMenu(
                             text = "Configuración",
                             onClick = { drawerViewModel.changeOptionsMenu(OptionsMenu.USER_PREFERENCES_SCREEN) },
                             drawable = R.drawable.ic_configuracion
+                        )
+
+                        MenuOptionItem(
+                            icon = Icons.Filled.Groups,
+                            text = "Mis publicaciones",
+                            onClick = { drawerViewModel.changeOptionsMenu(OptionsMenu.MY_POSTS_SCREEN) }
                         )
 
                         Button(onClick = { drawerViewModel.sendNotification() }) {

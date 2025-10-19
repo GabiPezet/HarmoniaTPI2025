@@ -21,6 +21,7 @@ import com.android.harmoniatpi.ui.components.ShowConfirmationDialog
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.MenuUiState
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.OptionsMenu
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.contentMainMenu.ContentMainMenu
+import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.myPostScreen.MyPostsScreen
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userPreferencesScreen.UserPreferencesScreen
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.UserDetailProfile
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.viewmodel.DrawerContentViewModel
@@ -69,7 +70,7 @@ fun DrawerContent(
             uiState = uiState,
             drawerState = drawerState,
             onCloseDrawer = onCloseDrawer,
-            onNavigateToNotifications = {onNavigateToNotifications()},
+            onNavigateToNotifications = { onNavigateToNotifications() },
             scrollState = scrollState,
             innerPadding = innerPadding,
             showCloseSessionDialog = { showCloseSessionDialog = true }
@@ -115,6 +116,12 @@ fun DrawerScreenContent(
                 viewModel = drawerViewModel,
                 uiState = uiState,
                 innerPadding = innerPadding
+            )
+        }
+
+        OptionsMenu.MY_POSTS_SCREEN -> {
+            MyPostsScreen(
+                viewModel = drawerViewModel
             )
         }
     }

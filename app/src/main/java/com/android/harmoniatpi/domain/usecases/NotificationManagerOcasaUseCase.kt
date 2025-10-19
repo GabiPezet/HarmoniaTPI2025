@@ -4,6 +4,7 @@ import android.util.Log
 import com.android.harmoniatpi.data.local.ext.getCurrentDate
 import com.android.harmoniatpi.di.util.NotificationHelper
 import com.android.harmoniatpi.domain.model.UserPreferences
+import com.android.harmoniatpi.domain.usecases.roomUseCases.SetUserPreferencesUseCase
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.SharedMenuUiState
 import com.android.harmoniatpi.ui.screens.notificationScreen.model.NotificationHarmonia
 import kotlinx.coroutines.Dispatchers

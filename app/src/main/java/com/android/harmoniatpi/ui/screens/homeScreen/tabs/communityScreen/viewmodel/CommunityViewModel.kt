@@ -4,10 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.harmoniatpi.domain.model.userPreferences.Comment
 import com.android.harmoniatpi.domain.model.userPreferences.Post
-import com.android.harmoniatpi.domain.usecases.firebase.DeletePostFirebaseDataBaseUseCase
-import com.android.harmoniatpi.domain.usecases.firebase.GetAllPostFromFirebaseDataBaseUseCase
-import com.android.harmoniatpi.domain.usecases.firebase.InsertNewPostFirebaseDataBaseUseCase
-import com.android.harmoniatpi.domain.usecases.firebase.UpdatePostFirebaseDataBaseUseCase
+import com.android.harmoniatpi.domain.usecases.firebaseUseCases.DeletePostFirebaseDataBaseUseCase
+import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetAllPostFromFirebaseDataBaseUseCase
+import com.android.harmoniatpi.domain.usecases.firebaseUseCases.InsertNewPostFirebaseDataBaseUseCase
+import com.android.harmoniatpi.domain.usecases.firebaseUseCases.UpdatePostFirebaseDataBaseUseCase
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.model.CommunityUiState
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.SharedMenuUiState
 import dagger.hilt.android.lifecycle.HiltViewModel

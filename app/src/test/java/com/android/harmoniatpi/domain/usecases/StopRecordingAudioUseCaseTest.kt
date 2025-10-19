@@ -1,6 +1,7 @@
 package com.android.harmoniatpi.domain.usecases
 
 import com.android.harmoniatpi.domain.interfaces.AudioRecorderRepository
+import com.android.harmoniatpi.domain.usecases.audioUseCases.StopRecordingAudioUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk

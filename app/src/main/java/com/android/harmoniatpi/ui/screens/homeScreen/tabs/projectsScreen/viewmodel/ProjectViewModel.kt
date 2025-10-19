@@ -4,9 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.harmoniatpi.domain.cache.HoloJamCache
 import com.android.harmoniatpi.domain.model.project.Project
-import com.android.harmoniatpi.domain.usecases.DeleteProjectByIdFromDBUseCase
-import com.android.harmoniatpi.domain.usecases.GetAllProjectsFromDBUseCase
-import com.android.harmoniatpi.domain.usecases.UpdateOrInsertProjectInDBUseCase
+import com.android.harmoniatpi.domain.usecases.roomUseCases.DeleteProjectByIdFromDBUseCase
+import com.android.harmoniatpi.domain.usecases.roomUseCases.GetAllProjectsFromDBUseCase
+import com.android.harmoniatpi.domain.usecases.roomUseCases.UpdateOrInsertProjectInDBUseCase
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.model.ProjectTab
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.model.ProjectUiState
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.SharedMenuUiState
