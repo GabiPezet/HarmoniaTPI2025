@@ -30,8 +30,10 @@ import java.io.FileInputStream
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.IOException
+import java.nio.file.Files
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
+import kotlin.io.path.createTempFile
 import kotlin.math.roundToLong
 
 /**
@@ -67,7 +69,8 @@ class AudioMixerRepositoryImpl @Inject constructor(
     override fun play(excludeTrackId: Long?) {
 
         masterPlaybackJob?.cancel()
-        val tracksToPlay = tracks.value.filter { it.hasAudio() && it.id != excludeTrackId && !it.isMuted() }
+        val tracksToPlay =
+            tracks.value.filter { it.hasAudio() && it.id != excludeTrackId && !it.isMuted() }
 
         if (tracksToPlay.isEmpty()) {
             if (tracks.value.any { it.hasAudio() }) {
@@ -402,6 +405,77 @@ class AudioMixerRepositoryImpl @Inject constructor(
     override fun clearAllTracks() {
         tracks.update { emptyList() }
         Log.i("AudioMixerRepository", "🧹 Tracks limpiados del repositorio")
+    }
+
+    override fun mixTracks(outputFile: File) {
+        try {
+            stop()
+            val files = tracks.value.map { File(it.path) }
+            mixPcmFiles(files, outputFile)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al mezclar las pistas", e)
+        }
+    }
+
+    private fun copyTracksToTempFiles(): List<File> {
+        return tracks.value.map { track ->
+            val originalFile = File(track.path)
+            val tempFile = Files.createTempFile("temp_copy_", ".pcm").toFile()
+            originalFile.copyTo(tempFile, overwrite = true)
+            tempFile
+        }
+    }
+
+    private fun getPaddedTempTrackFiles(tempFiles: List<File>): List<File> {
+        val maxLength = tempFiles.maxOfOrNull { it.length() } ?: 0L
+        return tempFiles.map { file ->
+            val currentLength = file.length()
+            if (currentLength < maxLength) {
+                val padding = maxLength - currentLength
+                FileOutputStream(file, true).use { os ->
+                    val zeroBuffer = ByteArray(1024)
+                    var written = 0L
+                    while (written < padding) {
+                        val toWrite = minOf(zeroBuffer.size.toLong(), padding - written).toInt()
+                        os.write(zeroBuffer, 0, toWrite)
+                        written += toWrite
+                    }
+                }
+            }
+            file
+        }
+    }
+
+    private fun mixPcmFiles(inputFiles: List<File>, outputFile: File) {
+        // Leer todos los archivos como ByteArray
+        val byteArrays = inputFiles.map { it.readBytes() }
+        // Calcular longitud máxima en bytes
+        val maxLength = byteArrays.maxOf { it.size }
+        val outputBuffer = ByteArray(maxLength)
+
+        var i = 0
+        while (i < maxLength) {
+            var mixedSample = 0
+
+            inputFiles.indices.forEach { index ->
+                val bytes = byteArrays[index]
+                if (i + 1 < bytes.size) {
+                    val sample = (bytes[i].toInt() and 0xFF) or (bytes[i + 1].toInt() shl 8)
+                    mixedSample += sample
+                }
+            }
+
+            // Normalizar para evitar clipping
+            mixedSample = mixedSample.coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt())
+
+            // Escribir al buffer de salida (little endian)
+            outputBuffer[i] = (mixedSample and 0xFF).toByte()
+            outputBuffer[i + 1] = ((mixedSample shr 8) and 0xFF).toByte()
+
+            i += 2
+        }
+
+        outputFile.writeBytes(outputBuffer)
     }
 
 

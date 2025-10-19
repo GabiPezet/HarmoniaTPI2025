@@ -108,4 +108,6 @@ interface AudioMixerRepository {
     suspend fun loadPcmTrack(file: File, id: Long, sourceType: AudioSourceType)
 
     fun clearAllTracks()
+
+    fun mixTracks(outputFile: File)
 }
