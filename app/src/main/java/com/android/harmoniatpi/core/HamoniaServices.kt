@@ -9,6 +9,7 @@ import androidx.core.app.NotificationCompat
 import com.android.harmoniatpi.R
 import com.android.harmoniatpi.domain.usecases.CheckIsInternetAvailableUseCase
 import com.android.harmoniatpi.domain.usecases.NotificationManagerOcasaUseCase
+import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetAllPostFromFirebaseDataBaseUseCase
 import com.android.harmoniatpi.domain.usecases.roomUseCases.GetMyPostFromDataBaseUseCase
 import com.android.harmoniatpi.domain.usecases.roomUseCases.UpdateMyPostFromDataBaseUseCase
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.SharedMenuUiState
@@ -44,19 +45,25 @@ class HamoniaServices : Service() {
     @Inject
     lateinit var updateMyPostFromDataBaseUseCase: UpdateMyPostFromDataBaseUseCase
 
+    @Inject
+    lateinit var getAllPostFromFirebaseDataBaseUseCase: GetAllPostFromFirebaseDataBaseUseCase
+
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var postObserverJob: Job? = null
+    private var firebaseCollectorJob: Job? = null
 
     override fun onCreate() {
         super.onCreate()
         acquireWakeLock()
         startForegroundService()
         startPostObserver()
+        startFirebaseCollector()
     }
 
     override fun onDestroy() {
         super.onDestroy()
         postObserverJob?.cancel()
+        firebaseCollectorJob?.cancel()
         serviceScope.cancel()
         wakeLock?.takeIf { it.isHeld }?.release()
     }
@@ -129,6 +136,14 @@ class HamoniaServices : Service() {
                         }
                     }
                 }
+        }
+    }
+
+    private fun startFirebaseCollector() {
+        firebaseCollectorJob?.cancel()
+        firebaseCollectorJob = serviceScope.launch {
+            getAllPostFromFirebaseDataBaseUseCase()
+                .collect {}
         }
     }
 
