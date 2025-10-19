@@ -90,87 +90,87 @@ class DrawerContentViewModel @Inject constructor(
         }
     }
 
-        fun start() {
-            initUserPreferences()
-        }
+    fun start() {
+        initUserPreferences()
+    }
 
-        fun resetLogOutSuccess() {
-            sharedMenuUiState.updateState { it.copy(logOutSuccess = false) }
-        }
-
-
-        fun toggleTheme(theme: AppTheme) {
-            sharedMenuUiState.updateState {
-                it.copy(
-                    appTheme = theme
-                )
-            }
-        }
+    fun resetLogOutSuccess() {
+        sharedMenuUiState.updateState { it.copy(logOutSuccess = false) }
+    }
 
 
-        fun updateUserPreferences() {
-
-            val preferences = UserPreferences(
-                userID = uiState.value.userID,
-                userEmail = uiState.value.userEmail,
-                userPhotoPath = uiState.value.userPhotoPath,
-                userPhotoPathRemote = uiState.value.userPhotoPathRemote,
-                userName = uiState.value.userName,
-                userLastName = uiState.value.userLastName,
-                appTheme = uiState.value.appTheme,
-                notificationList = uiState.value.notificationsList,
-                newNotification = uiState.value.newNotification,
-                instrument = uiState.value.instrument,
-                genres = uiState.value.genres,
-                location = uiState.value.location,
-                rating = uiState.value.rating,
-                friendsList = uiState.value.friendsList,
-                projectsList = uiState.value.projectsList,
-                myPostsList = uiState.value.myPostsList,
-                friendRequestReceived = uiState.value.friendRequestReceived,
-                friendRequestSent = uiState.value.friendRequestSent
+    fun toggleTheme(theme: AppTheme) {
+        sharedMenuUiState.updateState {
+            it.copy(
+                appTheme = theme
             )
-            viewModelScope.launch(Dispatchers.IO) {
-                setUserPreferencesUseCase(preferences)
-            }
         }
+    }
 
-        fun updateUserName(newName: String) {
-            sharedMenuUiState.updateState { it.copy(userName = newName) }
+
+    fun updateUserPreferences() {
+
+        val preferences = UserPreferences(
+            userID = uiState.value.userID,
+            userEmail = uiState.value.userEmail,
+            userPhotoPath = uiState.value.userPhotoPath,
+            userPhotoPathRemote = uiState.value.userPhotoPathRemote,
+            userName = uiState.value.userName,
+            userLastName = uiState.value.userLastName,
+            appTheme = uiState.value.appTheme,
+            notificationList = uiState.value.notificationsList,
+            newNotification = uiState.value.newNotification,
+            instrument = uiState.value.instrument,
+            genres = uiState.value.genres,
+            location = uiState.value.location,
+            rating = uiState.value.rating,
+            friendsList = uiState.value.friendsList,
+            projectsList = uiState.value.projectsList,
+            myPostsList = uiState.value.myPostsList,
+            friendRequestReceived = uiState.value.friendRequestReceived,
+            friendRequestSent = uiState.value.friendRequestSent
+        )
+        viewModelScope.launch(Dispatchers.IO) {
+            setUserPreferencesUseCase(preferences)
         }
+    }
 
-        fun updateWorkProfile(instrument: String, genres: String, location: String) {
+    fun updateUserName(newName: String) {
+        sharedMenuUiState.updateState { it.copy(userName = newName) }
+    }
+
+    fun updateWorkProfile(instrument: String, genres: String, location: String) {
+        sharedMenuUiState.updateState {
+            it.copy(
+                instrument = instrument,
+                genres = genres,
+                location = location
+            )
+        }
+    }
+
+    fun updateRating(newRating: Float) {
+        // Aseguramos que el valor siempre esté entre 0 y 5
+        val clampedRating = newRating.coerceIn(0f, 5f)
+        sharedMenuUiState.updateState {
+            it.copy(rating = clampedRating)
+        }
+    }
+
+    fun logOutUser() {
+        viewModelScope.launch(Dispatchers.IO) {
+            logOutUseCase()
             sharedMenuUiState.updateState {
                 it.copy(
-                    instrument = instrument,
-                    genres = genres,
-                    location = location
+                    logOutSuccess = true
                 )
             }
         }
+    }
 
-        fun updateRating(newRating: Float) {
-            // Aseguramos que el valor siempre esté entre 0 y 5
-            val clampedRating = newRating.coerceIn(0f, 5f)
-            sharedMenuUiState.updateState {
-                it.copy(rating = clampedRating)
-            }
-        }
-
-        fun logOutUser() {
-            viewModelScope.launch(Dispatchers.IO) {
-                logOutUseCase()
-                sharedMenuUiState.updateState {
-                    it.copy(
-                        logOutSuccess = true
-                    )
-                }
-            }
-        }
-
-        fun changeOptionsMenu(option: OptionsMenu) {
-            sharedMenuUiState.updateState { it.copy(optionsMenu = option) }
-        }
+    fun changeOptionsMenu(option: OptionsMenu) {
+        sharedMenuUiState.updateState { it.copy(optionsMenu = option) }
+    }
 
     fun saveUserPhoto(path: String) {
         Log.i("FirebaseStorage", "Entrando en saveUserPhoto")
@@ -195,7 +195,6 @@ class DrawerContentViewModel @Inject constructor(
                     sharedMenuUiState.updateState {
                         it.copy(userPhotoPathRemote = url)
                     }
-                    updateUserPreferences()
                     Log.i("FirebaseStorage", "URL: $url")
                 }.onFailure { e ->
                     Log.i("FirebaseStorage", "Error subiendo imagen", e)
@@ -204,11 +203,11 @@ class DrawerContentViewModel @Inject constructor(
         }
     }
 
-        fun sendNotification() {
-            viewModelScope.launch {
-                sharedMenuUiState.updateState { it.copy(showNewNotification = true) }
-            }
+    fun sendNotification() {
+        viewModelScope.launch {
+            sharedMenuUiState.updateState { it.copy(showNewNotification = true) }
         }
+    }
 
     fun updateComments(post: Post, comment: String) {
         val newComment = Comment(
@@ -231,4 +230,4 @@ class DrawerContentViewModel @Inject constructor(
         }
     }
 
-    }
+}

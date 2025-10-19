@@ -188,23 +188,33 @@ private fun UserProfileCard(
                     .weight(1f)
                     .padding(16.dp)
             ) {
-                if (uiState.userPhotoPath.isEmpty()) {
-                    Icon(
-                        imageVector = Icons.Default.AccountCircle,
-                        contentDescription = "Foto de perfil",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(80.dp)
-                    )
-                } else {
+                if (uiState.userPhotoPathRemote.isNotBlank()) {
                     Image(
-                        painter = rememberAsyncImagePainter(uiState.userPhotoPath),
+                        painter = rememberAsyncImagePainter(uiState.userPhotoPathRemote),
                         contentDescription = "Foto de perfil",
                         modifier = Modifier
                             .size(80.dp)
                             .clip(CircleShape),
                         contentScale = ContentScale.Crop
                     )
-                }
+                } else
+                    if (uiState.userPhotoPath.isBlank()) {
+                        Icon(
+                            imageVector = Icons.Default.AccountCircle,
+                            contentDescription = "Foto de perfil",
+                            tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f),
+                            modifier = Modifier.size(80.dp)
+                        )
+                    } else {
+                        Image(
+                            painter = rememberAsyncImagePainter(uiState.userPhotoPath),
+                            contentDescription = "Foto de perfil",
+                            modifier = Modifier
+                                .size(150.dp)
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
 
                 Spacer(modifier = Modifier.height(12.dp))
 

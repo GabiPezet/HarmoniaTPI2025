@@ -2,6 +2,7 @@ package com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -83,6 +84,7 @@ fun UserDetailProfile(
     innerPadding: PaddingValues,
 ) {
     val context = LocalContext.current
+    Log.i("FirebaseStorage UserDetailProfile", "URL: $uiState.userPhotoPathRemote")
     var photoUri by rememberSaveable { mutableStateOf<Uri?>(null) }
     var showSheet by remember { mutableStateOf(false) }
     val userPhotoPath by viewModel.userPhotoPath.collectAsState()

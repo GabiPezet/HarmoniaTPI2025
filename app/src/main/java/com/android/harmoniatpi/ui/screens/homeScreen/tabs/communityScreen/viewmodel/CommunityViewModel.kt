@@ -62,6 +62,7 @@ class CommunityViewModel @Inject constructor(
         val newPost = Post(
             id = System.currentTimeMillis().toString(),
             userID = _uiState.value.userID,
+            userImagePathURL = _uiState.value.userPhotoPathRemote,
             title = title,
             description = description,
             name = _uiState.value.userName,
@@ -70,6 +71,7 @@ class CommunityViewModel @Inject constructor(
             idProject = "",
             urlCompleteAudio = "",
             urlAudioTracks = emptyList(),
+            imageUrl = "",
             createdAt = LocalDateTime.now().toString(),
             likes = 0,
             totalShared = 0,

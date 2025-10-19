@@ -29,6 +29,7 @@ data class Post(
         return PostFirebaseModel(
             id = id,
             userID = userID,
+            userImagePathURL = userImagePathURL,
             title = title,
             description = description,
             name = name,
@@ -53,6 +54,7 @@ data class Post(
     ) = MyPostEntity(
         id = id,
         userID = userID,
+        userImagePathURL = userImagePathURL,
         title = title,
         description = description,
         name = name,
