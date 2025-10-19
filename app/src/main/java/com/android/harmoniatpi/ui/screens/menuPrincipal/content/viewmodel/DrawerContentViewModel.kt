@@ -19,6 +19,7 @@ import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.ProfileIma
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.SharedMenuUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -76,6 +77,7 @@ class DrawerContentViewModel @Inject constructor(
                         friendRequestSent = currentUser.friendRequestSent
                     )
                 }
+                delay(2000L)
                 initMyPostCollect()
             }
         }
@@ -200,12 +202,6 @@ class DrawerContentViewModel @Inject constructor(
                     Log.i("FirebaseStorage", "Error subiendo imagen", e)
                 }
             }
-        }
-    }
-
-    fun sendNotification() {
-        viewModelScope.launch {
-            sharedMenuUiState.updateState { it.copy(showNewNotification = true) }
         }
     }
 

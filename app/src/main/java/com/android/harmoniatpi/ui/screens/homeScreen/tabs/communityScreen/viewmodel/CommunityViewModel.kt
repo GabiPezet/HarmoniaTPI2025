@@ -31,20 +31,20 @@ class CommunityViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            sharedMenuUiState.uiState.collect { uiState ->
+            sharedMenuUiState.uiState.collect { state ->
                 _uiState.update {
                     it.copy(
-                        userName = uiState.userName,
-                        userLastName = uiState.userLastName,
-                        userID = uiState.userID,
-                        userPhotoPathRemote = uiState.userPhotoPathRemote
+                        userName = state.userName,
+                        userLastName = state.userLastName,
+                        userID = state.userID,
+                        userPhotoPathRemote = state.userPhotoPathRemote
                     )
                 }
             }
         }
 
         viewModelScope.launch {
-            getAllPostFromFirebaseDataBaseUseCase(_uiState.value.userID).collect { posts ->
+            getAllPostFromFirebaseDataBaseUseCase().collect { posts ->
                 _uiState.update { it.copy(posts = posts) }
             }
         }

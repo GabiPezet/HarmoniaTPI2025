@@ -144,9 +144,6 @@ fun ContentMainMenu(
                             onClick = { drawerViewModel.changeOptionsMenu(OptionsMenu.MY_POSTS_SCREEN) }
                         )
 
-                        Button(onClick = { drawerViewModel.sendNotification() }) {
-                            Text("Enviar Notificacion")
-                        }
                     }
 
                     // Sección inferior con "Cerrar sesión"

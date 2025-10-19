@@ -84,7 +84,6 @@ fun UserDetailProfile(
     innerPadding: PaddingValues,
 ) {
     val context = LocalContext.current
-    Log.i("FirebaseStorage UserDetailProfile", "URL: $uiState.userPhotoPathRemote")
     var photoUri by rememberSaveable { mutableStateOf<Uri?>(null) }
     var showSheet by remember { mutableStateOf(false) }
     val userPhotoPath by viewModel.userPhotoPath.collectAsState()

@@ -35,7 +35,7 @@ interface Repository {
 
     suspend fun getProjectById(projectId: String): Project
 
-    fun getAllPostsFlowRealTimeDB(userID: String): Flow<List<Post>>
+    fun getAllPostsFlowRealTimeDB(): Flow<List<Post>>
 
     suspend fun insertPostRealTimeDB(post: Post)
 
