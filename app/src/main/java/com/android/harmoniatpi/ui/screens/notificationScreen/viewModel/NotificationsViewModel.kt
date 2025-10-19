@@ -3,7 +3,7 @@ package com.android.harmoniatpi.ui.screens.notificationScreen.viewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.harmoniatpi.domain.model.UserPreferences
-import com.android.harmoniatpi.domain.usecases.SetUserPreferencesUseCase
+import com.android.harmoniatpi.domain.usecases.roomUseCases.SetUserPreferencesUseCase
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.SharedMenuUiState
 import com.android.harmoniatpi.ui.screens.notificationScreen.model.NotificationState
 import dagger.hilt.android.lifecycle.HiltViewModel

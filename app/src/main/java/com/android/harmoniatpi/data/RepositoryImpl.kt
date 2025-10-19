@@ -78,7 +78,7 @@ class RepositoryImpl @Inject constructor(
                 val user =
                     authResult.user ?: return@withContext Result.failure(Exception("User is null"))
 
-//                syncFireStoreToLocal(user.uid)
+                syncFireStoreToLocal(user.uid)
 
                 Result.success(user)
             } catch (e: Exception) {

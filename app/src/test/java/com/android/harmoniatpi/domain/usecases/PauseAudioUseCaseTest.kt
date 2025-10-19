@@ -1,6 +1,7 @@
 package com.android.harmoniatpi.domain.usecases
 
 import com.android.harmoniatpi.domain.interfaces.AudioMixerRepository
+import com.android.harmoniatpi.domain.usecases.audioUseCases.PauseAudioUseCase
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking

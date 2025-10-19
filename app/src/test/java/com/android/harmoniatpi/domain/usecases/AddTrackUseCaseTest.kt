@@ -1,6 +1,7 @@
 package com.android.harmoniatpi.domain.usecases
 
 import com.android.harmoniatpi.domain.interfaces.AudioMixerRepository
+import com.android.harmoniatpi.domain.usecases.audioUseCases.AddTrackUseCase
 import io.mockk.mockk
 import io.mockk.verify
 import org.junit.Before

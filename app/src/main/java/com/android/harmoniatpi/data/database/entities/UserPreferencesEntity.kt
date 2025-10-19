@@ -104,7 +104,7 @@ data class UserPreferencesEntity(
         userName = userName,
         userLastName = userLastName,
         userPhotoPath = userPhotoPath,
-        userPhotoPathRemote = userPhotoPathRemote,
+        userPhotoPathRemote = this.userPhotoPathRemote,
         appTheme = appTheme.value,
         notificationList = notificationList,
         newNotification = newNotification,
