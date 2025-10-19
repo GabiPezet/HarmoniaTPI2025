@@ -109,5 +109,5 @@ interface AudioMixerRepository {
 
     fun clearAllTracks()
 
-    fun mixTracks(outputFile: File)
+    fun mixTracks(outputFileName: String): File?
 }

@@ -30,10 +30,8 @@ import java.io.FileInputStream
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.IOException
-import java.nio.file.Files
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
-import kotlin.io.path.createTempFile
 import kotlin.math.roundToLong
 
 /**
@@ -42,7 +40,7 @@ import kotlin.math.roundToLong
 class AudioMixerRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     private val trackFactory: TrackFactory,
-    private val audioConverter: AudioConverter
+    private val audioConverter: AudioConverter,
 ) : AudioMixerRepository {
     /**
      * Lista de pistas disponibles
@@ -397,7 +395,8 @@ class AudioMixerRepositoryImpl @Inject constructor(
             return
         }
 
-        val track = trackFactory.create(file.parent!!, file.absolutePath, id, sourceType = sourceType)
+        val track =
+            trackFactory.create(file.parent!!, file.absolutePath, id, sourceType = sourceType)
         tracks.update { it + track }
         Log.i(TAG, "Track restored from PCM: ${file.name} with path ${track.path}")
     }
@@ -407,46 +406,22 @@ class AudioMixerRepositoryImpl @Inject constructor(
         Log.i("AudioMixerRepository", "🧹 Tracks limpiados del repositorio")
     }
 
-    override fun mixTracks(outputFile: File) {
+    override fun mixTracks(outputFileName: String): File? {
+        Log.d(TAG, "mixTracks(). Output file name: $outputFileName")
         try {
             stop()
+            val outputFile = File(context.filesDir, outputFileName)
             val files = tracks.value.map { File(it.path) }
-            mixPcmFiles(files, outputFile)
+            mixAudioFiles(files, outputFile)
+            Log.d(TAG, "Mix finalizado. Archivo de salida: ${outputFile.absolutePath}")
+            return outputFile
         } catch (e: Exception) {
             Log.e(TAG, "Error al mezclar las pistas", e)
+            return null
         }
     }
 
-    private fun copyTracksToTempFiles(): List<File> {
-        return tracks.value.map { track ->
-            val originalFile = File(track.path)
-            val tempFile = Files.createTempFile("temp_copy_", ".pcm").toFile()
-            originalFile.copyTo(tempFile, overwrite = true)
-            tempFile
-        }
-    }
-
-    private fun getPaddedTempTrackFiles(tempFiles: List<File>): List<File> {
-        val maxLength = tempFiles.maxOfOrNull { it.length() } ?: 0L
-        return tempFiles.map { file ->
-            val currentLength = file.length()
-            if (currentLength < maxLength) {
-                val padding = maxLength - currentLength
-                FileOutputStream(file, true).use { os ->
-                    val zeroBuffer = ByteArray(1024)
-                    var written = 0L
-                    while (written < padding) {
-                        val toWrite = minOf(zeroBuffer.size.toLong(), padding - written).toInt()
-                        os.write(zeroBuffer, 0, toWrite)
-                        written += toWrite
-                    }
-                }
-            }
-            file
-        }
-    }
-
-    private fun mixPcmFiles(inputFiles: List<File>, outputFile: File) {
+    private fun mixAudioFiles(inputFiles: List<File>, outputFile: File) {
         // Leer todos los archivos como ByteArray
         val byteArrays = inputFiles.map { it.readBytes() }
         // Calcular longitud máxima en bytes
