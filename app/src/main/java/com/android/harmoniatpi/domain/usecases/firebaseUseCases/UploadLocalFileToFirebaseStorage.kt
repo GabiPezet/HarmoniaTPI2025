@@ -1,6 +1,5 @@
 package com.android.harmoniatpi.domain.usecases.firebaseUseCases
 
-import android.util.Log
 import com.android.harmoniatpi.domain.interfaces.Repository
 import javax.inject.Inject
 
