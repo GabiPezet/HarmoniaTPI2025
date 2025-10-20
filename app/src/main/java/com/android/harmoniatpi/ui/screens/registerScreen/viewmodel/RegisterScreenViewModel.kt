@@ -3,7 +3,7 @@ package com.android.harmoniatpi.ui.screens.registerScreen.viewmodel
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.android.harmoniatpi.domain.usecases.RegisterUserFirebaseUseCase
+import com.android.harmoniatpi.domain.usecases.firebaseUseCases.RegisterUserFirebaseUseCase
 import com.android.harmoniatpi.ui.screens.registerScreen.model.RegisterUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow

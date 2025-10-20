@@ -7,5 +7,7 @@ data class CommunityUiState(
     val showCreateDialog: Boolean = false,
     val userName: String = "",
     val userLastName: String = "",
+    val userID : String = "",
+    val userPhotoPathRemote : String = "",
     val posts: List<Post> = emptyList()
 )

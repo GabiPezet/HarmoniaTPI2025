@@ -40,7 +40,7 @@ import kotlin.math.roundToLong
 class AudioMixerRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     private val trackFactory: TrackFactory,
-    private val audioConverter: AudioConverter
+    private val audioConverter: AudioConverter,
 ) : AudioMixerRepository {
     /**
      * Lista de pistas disponibles
@@ -67,7 +67,8 @@ class AudioMixerRepositoryImpl @Inject constructor(
     override fun play(excludeTrackId: Long?) {
 
         masterPlaybackJob?.cancel()
-        val tracksToPlay = tracks.value.filter { it.hasAudio() && it.id != excludeTrackId && !it.isMuted() }
+        val tracksToPlay =
+            tracks.value.filter { it.hasAudio() && it.id != excludeTrackId && !it.isMuted() }
 
         if (tracksToPlay.isEmpty()) {
             if (tracks.value.any { it.hasAudio() }) {
@@ -394,7 +395,8 @@ class AudioMixerRepositoryImpl @Inject constructor(
             return
         }
 
-        val track = trackFactory.create(file.parent!!, file.absolutePath, id, sourceType = sourceType)
+        val track =
+            trackFactory.create(file.parent!!, file.absolutePath, id, sourceType = sourceType)
         tracks.update { it + track }
         Log.i(TAG, "Track restored from PCM: ${file.name} with path ${track.path}")
     }
@@ -403,7 +405,6 @@ class AudioMixerRepositoryImpl @Inject constructor(
         tracks.update { emptyList() }
         Log.i("AudioMixerRepository", "🧹 Tracks limpiados del repositorio")
     }
-
 
     private companion object {
         const val TAG = "AudioMixerRepository"

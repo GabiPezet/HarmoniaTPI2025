@@ -9,33 +9,32 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.harmoniatpi.domain.cache.HoloJamCache
 import com.android.harmoniatpi.domain.model.audio.AudioSourceType
-import com.android.harmoniatpi.domain.usecases.AddTrackFromFileUseCase
-import com.android.harmoniatpi.domain.usecases.AddTrackUseCase
-import com.android.harmoniatpi.domain.usecases.DeleteTrackUseCase
-import com.android.harmoniatpi.domain.usecases.GenerateWaveformUseCase
-import com.android.harmoniatpi.domain.usecases.GetCurrentPlaybackPositionUseCase
-import com.android.harmoniatpi.domain.usecases.GetIfAllTracksWherePlayedUseCase
-import com.android.harmoniatpi.domain.usecases.GetTracksUseCase
-import com.android.harmoniatpi.domain.usecases.LoadProjectTrackUseCase
-import com.android.harmoniatpi.domain.usecases.MuteTrackUseCase
-import com.android.harmoniatpi.domain.usecases.PauseAudioUseCase
-import com.android.harmoniatpi.domain.usecases.PlayAudioUseCase
-import com.android.harmoniatpi.domain.usecases.SeekToUseCase
-import com.android.harmoniatpi.domain.usecases.SetTrackOffsetUseCase
-import com.android.harmoniatpi.domain.usecases.SetTrackVolumeUseCase
-import com.android.harmoniatpi.domain.usecases.StartRecordingAudioUseCase
-import com.android.harmoniatpi.domain.usecases.StopAudioUseCase
-import com.android.harmoniatpi.domain.usecases.StopRecordingAudioUseCase
-import com.android.harmoniatpi.domain.usecases.TrimAudioTrackUseCase
-import com.android.harmoniatpi.domain.usecases.UnMuteTrackUseCase
-import com.android.harmoniatpi.domain.usecases.UndoTrimUseCase
-import com.android.harmoniatpi.domain.usecases.UpdateOrInsertProjectInDBUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.AddTrackFromFileUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.AddTrackUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.DeleteTrackUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.GenerateWaveformUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.GetCurrentPlaybackPositionUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.GetIfAllTracksWherePlayedUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.GetTracksUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.LoadProjectTrackUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.MuteTrackUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.PauseAudioUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.PlayAudioUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.SeekToUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.SetTrackOffsetUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.SetTrackVolumeUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.StartRecordingAudioUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.StopAudioUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.StopRecordingAudioUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.TrimAudioTrackUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.UnMuteTrackUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.UndoTrimUseCase
+import com.android.harmoniatpi.domain.usecases.roomUseCases.UpdateOrInsertProjectInDBUseCase
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.ProyectScreenUiState
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -90,7 +89,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
         val project = holoJamCache.currentProjectSelected
         _state.update { it.copy(currentProjectSelected = project) }
 
-        if (project != null && !project.urlAudioTracks.isNullOrEmpty()) {
+        if (project != null && project.urlAudioTracks.isNotEmpty()) {
             viewModelScope.launch {
                 Log.i("KlyxDevs", "Restaurando pistas del proyecto guardado...")
                 loadProjectTrackUseCase.clearAllTracks()
@@ -419,7 +418,6 @@ class ProjectManagementScreenViewModel @Inject constructor(
             updateTrackVolume(it.id, volume)
         }
     }
-
 
     fun updateTrackOffset(trackId: Long, offsetMs: Long) {
         setTrackOffsetUseCase(trackId, offsetMs)
