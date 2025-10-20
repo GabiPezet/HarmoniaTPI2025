@@ -406,54 +406,6 @@ class AudioMixerRepositoryImpl @Inject constructor(
         Log.i("AudioMixerRepository", "🧹 Tracks limpiados del repositorio")
     }
 
-    override fun mixTracks(outputFileName: String): File? {
-        Log.d(TAG, "mixTracks(). Output file name: $outputFileName")
-        try {
-            stop()
-            val outputFile = File(context.filesDir, outputFileName)
-            val files = tracks.value.map { File(it.path) }
-            mixAudioFiles(files, outputFile)
-            Log.d(TAG, "Mix finalizado. Archivo de salida: ${outputFile.absolutePath}")
-            return outputFile
-        } catch (e: Exception) {
-            Log.e(TAG, "Error al mezclar las pistas", e)
-            return null
-        }
-    }
-
-    private fun mixAudioFiles(inputFiles: List<File>, outputFile: File) {
-        // Leer todos los archivos como ByteArray
-        val byteArrays = inputFiles.map { it.readBytes() }
-        // Calcular longitud máxima en bytes
-        val maxLength = byteArrays.maxOf { it.size }
-        val outputBuffer = ByteArray(maxLength)
-
-        var i = 0
-        while (i < maxLength) {
-            var mixedSample = 0
-
-            inputFiles.indices.forEach { index ->
-                val bytes = byteArrays[index]
-                if (i + 1 < bytes.size) {
-                    val sample = (bytes[i].toInt() and 0xFF) or (bytes[i + 1].toInt() shl 8)
-                    mixedSample += sample
-                }
-            }
-
-            // Normalizar para evitar clipping
-            mixedSample = mixedSample.coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt())
-
-            // Escribir al buffer de salida (little endian)
-            outputBuffer[i] = (mixedSample and 0xFF).toByte()
-            outputBuffer[i + 1] = ((mixedSample shr 8) and 0xFF).toByte()
-
-            i += 2
-        }
-
-        outputFile.writeBytes(outputBuffer)
-    }
-
-
     private companion object {
         const val TAG = "AudioMixerRepository"
     }

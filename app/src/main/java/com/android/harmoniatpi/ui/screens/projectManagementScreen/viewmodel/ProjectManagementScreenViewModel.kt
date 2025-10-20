@@ -17,7 +17,6 @@ import com.android.harmoniatpi.domain.usecases.audioUseCases.GetCurrentPlaybackP
 import com.android.harmoniatpi.domain.usecases.audioUseCases.GetIfAllTracksWherePlayedUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.GetTracksUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.LoadProjectTrackUseCase
-import com.android.harmoniatpi.domain.usecases.audioUseCases.MixTracksUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.MuteTrackUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.PauseAudioUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.PlayAudioUseCase
@@ -71,8 +70,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
     private val getCurrentPlaybackPosition: GetCurrentPlaybackPositionUseCase,
     private val seekToUseCase: SeekToUseCase,
     private val loadProjectTrackUseCase: LoadProjectTrackUseCase,
-    private val setTrackOffsetUseCase: SetTrackOffsetUseCase,
-    private val mixTracks: MixTracksUseCase
+    private val setTrackOffsetUseCase: SetTrackOffsetUseCase
 ) : ViewModel() {
     private val _state = MutableStateFlow(ProyectScreenUiState())
     private var selectedTrack: TrackUi? = null
@@ -418,12 +416,6 @@ class ProjectManagementScreenViewModel @Inject constructor(
         selectedTrack?.let {
             setTrackVolumeUseCase(it.id, volume)
             updateTrackVolume(it.id, volume)
-        }
-    }
-
-    fun mixProjectTracks() {
-        _state.value.currentProjectSelected?.let { project ->
-            mixTracks(project.id)
         }
     }
 
