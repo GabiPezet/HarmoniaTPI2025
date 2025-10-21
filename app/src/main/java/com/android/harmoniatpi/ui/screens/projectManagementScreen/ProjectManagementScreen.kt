@@ -113,7 +113,7 @@ fun ProjectManagementScreen(
                     navigationIconContentColor = MaterialTheme.colorScheme.secondary,
                     actionIconContentColor = MaterialTheme.colorScheme.secondary,
                     scrolledContainerColor = MaterialTheme.colorScheme.secondaryContainer
-                ),
+                )
             )
         }
     ) { padding ->

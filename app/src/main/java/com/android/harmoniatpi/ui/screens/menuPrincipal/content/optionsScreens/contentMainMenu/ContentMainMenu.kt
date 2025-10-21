@@ -29,9 +29,9 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Button
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -137,9 +137,12 @@ fun ContentMainMenu(
                             drawable = R.drawable.ic_configuracion
                         )
 
-                        Button(onClick = { drawerViewModel.sendNotification() }) {
-                            Text("Enviar Notificacion")
-                        }
+                        MenuOptionItem(
+                            icon = Icons.Filled.Groups,
+                            text = "Mis publicaciones",
+                            onClick = { drawerViewModel.changeOptionsMenu(OptionsMenu.MY_POSTS_SCREEN) }
+                        )
+
                     }
 
                     // Sección inferior con "Cerrar sesión"
@@ -181,23 +184,33 @@ private fun UserProfileCard(
                     .weight(1f)
                     .padding(16.dp)
             ) {
-                if (uiState.userPhotoPath.isEmpty()) {
-                    Icon(
-                        imageVector = Icons.Default.AccountCircle,
-                        contentDescription = "Foto de perfil",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(80.dp)
-                    )
-                } else {
+                if (uiState.userPhotoPathRemote.isNotBlank()) {
                     Image(
-                        painter = rememberAsyncImagePainter(uiState.userPhotoPath),
+                        painter = rememberAsyncImagePainter(uiState.userPhotoPathRemote),
                         contentDescription = "Foto de perfil",
                         modifier = Modifier
                             .size(80.dp)
                             .clip(CircleShape),
                         contentScale = ContentScale.Crop
                     )
-                }
+                } else
+                    if (uiState.userPhotoPath.isBlank()) {
+                        Icon(
+                            imageVector = Icons.Default.AccountCircle,
+                            contentDescription = "Foto de perfil",
+                            tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f),
+                            modifier = Modifier.size(80.dp)
+                        )
+                    } else {
+                        Image(
+                            painter = rememberAsyncImagePainter(uiState.userPhotoPath),
+                            contentDescription = "Foto de perfil",
+                            modifier = Modifier
+                                .size(150.dp)
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
 
                 Spacer(modifier = Modifier.height(12.dp))
 

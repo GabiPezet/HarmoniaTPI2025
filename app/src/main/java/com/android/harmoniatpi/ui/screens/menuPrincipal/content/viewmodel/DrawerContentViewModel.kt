@@ -5,15 +5,21 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.harmoniatpi.domain.model.UserPreferences
 import com.android.harmoniatpi.domain.model.userPreferences.AppTheme
-import com.android.harmoniatpi.domain.usecases.GetUserPreferencesUseCase
-import com.android.harmoniatpi.domain.usecases.firebase.LogOutFirebaseUseCase
-import com.android.harmoniatpi.domain.usecases.SetUserPreferencesUseCase
-import com.android.harmoniatpi.domain.usecases.firebase.UploadLocalFileToFirebaseStorage
+import com.android.harmoniatpi.domain.model.userPreferences.Comment
+import com.android.harmoniatpi.domain.model.userPreferences.Post
+import com.android.harmoniatpi.domain.usecases.firebaseUseCases.DeletePostFirebaseDataBaseUseCase
+import com.android.harmoniatpi.domain.usecases.firebaseUseCases.LogOutFirebaseUseCase
+import com.android.harmoniatpi.domain.usecases.firebaseUseCases.UpdatePostFirebaseDataBaseUseCase
+import com.android.harmoniatpi.domain.usecases.firebaseUseCases.UploadLocalFileToFirebaseStorage
+import com.android.harmoniatpi.domain.usecases.roomUseCases.GetMyPostFromDataBaseUseCase
+import com.android.harmoniatpi.domain.usecases.roomUseCases.GetUserPreferencesUseCase
+import com.android.harmoniatpi.domain.usecases.roomUseCases.SetUserPreferencesUseCase
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.OptionsMenu
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.ProfileImageUser
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.SharedMenuUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -27,11 +33,17 @@ class DrawerContentViewModel @Inject constructor(
     private val sharedMenuUiState: SharedMenuUiState,
     private val getUserPreferencesUseCase: GetUserPreferencesUseCase,
     private val setUserPreferencesUseCase: SetUserPreferencesUseCase,
-    private val uploadLocalFileToFirebaseStorage: UploadLocalFileToFirebaseStorage
+    private val uploadLocalFileToFirebaseStorage: UploadLocalFileToFirebaseStorage,
+    private val getMyPostFromDataBaseUseCase: GetMyPostFromDataBaseUseCase,
+    private val updatePostFirebaseDataBaseUseCase: UpdatePostFirebaseDataBaseUseCase,
+    private val deletePostFirebaseDataBaseUseCase: DeletePostFirebaseDataBaseUseCase
 ) : ViewModel() {
+
     val uiState = sharedMenuUiState.uiState
+
     private val _userPhotoPath = MutableStateFlow(ProfileImageUser())
     val userPhotoPath = _userPhotoPath.asStateFlow()
+
 
     fun initUserPreferences() {
         viewModelScope.launch {
@@ -65,6 +77,17 @@ class DrawerContentViewModel @Inject constructor(
                         friendRequestSent = currentUser.friendRequestSent
                     )
                 }
+                delay(2000L)
+                initMyPostCollect()
+            }
+        }
+    }
+
+    private fun initMyPostCollect() {
+        viewModelScope.launch {
+            getMyPostFromDataBaseUseCase().collect { posts ->
+                sharedMenuUiState.updateState { it.copy(myPostsList = posts) }
+                Log.i("KlyxDevs", "Posts: $posts")
             }
         }
     }
@@ -174,7 +197,6 @@ class DrawerContentViewModel @Inject constructor(
                     sharedMenuUiState.updateState {
                         it.copy(userPhotoPathRemote = url)
                     }
-                    updateUserPreferences()
                     Log.i("FirebaseStorage", "URL: $url")
                 }.onFailure { e ->
                     Log.i("FirebaseStorage", "Error subiendo imagen", e)
@@ -183,9 +205,24 @@ class DrawerContentViewModel @Inject constructor(
         }
     }
 
-    fun sendNotification() {
+    fun updateComments(post: Post, comment: String) {
+        val newComment = Comment(
+            id = System.currentTimeMillis().toString(),
+            name = uiState.value.userName,
+            lastName = uiState.value.userLastName,
+            comment = comment,
+            photoUrlUser = uiState.value.userPhotoPathRemote
+        )
+        val newPost = post.copy(comments = post.comments + newComment)
         viewModelScope.launch {
-            sharedMenuUiState.updateState { it.copy(showNewNotification = true) }
+            updatePostFirebaseDataBaseUseCase(newPost)
+        }
+
+    }
+
+    fun deleteMyPost(postID: String) {
+        viewModelScope.launch {
+            deletePostFirebaseDataBaseUseCase(postID)
         }
     }
 

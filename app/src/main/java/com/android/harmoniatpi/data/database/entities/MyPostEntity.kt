@@ -52,6 +52,7 @@ data class MyPostEntity(
     fun toDomain(jsonUtils: JsonUtils) = Post(
         id = id,
         userID = userID,
+        userImagePathURL = userImagePathURL,
         title = title,
         description = description,
         name = name,

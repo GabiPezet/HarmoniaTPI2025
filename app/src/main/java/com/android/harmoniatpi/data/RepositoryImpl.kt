@@ -23,7 +23,6 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -78,7 +77,7 @@ class RepositoryImpl @Inject constructor(
                 val user =
                     authResult.user ?: return@withContext Result.failure(Exception("User is null"))
 
-//                syncFireStoreToLocal(user.uid)
+                syncFireStoreToLocal(user.uid)
 
                 Result.success(user)
             } catch (e: Exception) {
@@ -163,7 +162,8 @@ class RepositoryImpl @Inject constructor(
         return projectDao.getProjectById(projectId)!!.toDomain(jsonUtils)
     }
 
-    override fun getAllPostsFlowRealTimeDB(userID: String): Flow<List<Post>> = callbackFlow {
+    override fun getAllPostsFlowRealTimeDB(): Flow<List<Post>> = callbackFlow {
+        val user = firebaseAuth.currentUser
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val posts = snapshot.children.mapNotNull { child ->
@@ -174,24 +174,26 @@ class RepositoryImpl @Inject constructor(
                 trySend(posts)
 
                 // Sincronizar Room en segundo plano
-                CoroutineScope(Dispatchers.IO).launch {
+                launch(Dispatchers.IO) {
                     try {
+                        Log.i("KlyxDevs", "Sincronizando posts...")
+                        Log.i("KlyxDevs", "userID: ${user!!.uid}")
                         val localPosts = getMyPosts().first()
-                        val myRemotePosts = posts.filter { it.userID == userID }
-
+                        val myRemotePosts = posts.filter { it.userID == user.uid }
                         myRemotePosts.forEach { remotePost ->
                             val localPost = localPosts.find { it.id == remotePost.id }
 
                             if (localPost == null) {
+                                Log.i("KlyxDevs", "Insertando nuevo post: ${remotePost.id}")
                                 insertMyPost(remotePost.toDataBase(jsonUtils))
                             } else {
                                 val hasNewLike = remotePost.likes != localPost.likes
                                 val hasNewComment =
                                     remotePost.comments.size != localPost.comments.size
-
                                 if (hasNewLike || hasNewComment) {
+                                    Log.i("KlyxDevs", "Actualizando post ${remotePost.id}")
                                     val updatedEntity = remotePost.toDataBase(
-                                        jsonUtils,
+                                        jsonUtils = jsonUtils,
                                         hasNewComment = hasNewComment,
                                         hasNewLike = hasNewLike
                                     )

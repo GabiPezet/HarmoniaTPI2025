@@ -6,6 +6,7 @@ import com.android.harmoniatpi.domain.model.userPreferences.Post
 data class PostFirebaseModel(
     val id: String = "",
     val userID: String = "",
+    val userImagePathURL : String = "",
     val title: String = "",
     val description: String = "",
     val name: String = "",
@@ -25,6 +26,7 @@ data class PostFirebaseModel(
         return Post(
             id = id,
             userID = userID,
+            userImagePathURL = userImagePathURL,
             title = title,
             description = description,
             name = name,

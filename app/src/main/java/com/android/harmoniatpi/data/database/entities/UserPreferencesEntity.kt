@@ -59,6 +59,7 @@ data class UserPreferencesEntity(
         userName = userName,
         userLastName = userLastName,
         userPhotoPath = userPhotoPath,
+        userPhotoPathRemote = userPhotoPathRemote,
         appTheme = appTheme,
         notificationList = if (notificationList.isNotBlank()) {
             jsonUtils.decodeJsonToListObject<NotificationHarmonia>(notificationList)
