@@ -11,6 +11,7 @@ import androidx.annotation.RequiresApi
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.nio.ByteBuffer
@@ -46,10 +47,10 @@ class AudioConverter @Inject constructor(
     suspend fun convertToPcm(inputUri: Uri, outputPcmFile: File): Result<Unit> = withContext(Dispatchers.IO) {
         val extractor = MediaExtractor()
         var decoder: MediaCodec? = null
-        var outputStream: FileOutputStream? = null
+        var outputStream: BufferedOutputStream? = null
 
         try {
-            outputStream = FileOutputStream(outputPcmFile)
+            outputStream = BufferedOutputStream(FileOutputStream(outputPcmFile), 64 * 1024)
             context.contentResolver.openFileDescriptor(inputUri, "r")?.use { pfd ->
                 extractor.setDataSource(pfd.fileDescriptor)
             } ?: return@withContext Result.failure(Exception("No se pudo abrir el archivo de origen."))
