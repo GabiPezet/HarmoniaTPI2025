@@ -27,6 +27,14 @@ class AudioConverter @Inject constructor(
     private val TARGET_CHANNEL_COUNT = 1 // Mono
     private val BYTES_PER_SAMPLE = 2 // 16-bit PCM
 
+    // --- PERFORMANCE IMPROVEMENT: Pre-allocated buffers ---
+    // Create reusable buffers once to avoid allocations in the hot loop.
+    // A 16KB buffer is a good, safe size for audio chunks.
+    private val MAX_CHUNK_SIZE = 16 * 1024
+    private val reusableRawChunk = ByteArray(MAX_CHUNK_SIZE)
+    private val reusableMonoChunk = ByteArray(MAX_CHUNK_SIZE / 2)
+    // ----------------------------------------------------
+
     /**
      * Convierte el audio desde la URI de origen (ej. MP3, WAV) a PCM y lo guarda en el archivo de destino.
      *
@@ -80,8 +88,8 @@ class AudioConverter @Inject constructor(
                 if (!isExtractorEOS) {
                     val inputBufferId = decoder.dequeueInputBuffer(timeoutUs)
                     if (inputBufferId >= 0) {
-                        val inputBuffer = decoder.getInputBuffer(inputBufferId)
-                        val sampleSize = extractor.readSampleData(inputBuffer!!, 0)
+                        val inputBuffer = decoder.getInputBuffer(inputBufferId)!!
+                        val sampleSize = extractor.readSampleData(inputBuffer, 0)
 
                         if (sampleSize < 0) {
                             decoder.queueInputBuffer(inputBufferId, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
@@ -95,26 +103,34 @@ class AudioConverter @Inject constructor(
 
                 val outputBufferId = decoder.dequeueOutputBuffer(bufferInfo, timeoutUs)
                 if (outputBufferId >= 0) {
-                    val outputBuffer = decoder.getOutputBuffer(outputBufferId)
+                    val outputBuffer = decoder.getOutputBuffer(outputBufferId)!!
+                    val chunkSize = bufferInfo.size
 
-                    // esto es IMPORTANTE - aca se remuestrea si es necesario
-                    val chunk = if (outputChannelCount == 2) {
+                    if (chunkSize > 0) {
+                        // --- REFACTORED LOGIC ---
+                        // 1. Copy data ONCE from the decoder's buffer into our reusable buffer.
+                        outputBuffer.get(reusableRawChunk, 0, chunkSize)
 
-                        mixStereoToMono(outputBuffer!!, bufferInfo.size)
-                    } else if (outputSampleRate != TARGET_SAMPLE_RATE) {
+                        val bytesToWrite: ByteArray
+                        val sizeToWrite: Int
 
-                        val rawChunk = ByteArray(bufferInfo.size)
-                        outputBuffer?.get(rawChunk)
-                        rawChunk
+                        // 2. Decide what to do based on channel count.
+                        if (outputChannelCount == 2) {
+                            // Perform mixing into the reusable mono buffer.
+                            val monoSize = mixStereoToMono(chunkSize)
+                            bytesToWrite = reusableMonoChunk
+                            sizeToWrite = monoSize
+                        } else {
+                            // If it's already mono (or something else), just use the raw chunk.
+                            // NOTE: This still doesn't resample. The warning log is correct.
+                            bytesToWrite = reusableRawChunk
+                            sizeToWrite = chunkSize
+                        }
 
-                    } else {
-                        // chequeo que sea mono y 44100hz
-                        val rawChunk = ByteArray(bufferInfo.size)
-                        outputBuffer?.get(rawChunk)
-                        rawChunk
+                        // 3. Write the correct data to the file.
+                        outputStream.write(bytesToWrite, 0, sizeToWrite)
+                        // ------------------------
                     }
-                    outputStream.write(chunk)
-                    outputBuffer?.clear()
 
                     decoder.releaseOutputBuffer(outputBufferId, false)
 
@@ -123,20 +139,18 @@ class AudioConverter @Inject constructor(
                     }
                 } else if (outputBufferId == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
                     val newFormat = decoder.outputFormat
-                    outputSampleRate = newFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE, 0)
-                    outputChannelCount = newFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT, 0)
+                    outputSampleRate = newFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE)
+                    outputChannelCount = newFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
 
                     if (outputSampleRate != TARGET_SAMPLE_RATE) {
-                        Log.w(TAG, "ADVERTENCIA: Sample Rate de salida (${outputSampleRate} Hz) es diferente al objetivo (${TARGET_SAMPLE_RATE} Hz). Esto causará velocidad incorrecta.")
+                        Log.w(TAG, "ADVERTENCIA: Sample Rate de salida ($outputSampleRate Hz) es diferente al objetivo ($TARGET_SAMPLE_RATE Hz). Esto causará velocidad incorrecta.")
                     }
                     if (outputChannelCount > TARGET_CHANNEL_COUNT) {
-                        Log.i(TAG, "Se detectó audio estéreo (${outputChannelCount} canales). Se realizará la mezcla a Mono.")
+                        Log.i(TAG, "Se detectó audio estéreo ($outputChannelCount canales). Se realizará la mezcla a Mono.")
                     }
                 }
             }
-
             return@withContext Result.success(Unit)
-
         } catch (e: Exception) {
             Log.e(TAG, "Error en la conversión de audio: ${e.message}", e)
             return@withContext Result.failure(Exception("Fallo en la conversión del archivo de audio a PCM. ${e.localizedMessage}"))
@@ -149,27 +163,36 @@ class AudioConverter @Inject constructor(
     }
 
     /**
-     * Convierte un buffer de audio PCM de 16 bits Estéreo a Mono.
+     * Convierte un chunk de audio PCM de 16 bits Estéreo a Mono.
+     * Esta versión es altamente optimizada:
+     * - NO crea nuevos arrays ni buffers.
+     * - Lee desde `reusableRawChunk` y escribe en `reusableMonoChunk`.
+     * - Realiza la conversión con aritmética de enteros.
+     *
+     * @param stereoSize La cantidad de bytes válidos en el `reusableRawChunk`.
+     * @return La cantidad de bytes válidos escritos en el `reusableMonoChunk`.
      */
-    private fun mixStereoToMono(stereoBuffer: ByteBuffer, sizeBytes: Int): ByteArray {
-        stereoBuffer.rewind()
-        // me aseguro los bytes en orden y calculo los mono bytes
+    private fun mixStereoToMono(stereoSize: Int): Int {
+        val monoSize = stereoSize / 2
+        var monoIndex = 0
 
-        stereoBuffer.order(ByteOrder.LITTLE_ENDIAN)
+        // Procesa 4 bytes a la vez (Short Izquierdo + Short Derecho)
+        var stereoIndex = 0
+        while (stereoIndex < stereoSize) {
+            // Combina los bytes a un Short (Little Endian)
+            val left = (reusableRawChunk[stereoIndex].toInt() and 0xFF) or (reusableRawChunk[stereoIndex + 1].toInt() shl 8)
+            val right = (reusableRawChunk[stereoIndex + 2].toInt() and 0xFF) or (reusableRawChunk[stereoIndex + 3].toInt() shl 8)
 
-        val numShorts = sizeBytes / BYTES_PER_SAMPLE
-        val monoBytes = ByteArray(sizeBytes / 2)
-        val monoBuffer = ByteBuffer.wrap(monoBytes).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer()
-        val stereoShortBuffer = stereoBuffer.asShortBuffer()
+            // Realiza el promedio
+            val monoSample = (left + right) / 2
 
-        for (i in 0 until numShorts step 2) {
-            val left = stereoShortBuffer.get(i).toInt()
-            val right = stereoShortBuffer.get(i + 1).toInt()
+            // Descompone el Short de vuelta a bytes (Little Endian) en el buffer mono
+            reusableMonoChunk[monoIndex] = (monoSample and 0xFF).toByte()
+            reusableMonoChunk[monoIndex + 1] = (monoSample shr 8 and 0xFF).toByte()
 
-            val monoSample = ((left + right) / 2).toShort()
-            monoBuffer.put(monoSample)
+            stereoIndex += 4
+            monoIndex += 2
         }
-
-        return monoBytes
+        return monoSize
     }
 }
