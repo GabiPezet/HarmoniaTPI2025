@@ -163,9 +163,25 @@ class CommunityViewModel @Inject constructor(
 
     }
 
-    fun deleteMyPost(postID: String) {
+    fun deleteMyPost(post: Post) {
         viewModelScope.launch {
-            deletePostFirebaseDataBaseUseCase(postID)
+            try {
+                // 1. Borra el Post de Firebase (Remoto)
+                deletePostFirebaseDataBaseUseCase(post.id)
+
+                // 2. Comprueba si este Post estaba vinculado a un Proyecto
+                if (post.idProject.isNotBlank()) {
+
+                    // 3. Busca el Proyecto original en la BBDD local (Room)
+                    val localProject = getProjectByIdUseCase(post.idProject)
+
+                    // 4. Lo actualiza, marcándolo como "no publicado"
+                    val unpublishedProject = localProject.copy(isPublished = false)
+                    insertProjectInDBUseCase(unpublishedProject)
+                }
+            } catch (e: Exception) {
+                // Manejar error (ej. el post no se pudo borrar, o el proyecto local no se encontró)
+            }
         }
-    }
+   }
 }

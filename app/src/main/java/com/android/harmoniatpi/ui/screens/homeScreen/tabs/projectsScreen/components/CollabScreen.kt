@@ -55,7 +55,8 @@ fun CollabScreen(
                         onNavigateToVersions = { onNavigateToVersions(project) },
                         onDeleteClick = onDeleteClick, // No se puede borrar desde aquí
                         onForkClick = onForkClick,
-                        onEditClick = onEditClick
+                        onEditClick = onEditClick,
+                        onPublishClick = {}
                     )
                 }
             }

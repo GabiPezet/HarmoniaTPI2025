@@ -146,20 +146,16 @@ class ProjectViewModel @Inject constructor(
             getAllProjectsFromDBUseCase()
                 .collect { allProjectsList ->
 
-                    // Filtramos la lista para Colaboraciones
-                    val collabList = allProjectsList.filter { project ->
-                        // Condición 1: Es un clon que yo he creado
-                        val isMyClone = project.originalProjectId != null && project.ownerId == currentUserId
-                        // Condición 2: Es un original que NO es mío
-                        val isOtherUsersOriginal = project.originalProjectId == null && project.ownerId != currentUserId
-
-                        isMyClone || isOtherUsersOriginal
+                    //Filtramos la lista para mostrar ÚNICAMENTE mis clones
+                    val myClones = allProjectsList.filter { project ->
+                        // Condición: Es un clon (tiene un ID original) Y yo soy el dueño.
+                        project.originalProjectId != null && project.ownerId == currentUserId
                     }
 
                     _uiState.update {
                         it.copy(
-                            // 'allProjects' ahora es la lista filtrada
-                            allProjects = collabList
+                            // 'allProjects' ahora solo contiene mis clones
+                            allProjects = myClones
                         )
                     }
                 }

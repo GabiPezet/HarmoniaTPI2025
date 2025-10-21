@@ -77,7 +77,7 @@ fun CommunityScreen(
                         onCommentClicked = {
                             selectedPostForComments = post
                         },
-                        onDeleteClicked = { viewModel.deleteMyPost(post.id) },
+                        onDeleteClicked = { viewModel.deleteMyPost(post) },
                         isMyPost = post.userID == uiState.userID,
                         isAlreadyCloned = isAlreadyCloned,
                         onCloneClicked = {
