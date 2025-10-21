@@ -28,9 +28,6 @@ class AudioConverter @Inject constructor(
     private val TARGET_CHANNEL_COUNT = 1 // Mono
     private val BYTES_PER_SAMPLE = 2 // 16-bit PCM
 
-    // --- PERFORMANCE IMPROVEMENT: Pre-allocated buffers ---
-    // Create reusable buffers once to avoid allocations in the hot loop.
-    // A 16KB buffer is a good, safe size for audio chunks.
     private val MAX_CHUNK_SIZE = 16 * 1024
     private val reusableRawChunk = ByteArray(MAX_CHUNK_SIZE)
     private val reusableMonoChunk = ByteArray(MAX_CHUNK_SIZE / 2)
@@ -108,29 +105,22 @@ class AudioConverter @Inject constructor(
                     val chunkSize = bufferInfo.size
 
                     if (chunkSize > 0) {
-                        // --- REFACTORED LOGIC ---
-                        // 1. Copy data ONCE from the decoder's buffer into our reusable buffer.
+
                         outputBuffer.get(reusableRawChunk, 0, chunkSize)
 
                         val bytesToWrite: ByteArray
                         val sizeToWrite: Int
 
-                        // 2. Decide what to do based on channel count.
                         if (outputChannelCount == 2) {
-                            // Perform mixing into the reusable mono buffer.
                             val monoSize = mixStereoToMono(chunkSize)
                             bytesToWrite = reusableMonoChunk
                             sizeToWrite = monoSize
                         } else {
-                            // If it's already mono (or something else), just use the raw chunk.
-                            // NOTE: This still doesn't resample. The warning log is correct.
                             bytesToWrite = reusableRawChunk
                             sizeToWrite = chunkSize
                         }
 
-                        // 3. Write the correct data to the file.
                         outputStream.write(bytesToWrite, 0, sizeToWrite)
-                        // ------------------------
                     }
 
                     decoder.releaseOutputBuffer(outputBufferId, false)
@@ -165,10 +155,6 @@ class AudioConverter @Inject constructor(
 
     /**
      * Convierte un chunk de audio PCM de 16 bits Estéreo a Mono.
-     * Esta versión es altamente optimizada:
-     * - NO crea nuevos arrays ni buffers.
-     * - Lee desde `reusableRawChunk` y escribe en `reusableMonoChunk`.
-     * - Realiza la conversión con aritmética de enteros.
      *
      * @param stereoSize La cantidad de bytes válidos en el `reusableRawChunk`.
      * @return La cantidad de bytes válidos escritos en el `reusableMonoChunk`.
