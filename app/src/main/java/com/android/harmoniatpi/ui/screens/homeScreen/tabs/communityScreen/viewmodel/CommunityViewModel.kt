@@ -17,6 +17,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import javax.inject.Inject
+import java.util.UUID
+import com.android.harmoniatpi.domain.usecases.GetProjectByIdUseCase
+import com.android.harmoniatpi.domain.usecases.roomUseCases.GetAllProjectsFromDBUseCase
+import com.android.harmoniatpi.domain.usecases.roomUseCases.UpdateOrInsertProjectInDBUseCase
+import kotlinx.coroutines.flow.combine
 
 @HiltViewModel
 class CommunityViewModel @Inject constructor(
@@ -24,11 +29,15 @@ class CommunityViewModel @Inject constructor(
     private val insertNewPostFirebaseDataBaseUseCase: InsertNewPostFirebaseDataBaseUseCase,
     private val getAllPostFromFirebaseDataBaseUseCase: GetAllPostFromFirebaseDataBaseUseCase,
     private val updatePostFirebaseDataBaseUseCase: UpdatePostFirebaseDataBaseUseCase,
-    private val deletePostFirebaseDataBaseUseCase: DeletePostFirebaseDataBaseUseCase
+    private val deletePostFirebaseDataBaseUseCase: DeletePostFirebaseDataBaseUseCase,
+
+    private val getAllProjectsFromDBUseCase: GetAllProjectsFromDBUseCase,
+    private val getProjectByIdUseCase: GetProjectByIdUseCase,
+    private val insertProjectInDBUseCase: UpdateOrInsertProjectInDBUseCase
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(CommunityUiState())
     val uiState = _uiState.asStateFlow()
-
+    private val localProjectsFlow = getAllProjectsFromDBUseCase()
     init {
         viewModelScope.launch {
             sharedMenuUiState.uiState.collect { state ->
@@ -44,8 +53,56 @@ class CommunityViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            getAllPostFromFirebaseDataBaseUseCase().collect { posts ->
-                _uiState.update { it.copy(posts = posts) }
+            // Combinamos los posts de Firebase con los proyectos locales
+            combine(
+                getAllPostFromFirebaseDataBaseUseCase(),
+                localProjectsFlow
+            ) { posts, localProjects ->
+                _uiState.update {
+                    it.copy(
+                        posts = posts,
+                        localProjects = localProjects // 👈 Guarda los proyectos locales
+                    )
+                }
+            }.collect{}
+        }
+    }
+
+    fun cloneProject(post: Post) {
+        val currentUserId = _uiState.value.userID
+        // Si el post no es un proyecto, o si yo soy el dueño, no hago nada.
+        if (post.idProject.isBlank() || post.userID == currentUserId) return
+
+        viewModelScope.launch {
+            try {
+                // 1. Obtiene el proyecto original (asumiendo que está en la DB local por ahora)
+                // (En el futuro, esto sería una llamada a Firebase: getRemoteProjectByIdUseCase(post.idProject))
+                val originalProject = getProjectByIdUseCase(post.idProject)
+
+                // 2. Crea el clon
+                val clonedProject = originalProject.copy(
+                    id = UUID.randomUUID().toString(),
+                    ownerId = currentUserId,
+                    originalProjectId = originalProject.id,
+                    forkedByUserIds = emptyList()
+                )
+                insertProjectInDBUseCase(clonedProject)
+
+                // 3. Actualiza el original (local)
+                val updatedForkedIds = originalProject.forkedByUserIds + currentUserId
+                val updatedOriginal = originalProject.copy(
+                    forkedByUserIds = updatedForkedIds
+                )
+                insertProjectInDBUseCase(updatedOriginal)
+
+                // 4. Actualiza el Post (remoto) para sumar un "clon"
+                val updatedPost = post.copy(totalShared = post.totalShared + 1)
+                updatePostFirebaseDataBaseUseCase(updatedPost)
+
+                // (Opcional: puedes añadir un callback 'onSuccess' para navegar)
+
+            } catch (e: Exception) {
+                // Manejar error (ej. el proyecto original no se encontró localmente)
             }
         }
     }

@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.ModeComment
+import androidx.compose.material.icons.filled.Publish
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
@@ -57,7 +58,8 @@ fun ProjectCard(
     onNavigateToVersions: () -> Unit,
     onDeleteClick: (String) -> Unit,
     onForkClick: (Project) -> Unit,
-    onEditClick: (Project) -> Unit
+    onEditClick: (Project) -> Unit,
+    onPublishClick: (Project) -> Unit
 ) {
     val isMyProject = project.ownerId == currentUserId
     val isMyClone = isMyProject && project.originalProjectId != null
@@ -74,7 +76,7 @@ fun ProjectCard(
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // 🔹 Encabezado con título y botón de eliminar
+            // Encabezado con título y botón de eliminar
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -123,30 +125,44 @@ fun ProjectCard(
 
             Spacer(Modifier.height(12.dp))
 
-            // 🔹 Lógica de botones condicionales
+            // Lógica de botones condicionales
             when (selectedTab) {
                 ProjectTab.MY_PROJECTS -> {
-                    // El dueño del proyecto solo ve "Escuchar Versiones" si OTRO usuario ha forkeado.
-                    if (hasBeenForkedByOthers) {
+                    // Si NO está publicado, muestra el botón "Publicar"
+                    if (!project.isPublished) {
                         Button(
-                            onClick = { onNavigateToVersions() }, // 🟢 FIX 4: Corregido de mi error anterior
+                            onClick = { onPublishClick(project) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            // Reemplaza con tu ícono de "Publicar"
+                            Icon(Icons.Default.Publish, contentDescription = "Publicar")
+                            Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+                            Text("PUBLICAR")
+                        }
+                    }
+                    // Si SÍ está publicado Y ha sido forkeado, muestra "Escuchar Versiones"
+                    else if (project.isPublished && hasBeenForkedByOthers) {
+                        Button(
+                            onClick = { onNavigateToVersions() },
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.secondaryContainer,
                                 contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                             )
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.LibraryMusic,
-                                contentDescription = null,
-                                modifier = Modifier.size(ButtonDefaults.IconSize)
-                            )
+                            Icon(Icons.Default.LibraryMusic, contentDescription = null)
                             Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                            Text(
-                                text = "ESCUCHAR VERSIONES",
-                                style = MaterialTheme.typography.labelLarge
-                            )
+                            Text("ESCUCHAR VERSIONES")
                         }
+                    }
+                    // Si está publicado pero nadie lo ha forkeado, muestra un texto
+                    else if (project.isPublished) {
+                        Text(
+                            "Publicado en la comunidad",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                        )
                     }
                 }
                 ProjectTab.COLLABS -> {
@@ -158,13 +174,13 @@ fun ProjectCard(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Icon(
-                                // 🟢 FIX: Icono de "Clonar"
+                                // Icono de "Clonar"
                                 imageVector = if (hasCurrentUserForked) Icons.Default.Check else Icons.Default.ContentCopy,
                                 contentDescription = null,
                                 modifier = Modifier.size(ButtonDefaults.IconSize)
                             )
                             Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                            // 🟢 FIX: Texto "CLONAR"
+                            // Texto "CLONAR"
                             Text(text = if (hasCurrentUserForked) "CLONADO" else "CLONAR")
                         }
                     }
@@ -180,7 +196,7 @@ fun ProjectCard(
                 Spacer(Modifier.height(12.dp))
             }
 
-            // 🔹 Fila de acciones inferiores
+            // Fila de acciones inferiores
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween

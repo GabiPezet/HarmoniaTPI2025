@@ -26,7 +26,8 @@ data class ProjectEntity(
     val urlAudioTracks: String,
     val hashtags: String,
     val forkedByUserIds: String,
-    val originalProjectId: String? = null
+    val originalProjectId: String? = null,
+    val isPublished: Boolean
 ) {
     fun toDomain(jsonUtils: JsonUtils) = Project(
         id = id,
@@ -47,6 +48,7 @@ data class ProjectEntity(
         urlAudioTracks = jsonUtils.decodeJsonToListObject<AudioTrack>(urlAudioTracks),
         hashtags = jsonUtils.decodeJsonToListObject<String>(hashtags),
         forkedByUserIds = jsonUtils.decodeJsonToListObject<String>(forkedByUserIds),
-        originalProjectId = originalProjectId
+        originalProjectId = originalProjectId,
+        isPublished = isPublished
     )
 }

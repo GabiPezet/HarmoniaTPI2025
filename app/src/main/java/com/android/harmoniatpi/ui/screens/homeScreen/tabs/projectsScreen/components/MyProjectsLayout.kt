@@ -24,7 +24,7 @@ import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.viewmod
 import androidx.compose.foundation.lazy.items
 @Composable
 fun MyProjectsLayout(
-    projects: List<Project>, // 🟢 FIX: Recibe la lista directamente
+    projects: List<Project>,
     sharedStateUserID: String,
     onShowForm: () -> Unit,
     onProjectClick: (Project) -> Unit,
@@ -48,7 +48,6 @@ fun MyProjectsLayout(
                     modifier = Modifier.padding(top = 32.dp)
                 )
             } else {
-                // 🟢 FIX 2: Añadido .weight(1f) para arreglar los errores de LazyColumn
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -63,8 +62,9 @@ fun MyProjectsLayout(
                             onClick = { onProjectClick(project) },
                             onNavigateToVersions = { onNavigateToVersion(project) },
                             onDeleteClick = { id -> viewModel.deleteProject(id) },
-                            onForkClick = { proj -> viewModel.cloneProject(proj) }, // 📞 Llama a 'cloneProject'
-                            onEditClick = onEditClick // ➕ PASA EL PARÁMETRO
+                            onForkClick = { proj -> viewModel.cloneProject(proj) }, // Llama a 'cloneProject'
+                            onEditClick = onEditClick, // PASA EL PARÁMETRO
+                            onPublishClick = { proj -> viewModel.publishProject(proj) }
                         )
                     }
                 }

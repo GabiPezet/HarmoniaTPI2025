@@ -65,6 +65,12 @@ fun CommunityScreen(
         ) {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(uiState.posts) { post ->
+
+                    val projectData = uiState.localProjects.find {
+                        it.originalProjectId == post.idProject
+                    }
+                    val isAlreadyCloned = projectData != null
+
                     PostCard(
                         post = post,
                         onLikeClicked = { viewModel.updateLikes(post) },
@@ -72,7 +78,13 @@ fun CommunityScreen(
                             selectedPostForComments = post
                         },
                         onDeleteClicked = { viewModel.deleteMyPost(post.id) },
-                        isMyPost = post.userID == uiState.userID
+                        isMyPost = post.userID == uiState.userID,
+                        isAlreadyCloned = isAlreadyCloned,
+                        onCloneClicked = {
+                            viewModel.cloneProject(post)
+                            // Aquí es donde llamarías a la navegación
+                            // onNavigateToProjectsTab()
+                        }
                     )
                 }
             }

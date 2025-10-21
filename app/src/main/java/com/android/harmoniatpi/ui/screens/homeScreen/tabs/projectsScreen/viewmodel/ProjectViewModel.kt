@@ -4,9 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.harmoniatpi.domain.cache.HoloJamCache
 import com.android.harmoniatpi.domain.model.project.Project
+import com.android.harmoniatpi.domain.model.userPreferences.Post
 
 import com.android.harmoniatpi.domain.usecases.GetProjectByIdUseCase
 import com.android.harmoniatpi.domain.usecases.GetProjectsByUserUseCase
+import com.android.harmoniatpi.domain.usecases.firebaseUseCases.InsertNewPostFirebaseDataBaseUseCase
 import com.android.harmoniatpi.domain.usecases.roomUseCases.DeleteProjectByIdFromDBUseCase
 import com.android.harmoniatpi.domain.usecases.roomUseCases.GetAllProjectsFromDBUseCase
 import com.android.harmoniatpi.domain.usecases.roomUseCases.UpdateOrInsertProjectInDBUseCase
@@ -30,6 +32,7 @@ class ProjectViewModel @Inject constructor(
     private val getProjectByIdUseCase: GetProjectByIdUseCase,
     private val insertProjectInDBUseCase: UpdateOrInsertProjectInDBUseCase,
     private val deleteProjectByIdFromDBUseCase: DeleteProjectByIdFromDBUseCase,
+    private val insertNewPostFirebaseDataBaseUseCase: InsertNewPostFirebaseDataBaseUseCase, //para crear el post
     internal val sharedMenuUiState: SharedMenuUiState,
     private val holoJamCache: HoloJamCache
 ) : ViewModel() {
@@ -89,7 +92,6 @@ class ProjectViewModel @Inject constructor(
                 // 2. Inserta el clon en la BBDD
                 insertProjectInDBUseCase(clonedProject)
 
-                // 🟢 FIX: Actualiza el proyecto original AHORA
                 // 3. Obtiene el proyecto original
                 val originalProject = getProjectByIdUseCase(projectToClone.id)
 
@@ -126,9 +128,6 @@ class ProjectViewModel @Inject constructor(
                 // 1. Guarda el proyecto editado (ej. "Cancion dos")
                 insertProjectInDBUseCase(projectToSave)
 
-                // 🟢 FIX: Ya no necesitamos actualizar el original aquí.
-                // Esa lógica se movió a 'cloneProject'.
-
                 _uiState.update { it.copy(isLoading = false) }
                 onSuccess()
 
@@ -138,7 +137,7 @@ class ProjectViewModel @Inject constructor(
             }
         }
     }
-    // 🟢 Esta función ahora filtra la lista para Colaboraciones
+    // Esta función ahora filtra la lista para Colaboraciones
     fun loadCollabProjects() {
         val currentUserId = sharedMenuUiState.uiState.value.userID
         if (currentUserId.isBlank()) return
@@ -252,7 +251,8 @@ class ProjectViewModel @Inject constructor(
                     urlCompleteAudio = null,
                     urlAudioTracks = emptyList(),
                     hashtags = current.hashtags.split(",").map { it.trim() },
-                    forkedByUserIds = emptyList()
+                    forkedByUserIds = emptyList(),
+                    isPublished = false
                 )
 
                 insertProjectInDBUseCase(project)
@@ -274,6 +274,46 @@ class ProjectViewModel @Inject constructor(
             }
         }
     }
+
+    fun publishProject(project: Project) {
+        viewModelScope.launch {
+            try {
+                // 1. Marca el proyecto local como "publicado"
+                val publishedProject = project.copy(isPublished = true)
+                insertProjectInDBUseCase(publishedProject)
+
+                // (Simulación futura) Aquí es donde subirías el audio a Storage
+                // val fullAudioUrl = uploadAudioToStorage(project.urlCompleteAudio)
+                // val tracksUrls = uploadTracksToStorage(project.urlAudioTracks)
+                val simulatedAudioUrl = "simulated_audio_url_for_${project.id}.mp3"
+
+                // 2. Crea el 'Post' para la comunidad
+                val post = Post(
+                    id = System.currentTimeMillis().toString(),
+                    userID = project.ownerId,
+                    userImagePathURL = sharedMenuUiState.uiState.value.userPhotoPathRemote,
+                    title = project.title,
+                    description = project.description,
+                    name = project.name,
+                    lasName = project.lastName,
+                    hashtags = project.hashtags,
+                    idProject = project.id, // ENLACE CLAVE
+                    urlCompleteAudio = simulatedAudioUrl, //Audio para el reproductor
+                    urlAudioTracks = emptyList(), // (O las URLs reales si ya las tuvieras)
+                    imageUrl = "", // Podemos añadir una imagen del proyecto si queremos.
+                    createdAt = LocalDateTime.now().toString(),
+                    clonedOption = true // Indica que este post se puede clonar
+                )
+
+                // 3. Inserta el Post en la base de datos remota (Firebase)
+                insertNewPostFirebaseDataBaseUseCase(post)
+
+            } catch (e: Exception) {
+                // Manejar error de publicación
+            }
+        }
+    }
+
 
     // --- Validación del formulario
     private fun validateForm() {
