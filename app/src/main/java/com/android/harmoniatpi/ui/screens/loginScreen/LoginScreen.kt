@@ -81,8 +81,8 @@ fun LoginScreen(
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
-    val username = rememberSaveable { mutableStateOf("klyxdevs@gmail.com") }
-    val password = rememberSaveable { mutableStateOf("123456") }
+    val username = rememberSaveable { mutableStateOf("") }
+    val password = rememberSaveable { mutableStateOf("") }
     val permissions = buildList {
         add(permission.RECORD_AUDIO)
         add(permission.CAMERA)
