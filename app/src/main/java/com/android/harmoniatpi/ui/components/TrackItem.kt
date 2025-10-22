@@ -132,7 +132,7 @@ fun TrackItem(
             border = when {
                 isBeingRecorded -> BorderStroke(2.dp, animatedBorderColor)
                 track.selected -> BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
-                else -> null
+                else ->BorderStroke(1.dp, MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f))
             },
             modifier = Modifier
                 .fillMaxHeight()
@@ -221,7 +221,7 @@ fun TrackItem(
 
                                 else -> Modifier.border(
                                     width = 1.dp,
-                                    color = MaterialTheme.colorScheme.outlineVariant,
+                                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f),
                                     shape = RoundedCornerShape(8.dp)
                                 )
                             }
@@ -389,7 +389,7 @@ fun DbWaveform(
 ) {
     val waveformColor = if (isMuted) color else MaterialTheme.colorScheme.primary
     val backgroundColor =
-        if (isMuted) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.onBackground.copy(
+        if (isMuted) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surfaceContainerHighest.copy(
             alpha = 0.6f
         )
     val density = LocalDensity.current

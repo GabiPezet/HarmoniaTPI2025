@@ -42,7 +42,7 @@ fun NotificationCard(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(4.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
         )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
