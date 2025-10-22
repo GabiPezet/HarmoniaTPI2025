@@ -166,7 +166,7 @@ fun RegisterScreen(
                     )
                 } else {
                     Text(
-                        if (uiState.registerEnabled) "REGISTRARSE" else "BIENVENIDO A HARMONIA",
+                        if (uiState.registerEnabled) "REGISTRARSE" else "BIENVENIDO A HOLOJAM",
                         style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
                         fontWeight = FontWeight.Bold
                     )

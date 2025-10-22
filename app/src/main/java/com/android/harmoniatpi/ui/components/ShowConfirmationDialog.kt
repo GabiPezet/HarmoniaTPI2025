@@ -52,7 +52,6 @@ fun ShowConfirmationDialog(
     if (show) {
         AlertDialog(
             onDismissRequest = onDismiss,
-            containerColor = MaterialTheme.colorScheme.background,
             modifier = Modifier
                 .border(
                     width = 1.dp,
