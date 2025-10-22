@@ -119,7 +119,7 @@ fun BottomNavigation(
     val currentDestination = navBackStackEntry?.destination
 
     NavigationBar(
-        containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.6f),
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
         tonalElevation = 16.dp
     ) {
         val currentScreen = currentDestination?.toString()?.substringAfterLast(".")

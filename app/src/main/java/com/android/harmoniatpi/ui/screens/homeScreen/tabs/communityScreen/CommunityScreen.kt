@@ -74,8 +74,7 @@ fun CommunityScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surfaceContainerLow)
-                .padding(horizontal = 16.dp)
+                .background(MaterialTheme.colorScheme.background)
         ) {
             // Quitamos el verticalArrangement y el padding
             // PostCard ahora gestiona su propio espaciado y divisores.
