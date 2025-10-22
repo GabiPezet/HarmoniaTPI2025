@@ -51,11 +51,11 @@ fun Toolbar(
 
     CenterAlignedTopAppBar(
         colors = TopAppBarColors(
-            containerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
-            titleContentColor = MaterialTheme.colorScheme.secondary,
-            navigationIconContentColor = MaterialTheme.colorScheme.secondary,
-            actionIconContentColor = MaterialTheme.colorScheme.secondary,
-            scrolledContainerColor = MaterialTheme.colorScheme.secondaryContainer
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+            actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerLow
         ),
         title = {
             if (isInternetAvailable) {
@@ -72,7 +72,6 @@ fun Toolbar(
                     Text(
                         text = title.uppercase(Locale.getDefault()),
                         fontSize = 20.sp,
-                        color = MaterialTheme.colorScheme.secondary,
                         style = MaterialTheme.typography.titleLarge
                     )
                     NoInternetMessage()
@@ -98,7 +97,6 @@ fun Toolbar(
                 Icon(
                     imageVector = if (showMenuPrincipal) Icons.Default.Menu else Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = if (showMenuPrincipal) "Abrir menú" else "Volver",
-                    tint = MaterialTheme.colorScheme.secondary
                 )
             }
         },
@@ -113,7 +111,6 @@ fun Toolbar(
                             Icon(
                                 imageVector = Icons.Filled.Notifications,
                                 contentDescription = "Notificaciones",
-                                tint = MaterialTheme.colorScheme.secondary
                             )
 
                             if (hasNotifications) {

@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.android.harmoniatpi.ui.core.theme.HoloTheme
 import com.android.harmoniatpi.ui.screens.notificationScreen.model.NotificationHarmonia
 
 @Composable
@@ -41,7 +42,7 @@ fun NotificationCard(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(4.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.background
+            containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -57,14 +58,14 @@ fun NotificationCard(
                     Icon(
                         imageVector = Icons.Default.Info,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.tertiary,
+                        tint = HoloTheme.extendedScheme.holoInfo3.container,
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = notificationHarmonia.title,
                         style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.secondary
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
@@ -78,7 +79,7 @@ fun NotificationCard(
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = "Eliminar notificación",
-                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
+                        tint = MaterialTheme.colorScheme.error,
                         modifier = Modifier
                             .size(20.dp)
                             .clickable { onDeleteClick(notificationHarmonia) }
@@ -90,7 +91,7 @@ fun NotificationCard(
 
             Text(
                 text = notificationHarmonia.description,
-                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.bodyMedium,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,

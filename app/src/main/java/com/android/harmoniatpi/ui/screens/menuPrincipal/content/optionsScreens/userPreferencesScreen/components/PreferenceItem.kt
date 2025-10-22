@@ -1,6 +1,5 @@
 package com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userPreferencesScreen.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,7 +24,6 @@ fun PreferenceItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.secondaryContainer)
             .clickable(
                 onClick = onClick
             )
@@ -38,15 +36,14 @@ fun PreferenceItem(
         ) {
             Text(
                 text = title,
-                color = MaterialTheme.colorScheme.secondary,
-                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
 
                 )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = subtitle,
-                color = MaterialTheme.colorScheme.secondary,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium,
             )

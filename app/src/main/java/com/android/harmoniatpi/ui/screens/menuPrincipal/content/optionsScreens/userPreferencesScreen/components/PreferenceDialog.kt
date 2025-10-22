@@ -27,7 +27,6 @@ fun PreferenceDialog(
     onConfirm: () -> Unit
 ) {
     AlertDialog(
-        containerColor = MaterialTheme.colorScheme.secondaryContainer,
         onDismissRequest = onDismiss,
         confirmButton = {
             TextButton(onClick = onConfirm) {

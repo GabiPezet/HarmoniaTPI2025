@@ -13,7 +13,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,7 +35,7 @@ fun NoInternetMessage(textSize : Int = 12, iconSize : Int = 16) {
             modifier = Modifier.size(iconSize.dp),
             imageVector = Icons.Default.Info,
             contentDescription = stringResource(R.string.content_description_notification),
-            tint = Color.Red
+            tint = MaterialTheme.colorScheme.error,
         )
     }
 }
