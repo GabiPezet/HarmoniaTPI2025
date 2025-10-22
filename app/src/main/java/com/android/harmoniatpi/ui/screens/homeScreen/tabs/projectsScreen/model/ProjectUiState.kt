@@ -10,6 +10,8 @@ data class ProjectUiState(
     val isLoading: Boolean = false,
     val isTitleValid: Boolean = false,
     val isFormValid: Boolean = false,
-    val listProjects : List<Project> = emptyList(),
-    val tabSelected : ProjectTab = ProjectTab.MY_PROJECTS
+    val myProjects : List<Project> = emptyList(),
+    val allProjects : List<Project> = emptyList(),
+    val tabSelected : ProjectTab = ProjectTab.MY_PROJECTS,
+    val currentlyPlayingProject: Project? = null
 )
