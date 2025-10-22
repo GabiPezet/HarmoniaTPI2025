@@ -20,7 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -71,7 +70,6 @@ fun HomeScreen(
     } else {
         Scaffold(
             topBar = {
-                if (currentTabName != BottomBarItem.ProjectsTab.route.toString().substringAfterLast(".")) {
                     Toolbar(
                         title = when (currentTabName) {
                             "CommunityScreenRoute" -> "Comunidad"
@@ -84,7 +82,6 @@ fun HomeScreen(
                         onMenuClick = openDrawerState,
                         isInternetAvailable = true,
                     )
-                }
             },
             bottomBar = {
                 BottomNavigation(
@@ -122,7 +119,7 @@ fun BottomNavigation(
     val currentDestination = navBackStackEntry?.destination
 
     NavigationBar(
-        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+        containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.6f),
         tonalElevation = 16.dp
     ) {
         val currentScreen = currentDestination?.toString()?.substringAfterLast(".")
@@ -149,7 +146,7 @@ fun BottomNavigation(
                 label = {
                     Text(
                         text = item.titleRes,
-                        fontSize = 10.sp
+                        fontFamily = MaterialTheme.typography.bodyLarge.fontFamily
                     )
                 },
                 interactionSource = null,
