@@ -146,6 +146,11 @@ fun TrackItemCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1
                     )
+                    Spacer(Modifier.height(2.dp))
+                    if (isMyProject && project.originalProjectId == null && hasBeenForkedByOthers && selectedTab == ProjectTab.MY_PROJECTS) {
+                        Spacer(Modifier.height(8.dp))
+                        ForkedByUsersRow(forkedByUserIds = forksByOthers) // Asegúrate que ForkedByUsersRow sea público
+                    }
                 }
 
                 Spacer(Modifier.width(12.dp))
@@ -190,13 +195,13 @@ fun TrackItemCard(
                         }
 
                         // Opción: Ver Versiones (Solo para mis proyectos originales publicados Y con forks)
-                        if (isMyProject && project.originalProjectId == null && project.isPublished && hasBeenForkedByOthers && selectedTab == ProjectTab.MY_PROJECTS) {
+                        //if (isMyProject && project.originalProjectId == null && project.isPublished && hasBeenForkedByOthers && selectedTab == ProjectTab.MY_PROJECTS) {
                             DropdownMenuItem(
                                 text = { Text("Ver Versiones") },
                                 onClick = { onNavigateToVersions(); showMenu = false },
                                 leadingIcon = { Icon(Icons.Default.LibraryMusic, null) }
                             )
-                        }
+                        //}
 
                         // Opción: Editar (Solo para mis proyectos o mis clones)
                         if (isMyProject) { // Esto incluye originales y clones
@@ -233,10 +238,6 @@ fun TrackItemCard(
                     }
                 }
             }
-        }
-        if (isMyProject && project.originalProjectId == null && hasBeenForkedByOthers && selectedTab == ProjectTab.MY_PROJECTS) {
-            Spacer(Modifier.height(8.dp))
-            ForkedByUsersRow(forkedByUserIds = forksByOthers) // Asegúrate que ForkedByUsersRow sea público
         }
     }
 }
