@@ -45,8 +45,6 @@ class ProjectViewModel @Inject constructor(
         loadCollabProjects()
     }
 
-
-
     // --- Cargar todos los proyectos de la base de datos
     fun loadAllProjects() {
         viewModelScope.launch {
@@ -336,5 +334,25 @@ class ProjectViewModel @Inject constructor(
 
     fun setCurrentProject(project: Project) {
         holoJamCache.currentProjectSelected = project
+    }
+
+    fun togglePlayPause(project: Project) {
+        _uiState.update { currentState ->
+            // Si ya se estaba reproduciendo este proyecto, lo detenemos (null)
+            if (currentState.currentlyPlayingProject?.id == project.id) {
+                currentState.copy(currentlyPlayingProject = null)
+            }
+            // Si no, empezamos a reproducir este
+            else {
+                currentState.copy(currentlyPlayingProject = project)
+            }
+        }
+        // TODO: Aquí interactuarías con tu servicio/clase de reproducción real
+    }
+
+    // Para detener la reproducción (ej. desde el mini-player)
+    fun stopPlayback() {
+        _uiState.update { it.copy(currentlyPlayingProject = null) }
+        // TODO: Detener la reproducción real
     }
 }
