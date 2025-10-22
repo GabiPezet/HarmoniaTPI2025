@@ -71,7 +71,6 @@ fun HomeScreen(
     } else {
         Scaffold(
             topBar = {
-                if (currentTabName != BottomBarItem.ProjectsTab.route.toString().substringAfterLast(".")) {
                     Toolbar(
                         title = when (currentTabName) {
                             "CommunityScreenRoute" -> "Comunidad"
@@ -84,7 +83,6 @@ fun HomeScreen(
                         onMenuClick = openDrawerState,
                         isInternetAvailable = true,
                     )
-                }
             },
             bottomBar = {
                 BottomNavigation(
