@@ -33,6 +33,8 @@ import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.compone
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.model.ProjectTab
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.viewmodel.ProjectViewModel
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.MaterialTheme
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProjectsScreen(
@@ -114,7 +116,9 @@ fun ProjectsScreen(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(16.dp)
-                .padding(bottom = bottomPadding + 8.dp) // Lo subimos encima del mini-reproductor
+                .padding(bottom = bottomPadding + 8.dp), // Lo subimos encima del mini-reproductor
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
         ) {
             Icon(Icons.Default.Add, contentDescription = "Nuevo Proyecto")
         }

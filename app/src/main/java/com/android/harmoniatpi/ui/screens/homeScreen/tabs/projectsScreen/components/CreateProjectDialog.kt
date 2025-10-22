@@ -43,6 +43,7 @@ fun CreateProjectDialog(
     val keyboardController = LocalSoftwareKeyboardController.current
 
     AlertDialog(
+        containerColor = MaterialTheme.colorScheme.background,
         onDismissRequest = onDismiss,
         confirmButton = {},
         text = {

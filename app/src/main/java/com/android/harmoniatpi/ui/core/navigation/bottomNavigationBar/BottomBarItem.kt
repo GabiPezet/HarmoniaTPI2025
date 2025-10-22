@@ -42,7 +42,7 @@ sealed class BottomBarItem {
                 Icon(
                     painter = painterResource(R.drawable.ic_harmonyicon),
                     contentDescription = null,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(26.dp)
                 )
             }
     }
