@@ -114,7 +114,14 @@ private fun CircleIconButton(
         color = backgroundColor,
         modifier = Modifier
             .shadow(if (glow) 12.dp else 4.dp, CircleShape)
-            .background(glowBrush ?: Brush.linearGradient(listOf(backgroundColor, backgroundColor))),
+            .background(
+                glowBrush ?: Brush.linearGradient(
+                    listOf(
+                        backgroundColor,
+                        backgroundColor
+                    )
+                )
+            ),
     ) {
         IconButton(
             onClick = onClick,
@@ -134,6 +141,7 @@ private fun CircleIconButton(
                     contentDescription = null,
                     modifier = Modifier.size(64.dp)
                 )
+
                 icon != null -> Icon(
                     imageVector = icon,
                     contentDescription = null,
