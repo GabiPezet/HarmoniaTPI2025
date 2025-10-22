@@ -38,7 +38,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarColors
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -97,7 +96,7 @@ fun ProjectManagementScreen(
         modifier = Modifier.fillMaxSize(),
         topBar = { //Impl de top bar
             TopAppBar(
-                title = { Text("Gestión de Proyectos") },
+                title = { Text("Nombre del Proyecto") },
                 navigationIcon = {
                     IconButton(onClick = {
                         viewModel.updateCurrentProjectWithTracks()
@@ -107,13 +106,6 @@ fun ProjectManagementScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 },
-                colors = TopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
-                    titleContentColor = MaterialTheme.colorScheme.secondary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.secondary,
-                    actionIconContentColor = MaterialTheme.colorScheme.secondary,
-                    scrolledContainerColor = MaterialTheme.colorScheme.secondaryContainer
-                )
             )
         }
     ) { padding ->
@@ -147,7 +139,11 @@ fun ProjectManagementScreen(
                         onDelete = { viewModel.deleteTrack() },
                         onTrim = {
                             if (track.waveForm.isNullOrEmpty() || track.durationMs < 50L) {
-                                Toast.makeText(context, "La pista no tiene audio para recortar", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    context,
+                                    "La pista no tiene audio para recortar",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                                 Log.d("Trim", "Pista sin audio o muy corta para recortar.")
                             } else {
                                 trackForTrimming = track
@@ -183,9 +179,9 @@ fun ProjectManagementScreen(
                     showSheet = true
                 },
                 modifier = Modifier
-                    .padding(top = 8.dp, start = 8.dp)
-                    .size(36.dp)
-                    .align(Alignment.Start),
+                    .padding(top = 16.dp,end = 32.dp)
+                    .size(40.dp)
+                    .align(Alignment.End),
 
                 colors = IconButtonDefaults.iconButtonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -196,7 +192,6 @@ fun ProjectManagementScreen(
                     imageVector = Icons.Default.Add,
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
-                    tint = MaterialTheme.colorScheme.onPrimary
                 )
             }
             Spacer(modifier = Modifier.weight(1f))

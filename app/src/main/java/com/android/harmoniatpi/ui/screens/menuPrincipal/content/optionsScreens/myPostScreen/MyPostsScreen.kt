@@ -46,7 +46,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -228,7 +227,7 @@ fun PostCardMyPosts(
                     Icon(
                         imageVector = Icons.Default.AccountCircle,
                         contentDescription = "Foto de perfil",
-                        tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(40.dp)
                     )
                 }
@@ -271,7 +270,7 @@ fun PostCardMyPosts(
                     Icon(
                         if (post.likes > 0) Icons.Filled.Favorite else Icons.Outlined.Favorite,
                         contentDescription = "Likes",
-                        tint = if (post.likes > 0) Color.Red else MaterialTheme.colorScheme.onSurface
+                        tint = if (post.likes > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(Modifier.width(4.dp))
                     Text(post.likes.toString())
@@ -283,7 +282,11 @@ fun PostCardMyPosts(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.clickable { onCommentClicked() }
                 ) {
-                    Icon(Icons.AutoMirrored.Outlined.Comment, contentDescription = "Comentarios")
+                    Icon(
+                        Icons.AutoMirrored.Outlined.Comment,
+                        contentDescription = "Comentarios",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                     Spacer(Modifier.width(4.dp))
                     Text(post.comments.size.toString())
                 }

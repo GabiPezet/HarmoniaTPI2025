@@ -22,7 +22,6 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -43,7 +42,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.android.harmoniatpi.ui.components.HarmoniaTextField
+import com.android.harmoniatpi.ui.components.HoloTextField
 import com.android.harmoniatpi.ui.components.RegisterBackgroundHeader
 import com.android.harmoniatpi.ui.screens.registerScreen.viewmodel.RegisterScreenViewModel
 
@@ -72,7 +71,7 @@ fun RegisterScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
 
-                HarmoniaTextField(
+                HoloTextField(
                     value = uiState.name,
                     onValueChange = viewModel::onNameChange,
                     label = "Nombre",
@@ -81,7 +80,7 @@ fun RegisterScreen(
                     keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text)
                 )
 
-                HarmoniaTextField(
+                HoloTextField(
                     value = uiState.lastName,
                     onValueChange = viewModel::onLastNameChange,
                     label = "Apellido",
@@ -91,7 +90,7 @@ fun RegisterScreen(
                 )
 
 
-                HarmoniaTextField(
+                HoloTextField(
                     value = uiState.email,
                     onValueChange = viewModel::onEmailChange,
                     label = "Email",
@@ -104,7 +103,7 @@ fun RegisterScreen(
 
                 // pass
                 var passwordVisible by remember { mutableStateOf(false) }
-                HarmoniaTextField(
+                HoloTextField(
                     value = uiState.password,
                     onValueChange = viewModel::onPasswordChange,
                     label = "Contraseña",
@@ -120,7 +119,7 @@ fun RegisterScreen(
 
                 // confirmar
                 var confirmVisible by remember { mutableStateOf(false) }
-                HarmoniaTextField(
+                HoloTextField(
                     value = uiState.confirmPassword,
                     onValueChange = viewModel::onConfirmPasswordChange,
                     label = "Confirma tu contraseña",
@@ -158,17 +157,11 @@ fun RegisterScreen(
                     .height(52.dp),
                 shape = RoundedCornerShape(16.dp),
                 enabled = uiState.isFormValid && !uiState.isLoading,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    disabledContainerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
-                )
             ) {
                 if (uiState.isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.secondary,
+                        color = MaterialTheme.colorScheme.onPrimary,
                         strokeWidth = 2.dp
                     )
                 } else {
@@ -190,7 +183,7 @@ fun RegisterScreen(
             ) {
                 Text(
                     text = "¿Ya tienes una cuenta? ",
-                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 TextButton(onClick = onBackToLogin) {
                     Text(

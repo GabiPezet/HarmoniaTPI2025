@@ -54,7 +54,6 @@ fun WorkProfileCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant) // AHORA
     ) {
         Column(
             modifier = Modifier

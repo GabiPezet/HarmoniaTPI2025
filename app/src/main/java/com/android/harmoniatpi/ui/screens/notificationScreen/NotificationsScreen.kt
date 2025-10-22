@@ -2,7 +2,6 @@ package com.android.harmoniatpi.ui.screens.notificationScreen
 
 import android.os.SystemClock
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -89,7 +88,8 @@ fun NotificationsScreen(
             if (uiState.notificationsList.isEmpty()) {
                 Box(
                     modifier = Modifier
-                        .fillMaxSize(),
+                        .fillMaxSize()
+                        .padding(innerPadding),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
@@ -100,12 +100,12 @@ fun NotificationsScreen(
                             modifier = Modifier.size(48.dp),
                             painter = painterResource(R.drawable.ic_empty_screen),
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(20.dp))
                         Text(
                             text = stringResource(R.string.notification_screen_no_notifications_tittle),
-                            color = MaterialTheme.colorScheme.secondary,
+                            color = MaterialTheme.colorScheme.onSurface,
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.titleLarge,
                             fontSize = 22.sp
@@ -115,7 +115,7 @@ fun NotificationsScreen(
                             modifier = Modifier.padding(horizontal = 24.dp),
                             text = stringResource(R.string.notification_screen_no_notifications_message),
                             textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Normal,
                             style = MaterialTheme.typography.titleLarge,
                             fontSize = 18.sp
