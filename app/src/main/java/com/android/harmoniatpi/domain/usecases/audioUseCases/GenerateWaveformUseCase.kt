@@ -22,24 +22,9 @@ class GenerateWaveformUseCase @Inject constructor() {
 
     // El tamaño del búfer para leer del archivo de una sola vez (en bytes).
     // Debería ser un múltiplo de (SAMPLES_PER_PEAK * 2 bytes/muestra * 2 para min/max).
-    // 8KB es un tamaño robusto y eficiente.
+    // 64KB es un tamaño robusto y eficiente.
     private val BUFFER_SIZE = 64 * 1024
-/*
-    operator fun invoke(path: String): WaveformResult {
-        val file = File(path)
-        if (!file.exists() || file.length() == 0L) {
-            return WaveformResult(emptyList(), 0L)
-        }
 
-        val totalSamples = file.length() / 2
-        val durationMs = (totalSamples * 1000L) / 44100L
-
-        val peaks = generatePeaks(file)
-        val normalizedWaveform = normalizePeaks(peaks)
-
-        return WaveformResult(normalizedWaveform, durationMs)
-    }
-*/
     operator fun invoke(path: String): WaveformResult = runBlocking(Dispatchers.Default) {
         val file = File(path)
         if (!file.exists() || file.length() == 0L) {
@@ -68,56 +53,7 @@ class GenerateWaveformUseCase @Inject constructor() {
 
         return@runBlocking WaveformResult(normalizedWaveform, durationMs)
     }
-/*
-    private fun generatePeaks(file: File): List<Float> {
-        val peaks = mutableListOf<Float>()
 
-        FileInputStream(file).use { fis ->
-            val buffer = ByteArray(BUFFER_SIZE)
-
-            val window = ShortArray(SAMPLES_PER_PEAK)
-            var windowIndex = 0
-
-            while (fis.read(buffer) != -1) {
-                val shortBuffer = ByteBuffer.wrap(buffer).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer()
-
-                while (shortBuffer.hasRemaining()) {
-                    window[windowIndex++] = shortBuffer.get()
-
-                    if (windowIndex == SAMPLES_PER_PEAK) {
-                        var minPeak: Short = Short.MAX_VALUE
-                        var maxPeak: Short = Short.MIN_VALUE
-
-                        for (sample in window) {
-                            if (sample > maxPeak) maxPeak = sample
-                            if (sample < minPeak) minPeak = sample
-                        }
-
-                        peaks.add(maxPeak.toFloat())
-                        peaks.add(minPeak.toFloat())
-
-                        windowIndex = 0
-                    }
-                }
-            }
-        }
-        return peaks
-    }
-
-    private fun normalizePeaks(peaks: List<Float>): List<Float> {
-        if (peaks.isEmpty()) return emptyList()
-
-        val maxAbsValue = peaks.maxOfOrNull { abs(it) } ?: 1f
-
-        if (maxAbsValue == 0f) return peaks.map { 0f }
-
-        val normalizedPeaks = MutableList(peaks.size) { 0f }
-        for (i in peaks.indices) {
-            normalizedPeaks[i] = peaks[i] / maxAbsValue
-        }
-        return normalizedPeaks
-    }
-*/
     /**
      * PRODUCTOR: Lee el archivo de audio por trozos y envía arrays de picos a través de un Channel.
      * Cuando termina, cierra el canal para señalar al consumidor que no hay más datos.
