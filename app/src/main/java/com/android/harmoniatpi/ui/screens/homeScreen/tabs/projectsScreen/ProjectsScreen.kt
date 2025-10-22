@@ -90,6 +90,7 @@ fun ProjectsScreen(
             } else {
                 items(listToShow) { project ->
                     val isCurrentlyPlaying = uiState.currentlyPlayingProject?.id == project.id
+                    val isPreviewLoading = uiState.isPreviewLoading && isCurrentlyPlaying
                     Spacer(modifier = Modifier.height(8.dp))
                     ProjectCard(
                         project = project,
@@ -104,7 +105,8 @@ fun ProjectsScreen(
                         onEditClick = { projectToEdit = project },
                         onDeleteClick = { viewModel.deleteProject(project.id) },
                         onPublishClick = { viewModel.publishProject(project) },
-                        onNavigateToVersions = { onNavigateToVersion(project) }
+                        onNavigateToVersions = { onNavigateToVersion(project) },
+                        isPreviewLoading = isPreviewLoading,
                     )
                 }
             }

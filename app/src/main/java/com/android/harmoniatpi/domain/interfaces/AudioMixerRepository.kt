@@ -2,6 +2,7 @@ package com.android.harmoniatpi.domain.interfaces
 
 import com.android.harmoniatpi.domain.model.audio.AudioSourceType
 import com.android.harmoniatpi.domain.model.audio.Track
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import java.io.File
 
@@ -108,4 +109,13 @@ interface AudioMixerRepository {
     suspend fun loadPcmTrack(file: File, id: Long, sourceType: AudioSourceType)
 
     fun clearAllTracks()
+
+    fun playPreview(filePath: String): Result<Unit>
+
+    fun stopPreview()
+
+    fun onPreviewCompleted(): SharedFlow<Unit>
+
+
+
 }

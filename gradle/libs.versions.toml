@@ -43,6 +43,7 @@ crashlytics = "3.0.5"
 performance = "2.0.0"
 lottieCompose = "6.6.6"
 playServicesAuth = "21.2.0"
+lame = "1.1"
 
 [libraries]
 # Core AndroidX
@@ -131,6 +132,10 @@ androidx-credentials-play-services-auth = { module = "androidx.credentials:crede
 googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
 # Lottie
 lottie-compose = { module = "com.airbnb.android:lottie-compose", version.ref = "lottieCompose" }
+#LAME
+lame = {module = "com.github.naman14:TAndroidLame", version.ref = "lame" }
+
+
 [plugins]
 # Basicos
 android-application = { id = "com.android.application", version.ref = "agp" }
