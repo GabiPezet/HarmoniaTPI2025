@@ -11,7 +11,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
@@ -19,7 +18,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -43,7 +41,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,9 +59,7 @@ import com.android.harmoniatpi.R
 import com.android.harmoniatpi.domain.model.audio.AudioSourceType
 import com.android.harmoniatpi.ui.core.theme.HarmoniaTPITheme
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
-import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
-import kotlin.math.roundToLong
 import kotlin.math.sin
 
 private const val MS_PER_DP_SCALE = 10f
@@ -129,7 +124,7 @@ fun TrackItem(
     ) {
         Surface(
             shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.background,
+            color = if(track.isMuted)MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surfaceContainer,
             border = when {
                 isBeingRecorded -> BorderStroke(2.dp, animatedBorderColor)
                 track.selected -> BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
@@ -159,6 +154,8 @@ fun TrackItem(
                         Icon(
                             imageVector = Icons.Default.MoreVert,
                             contentDescription = "Mostrar opciones de la pista",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+
                         )
                     }
                     TrackOptionsMenu(
@@ -356,8 +353,8 @@ fun DbWaveform(
     onOffsetChange: (Long) -> Unit,
     color: Color = MaterialTheme.colorScheme.onPrimaryContainer
 ) {
-    val waveformColor = if (isMuted) Color.LightGray else color
-    val backgroundColor = if (isMuted) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.primaryContainer
+    val waveformColor = if (isMuted) MaterialTheme.colorScheme.onSurfaceVariant else color
+    val backgroundColor = if (isMuted) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.tertiaryContainer
     val density = LocalDensity.current
 
     val canvasWidthDp = (maxDurationMs / MS_PER_DP_SCALE).dp

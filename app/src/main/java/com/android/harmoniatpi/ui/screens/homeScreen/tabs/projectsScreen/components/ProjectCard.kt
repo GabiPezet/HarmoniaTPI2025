@@ -81,10 +81,10 @@ fun TrackItemCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(4.dp)
-            // ✨ CAMBIO: El clickable ahora está en el Card
             .clickable { onNavigateToManagement() },
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp), // Añade elevación
         shape = RoundedCornerShape(8.dp) // Esquinas redondeadas
+
     ) {
         Column( // Mantenemos la Column para ForkedByUsersRow
             modifier = Modifier.padding(vertical = 8.dp) // Padding vertical interno
@@ -156,6 +156,7 @@ fun TrackItemCard(
                 Spacer(Modifier.width(12.dp))
 
                 // 3. Duración (Real)
+
                 Text(
                     // 🟢 CAMBIO: Usa la duración real formateada
                     text = formatDuration(project.duration),

@@ -11,6 +11,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material.icons.filled.Create
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Tag
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -32,6 +38,7 @@ import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.compone
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.SoundCloudTabRow
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.TrackItemCard
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.UserProfileHeader
+import com.android.harmoniatpi.ui.components.HoloTextField
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.model.ProjectTab
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.viewmodel.ProjectViewModel
 import androidx.compose.foundation.lazy.items
@@ -51,7 +58,7 @@ fun ProjectsScreen(
     val showMiniPlayer = uiState.currentlyPlayingProject != null
     // 🟢 CAMBIO: Padding inferior dinámico
     val bottomPadding = if (showMiniPlayer) 64.dp else 0.dp
-
+    
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
