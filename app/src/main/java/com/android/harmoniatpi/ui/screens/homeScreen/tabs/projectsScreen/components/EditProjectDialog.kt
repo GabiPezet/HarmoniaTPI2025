@@ -32,7 +32,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import com.android.harmoniatpi.domain.model.project.Project
-import com.android.harmoniatpi.ui.components.HarmoniaTextField
+import com.android.harmoniatpi.ui.components.HoloTextField
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.viewmodel.ProjectViewModel
 
 @Composable
@@ -68,7 +68,7 @@ fun EditProjectDialog(
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 )
 
-                HarmoniaTextField(
+                HoloTextField(
                     value = title,
                     onValueChange = { title = it },
                     label = "Título",
@@ -78,7 +78,7 @@ fun EditProjectDialog(
                     supportingText = if (!isTitleValid && title.isNotBlank()) "El título no puede estar vacío" else null
                 )
 
-                HarmoniaTextField(
+                HoloTextField(
                     value = description,
                     onValueChange = { description = it },
                     label = "Descripción",
@@ -86,7 +86,7 @@ fun EditProjectDialog(
                     leadingIcon = Icons.Default.Description
                 )
 
-                HarmoniaTextField(
+                HoloTextField(
                     value = hashtags,
                     onValueChange = { hashtags = it },
                     label = "Hashtags",
@@ -98,6 +98,15 @@ fun EditProjectDialog(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
+
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Text(text = "Cancelar")
+                    }
+
                     Button(
                         onClick = {
                             keyboardController?.hide()
@@ -127,21 +136,12 @@ fun EditProjectDialog(
                         if (uiState.isLoading) {
                             CircularProgressIndicator(modifier = Modifier.size(24.dp))
                         } else {
-                            Text("Guardar Cambios")
+                            Text("Guardar")
                         }
-                    }
-
-                    OutlinedButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Text(text = "Cancelar")
                     }
                 }
             }
         },
         shape = RoundedCornerShape(24.dp),
-        containerColor = MaterialTheme.colorScheme.surface
     )
 }

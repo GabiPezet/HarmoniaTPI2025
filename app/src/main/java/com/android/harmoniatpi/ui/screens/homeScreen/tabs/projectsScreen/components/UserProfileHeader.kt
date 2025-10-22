@@ -66,7 +66,6 @@ fun UserProfileHeader(
                 Text(
                     text = detailText,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -97,7 +96,6 @@ fun CompactStatItem(count: String, label: String) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

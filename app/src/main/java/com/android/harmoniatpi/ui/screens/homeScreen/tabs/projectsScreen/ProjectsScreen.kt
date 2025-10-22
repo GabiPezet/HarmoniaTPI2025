@@ -58,7 +58,7 @@ fun ProjectsScreen(
     val showMiniPlayer = uiState.currentlyPlayingProject != null
     // 🟢 CAMBIO: Padding inferior dinámico
     val bottomPadding = if (showMiniPlayer) 64.dp else 0.dp
-    
+
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -120,8 +120,6 @@ fun ProjectsScreen(
         // 3. Botón "Crear" (FAB)
         FloatingActionButton(
             onClick = { showCreateForm = true },
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(16.dp)

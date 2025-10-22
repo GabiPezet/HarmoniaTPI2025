@@ -26,7 +26,6 @@ fun ForkedByUsersRow(forkedByUserIds: List<String>) {
         Text(
             text = "Forked ${forkedByUserIds.size} veces",
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.width(8.dp))
 

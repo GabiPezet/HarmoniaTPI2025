@@ -122,7 +122,7 @@ fun TrackItemCard(
                     Icon(
                         imageVector = if (isCurrentlyPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                         contentDescription = if (isCurrentlyPlaying) "Pausar" else "Reproducir",
-                        modifier = Modifier.size(40.dp)
+                        modifier = Modifier.size(40.dp),
                     )
                 }
 
@@ -143,7 +143,6 @@ fun TrackItemCard(
                     Text(
                         text = "${project.name} ${project.lastName}",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1
                     )
                     Spacer(Modifier.height(2.dp))
@@ -161,7 +160,6 @@ fun TrackItemCard(
                     // 🟢 CAMBIO: Usa la duración real formateada
                     text = formatDuration(project.duration),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 // 4. Botón de "Más Opciones" (se queda igual)

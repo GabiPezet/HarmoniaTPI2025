@@ -29,7 +29,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.android.harmoniatpi.ui.components.HarmoniaTextField
+import com.android.harmoniatpi.ui.components.HoloTextField
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.model.ProjectUiState
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.viewmodel.ProjectViewModel
 
@@ -59,7 +59,7 @@ fun CreateProjectDialog(
                 )
 
                 // Asumo que HarmoniaTextField es un Composable tuyo
-                HarmoniaTextField(
+                HoloTextField(
                     value = uiState.title,
                     onValueChange = viewModel::onTitleChange,
                     label = "Título",
@@ -71,7 +71,7 @@ fun CreateProjectDialog(
                     } else null
                 )
 
-                HarmoniaTextField(
+                HoloTextField(
                     value = uiState.description,
                     onValueChange = viewModel::onDescriptionChange,
                     label = "Descripción",
@@ -79,7 +79,7 @@ fun CreateProjectDialog(
                     leadingIcon = Icons.Default.Description
                 )
 
-                HarmoniaTextField(
+                HoloTextField(
                     value = uiState.hashtags,
                     onValueChange = viewModel::onHashtagsChange,
                     label = "Hashtags",
@@ -91,6 +91,19 @@ fun CreateProjectDialog(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
+
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Text(
+                            text = "Cancelar",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        )
+                    }
+
                     Button(
                         onClick = {
                             keyboardController?.hide()
@@ -115,17 +128,10 @@ fun CreateProjectDialog(
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(16.dp),
                         enabled = uiState.isFormValid && !uiState.isLoading,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            disabledContainerColor = MaterialTheme.colorScheme.primary.copy(
-                                alpha = 0.5f
-                            )
-                        )
                     ) {
                         if (uiState.isLoading) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(24.dp),
-                                color = MaterialTheme.colorScheme.secondary,
                                 strokeWidth = 2.dp
                             )
                         } else {
@@ -134,26 +140,12 @@ fun CreateProjectDialog(
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     fontWeight = FontWeight.Bold, fontSize = 16.sp
                                 ),
-                                color = MaterialTheme.colorScheme.secondary
                             )
                         }
-                    }
-
-                    OutlinedButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Text(
-                            text = "Cancelar",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
-                        )
                     }
                 }
             }
         },
         shape = RoundedCornerShape(24.dp),
-        containerColor = MaterialTheme.colorScheme.surface
     )
 }

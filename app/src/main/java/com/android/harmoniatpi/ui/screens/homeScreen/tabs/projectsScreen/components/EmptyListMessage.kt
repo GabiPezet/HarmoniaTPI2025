@@ -28,7 +28,6 @@ fun EmptyListMessage(tab: ProjectTab, modifier: Modifier = Modifier) {
         Text(
             text = message,
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
         )
     }
 }

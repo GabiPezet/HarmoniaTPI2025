@@ -41,7 +41,6 @@ fun BottomMiniPlayer(
             .fillMaxWidth()
             .height(64.dp)
             .clickable { /* TODO: Abrir reproductor completo */ },
-        color = MaterialTheme.colorScheme.surfaceVariant,
         tonalElevation = 4.dp
     ) {
         Row(

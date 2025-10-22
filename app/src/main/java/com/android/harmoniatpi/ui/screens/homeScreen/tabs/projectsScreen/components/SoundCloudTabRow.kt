@@ -22,8 +22,7 @@ fun SoundCloudTabRow(
 
     PrimaryTabRow(
         selectedTabIndex = selectedIndex,
-        modifier = Modifier.fillMaxWidth(),
-        containerColor = MaterialTheme.colorScheme.surface // Fondo para el sticky header
+        modifier = Modifier.fillMaxWidth(), // Fondo para el sticky header
     ) {
         tabs.forEachIndexed { index, title ->
             Tab(
@@ -32,8 +31,6 @@ fun SoundCloudTabRow(
                     onTabSelected(if (index == 0) ProjectTab.MY_PROJECTS else ProjectTab.COLLABS)
                 },
                 text = { Text(title, fontWeight = FontWeight.SemiBold) },
-                selectedContentColor = MaterialTheme.colorScheme.primary,
-                unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
