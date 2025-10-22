@@ -73,41 +73,6 @@ class ProjectViewModel @Inject constructor(
         }
     }
 
-    fun cloneProject(projectToClone: Project) {
-        val currentUserId = sharedMenuUiState.uiState.value.userID
-        if (currentUserId.isBlank() || projectToClone.ownerId == currentUserId) return
-
-        viewModelScope.launch {
-            try {
-                // 1. Crea el clon
-                val clonedProject = projectToClone.copy(
-                    id = UUID.randomUUID().toString(),
-                    ownerId = currentUserId,
-                    originalProjectId = projectToClone.id,
-                    forkedByUserIds = emptyList()
-                )
-
-                // 2. Inserta el clon en la BBDD
-                insertProjectInDBUseCase(clonedProject)
-
-                // 3. Obtiene el proyecto original
-                val originalProject = getProjectByIdUseCase(projectToClone.id)
-
-                // 4. Si el usuario no está ya en la lista, lo añade
-                if (!originalProject.forkedByUserIds.contains(currentUserId)) {
-                    val updatedForkedIds = originalProject.forkedByUserIds + currentUserId
-                    val updatedOriginal = originalProject.copy(
-                        forkedByUserIds = updatedForkedIds
-                    )
-                    insertProjectInDBUseCase(updatedOriginal)
-                }
-
-            } catch (e: Exception) {
-                // Manejar error si es necesario
-            }
-        }
-    }
-
     fun saveProjectEdits(
         projectToSave: Project,
         onSuccess: () -> Unit,
@@ -347,7 +312,7 @@ class ProjectViewModel @Inject constructor(
                 currentState.copy(currentlyPlayingProject = project)
             }
         }
-        // TODO: Aquí interactuarías con tu servicio/clase de reproducción real
+        // TODO: Aquí interactuaríamos con nuestro servicio/clase de reproducción real
     }
 
     // Para detener la reproducción (ej. desde el mini-player)

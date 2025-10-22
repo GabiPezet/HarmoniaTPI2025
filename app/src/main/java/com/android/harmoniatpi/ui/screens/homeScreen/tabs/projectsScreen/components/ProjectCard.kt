@@ -15,24 +15,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.LibraryMusic
-import androidx.compose.material.icons.filled.ModeComment
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Publish
-import androidx.compose.material.icons.filled.Save
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -50,21 +41,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import com.android.harmoniatpi.domain.model.project.Project
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.model.ProjectTab
 
 @Composable
-fun TrackItemCard(
+fun ProjectCard(
     project: Project,
     currentUserId: String,
     selectedTab: ProjectTab,
     onNavigateToManagement: () -> Unit,
-    onTogglePlayPause: () -> Unit, // Se mantiene para el botón sobre la imagen
+    onTogglePlayPause: () -> Unit,
     isCurrentlyPlaying: Boolean,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
@@ -86,13 +75,12 @@ fun TrackItemCard(
         shape = RoundedCornerShape(8.dp) // Esquinas redondeadas
 
     ) {
-        Column( // Mantenemos la Column para ForkedByUsersRow
+        Column(
             modifier = Modifier.padding(vertical = 8.dp) // Padding vertical interno
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    // ✨ CAMBIO: Padding horizontal DENTRO del Card
                     .padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -106,14 +94,13 @@ fun TrackItemCard(
                 ) {
                     Image(
                         painter = rememberAsyncImagePainter(
-                            // TODO: Usar una imagen real del proyecto si existe
+                            // TODO: Usar una imagen real del proyecto cuando lo tengamos
                             model = "https://picsum.photos/seed/${project.id}/200/200"
                         ),
                         contentDescription = project.title,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
                     )
-                    // Overlay semitransparente
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -148,7 +135,7 @@ fun TrackItemCard(
                     Spacer(Modifier.height(2.dp))
                     if (isMyProject && project.originalProjectId == null && hasBeenForkedByOthers && selectedTab == ProjectTab.MY_PROJECTS) {
                         Spacer(Modifier.height(8.dp))
-                        ForkedByUsersRow(forkedByUserIds = forksByOthers) // Asegúrate que ForkedByUsersRow sea público
+                        ForkedByUsersRow(forkedByUserIds = forksByOthers)
                     }
                 }
 
@@ -157,7 +144,6 @@ fun TrackItemCard(
                 // 3. Duración (Real)
 
                 Text(
-                    // 🟢 CAMBIO: Usa la duración real formateada
                     text = formatDuration(project.duration),
                     style = MaterialTheme.typography.bodyMedium,
                 )

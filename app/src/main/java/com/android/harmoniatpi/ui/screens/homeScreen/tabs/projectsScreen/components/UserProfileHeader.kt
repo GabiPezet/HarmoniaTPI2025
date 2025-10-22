@@ -77,7 +77,7 @@ fun UserProfileHeader(
             ) {
                 CompactStatItem(count = projectsCount.toString(), label = "Proyectos")
                 CompactStatItem(count = clonesCount.toString(), label = "Clones")
-                // TODO: Añadir Followers reales si los tienes
+                // TODO: Añadir Followers reales cuando lo tengamos
                 CompactStatItem(count = "1.2K", label = "Followers")
             }
         }
@@ -86,13 +86,13 @@ fun UserProfileHeader(
 
 @Composable
 fun CompactStatItem(count: String, label: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) { // Usa Row para ponerlos lado a lado
+    Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = count,
-            style = MaterialTheme.typography.bodyMedium, // Texto más pequeño
+            style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Bold
         )
-        Spacer(Modifier.width(4.dp)) // Espacio pequeño
+        Spacer(Modifier.width(4.dp))
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,

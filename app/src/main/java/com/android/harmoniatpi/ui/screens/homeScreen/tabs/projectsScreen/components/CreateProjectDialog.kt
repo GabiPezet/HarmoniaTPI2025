@@ -58,7 +58,7 @@ fun CreateProjectDialog(
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 )
 
-                // Asumo que HarmoniaTextField es un Composable tuyo
+
                 HoloTextField(
                     value = uiState.title,
                     onValueChange = viewModel::onTitleChange,

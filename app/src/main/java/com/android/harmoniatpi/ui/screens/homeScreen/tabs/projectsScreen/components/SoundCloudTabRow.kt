@@ -22,7 +22,7 @@ fun SoundCloudTabRow(
 
     PrimaryTabRow(
         selectedTabIndex = selectedIndex,
-        modifier = Modifier.fillMaxWidth(), // Fondo para el sticky header
+        modifier = Modifier.fillMaxWidth(),
     ) {
         tabs.forEachIndexed { index, title ->
             Tab(

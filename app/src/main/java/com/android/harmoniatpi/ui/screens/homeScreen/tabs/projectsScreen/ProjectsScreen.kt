@@ -1,7 +1,6 @@
 package com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,15 +10,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material.icons.filled.Create
-import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.Tag
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -36,9 +28,8 @@ import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.compone
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.EditProjectDialog
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.EmptyListMessage
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.SoundCloudTabRow
-import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.TrackItemCard
+import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.ProjectCard
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.UserProfileHeader
-import com.android.harmoniatpi.ui.components.HoloTextField
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.model.ProjectTab
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.viewmodel.ProjectViewModel
 import androidx.compose.foundation.lazy.items
@@ -54,15 +45,14 @@ fun ProjectsScreen(
     var projectToEdit by remember { mutableStateOf<Project?>(null) }
     var showCreateForm by remember { mutableStateOf(false) } // 👈 Mantenemos este estado aquí
 
-    // 🟢 CAMBIO: Calcula si el mini-reproductor debe mostrarse
+    //Calcula si el mini-reproductor debe mostrarse
     val showMiniPlayer = uiState.currentlyPlayingProject != null
-    // 🟢 CAMBIO: Padding inferior dinámico
+    // Padding inferior dinámico
     val bottomPadding = if (showMiniPlayer) 64.dp else 0.dp
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            // 🟢 CAMBIO: Usa el padding dinámico
             contentPadding = PaddingValues(
                 bottom = bottomPadding + 80.dp) // 80.dp aprox para FAB + margen
         ) {
@@ -85,7 +75,7 @@ fun ProjectsScreen(
             val listToShow = if (uiState.tabSelected == ProjectTab.MY_PROJECTS) {
                 uiState.myProjects
             } else {
-                uiState.allProjects // Esta lista ya está filtrada para mostrar solo tus clones
+                uiState.allProjects
             }
 
             if (listToShow.isEmpty()) {
@@ -99,16 +89,16 @@ fun ProjectsScreen(
                 items(listToShow) { project ->
                     val isCurrentlyPlaying = uiState.currentlyPlayingProject?.id == project.id
                     Spacer(modifier = Modifier.height(8.dp))
-                    TrackItemCard(
+                    ProjectCard(
                         project = project,
                         currentUserId = sharedState.userID,
                         selectedTab = uiState.tabSelected,
                         onNavigateToManagement = {
-                            viewModel.setCurrentProject(project) // Prepara el proyecto en el ViewModel
-                            onNavigateToProjectManagementScreen() // Ejecuta la navegación
+                            viewModel.setCurrentProject(project)
+                            onNavigateToProjectManagementScreen()
                         },
                         onTogglePlayPause = { viewModel.togglePlayPause(project) },
-                        isCurrentlyPlaying = isCurrentlyPlaying, // 👈 Pasa el estado
+                        isCurrentlyPlaying = isCurrentlyPlaying,
                         onEditClick = { projectToEdit = project },
                         onDeleteClick = { viewModel.deleteProject(project.id) },
                         onPublishClick = { viewModel.publishProject(project) },
@@ -133,15 +123,13 @@ fun ProjectsScreen(
         if (showMiniPlayer) {
             BottomMiniPlayer(
                 playingProject = uiState.currentlyPlayingProject,
-                onStopClick = { viewModel.stopPlayback() }, // 👈 Conecta el botón de detener
+                onStopClick = { viewModel.stopPlayback() },
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
     }
 
     // --- Diálogos ---
-    // El diálogo de Crear ahora es controlado por HomeScreen
-    // Mantenemos el diálogo de Editar aquí
     projectToEdit?.let { project ->
         EditProjectDialog(
             project = project,
@@ -150,7 +138,7 @@ fun ProjectsScreen(
         )
     }
 
-    if (showCreateForm) { // Ahora este estado viene del ViewModel o se levanta
+    if (showCreateForm) {
         CreateProjectDialog(
             uiState = uiState,
             viewModel = viewModel,

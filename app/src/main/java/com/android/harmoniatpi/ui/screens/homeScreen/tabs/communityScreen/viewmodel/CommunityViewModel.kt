@@ -61,7 +61,7 @@ class CommunityViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         posts = posts,
-                        localProjects = localProjects // 👈 Guarda los proyectos locales
+                        localProjects = localProjects // Guarda los proyectos locales
                     )
                 }
             }.collect{}

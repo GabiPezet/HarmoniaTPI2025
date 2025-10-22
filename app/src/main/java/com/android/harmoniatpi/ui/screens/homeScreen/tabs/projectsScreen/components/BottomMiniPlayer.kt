@@ -27,9 +27,9 @@ import com.android.harmoniatpi.domain.model.project.Project
 
 @Composable
 fun BottomMiniPlayer(
-    // 🟢 CAMBIO: Recibe el proyecto que está sonando
+    //Recibe el proyecto que está sonando
     playingProject: Project?,
-    // 🟢 CAMBIO: Callback para detener
+    //Callback para detener
     onStopClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -59,21 +59,19 @@ fun BottomMiniPlayer(
 
             Column(modifier = Modifier.weight(1f).padding(horizontal = 12.dp)) {
                 Text(
-                    // 🟢 CAMBIO: Muestra título real
                     text = playingProject.title,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1
                 )
                 Text(
-                    // 🟢 CAMBIO: Muestra autor real
                     text = "${playingProject.name} ${playingProject.lastName}",
                     style = MaterialTheme.typography.bodySmall,
                     maxLines = 1
                 )
             }
 
-            // 🟢 CAMBIO: Botón para cerrar el mini-reproductor
+            //Botón para cerrar el mini-reproductor
             IconButton(onClick = onStopClick) {
                 Icon(Icons.Default.Close, contentDescription = "Detener")
             }
