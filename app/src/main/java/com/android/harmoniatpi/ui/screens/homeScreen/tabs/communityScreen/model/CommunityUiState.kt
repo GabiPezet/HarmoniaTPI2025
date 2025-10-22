@@ -1,5 +1,6 @@
 package com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.model
 
+import com.android.harmoniatpi.domain.model.project.Project
 import com.android.harmoniatpi.domain.model.userPreferences.Post
 
 data class CommunityUiState(
@@ -9,5 +10,6 @@ data class CommunityUiState(
     val userLastName: String = "",
     val userID : String = "",
     val userPhotoPathRemote : String = "",
-    val posts: List<Post> = emptyList()
+    val posts: List<Post> = emptyList(),
+    val localProjects: List<Project> = emptyList()
 )

@@ -71,18 +71,20 @@ fun HomeScreen(
     } else {
         Scaffold(
             topBar = {
-                Toolbar(
-                    title = when (currentTabName) {
-                        "CommunityScreenRoute" -> "Comunidad"
-                        "ProjectsScreenRoute" -> "Proyectos"
-                        else -> "Comunidad"
-                    },
-                    onNotificationClick = { onNavigateToNotifications() },
-                    hasNotifications = drawerUiState.newNotification,
-                    showMenuPrincipal = true,
-                    onMenuClick = openDrawerState,
-                    isInternetAvailable = true,
-                )
+                if (currentTabName != BottomBarItem.ProjectsTab.route.toString().substringAfterLast(".")) {
+                    Toolbar(
+                        title = when (currentTabName) {
+                            "CommunityScreenRoute" -> "Comunidad"
+                            "ProjectsScreenRoute" -> "Proyectos"
+                            else -> "Comunidad"
+                        },
+                        onNotificationClick = { onNavigateToNotifications() },
+                        hasNotifications = drawerUiState.newNotification,
+                        showMenuPrincipal = true,
+                        onMenuClick = openDrawerState,
+                        isInternetAvailable = true,
+                    )
+                }
             },
             bottomBar = {
                 BottomNavigation(

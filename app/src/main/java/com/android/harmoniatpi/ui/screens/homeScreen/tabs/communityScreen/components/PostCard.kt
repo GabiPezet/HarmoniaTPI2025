@@ -16,10 +16,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Comment
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -43,7 +47,9 @@ fun PostCard(
     onLikeClicked: () -> Unit,
     onCommentClicked: () -> Unit,
     onDeleteClicked: () -> Unit,
-    isMyPost: Boolean
+    isMyPost: Boolean,
+    isAlreadyCloned: Boolean,
+    onCloneClicked: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -105,6 +111,23 @@ fun PostCard(
                     }
                 }
             }
+            // AÑADE EL BOTÓN DE CLONAR
+            if (post.idProject.isNotBlank() && !isMyPost) {
+                Spacer(Modifier.height(12.dp))
+                Button(
+                    onClick = onCloneClicked,
+                    enabled = !isAlreadyCloned,
+                    modifier = Modifier.align(Alignment.End)
+                ) {
+                    Icon(
+                        imageVector = if (isAlreadyCloned) Icons.Default.Check else Icons.Default.ContentCopy,
+                        contentDescription = "Clonar",
+                        modifier = Modifier.size(ButtonDefaults.IconSize)
+                    )
+                    Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+                    Text(if (isAlreadyCloned) "CLONADO" else "CLONAR")
+                }
+            }
 
             // Footer con acciones (like y comentarios)
             Spacer(Modifier.height(12.dp))
@@ -145,6 +168,21 @@ fun PostCard(
                         post.comments.size.toString(),
                         style = MaterialTheme.typography.bodySmall
                     )
+                }
+                // Muestra el contador de clones (usando 'totalShared')
+                Spacer(Modifier.width(16.dp))
+                if (post.totalShared > 0) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.ContentCopy, // O un ícono de "fork"
+                            contentDescription = "Clones"
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            post.totalShared.toString(),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
                 }
             }
         }

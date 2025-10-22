@@ -1,32 +1,17 @@
 package com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen
 
-import android.widget.Toast
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Create
-import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.Tag
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -35,20 +20,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.android.harmoniatpi.domain.model.project.Project
-import com.android.harmoniatpi.ui.components.HoloTextField
-import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.CollabScreen
+import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.BottomMiniPlayer
+import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.CreateProjectDialog
+import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.EditProjectDialog
+import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.EmptyListMessage
+import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.SoundCloudTabRow
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.ProjectCard
-import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.ProjectTabSelector
+import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.UserProfileHeader
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.model.ProjectTab
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.viewmodel.ProjectViewModel
-
+import androidx.compose.foundation.lazy.items
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProjectsScreen(
     onNavigateToProjectManagementScreen: () -> Unit,
@@ -56,179 +41,109 @@ fun ProjectsScreen(
     viewModel: ProjectViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val context = LocalContext.current
-    val keyboardController = LocalSoftwareKeyboardController.current
+    val sharedState by viewModel.sharedMenuUiState.uiState.collectAsState()
+    var projectToEdit by remember { mutableStateOf<Project?>(null) }
+    var showCreateForm by remember { mutableStateOf(false) } // 👈 Mantenemos este estado aquí
 
-    var showForm by remember { mutableStateOf(false) }
+    //Calcula si el mini-reproductor debe mostrarse
+    val showMiniPlayer = uiState.currentlyPlayingProject != null
+    // Padding inferior dinámico
+    val bottomPadding = if (showMiniPlayer) 64.dp else 0.dp
 
-    Column {
-        ProjectTabSelector(
-            selectedTab = uiState.tabSelected,
-            onTabSelected = { viewModel.onTabSelected(it) })
-        if (uiState.tabSelected == ProjectTab.MY_PROJECTS) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    // 🔹 Lista de proyectos
-                    if (uiState.listProjects.isEmpty()) {
-                        Text(
-                            text = "Todavía no has creado ningún proyecto",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 32.dp)
-                        )
-                    } else {
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            items(uiState.listProjects) { project ->
-                                ProjectCard(
-                                    project = project,
-                                    onClick = {
-                                        viewModel.setCurrentProject(project)
-                                        onNavigateToProjectManagementScreen()
-                                    },
-                                    onNavigateToVersions = { onNavigateToVersion(project) },
-                                    onDeleteClick = { id -> viewModel.deleteProject(id) }
-                                )
-                            }
-                        }
-                    }
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                bottom = bottomPadding + 80.dp) // 80.dp aprox para FAB + margen
+        ) {
+            item {
+                Spacer(modifier = Modifier.height(30.dp))
+                UserProfileHeader(
+                    sharedState = sharedState, // Pasa el estado completo
+                    projectsCount = uiState.myProjects.size,
+                    clonesCount = uiState.allProjects.size
+                )
+            }
+            stickyHeader {
+                SoundCloudTabRow(
+                    selectedTab = uiState.tabSelected,
+                    onTabSelected = { viewModel.onTabSelected(it) }
+                )
+            }
+
+            // --- 3. Lista de Proyectos/Clones ---
+            val listToShow = if (uiState.tabSelected == ProjectTab.MY_PROJECTS) {
+                uiState.myProjects
+            } else {
+                uiState.allProjects
+            }
+
+            if (listToShow.isEmpty()) {
+                item {
+                    EmptyListMessage(
+                        tab = uiState.tabSelected,
+                        modifier = Modifier.padding(top = 48.dp)
+                    )
                 }
-
-                // 🔹 Floating Action Button
-                FloatingActionButton(
-                    onClick = { showForm = true },
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(24.dp)
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Nuevo proyecto")
-                }
-
-                // 🔹 AlertDialog para crear nuevo proyecto
-                if (showForm) {
-                    AlertDialog(
-                        onDismissRequest = { showForm = false },
-                        confirmButton = {},
-                        text = {
-                            Column(
-                                modifier = Modifier
-                                    .verticalScroll(rememberScrollState())
-                                    .padding(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Text(
-                                    "Crear nuevo proyecto",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                                )
-
-                                HoloTextField(
-                                    value = uiState.title,
-                                    onValueChange = viewModel::onTitleChange,
-                                    label = "Título",
-                                    placeholder = "Ej. Mi primer proyecto",
-                                    leadingIcon = Icons.Default.Create,
-                                    isError = !uiState.isTitleValid && uiState.title.isNotBlank(),
-                                    supportingText = if (!uiState.isTitleValid && uiState.title.isNotBlank()) {
-                                        "El título no puede estar vacío"
-                                    } else null
-                                )
-
-                                HoloTextField(
-                                    value = uiState.description,
-                                    onValueChange = viewModel::onDescriptionChange,
-                                    label = "Descripción",
-                                    placeholder = "Describe tu proyecto",
-                                    leadingIcon = Icons.Default.Description
-                                )
-
-                                HoloTextField(
-                                    value = uiState.hashtags,
-                                    onValueChange = viewModel::onHashtagsChange,
-                                    label = "Hashtags",
-                                    placeholder = "#música, #creatividad",
-                                    leadingIcon = Icons.Default.Tag
-                                )
-
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    OutlinedButton(
-                                        onClick = { showForm = false },
-                                        modifier = Modifier.weight(1f),
-                                        shape = RoundedCornerShape(16.dp)
-                                    ) {
-                                        Text(
-                                            text = "Cancelar",
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 16.sp
-                                        )
-                                    }
-
-                                    Button(
-                                        onClick = {
-                                            keyboardController?.hide()
-                                            viewModel.saveProject(
-                                                onSuccess = {
-                                                    Toast.makeText(
-                                                        context,
-                                                        "Proyecto guardado",
-                                                        Toast.LENGTH_SHORT
-                                                    ).show()
-                                                    showForm = false
-                                                },
-                                                onError = { error ->
-                                                    Toast.makeText(
-                                                        context,
-                                                        "Error: $error",
-                                                        Toast.LENGTH_LONG
-                                                    ).show()
-                                                }
-                                            )
-                                        },
-                                        modifier = Modifier.weight(1f),
-                                        shape = RoundedCornerShape(16.dp),
-                                        enabled = uiState.isFormValid && !uiState.isLoading,
-                                    ) {
-                                        if (uiState.isLoading) {
-                                            CircularProgressIndicator(
-                                                modifier = Modifier.size(24.dp),
-                                                color = MaterialTheme.colorScheme.onPrimary,
-                                                strokeWidth = 2.dp
-                                            )
-                                        } else {
-                                            Text(
-                                                "Guardar",
-                                                style = MaterialTheme.typography.bodyMedium.copy(
-                                                    fontWeight = FontWeight.Bold, fontSize = 16.sp
-                                                ),
-                                            )
-                                        }
-                                    }
-
-                                }
-                            }
+            } else {
+                items(listToShow) { project ->
+                    val isCurrentlyPlaying = uiState.currentlyPlayingProject?.id == project.id
+                    Spacer(modifier = Modifier.height(8.dp))
+                    ProjectCard(
+                        project = project,
+                        currentUserId = sharedState.userID,
+                        selectedTab = uiState.tabSelected,
+                        onNavigateToManagement = {
+                            viewModel.setCurrentProject(project)
+                            onNavigateToProjectManagementScreen()
                         },
-                        shape = RoundedCornerShape(24.dp),
+                        onTogglePlayPause = { viewModel.togglePlayPause(project) },
+                        isCurrentlyPlaying = isCurrentlyPlaying,
+                        onEditClick = { projectToEdit = project },
+                        onDeleteClick = { viewModel.deleteProject(project.id) },
+                        onPublishClick = { viewModel.publishProject(project) },
+                        onNavigateToVersions = { onNavigateToVersion(project) }
                     )
                 }
             }
-        } else {
-            CollabScreen()
+        } // Fin del LazyColumn
+
+        // 3. Botón "Crear" (FAB)
+        FloatingActionButton(
+            onClick = { showCreateForm = true },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+                .padding(bottom = bottomPadding + 8.dp) // Lo subimos encima del mini-reproductor
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "Nuevo Proyecto")
+        }
+
+        // 4. Mini-Reproductor Fijo
+        if (showMiniPlayer) {
+            BottomMiniPlayer(
+                playingProject = uiState.currentlyPlayingProject,
+                onStopClick = { viewModel.stopPlayback() },
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
         }
     }
 
+    // --- Diálogos ---
+    projectToEdit?.let { project ->
+        EditProjectDialog(
+            project = project,
+            viewModel = viewModel,
+            onDismiss = { projectToEdit = null }
+        )
+    }
 
+    if (showCreateForm) {
+        CreateProjectDialog(
+            uiState = uiState,
+            viewModel = viewModel,
+            onDismiss = { showCreateForm = false /* viewModel.dismissCreateDialog() */ }
+        )
+    }
 }
-
 
