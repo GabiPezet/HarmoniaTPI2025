@@ -41,7 +41,6 @@ import com.android.harmoniatpi.R
 import com.android.harmoniatpi.data.local.ext.findActivity
 import com.android.harmoniatpi.ui.components.CircularProgressBar
 import com.android.harmoniatpi.ui.components.ShowConfirmationDialog
-import com.android.harmoniatpi.ui.components.Toolbar
 import com.android.harmoniatpi.ui.core.navigation.bottomNavigationBar.BottomBarItem
 import com.android.harmoniatpi.ui.core.navigation.bottomNavigationBar.NavigationBottomWrapper
 import com.android.harmoniatpi.ui.screens.homeScreen.viewmodel.HomeScreenViewModel
