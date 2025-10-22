@@ -20,8 +20,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Comment
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.Favorite
@@ -35,7 +37,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -48,6 +53,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.android.harmoniatpi.domain.model.userPreferences.Post
@@ -65,57 +71,94 @@ fun MyPostsScreen(
     var selectedPostForComments by remember { mutableStateOf<Post?>(null) }
     val modalBottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    BackHandler {
+    // Acción de retroceso centralizada
+    val onBackPressed = {
         viewModel.changeOptionsMenu(OptionsMenu.MAIN_CONTENT_SCREEN)
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(
+    BackHandler {
+        onBackPressed()
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        modifier = Modifier.fillMaxWidth().padding(end = 16.dp),
+                        text = "Mis publicaciones",
+                        style = MaterialTheme.typography.titleLarge,
+                        textAlign = TextAlign.Center
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = { onBackPressed() }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Volver"
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
+                )
+            )
+        },
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+    ) { innerPadding ->
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .padding(16.dp)
+                .padding(innerPadding)
         ) {
-            if (uiState.myPostsList.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        "Todavía no publicaste nada",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            } else {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(uiState.myPostsList) { post ->
-                        PostCardMyPosts(
-                            post = post,
-                            onCommentClicked = { selectedPostForComments = post },
-                            onDeleteClicked = { viewModel.deleteMyPost(post.id) }
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+            ) {
+                if (uiState.myPostsList.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "Todavía no publicaste nada",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                    }
+                } else {
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(uiState.myPostsList) { post ->
+                            PostCardMyPosts(
+                                post = post,
+                                onCommentClicked = { selectedPostForComments = post },
+                                onDeleteClicked = { viewModel.deleteMyPost(post.id) }
+                            )
+                        }
                     }
                 }
             }
-        }
 
-        if (selectedPostForComments != null) {
-            ModalBottomSheet(
-                onDismissRequest = { selectedPostForComments = null },
-                sheetState = modalBottomSheetState
-            ) {
-                CommentsBottomSheetContentMenu(
-                    post = selectedPostForComments!!,
-                    onCommentAdded = { comment ->
-                        viewModel.updateComments(selectedPostForComments!!, comment)
-                    }
-                )
+            if (selectedPostForComments != null) {
+                ModalBottomSheet(
+                    onDismissRequest = { selectedPostForComments = null },
+                    sheetState = modalBottomSheetState
+                ) {
+                    CommentsBottomSheetContentMenu(
+                        post = selectedPostForComments!!,
+                        onCommentAdded = { comment ->
+                            viewModel.updateComments(selectedPostForComments!!, comment)
+                        }
+                    )
+                }
             }
         }
     }
-
 }
+
 
 @Composable
 fun CommentsBottomSheetContentMenu(

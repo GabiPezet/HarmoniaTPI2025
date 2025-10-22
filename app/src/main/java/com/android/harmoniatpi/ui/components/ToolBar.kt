@@ -51,11 +51,11 @@ fun Toolbar(
 
     CenterAlignedTopAppBar(
         colors = TopAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            containerColor = MaterialTheme.colorScheme.background,
             titleContentColor = MaterialTheme.colorScheme.onSurface,
             navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
             actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerLow
+            scrolledContainerColor = MaterialTheme.colorScheme.background
         ),
         title = {
             if (isInternetAvailable) {

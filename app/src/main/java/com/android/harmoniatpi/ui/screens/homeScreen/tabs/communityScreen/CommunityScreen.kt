@@ -60,7 +60,7 @@ fun CommunityScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
+                .background(MaterialTheme.colorScheme.surfaceContainerLow)
                 .padding(horizontal = 16.dp)
         ) {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
