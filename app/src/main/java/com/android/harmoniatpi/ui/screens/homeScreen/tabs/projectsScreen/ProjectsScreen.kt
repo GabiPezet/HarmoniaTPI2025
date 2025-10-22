@@ -67,6 +67,7 @@ fun ProjectsScreen(
                 bottom = bottomPadding + 80.dp) // 80.dp aprox para FAB + margen
         ) {
             item {
+                Spacer(modifier = Modifier.height(30.dp))
                 UserProfileHeader(
                     sharedState = sharedState, // Pasa el estado completo
                     projectsCount = uiState.myProjects.size,
