@@ -1,10 +1,12 @@
 package com.android.harmoniatpi.ui.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FiberManualRecord
@@ -23,7 +25,9 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.android.harmoniatpi.R
 
 @Composable
 fun ProyectControlButtonRow(
@@ -63,7 +67,8 @@ fun ProyectControlButtonRow(
                 onClick = {
                     if (isRecording) stopRecording() else startRecording()
                 },
-                icon = if (isRecording) Icons.Default.Stop else Icons.Default.FiberManualRecord,
+                //icon = if (isRecording) Icons.Default.Stop else Icons.Default.FiberManualRecord,
+                pngRes = if (isRecording) R.drawable.stop_button_base else R.drawable.record_button_base,
                 iconColor = Color.White,
                 backgroundColor = if (isRecording)
                     Color(0xFFB71C1C)
@@ -77,7 +82,8 @@ fun ProyectControlButtonRow(
                 onClick = {
                     if (isPlaying) onPause() else onPlay()
                 },
-                icon = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                //icon = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                pngRes = if (isPlaying) R.drawable.pause_button_base else R.drawable.play_button_base,
                 iconColor = Color.Black,
                 backgroundColor = if (isPlaying)
                     Color(0xFF00E676)
@@ -91,7 +97,8 @@ fun ProyectControlButtonRow(
 @Composable
 private fun CircleIconButton(
     onClick: () -> Unit,
-    icon: ImageVector,
+    icon: ImageVector? = null,
+    pngRes: Int? = null, //nueva modificación
     backgroundColor: Color,
     iconColor: Color,
     glow: Boolean = false
@@ -112,9 +119,29 @@ private fun CircleIconButton(
         IconButton(
             onClick = onClick,
             colors = IconButtonDefaults.iconButtonColors(contentColor = iconColor),
-            modifier = Modifier.padding(12.dp)
+            modifier = Modifier.size(60.dp)
+//          modifier = Modifier.padding(12.dp)
         ) {
-            Icon(imageVector = icon, contentDescription = null, tint = iconColor)
+//            Icon(
+//                imageVector = icon,
+//                contentDescription = null,
+//                tint = iconColor
+//            )
+
+            when {
+                pngRes != null -> Image(
+                    painter = painterResource(id = pngRes),
+                    contentDescription = null,
+                    modifier = Modifier.size(64.dp)
+                )
+                icon != null -> Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconColor,
+                    modifier = Modifier.size(64.dp)
+                )
+            }
+
         }
     }
 }
