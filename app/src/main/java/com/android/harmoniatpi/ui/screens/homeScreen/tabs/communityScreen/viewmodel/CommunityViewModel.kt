@@ -22,6 +22,9 @@ import com.android.harmoniatpi.domain.usecases.GetProjectByIdUseCase
 import com.android.harmoniatpi.domain.usecases.roomUseCases.GetAllProjectsFromDBUseCase
 import com.android.harmoniatpi.domain.usecases.roomUseCases.UpdateOrInsertProjectInDBUseCase
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.launch
 
 @HiltViewModel
 class CommunityViewModel @Inject constructor(
@@ -35,6 +38,12 @@ class CommunityViewModel @Inject constructor(
     private val getProjectByIdUseCase: GetProjectByIdUseCase,
     private val insertProjectInDBUseCase: UpdateOrInsertProjectInDBUseCase
 ) : ViewModel() {
+
+    // 1. Canal privado para enviar eventos de Toast
+    private val _toastEvents = MutableSharedFlow<String>()
+    // 2. Canal público para que la UI escuche
+    val toastEvents = _toastEvents.asSharedFlow()
+
     private val _uiState = MutableStateFlow(CommunityUiState())
     val uiState = _uiState.asStateFlow()
     private val localProjectsFlow = getAllProjectsFromDBUseCase()
@@ -98,6 +107,8 @@ class CommunityViewModel @Inject constructor(
                 // 4. Actualiza el Post (remoto) para sumar un "clon"
                 val updatedPost = post.copy(totalShared = post.totalShared + 1)
                 updatePostFirebaseDataBaseUseCase(updatedPost)
+
+                _toastEvents.emit("Proyecto clonado en colaboraciones.")
 
                 // (Opcional: puedes añadir un callback 'onSuccess' para navegar)
 

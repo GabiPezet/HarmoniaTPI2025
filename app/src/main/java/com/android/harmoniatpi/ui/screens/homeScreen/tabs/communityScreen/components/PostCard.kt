@@ -1,9 +1,12 @@
 package com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.components
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,12 +23,14 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -36,11 +41,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
 import com.android.harmoniatpi.domain.model.userPreferences.Post
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PostCard(
     post: Post,
@@ -51,26 +61,27 @@ fun PostCard(
     isAlreadyCloned: Boolean,
     onCloneClicked: () -> Unit
 ) {
-    Card(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(4.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            .background(MaterialTheme.colorScheme.surface)
+            .clickable { /* onPostClicked(post.id) */ }
     ) {
-        Column(Modifier.padding(12.dp)) {
-            // Header con información del usuario y opción de borrar
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 8.dp)
+        ) {
+            // --- Columna del Avatar ---
+            Box(
+                modifier = Modifier.padding(top = 4.dp)
             ) {
-
                 if (post.userImagePathURL.isNotBlank()) {
-                    Image(
-                        painter = rememberAsyncImagePainter(post.userImagePathURL),
+                    AsyncImage(
+                        model = post.userImagePathURL,
                         contentDescription = "Foto de perfil",
                         modifier = Modifier
-                            .size(40.dp)
+                            .size(48.dp)
                             .clip(CircleShape),
                         contentScale = ContentScale.Crop
                     )
@@ -79,112 +90,156 @@ fun PostCard(
                         imageVector = Icons.Default.AccountCircle,
                         contentDescription = "Foto de perfil",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(40.dp)
+                        modifier = Modifier.size(48.dp)
                     )
                 }
-                Text("${post.name} ${post.lasName}", fontWeight = FontWeight.Bold)
-
-                if (isMyPost) {
-                    IconButton(
-                        onClick = onDeleteClicked,
-                        modifier = Modifier.size(24.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.Delete,
-                            contentDescription = "Borrar post",
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                    }
-                }
             }
 
-            Spacer(Modifier.height(8.dp))
-            Text(post.title, style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(4.dp))
-            Text(post.description)
+            Spacer(Modifier.width(12.dp))
 
-            if (post.hashtags.isNotEmpty()) {
-                Spacer(Modifier.height(6.dp))
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    post.hashtags.forEach {
-                        AssistChip(onClick = {}, label = { Text("#$it") })
-                    }
-                }
-            }
-            // AÑADE EL BOTÓN DE CLONAR
-            if (post.idProject.isNotBlank() && !isMyPost) {
-                Spacer(Modifier.height(12.dp))
-                Button(
-                    onClick = onCloneClicked,
-                    enabled = !isAlreadyCloned,
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Icon(
-                        imageVector = if (isAlreadyCloned) Icons.Default.Check else Icons.Default.ContentCopy,
-                        contentDescription = "Clonar",
-                        modifier = Modifier.size(ButtonDefaults.IconSize)
-                    )
-                    Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                    Text(if (isAlreadyCloned) "CLONADO" else "CLONAR")
-                }
-            }
-
-            // Footer con acciones (like y comentarios)
-            Spacer(Modifier.height(12.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Start,
-                verticalAlignment = Alignment.CenterVertically
+            // --- Columna de Contenido (Header, Body, Actions) ---
+            Column(
+                modifier = Modifier.weight(1f)
             ) {
 
+                // --- Cabecera (Nombre, Handle, Botón Borrar) ---
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.clickable { onLikeClicked() }
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        if (post.likes > 0) Icons.Filled.Favorite else Icons.Outlined.Favorite,
-                        contentDescription = "Like",
-                        tint = if (post.likes > 0) Color.Red else MaterialTheme.colorScheme.onSurface
+                    Text(
+                        text = "${post.name} ${post.lasName}",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
                     )
                     Spacer(Modifier.width(4.dp))
                     Text(
-                        post.likes.toString(),
-                        style = MaterialTheme.typography.bodySmall
+                        text = "@${post.name.lowercase()}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1
                     )
-                }
+                    Spacer(Modifier.weight(1f))
 
-                Spacer(Modifier.width(16.dp))
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.clickable { onCommentClicked() }
-                ) {
-                    Icon(
-                        Icons.AutoMirrored.Outlined.Comment,
-                        contentDescription = "Comentarios"
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        post.comments.size.toString(),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-                // Muestra el contador de clones (usando 'totalShared')
-                Spacer(Modifier.width(16.dp))
-                if (post.totalShared > 0) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Default.ContentCopy, // O un ícono de "fork"
-                            contentDescription = "Clones"
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Text(
-                            post.totalShared.toString(),
-                            style = MaterialTheme.typography.bodySmall
-                        )
+                    if (isMyPost) {
+                        IconButton(
+                            onClick = onDeleteClicked,
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = "Borrar post",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
+                }
+
+                // --- Cuerpo del Post (Título + Descripción) ---
+                Column(
+                    modifier = Modifier.padding(top = 2.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        buildAnnotatedString {
+                            withStyle(style = SpanStyle(fontWeight = FontWeight.SemiBold)) {
+                                append(post.title)
+                            }
+                            append("\n")
+                            append(post.description)
+                        },
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    if (post.hashtags.isNotEmpty()) {
+                        Spacer(Modifier.height(4.dp))
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            post.hashtags.forEach {
+                                Text(
+                                    text = "#$it",
+                                    color = MaterialTheme.colorScheme.primary,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.clickable { }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // --- Barra de Acciones (Estilo X) ---
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp),
+                    // AQUÍ ESTÁ EL CAMBIO:
+                    horizontalArrangement = Arrangement.End, // Alineados al final
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val defaultTint = MaterialTheme.colorScheme.onSurfaceVariant
+
+                    // 1. Comentarios
+                    PostActionItem(
+                        icon = Icons.AutoMirrored.Outlined.Comment,
+                        text = post.comments.size.toString(),
+                        onClick = onCommentClicked,
+                        enabled = true
+                    )
+
+                    Spacer(Modifier.width(24.dp)) // <-- Spacer fijo
+
+                    // 2. Clonar (en lugar de Retweet)
+                    if (post.idProject.isNotBlank()) {
+                        val isCloneEnabled = !isAlreadyCloned && !isMyPost
+                        val (cloneIcon, cloneTint) = if (isAlreadyCloned) {
+                            Icons.Default.Check to MaterialTheme.colorScheme.primary
+                        } else {
+                            Icons.Default.ContentCopy to defaultTint
+                        }
+
+                        PostActionItem(
+                            icon = cloneIcon,
+                            text = "",
+                            onClick = onCloneClicked,
+                            enabled = isCloneEnabled
+                        )
+
+                        Spacer(Modifier.width(24.dp)) // <-- Spacer fijo
+                    }
+
+                    // 3. Like
+                    val (likeIcon, likeTint) = if (post.likes > 0) {
+                        Icons.Filled.Favorite to Color.Red
+                    } else {
+                        Icons.Outlined.Favorite to defaultTint
+                    }
+                    PostActionItem(
+                        icon = likeIcon,
+                        text = post.likes.toString(),
+                        onClick = onLikeClicked,
+                        enabled = true
+                    )
+
+                    Spacer(Modifier.width(24.dp)) // <-- Spacer fijo
+
+                    // 4. Icono de Share (placeholder)
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = "Compartir",
+                        tint = defaultTint,
+                        modifier = Modifier
+                            .size(18.dp)
+                            .clickable { /* Lógica para compartir */ }
+                    )
                 }
             }
         }
+
+        // Divisor entre posts
+        Divider(
+            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
+            thickness = 1.dp,
+            modifier = Modifier.padding(top = 4.dp)
+        )
     }
 }
