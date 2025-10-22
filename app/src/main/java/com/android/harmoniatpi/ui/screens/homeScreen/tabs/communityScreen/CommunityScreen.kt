@@ -35,6 +35,10 @@ import com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.compon
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.components.PostCard
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.viewmodel.CommunityViewModel
 import kotlinx.coroutines.launch
+import android.widget.Toast
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.flow.collect
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,6 +51,16 @@ fun CommunityScreen(
     val uiState by viewModel.uiState.collectAsState()
     val modalBottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var selectedPostForComments by remember { mutableStateOf<Post?>(null) }
+
+    // 1. Obtenemos el contexto actual
+    val context = LocalContext.current
+
+    // 2. Escuchamos el flow de eventos del ViewModel
+    LaunchedEffect(key1 = true) {
+        viewModel.toastEvents.collect { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        }
+    }
 
     BackHandler {
         if (drawerState.isOpen) {
@@ -61,9 +75,11 @@ fun CommunityScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
-                .padding(horizontal = 16.dp)
+            // Quitamos el padding horizontal de aquí
         ) {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Quitamos el verticalArrangement y el padding
+            // PostCard ahora gestiona su propio espaciado y divisores.
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(uiState.posts) { post ->
 
                     val projectData = uiState.localProjects.find {
@@ -126,7 +142,6 @@ fun CommunityScreen(
         }
     }
 }
-
 
 
 
