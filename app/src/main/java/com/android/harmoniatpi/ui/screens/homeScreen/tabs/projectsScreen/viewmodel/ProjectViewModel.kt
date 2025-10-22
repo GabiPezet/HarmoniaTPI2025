@@ -1,5 +1,10 @@
 package com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.viewmodel
 
+import android.content.Context
+import android.media.AudioAttributes
+import android.media.MediaPlayer
+import android.util.Log
+import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.harmoniatpi.domain.cache.HoloJamCache
@@ -8,41 +13,68 @@ import com.android.harmoniatpi.domain.model.userPreferences.Post
 
 import com.android.harmoniatpi.domain.usecases.GetProjectByIdUseCase
 import com.android.harmoniatpi.domain.usecases.GetProjectsByUserUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.ExportProjectUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.MixTracksUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.OnPreviewCompletedUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.PlayPreviewUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.StopPreviewUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.InsertNewPostFirebaseDataBaseUseCase
 import com.android.harmoniatpi.domain.usecases.roomUseCases.DeleteProjectByIdFromDBUseCase
 import com.android.harmoniatpi.domain.usecases.roomUseCases.GetAllProjectsFromDBUseCase
+import com.android.harmoniatpi.domain.usecases.roomUseCases.GetProjectByIdFromDBUseCase
 import com.android.harmoniatpi.domain.usecases.roomUseCases.UpdateOrInsertProjectInDBUseCase
 
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.model.ProjectTab
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.model.ProjectUiState
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.SharedMenuUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.FileInputStream
+import java.io.IOException
 import java.time.LocalDateTime
 import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
 class ProjectViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val getAllProjectsFromDBUseCase: GetAllProjectsFromDBUseCase,
     private val getProjectsByUserUseCase: GetProjectsByUserUseCase,
     private val getProjectByIdUseCase: GetProjectByIdUseCase,
     private val insertProjectInDBUseCase: UpdateOrInsertProjectInDBUseCase,
     private val deleteProjectByIdFromDBUseCase: DeleteProjectByIdFromDBUseCase,
     private val insertNewPostFirebaseDataBaseUseCase: InsertNewPostFirebaseDataBaseUseCase, //para crear el post
+    private val exportProjectUseCase: ExportProjectUseCase,
+    private val getProjectByIdFromDBUseCase: GetProjectByIdFromDBUseCase,
+    private val playPreviewUseCase: PlayPreviewUseCase,
+    private val stopPreviewUseCase: StopPreviewUseCase,
+    private val onPreviewCompletedUseCase: OnPreviewCompletedUseCase,
+    private val mixTracksUseCase: MixTracksUseCase,
     internal val sharedMenuUiState: SharedMenuUiState,
     private val holoJamCache: HoloJamCache
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProjectUiState())
     val uiState = _uiState.asStateFlow()
+    private var previewMixJob: Job? = null
+
 
     init {
         loadMyProjects()
         loadCollabProjects()
+        listenForPreviewCompletion()
     }
 
     // --- Cargar todos los proyectos de la base de datos
@@ -235,44 +267,76 @@ class ProjectViewModel @Inject constructor(
     }
 
     fun publishProject(project: Project) {
+        if (project.isPublished) {
+            Toast.makeText(context, "Este proyecto ya está publicado.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        // Considerar isPublishing para UiState
+        // _uiState.update { it.copy(isPublishing = true, currentlyPublishingId = project.id) }
+
         viewModelScope.launch {
+            withContext(Dispatchers.Main) { Toast.makeText(context, "Preparando publicación...", Toast.LENGTH_SHORT).show() }
+            var mixedMp3File: File? = null
+            var individualMp3Files: List<File> = emptyList()
+
             try {
-                // 1. Marca el proyecto local como "publicado"
-                val publishedProject = project.copy(isPublished = true)
-                insertProjectInDBUseCase(publishedProject)
+                Log.d("ProjectViewModel", "Iniciando generación de MP3 para publicación de ${project.id}...")
+                val updatedProject = getProjectByIdFromDBUseCase(project.id)
+                val trackPaths = updatedProject.urlAudioTracks.map { it.path }
 
-                // (Simulación futura) Aquí es donde subirías el audio a Storage
-                // val fullAudioUrl = uploadAudioToStorage(project.urlCompleteAudio)
-                // val tracksUrls = uploadTracksToStorage(project.urlAudioTracks)
-                val simulatedAudioUrl = "simulated_audio_url_for_${project.id}.mp3"
+                if (trackPaths.isEmpty()) throw IOException("El proyecto no tiene audio para publicar.")
 
-                // 2. Crea el 'Post' para la comunidad
-                val post = Post(
-                    id = System.currentTimeMillis().toString(),
-                    userID = project.ownerId,
-                    userImagePathURL = sharedMenuUiState.uiState.value.userPhotoPathRemote,
-                    title = project.title,
-                    description = project.description,
-                    name = project.name,
-                    lasName = project.lastName,
-                    hashtags = project.hashtags,
-                    idProject = project.id, // ENLACE CLAVE
-                    urlCompleteAudio = simulatedAudioUrl, //Audio para el reproductor
-                    urlAudioTracks = emptyList(), // (O las URLs reales si ya las tuvieras)
-                    imageUrl = "", // Podemos añadir una imagen del proyecto si queremos.
-                    createdAt = LocalDateTime.now().toString(),
-                    clonedOption = true // Indica que este post se puede clonar
+                val exportResult = exportProjectUseCase(project.id, trackPaths).getOrThrow()
+                mixedMp3File = exportResult.mixedMp3
+                individualMp3Files = exportResult.individualMp3s // Guarda las individuales
+                Log.i("ProjectViewModel", "MP3 generados localmente en: ${mixedMp3File?.parent ?: "N/A"}")
+
+                val mainMp3ToUse = mixedMp3File ?: exportResult.individualMp3s.firstOrNull()
+                if (mainMp3ToUse == null) throw IOException("No se pudo generar el archivo MP3 principal.")
+
+                var finalAudioUrl = ""
+
+                Log.d("ProjectViewModel", "-> PASO PENDIENTE: Subir ${mainMp3ToUse.name} a Firebase Storage.")
+                // aca iria el codigo real para la subida a storage
+                withContext(Dispatchers.Main){ Toast.makeText(context, "Subiendo audio...", Toast.LENGTH_SHORT).show() } // Feedback
+                delay(2000)
+                finalAudioUrl = "https://firebasestorage.googleapis.com/v0/b/your-bucket/o/project_audio%2F${project.id}%2F${mainMp3ToUse.name}?alt=media" // URL simulada
+                Log.d("ProjectViewModel", "URL (simulada) obtenida: $finalAudioUrl")
+                // Manejo errores aca
+
+
+                val publishedProject = updatedProject.copy(
+                    isPublished = true,
+                    // publishedAudioUrl = finalAudioUrl // Guardar URL
                 )
+                insertProjectInDBUseCase(publishedProject)
+                Log.d("ProjectViewModel", "Proyecto ${project.id} marcado como publicado localmente.")
 
-                // 3. Inserta el Post en la base de datos remota (Firebase)
+                // Crear Post en Firebase Realtime DB
+                val post = Post(
+                    id = System.currentTimeMillis().toString(), userID = project.ownerId,
+                    userImagePathURL = sharedMenuUiState.uiState.value.userPhotoPathRemote,
+                    title = project.title, description = project.description, name = project.name,
+                    lasName = project.lastName, hashtags = project.hashtags, idProject = project.id,
+                    urlCompleteAudio = finalAudioUrl,
+                    urlAudioTracks = emptyList(),
+                    imageUrl = "", createdAt = LocalDateTime.now().toString(), clonedOption = true
+                )
                 insertNewPostFirebaseDataBaseUseCase(post)
+                Log.i("ProjectViewModel", "Post creado en Firebase Realtime DB para ${project.id}")
+                if (_uiState.value.tabSelected == ProjectTab.MY_PROJECTS) loadMyProjects() else loadCollabProjects()
+
+                withContext(Dispatchers.Main) { Toast.makeText(context, "¡Proyecto publicado!", Toast.LENGTH_LONG).show() }
 
             } catch (e: Exception) {
-                // Manejar error de publicación
+                Log.e("ProjectViewModel", "Error publicando proyecto ${project.id}", e)
+                withContext(Dispatchers.Main) { Toast.makeText(context, "Error al publicar: ${e.localizedMessage}", Toast.LENGTH_LONG).show() }
+            } finally {
+                // Quitar estado de carga
+                // _uiState.update { it.copy(isPublishing = false, currentlyPublishingId = null) }
             }
         }
     }
-
 
     // --- Validación del formulario
     private fun validateForm() {
@@ -290,11 +354,8 @@ class ProjectViewModel @Inject constructor(
 
     fun onTabSelected(tab: ProjectTab) {
         _uiState.update { it.copy(tabSelected = tab) }
-        if (tab == ProjectTab.MY_PROJECTS) {
-            loadMyProjects()
-        } else {
-            loadCollabProjects() // Llamamos a la nueva función filtrada
-        }
+        stopPlayback()
+        if (tab == ProjectTab.MY_PROJECTS) loadMyProjects() else loadCollabProjects()
     }
 
     fun setCurrentProject(project: Project) {
@@ -302,22 +363,111 @@ class ProjectViewModel @Inject constructor(
     }
 
     fun togglePlayPause(project: Project) {
-        _uiState.update { currentState ->
-            // Si ya se estaba reproduciendo este proyecto, lo detenemos (null)
-            if (currentState.currentlyPlayingProject?.id == project.id) {
-                currentState.copy(currentlyPlayingProject = null)
-            }
-            // Si no, empezamos a reproducir este
-            else {
-                currentState.copy(currentlyPlayingProject = project)
-            }
+        val currentlyPlayingId = _uiState.value.currentlyPlayingProject?.id
+        val requestedId = project.id
+
+        stopPlayback() // Detiene y limpia siempre
+        previewMixJob?.cancel()
+
+        if (currentlyPlayingId != requestedId) {
+            _uiState.update { it.copy(currentlyPlayingProject = project, isPreviewLoading = true) }
+            startPreviewPlayback(project)
         }
-        // TODO: Aquí interactuaríamos con nuestro servicio/clase de reproducción real
     }
 
-    // Para detener la reproducción (ej. desde el mini-player)
-    fun stopPlayback() {
-        _uiState.update { it.copy(currentlyPlayingProject = null) }
-        // TODO: Detener la reproducción real
+    private fun startPreviewPlayback(project: Project) {
+        previewMixJob = viewModelScope.launch(Dispatchers.IO) {
+            val trackPaths = project.urlAudioTracks.map { it.path }
+            if (trackPaths.isEmpty()) {
+                Log.w("ProjectViewModel", "Proyecto ${project.id} sin pistas para preview.")
+                withContext(Dispatchers.Main){ Toast.makeText(context, "El proyecto no tiene pistas.", Toast.LENGTH_SHORT).show()}
+                resetPlaybackState()
+                return@launch
+            }
+
+            val previewMixFileName = "preview_${project.id}_mix.pcm"
+            val mixedPcmFile = File(context.cacheDir, previewMixFileName)
+
+            try {
+
+                if (!mixedPcmFile.exists() || trackPaths.size > 1) {
+                    Log.d("ProjectViewModel", "Mezclando/Copiando para preview de ${project.id}...")
+                    val sourceFile = if(trackPaths.size > 1) {
+                        mixTracksUseCase(project.id, trackPaths)
+                    } else {
+                        File(trackPaths.first())
+                    }
+
+                    if (sourceFile == null || !sourceFile.exists()) {
+                        throw IOException("Fallo al obtener archivo fuente para preview.")
+                    }
+                    sourceFile.copyTo(mixedPcmFile, overwrite = true)
+                    Log.d("ProjectViewModel", "PCM para preview listo en caché: ${mixedPcmFile.absolutePath}")
+
+                    if(trackPaths.size > 1 && sourceFile.absolutePath != mixedPcmFile.absolutePath) sourceFile.delete()
+
+                } else {
+                    Log.d("ProjectViewModel", "Usando PCM de preview existente en caché: ${mixedPcmFile.absolutePath}")
+                }
+
+
+                if (!isActive) return@launch
+
+                _uiState.update { it.copy(isPreviewLoading = false) }
+                playPreviewUseCase(mixedPcmFile.absolutePath)
+                    .onFailure { error ->
+                        Log.e("ProjectViewModel", "Error al iniciar preview desde UseCase", error)
+                        withContext(Dispatchers.Main){Toast.makeText(context, "Error al reproducir preview.", Toast.LENGTH_SHORT).show()}
+                        resetPlaybackState()
+                    }
+
+            } catch (e: Exception) {
+                Log.e("ProjectViewModel", "Error preparando preview (mezcla/copia)", e)
+                withContext(Dispatchers.Main){ Toast.makeText(context, "Error al preparar preview.", Toast.LENGTH_SHORT).show()}
+                resetPlaybackState()
+            }
+        }
     }
+
+    fun stopPlayback() {
+        previewMixJob?.cancel()
+        previewMixJob = null
+        stopPreviewUseCase()
+        if (_uiState.value.currentlyPlayingProject != null || _uiState.value.isPreviewLoading) {
+            resetPlaybackState()
+        }
+    }
+
+    private fun resetPlaybackState() {
+        // Solo actualiza si realmente hay algo que resetear, evita updates innecesarios
+        if(_uiState.value.currentlyPlayingProject != null || _uiState.value.isPreviewLoading){
+            Log.d("ProjectViewModel", "Reseteando estado de playback.")
+            _uiState.update { it.copy(currentlyPlayingProject = null, isPreviewLoading = false) }
+        }
+    }
+    private fun listenForPreviewCompletion() {
+        onPreviewCompletedUseCase()
+            .onEach {
+                Log.d("ProjectViewModel", "Preview completion event received.")
+
+                withContext(Dispatchers.Main.immediate) {
+                    if (_uiState.value.currentlyPlayingProject != null){
+                        resetPlaybackState()
+                    }
+                }
+            }
+            .launchIn(viewModelScope)
+    }
+
+
+
+
+    override fun onCleared() {
+        super.onCleared()
+        stopPlayback()
+        Log.d("ProjectViewModel", "ViewModel cleared.")
+    }
+
+
+
 }

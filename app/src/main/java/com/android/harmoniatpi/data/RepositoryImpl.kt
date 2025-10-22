@@ -20,6 +20,7 @@ import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.Query
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
@@ -175,7 +176,7 @@ class RepositoryImpl @Inject constructor(
                     firebasePost?.toDomain(jsonUtils)
                 }
 
-                trySend(posts)
+                trySend(posts.reversed())
 
                 // Sincronizar Room en segundo plano
                 launch(Dispatchers.IO) {
@@ -217,8 +218,9 @@ class RepositoryImpl @Inject constructor(
         }
 
         val postsRef = database.reference.child("posts")
-        postsRef.addValueEventListener(listener)
-        awaitClose { postsRef.removeEventListener(listener) }
+        val query: Query = postsRef.orderByChild("createdAt")
+        query.addValueEventListener(listener)
+        awaitClose { query.removeEventListener(listener) }
     }
 
     override suspend fun insertPostRealTimeDB(post: Post) {

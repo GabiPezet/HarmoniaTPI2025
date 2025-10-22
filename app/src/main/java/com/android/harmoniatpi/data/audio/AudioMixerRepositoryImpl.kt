@@ -18,8 +18,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
@@ -41,6 +44,7 @@ class AudioMixerRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     private val trackFactory: TrackFactory,
     private val audioConverter: AudioConverter,
+    private val pcmAudioPlayerProvider: javax.inject.Provider<PcmAudioPlayer>
 ) : AudioMixerRepository {
     /**
      * Lista de pistas disponibles
@@ -63,6 +67,8 @@ class AudioMixerRepositoryImpl @Inject constructor(
     private val playerList: List<PcmAudioPlayer>
         get() = tracks.value.map { it.player as PcmAudioPlayer }
 
+    private var previewPlayer: PcmAudioPlayer? = null
+    private val _previewCompletedFlow = MutableSharedFlow<Unit>(replay = 0)
 
     override fun play(excludeTrackId: Long?) {
 
@@ -400,6 +406,66 @@ class AudioMixerRepositoryImpl @Inject constructor(
         tracks.update { it + track }
         Log.i(TAG, "Track restored from PCM: ${file.name} with path ${track.path}")
     }
+
+
+    override fun playPreview(filePath: String): Result<Unit> {
+        stopPreviewInternal()
+        if (masterPlaybackJob?.isActive == true || tracks.value.any { (it.player as PcmAudioPlayer).audioTrack.playState == AudioTrack.PLAYSTATE_PLAYING }) {
+            pause()
+        }
+
+        return try {
+            Log.d(TAG, "Iniciando playPreview para: $filePath")
+            val player = pcmAudioPlayerProvider.get()
+            previewPlayer = player
+
+            player.setFile(filePath)
+            player.setOnPlaybackCompletedCallback {
+                Log.d(TAG, "Preview completado para: $filePath")
+                stopPreviewInternal()
+                CoroutineScope(Dispatchers.Default + SupervisorJob()).launch {
+                    _previewCompletedFlow.emit(Unit)
+                }
+            }
+            val playResult = player.play()
+
+            if (playResult.isSuccess) {
+                Log.d(TAG, "Preview iniciado exitosamente.")
+                Result.success(Unit)
+            } else {
+
+                val exception = playResult.exceptionOrNull() ?: IllegalStateException("Unknown error during player.play()")
+                Log.e(TAG, "Fallo al iniciar previewPlayer.play()", exception)
+                stopPreviewInternal()
+                Result.failure(exception)
+            }
+
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Error en playPreview (catch block)", e)
+            stopPreviewInternal()
+            Result.failure(e)
+        }
+    }
+
+    override fun stopPreview() {
+        stopPreviewInternal()
+    }
+
+    private fun stopPreviewInternal() {
+        previewPlayer?.let {
+            Log.d(TAG, "Deteniendo y liberando preview player...")
+            it.stop()
+            it.release()
+            previewPlayer = null
+            Log.d(TAG, "Preview player liberado.")
+        }
+    }
+
+    override fun onPreviewCompleted(): SharedFlow<Unit> = _previewCompletedFlow.asSharedFlow()
+
+
+
 
     override fun clearAllTracks() {
         tracks.update { emptyList() }

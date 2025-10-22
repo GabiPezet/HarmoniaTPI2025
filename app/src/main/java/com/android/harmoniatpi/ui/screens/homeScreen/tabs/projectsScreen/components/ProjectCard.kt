@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Publish
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -55,10 +56,11 @@ fun ProjectCard(
     onNavigateToManagement: () -> Unit,
     onTogglePlayPause: () -> Unit,
     isCurrentlyPlaying: Boolean,
+    isPreviewLoading: Boolean,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
     onPublishClick: () -> Unit,
-    onNavigateToVersions: () -> Unit
+    onNavigateToVersions: () -> Unit,
 ) {
     var showMenu by remember { mutableStateOf(false) }
     val isMyProject = project.ownerId == currentUserId
@@ -106,11 +108,31 @@ fun ProjectCard(
                             .fillMaxSize()
                     )
                     // Icono de Play/Pause
-                    Icon(
-                        imageVector = if (isCurrentlyPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                        contentDescription = if (isCurrentlyPlaying) "Pausar" else "Reproducir",
-                        modifier = Modifier.size(40.dp),
-                    )
+                    when {
+                        isPreviewLoading -> {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(32.dp),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                strokeWidth = 2.dp
+                            )
+                        }
+                        isCurrentlyPlaying -> {
+                            Icon(
+                                imageVector = Icons.Default.Pause,
+                                contentDescription = "Pausar",
+                                modifier = Modifier.size(32.dp), // Icono un poco más pequeño
+                                tint = MaterialTheme.colorScheme.onPrimary // Color blanco sobre overlay
+                            )
+                        }
+                        else -> {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = "Reproducir",
+                                modifier = Modifier.size(32.dp),
+                                tint = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                    }
                 }
 
                 Spacer(Modifier.width(16.dp))
