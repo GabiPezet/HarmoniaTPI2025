@@ -3,6 +3,7 @@ package com.android.harmoniatpi.ui.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material.icons.filled.Pause
@@ -12,6 +13,7 @@ import androidx.compose.material.icons.filled.Stop
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 
 @Composable
 fun ProyectControlButtonRow(
@@ -25,7 +27,7 @@ fun ProyectControlButtonRow(
     modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().padding(vertical = 16.dp),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
 

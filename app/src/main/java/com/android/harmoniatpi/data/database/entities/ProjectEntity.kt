@@ -11,6 +11,7 @@ import com.android.harmoniatpi.domain.model.userPreferences.Comment
 data class ProjectEntity(
     @PrimaryKey
     val id: String,
+    val ownerId: String,
     val name: String,
     val lastName: String,
     val title: String,
@@ -23,10 +24,14 @@ data class ProjectEntity(
     val comments: String,
     val urlCompleteAudio: String?,
     val urlAudioTracks: String,
-    val hashtags: String
+    val hashtags: String,
+    val forkedByUserIds: String,
+    val originalProjectId: String? = null,
+    val isPublished: Boolean
 ) {
     fun toDomain(jsonUtils: JsonUtils) = Project(
         id = id,
+        ownerId = ownerId,
         name = name,
         lastName = lastName,
         title = title,
@@ -41,6 +46,9 @@ data class ProjectEntity(
             urlCompleteAudio
         ),
         urlAudioTracks = jsonUtils.decodeJsonToListObject<AudioTrack>(urlAudioTracks),
-        hashtags = jsonUtils.decodeJsonToListObject<String>(hashtags)
+        hashtags = jsonUtils.decodeJsonToListObject<String>(hashtags),
+        forkedByUserIds = jsonUtils.decodeJsonToListObject<String>(forkedByUserIds),
+        originalProjectId = originalProjectId,
+        isPublished = isPublished
     )
 }

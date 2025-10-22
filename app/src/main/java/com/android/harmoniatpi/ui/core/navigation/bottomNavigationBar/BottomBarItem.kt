@@ -36,13 +36,13 @@ sealed class BottomBarItem {
         override val route: BottomBarRoutes
             get() = BottomBarRoutes.RehearsalRoomRoute
         override val titleRes: String
-            get() = "Proyectos"
+            get() = "Mi estudio"
         override val icon: @Composable () -> Unit
             get() = {
                 Icon(
                     painter = painterResource(R.drawable.ic_harmonyicon),
                     contentDescription = null,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(26.dp)
                 )
             }
     }

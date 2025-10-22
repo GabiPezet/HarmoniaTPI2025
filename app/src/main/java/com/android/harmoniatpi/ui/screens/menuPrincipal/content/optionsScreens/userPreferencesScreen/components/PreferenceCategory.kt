@@ -1,6 +1,5 @@
 package com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userPreferencesScreen.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -18,12 +17,10 @@ fun PreferenceCategory(
     Column(
         modifier = Modifier
             .padding(horizontal = 16.dp, vertical = 16.dp)
-            .background(MaterialTheme.colorScheme.secondaryContainer)
     ) {
         Text(
             text = title,
-            color = MaterialTheme.colorScheme.secondary,
-            style = MaterialTheme.typography.bodyLarge,
+            style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
         )
         content()

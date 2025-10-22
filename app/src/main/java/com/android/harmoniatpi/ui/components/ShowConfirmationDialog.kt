@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -50,12 +51,11 @@ fun ShowConfirmationDialog(
 
     if (show) {
         AlertDialog(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer,
             onDismissRequest = onDismiss,
             modifier = Modifier
                 .border(
                     width = 1.dp,
-                    color = MaterialTheme.colorScheme.secondary,
+                    color = MaterialTheme.colorScheme.outlineVariant,
                     shape = MaterialTheme.shapes.extraLarge
                 ),
             shape = MaterialTheme.shapes.extraLarge,
@@ -80,7 +80,7 @@ fun ShowConfirmationDialog(
             },
             dismissButton = {
 
-                Button(
+                OutlinedButton(
                     onClick = onDismiss,
                     shape = MaterialTheme.shapes.small,
                 ) {
