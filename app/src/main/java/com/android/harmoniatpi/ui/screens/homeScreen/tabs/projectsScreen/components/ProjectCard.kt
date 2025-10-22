@@ -77,153 +77,160 @@ fun TrackItemCard(
     val forksByOthers = project.forkedByUserIds.filter { it != project.ownerId }
     val hasBeenForkedByOthers = forksByOthers.isNotEmpty()
 
-    Column( // Usamos Column para poder añadir ForkedByUsersRow debajo
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            // ✨ CAMBIO: El clickable principal ahora navega a Management
-            .clickable { onNavigateToManagement() }
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(4.dp)
+            // ✨ CAMBIO: El clickable ahora está en el Card
+            .clickable { onNavigateToManagement() },
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp), // Añade elevación
+        shape = RoundedCornerShape(8.dp) // Esquinas redondeadas
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column( // Mantenemos la Column para ForkedByUsersRow
+            modifier = Modifier.padding(vertical = 8.dp) // Padding vertical interno
         ) {
-            // 1. Imagen del "Track" con Overlay de Play/Pause
-            Box(
+            Row(
                 modifier = Modifier
-                    .size(72.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .clickable { onTogglePlayPause() }, // El clic en la imagen/botón controla play/pause
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    // ✨ CAMBIO: Padding horizontal DENTRO del Card
+                    .padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Image(
-                    painter = rememberAsyncImagePainter(
-                        // TODO: Usar una imagen real del proyecto si existe
-                        model = "https://picsum.photos/seed/${project.id}/200/200"
-                    ),
-                    contentDescription = project.title,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-                // Overlay semitransparente
+                // 1. Imagen del "Track" con Overlay de Play/Pause
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                )
-                // Icono de Play/Pause
-                Icon(
-                    imageVector = if (isCurrentlyPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                    contentDescription = if (isCurrentlyPlaying) "Pausar" else "Reproducir",
-                    modifier = Modifier.size(40.dp)
-                )
-            }
-
-            Spacer(Modifier.width(16.dp))
-
-            // 2. Información (Título, Autor)
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = project.title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1
-                )
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    text = "${project.name} ${project.lastName}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1
-                )
-            }
-
-            Spacer(Modifier.width(12.dp))
-
-            // 3. Duración (Real)
-            Text(
-                // 🟢 CAMBIO: Usa la duración real formateada
-                text = formatDuration(project.duration),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            // 4. Botón de "Más Opciones" (se queda igual)
-            Box {
-                IconButton(onClick = { showMenu = true }) {
+                        .size(72.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .clickable { onTogglePlayPause() }, // El clic en la imagen/botón controla play/pause
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = rememberAsyncImagePainter(
+                            // TODO: Usar una imagen real del proyecto si existe
+                            model = "https://picsum.photos/seed/${project.id}/200/200"
+                        ),
+                        contentDescription = project.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    // Overlay semitransparente
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                    )
+                    // Icono de Play/Pause
                     Icon(
-                        Icons.Default.MoreVert,
-                        contentDescription = "Más opciones"
+                        imageVector = if (isCurrentlyPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        contentDescription = if (isCurrentlyPlaying) "Pausar" else "Reproducir",
+                        modifier = Modifier.size(40.dp)
                     )
                 }
 
-                DropdownMenu(
-                    expanded = showMenu,
-                    onDismissRequest = { showMenu = false }
+                Spacer(Modifier.width(16.dp))
+
+                // 2. Información (Título, Autor)
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    // --- Opciones Comunes ---
-                    DropdownMenuItem(
-                        text = { Text("Compartir") },
-                        onClick = { /* TODO */; showMenu = false },
-                        leadingIcon = { Icon(Icons.Default.Share, null) }
+                    Text(
+                        text = project.title,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1
                     )
-
-                    // --- Opciones Condicionales ---
-
-                    // Opción: Publicar (Solo para mis proyectos originales NO publicados)
-                    if (isMyProject && project.originalProjectId == null && !project.isPublished && selectedTab == ProjectTab.MY_PROJECTS) {
-                        DropdownMenuItem(
-                            text = { Text("Publicar") },
-                            onClick = { onPublishClick(); showMenu = false },
-                            leadingIcon = { Icon(Icons.Default.Publish, null) }
-                        )
-                    }
-
-                    // Opción: Ver Versiones (Solo para mis proyectos originales publicados Y con forks)
-                    if (isMyProject && project.originalProjectId == null && project.isPublished && hasBeenForkedByOthers && selectedTab == ProjectTab.MY_PROJECTS) {
-                        DropdownMenuItem(
-                            text = { Text("Ver Versiones") },
-                            onClick = { onNavigateToVersions(); showMenu = false },
-                            leadingIcon = { Icon(Icons.Default.LibraryMusic, null) }
-                        )
-                    }
-
-                    // Opción: Editar (Solo para mis proyectos o mis clones)
-                    if (isMyProject) { // Esto incluye originales y clones
-                        DropdownMenuItem(
-                            text = { Text("Editar") },
-                            onClick = { onEditClick(); showMenu = false },
-                            leadingIcon = { Icon(Icons.Default.Edit, null) }
-                        )
-                    }
-
-                    // Opción: Borrar (Para mis originales en mi pestaña O mis clones en collab)
-                    val canDelete =
-                        (isMyProject && project.originalProjectId == null && selectedTab == ProjectTab.MY_PROJECTS) ||
-                                (isMyClone && selectedTab == ProjectTab.COLLABS)
-                    if (canDelete) {
-                        DropdownMenuItem(
-                            text = { Text("Eliminar") },
-                            onClick = { onDeleteClick(); showMenu = false },
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Default.Delete,
-                                    null,
-                                    tint = MaterialTheme.colorScheme.error
-                                )
-                            }
-                        )
-                    }
-
-                    DropdownMenuItem(
-                        text = { Text("Reportar") },
-                        onClick = { /* TODO */; showMenu = false },
-                        leadingIcon = { Icon(Icons.Default.Flag, null) }
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = "${project.name} ${project.lastName}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1
                     )
+                }
+
+                Spacer(Modifier.width(12.dp))
+
+                // 3. Duración (Real)
+                Text(
+                    // 🟢 CAMBIO: Usa la duración real formateada
+                    text = formatDuration(project.duration),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                // 4. Botón de "Más Opciones" (se queda igual)
+                Box {
+                    IconButton(onClick = { showMenu = true }) {
+                        Icon(
+                            Icons.Default.MoreVert,
+                            contentDescription = "Más opciones"
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false }
+                    ) {
+                        // --- Opciones Comunes ---
+                        DropdownMenuItem(
+                            text = { Text("Compartir") },
+                            onClick = { /* TODO */; showMenu = false },
+                            leadingIcon = { Icon(Icons.Default.Share, null) }
+                        )
+
+                        // --- Opciones Condicionales ---
+
+                        // Opción: Publicar (Solo para mis proyectos originales NO publicados)
+                        if (isMyProject && project.originalProjectId == null && !project.isPublished && selectedTab == ProjectTab.MY_PROJECTS) {
+                            DropdownMenuItem(
+                                text = { Text("Publicar") },
+                                onClick = { onPublishClick(); showMenu = false },
+                                leadingIcon = { Icon(Icons.Default.Publish, null) }
+                            )
+                        }
+
+                        // Opción: Ver Versiones (Solo para mis proyectos originales publicados Y con forks)
+                        if (isMyProject && project.originalProjectId == null && project.isPublished && hasBeenForkedByOthers && selectedTab == ProjectTab.MY_PROJECTS) {
+                            DropdownMenuItem(
+                                text = { Text("Ver Versiones") },
+                                onClick = { onNavigateToVersions(); showMenu = false },
+                                leadingIcon = { Icon(Icons.Default.LibraryMusic, null) }
+                            )
+                        }
+
+                        // Opción: Editar (Solo para mis proyectos o mis clones)
+                        if (isMyProject) { // Esto incluye originales y clones
+                            DropdownMenuItem(
+                                text = { Text("Editar") },
+                                onClick = { onEditClick(); showMenu = false },
+                                leadingIcon = { Icon(Icons.Default.Edit, null) }
+                            )
+                        }
+
+                        // Opción: Borrar (Para mis originales en mi pestaña O mis clones en collab)
+                        val canDelete =
+                            (isMyProject && project.originalProjectId == null && selectedTab == ProjectTab.MY_PROJECTS) ||
+                                    (isMyClone && selectedTab == ProjectTab.COLLABS)
+                        if (canDelete) {
+                            DropdownMenuItem(
+                                text = { Text("Eliminar") },
+                                onClick = { onDeleteClick(); showMenu = false },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        null,
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                }
+                            )
+                        }
+
+                        DropdownMenuItem(
+                            text = { Text("Reportar") },
+                            onClick = { /* TODO */; showMenu = false },
+                            leadingIcon = { Icon(Icons.Default.Flag, null) }
+                        )
+                    }
                 }
             }
         }

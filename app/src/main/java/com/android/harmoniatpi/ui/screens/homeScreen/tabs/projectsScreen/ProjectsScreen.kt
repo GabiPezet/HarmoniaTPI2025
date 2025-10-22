@@ -3,7 +3,9 @@ package com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -54,7 +56,8 @@ fun ProjectsScreen(
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             // 🟢 CAMBIO: Usa el padding dinámico
-            contentPadding = PaddingValues(bottom = bottomPadding)
+            contentPadding = PaddingValues(
+                bottom = bottomPadding + 80.dp) // 80.dp aprox para FAB + margen
         ) {
             item {
                 UserProfileHeader(
@@ -87,12 +90,13 @@ fun ProjectsScreen(
             } else {
                 items(listToShow) { project ->
                     val isCurrentlyPlaying = uiState.currentlyPlayingProject?.id == project.id
+                    Spacer(modifier = Modifier.height(8.dp))
                     TrackItemCard(
                         project = project,
                         currentUserId = sharedState.userID,
                         selectedTab = uiState.tabSelected,
                         onNavigateToManagement = {
-                            viewModel.prepareProjectForManagement(project) // Prepara el proyecto en el ViewModel
+                            viewModel.setCurrentProject(project) // Prepara el proyecto en el ViewModel
                             onNavigateToProjectManagementScreen() // Ejecuta la navegación
                         },
                         onTogglePlayPause = { viewModel.togglePlayPause(project) },
@@ -114,7 +118,7 @@ fun ProjectsScreen(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(16.dp)
-                .padding(bottom = 64.dp) // Lo subimos encima del mini-reproductor
+                .padding(bottom = bottomPadding + 8.dp) // Lo subimos encima del mini-reproductor
         ) {
             Icon(Icons.Default.Add, contentDescription = "Nuevo Proyecto")
         }

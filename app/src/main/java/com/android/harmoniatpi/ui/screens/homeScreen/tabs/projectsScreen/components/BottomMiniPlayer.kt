@@ -74,13 +74,6 @@ fun BottomMiniPlayer(
                 )
             }
 
-            // TODO: Botón de Like real
-            Icon(
-                imageVector = Icons.Default.Favorite,
-                contentDescription = "Like",
-                tint = MaterialTheme.colorScheme.primary
-            )
-
             // 🟢 CAMBIO: Botón para cerrar el mini-reproductor
             IconButton(onClick = onStopClick) {
                 Icon(Icons.Default.Close, contentDescription = "Detener")
