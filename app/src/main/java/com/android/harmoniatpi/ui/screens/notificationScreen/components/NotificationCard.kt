@@ -25,9 +25,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.android.harmoniatpi.ui.core.theme.HoloTheme
 import com.android.harmoniatpi.ui.screens.notificationScreen.model.NotificationHarmonia
 
 @Composable
@@ -58,7 +58,7 @@ fun NotificationCard(
                     Icon(
                         imageVector = Icons.Default.Info,
                         contentDescription = null,
-                        tint = HoloTheme.extendedScheme.holoInfo3.container,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
@@ -79,7 +79,7 @@ fun NotificationCard(
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = "Eliminar notificación",
-                        tint = MaterialTheme.colorScheme.error,
+                        tint = Color.Red.copy(alpha = 0.8f),
                         modifier = Modifier
                             .size(20.dp)
                             .clickable { onDeleteClick(notificationHarmonia) }

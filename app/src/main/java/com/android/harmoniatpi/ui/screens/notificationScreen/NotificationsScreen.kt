@@ -83,6 +83,7 @@ fun NotificationsScreen(
                 isInternetAvailable = uiState.internetAvailable,
             )
         },
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         content = { innerPadding ->
 
             if (uiState.notificationsList.isEmpty()) {
