@@ -21,7 +21,6 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -43,7 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.android.harmoniatpi.domain.model.project.Project
-import com.android.harmoniatpi.ui.components.HarmoniaTextField
+import com.android.harmoniatpi.ui.components.HoloTextField
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.CollabScreen
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.ProjectCard
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.ProjectTabSelector
@@ -79,7 +78,7 @@ fun ProjectsScreen(
                         Text(
                             text = "Todavía no has creado ningún proyecto",
                             style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(top = 32.dp)
                         )
                     } else {
@@ -107,8 +106,6 @@ fun ProjectsScreen(
                 // 🔹 Floating Action Button
                 FloatingActionButton(
                     onClick = { showForm = true },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(24.dp)
@@ -134,7 +131,7 @@ fun ProjectsScreen(
                                     modifier = Modifier.align(Alignment.CenterHorizontally)
                                 )
 
-                                HarmoniaTextField(
+                                HoloTextField(
                                     value = uiState.title,
                                     onValueChange = viewModel::onTitleChange,
                                     label = "Título",
@@ -146,7 +143,7 @@ fun ProjectsScreen(
                                     } else null
                                 )
 
-                                HarmoniaTextField(
+                                HoloTextField(
                                     value = uiState.description,
                                     onValueChange = viewModel::onDescriptionChange,
                                     label = "Descripción",
@@ -154,7 +151,7 @@ fun ProjectsScreen(
                                     leadingIcon = Icons.Default.Description
                                 )
 
-                                HarmoniaTextField(
+                                HoloTextField(
                                     value = uiState.hashtags,
                                     onValueChange = viewModel::onHashtagsChange,
                                     label = "Hashtags",
@@ -166,6 +163,18 @@ fun ProjectsScreen(
                                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
+                                    OutlinedButton(
+                                        onClick = { showForm = false },
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(16.dp)
+                                    ) {
+                                        Text(
+                                            text = "Cancelar",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 16.sp
+                                        )
+                                    }
+
                                     Button(
                                         onClick = {
                                             keyboardController?.hide()
@@ -190,17 +199,11 @@ fun ProjectsScreen(
                                         modifier = Modifier.weight(1f),
                                         shape = RoundedCornerShape(16.dp),
                                         enabled = uiState.isFormValid && !uiState.isLoading,
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = MaterialTheme.colorScheme.primary,
-                                            disabledContainerColor = MaterialTheme.colorScheme.primary.copy(
-                                                alpha = 0.5f
-                                            )
-                                        )
                                     ) {
                                         if (uiState.isLoading) {
                                             CircularProgressIndicator(
                                                 modifier = Modifier.size(24.dp),
-                                                color = MaterialTheme.colorScheme.secondary,
+                                                color = MaterialTheme.colorScheme.onPrimary,
                                                 strokeWidth = 2.dp
                                             )
                                         } else {
@@ -209,27 +212,14 @@ fun ProjectsScreen(
                                                 style = MaterialTheme.typography.bodyMedium.copy(
                                                     fontWeight = FontWeight.Bold, fontSize = 16.sp
                                                 ),
-                                                color = MaterialTheme.colorScheme.secondary
                                             )
                                         }
                                     }
 
-                                    OutlinedButton(
-                                        onClick = { showForm = false },
-                                        modifier = Modifier.weight(1f),
-                                        shape = RoundedCornerShape(16.dp)
-                                    ) {
-                                        Text(
-                                            text = "Cancelar",
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 16.sp
-                                        )
-                                    }
                                 }
                             }
                         },
                         shape = RoundedCornerShape(24.dp),
-                        containerColor = MaterialTheme.colorScheme.surface
                     )
                 }
             }

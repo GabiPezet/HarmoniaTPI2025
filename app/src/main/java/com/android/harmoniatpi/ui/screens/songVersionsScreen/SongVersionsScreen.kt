@@ -39,7 +39,6 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.SliderState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBarColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -170,13 +169,6 @@ fun SongVersionsContent(
                             )
                         }
                     },
-                    colors = TopAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
-                        titleContentColor = MaterialTheme.colorScheme.secondary,
-                        navigationIconContentColor = MaterialTheme.colorScheme.secondary,
-                        actionIconContentColor = MaterialTheme.colorScheme.secondary,
-                        scrolledContainerColor = MaterialTheme.colorScheme.secondaryContainer
-                    ),
                 )
             },
         ) { paddingValues ->
@@ -207,7 +199,8 @@ fun SongVersionsContent(
                             text = "VERSIONES DERIVADAS",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                     }
@@ -223,6 +216,9 @@ fun SongVersionsContent(
                             onSliderChange = onSliderChange,
                             modifier = Modifier.padding(vertical = 4.dp)
                         )
+                    }
+                    item {
+                        Spacer(modifier = Modifier.height(16.dp))
                     }
                 }
             }
@@ -255,12 +251,13 @@ fun SongHeader(song: Song, modifier: Modifier = Modifier) {
             Text(
                 text = song.title,
                 style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 text = song.creator.name,
                 style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
         }
@@ -302,12 +299,12 @@ fun PrincipalSongPlayer(
                 Text(
                     text = song.creator.name,
                     style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
                     text = song.versionType.name,
                     style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             Spacer(modifier = Modifier.width(12.dp))
@@ -324,11 +321,15 @@ fun PrincipalSongPlayer(
                         .border(BorderStroke(2.dp, MaterialTheme.colorScheme.outline), CircleShape),
                     contentScale = ContentScale.Crop
                 )
-                TextButton(onClick = { if (song.projectId != null) onOpenProjectClick() }) {
+                TextButton(
+                    onClick = { if (song.projectId != null) onOpenProjectClick() },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                    )
+                ) {
                     Text(
                         text = "Abrir proyecto",
                         style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onTertiaryContainer,
                         fontWeight = FontWeight.SemiBold,
                         textDecoration = TextDecoration.Underline
                     )
@@ -553,7 +554,6 @@ fun DerivedVersionItem(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(CircleShape)
-                        .background(color = MaterialTheme.colorScheme.surfaceVariant)
                         .border(BorderStroke(2.dp, MaterialTheme.colorScheme.outline), CircleShape),
                     contentScale = ContentScale.Crop
                 )

@@ -72,7 +72,7 @@ fun PostCard(
                     Icon(
                         imageVector = Icons.Default.AccountCircle,
                         contentDescription = "Foto de perfil",
-                        tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(40.dp)
                     )
                 }

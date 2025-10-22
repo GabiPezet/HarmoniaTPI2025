@@ -52,17 +52,13 @@ fun InternetDisableScreen(colorText: Color, modifier: Modifier, tryAgain: () -> 
 
             Text(
                 text = stringResource(R.string.internet_disable_screen_NoInternetMessage),
-                style = MaterialTheme.typography.titleLarge.copy(
-                    color = MaterialTheme.colorScheme.secondary
-                ),
+                style = MaterialTheme.typography.titleLarge,
                 textAlign = TextAlign.Center
             )
 
             Text(
                 text = stringResource(R.string.internet_disable_screen_verifyInternetMessage),
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    color = colorText
-                ),
+                style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
             )
@@ -73,7 +69,7 @@ fun InternetDisableScreen(colorText: Color, modifier: Modifier, tryAgain: () -> 
                 onClick = tryAgain,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = colorText
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
                 ),
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier

@@ -6,9 +6,11 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,7 +28,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Groups
@@ -77,7 +78,7 @@ fun ContentMainMenu(
         modifier = Modifier
             .fillMaxSize()
             .padding(innerPadding)
-            .background(MaterialTheme.colorScheme.secondaryContainer)
+            .background(MaterialTheme.colorScheme.surface)
     ) {
         // Header
         UserProfileCard(
@@ -94,7 +95,7 @@ fun ContentMainMenu(
                 .fillMaxWidth()
                 .padding(bottom = 16.dp),
             thickness = 1.dp,
-            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)
+            color = MaterialTheme.colorScheme.outline
         )
 
         AnimatedContent(
@@ -196,9 +197,9 @@ private fun UserProfileCard(
                 } else
                     if (uiState.userPhotoPath.isBlank()) {
                         Icon(
-                            imageVector = Icons.Default.AccountCircle,
+                            painter = painterResource(id = R.drawable.holojamperfildefaultblackmode),
                             contentDescription = "Foto de perfil",
-                            tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f),
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(80.dp)
                         )
                     } else {
@@ -207,8 +208,9 @@ private fun UserProfileCard(
                             contentDescription = "Foto de perfil",
                             modifier = Modifier
                                 .size(150.dp)
-                                .clip(CircleShape),
-                            contentScale = ContentScale.Crop
+                                .clip(CircleShape)
+                                .border(BorderStroke(2.dp, MaterialTheme.colorScheme.outlineVariant), CircleShape),
+                            contentScale = ContentScale.Crop,
                         )
                     }
 
@@ -220,7 +222,7 @@ private fun UserProfileCard(
                         style = MaterialTheme.typography.bodyLarge.copy(
                             fontWeight = FontWeight.Bold
                         ),
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
@@ -228,7 +230,7 @@ private fun UserProfileCard(
                     Text(
                         text = "Violero",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -242,7 +244,7 @@ private fun UserProfileCard(
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Close Drawer",
-                        tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f)
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer
                     )
                 }
             }
@@ -258,7 +260,7 @@ private fun MenuOptionItem(
     drawable: Int? = null
 ) {
     val iconColor = MaterialTheme.colorScheme.primary
-    val textColor = MaterialTheme.colorScheme.secondary
+    val textColor = MaterialTheme.colorScheme.onBackground
 
     Row(
         modifier = Modifier
