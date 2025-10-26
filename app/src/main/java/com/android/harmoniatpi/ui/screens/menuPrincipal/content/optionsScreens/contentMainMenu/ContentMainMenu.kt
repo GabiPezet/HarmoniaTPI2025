@@ -82,7 +82,7 @@ fun ContentMainMenu(
     ) {
         // Header
         UserProfileCard(
-            userName = uiState.userName.ifEmpty { "Pepe ArgEnTo" },
+            userName = uiState.userName.ifEmpty { "Nombre vacío o error de red." },
             uiState = uiState,
             onCloseDrawer = {
                 drawerViewModel.updateUserPreferences()
