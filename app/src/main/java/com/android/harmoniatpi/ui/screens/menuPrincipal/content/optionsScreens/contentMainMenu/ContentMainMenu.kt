@@ -28,6 +28,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Groups
@@ -197,9 +198,9 @@ private fun UserProfileCard(
                 } else
                     if (uiState.userPhotoPath.isBlank()) {
                         Icon(
-                            painter = painterResource(id = R.drawable.holojamperfildefaultblackmode),
+                            imageVector = Icons.Default.AccountCircle,
                             contentDescription = "Foto de perfil",
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = MaterialTheme.colorScheme.outlineVariant,
                             modifier = Modifier.size(80.dp)
                         )
                     } else {
@@ -207,7 +208,7 @@ private fun UserProfileCard(
                             painter = rememberAsyncImagePainter(uiState.userPhotoPath),
                             contentDescription = "Foto de perfil",
                             modifier = Modifier
-                                .size(150.dp)
+                                .size(100.dp)
                                 .clip(CircleShape)
                                 .border(BorderStroke(2.dp, MaterialTheme.colorScheme.outlineVariant), CircleShape),
                             contentScale = ContentScale.Crop,
@@ -228,7 +229,7 @@ private fun UserProfileCard(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
-                        text = "Violero",
+                        text = uiState.instrument.ifEmpty({ "Completa tu instrumento desde perfil." }),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
