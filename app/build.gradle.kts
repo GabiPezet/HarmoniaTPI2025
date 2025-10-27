@@ -138,4 +138,6 @@ dependencies {
     implementation(libs.googleid)
     //ExoPlayer (reproducción streaming de audio, Soporta múltiples formatos de audio (.mp3, .m4a, .aac, etc.))
     implementation(libs.androidx.media3.exoplayer)
+    //LAME
+    implementation(libs.lame)
 }

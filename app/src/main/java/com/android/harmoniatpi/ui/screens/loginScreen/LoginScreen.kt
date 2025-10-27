@@ -28,8 +28,6 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonColors
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -62,7 +60,7 @@ import androidx.credentials.exceptions.GetCredentialException
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.android.harmoniatpi.R
 import com.android.harmoniatpi.data.local.ext.findActivity
-import com.android.harmoniatpi.ui.components.HarmoniaTextField
+import com.android.harmoniatpi.ui.components.HoloTextField
 import com.android.harmoniatpi.ui.components.InternetDisableScreen
 import com.android.harmoniatpi.ui.components.LoginBackGroundHeader
 import com.android.harmoniatpi.ui.screens.loginScreen.components.PreviewScreen
@@ -83,8 +81,8 @@ fun LoginScreen(
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
-    val username = rememberSaveable { mutableStateOf("klyxdevs@gmail.com") }
-    val password = rememberSaveable { mutableStateOf("123456") }
+    val username = rememberSaveable { mutableStateOf("") }
+    val password = rememberSaveable { mutableStateOf("") }
     val permissions = buildList {
         add(permission.RECORD_AUDIO)
         add(permission.CAMERA)
@@ -141,7 +139,7 @@ fun LoginScreen(
             PreviewScreen(goToLogin = { viewModel.navigateToLogin() })
         } else if (uiState.showNoInternetScreen) {
             InternetDisableScreen(
-                colorText = MaterialTheme.colorScheme.onPrimary,
+                colorText = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.testTag("InternetDisableScreen")
             ) {
                 viewModel.checkInternetAvailable()
@@ -283,11 +281,7 @@ private fun GoogleSignInButton(
         modifier = Modifier
             .fillMaxWidth()
             .testTag("GOOGLE_SIGNIN_BUTTON"),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)),
-        colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-        )
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
     ) {
         Image(
             modifier = Modifier.size(24.dp),
@@ -299,6 +293,7 @@ private fun GoogleSignInButton(
             text = "Continuar con Google",
             modifier = Modifier.padding(vertical = 8.dp),
             style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onBackground
         )
     }
 }
@@ -315,7 +310,7 @@ private fun NoAccountSection(
         Text(
             text = "¿No tenés una cuenta?",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         TextButton(
@@ -324,7 +319,6 @@ private fun NoAccountSection(
         ) {
             Text(
                 text = "Registrarse",
-                color = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontWeight = FontWeight.Bold
                 )
@@ -340,10 +334,7 @@ private fun LoginButton(
     enabled: Boolean,
     onClick: () -> Unit
 ) {
-    val containerColor =
-        if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f)
-    val contentColor =
-        if (enabled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimary
+
     Button(
         onClick = onClick,
         shape = RoundedCornerShape(16.dp),
@@ -353,12 +344,6 @@ private fun LoginButton(
             .height(70.dp)
             .padding(vertical = 8.dp)
             .testTag("LOGIN_BUTTON"),
-        colors = ButtonColors(
-            contentColor = contentColor,
-            containerColor = containerColor,
-            disabledContentColor = contentColor,
-            disabledContainerColor = containerColor
-        )
     ) {
         Text(
             text = label,
@@ -373,7 +358,7 @@ private fun PasswordInput(
     visible: MutableState<Boolean>,
     modifier: Modifier = Modifier
 ) {
-    HarmoniaTextField(
+    HoloTextField(
         value = state.value,
         onValueChange = { state.value = it },
         label = stringResource(R.string.login_screen_userPassword),
@@ -395,7 +380,7 @@ private fun UsernameInput(
     state: MutableState<String>,
     modifier: Modifier = Modifier
 ) {
-    HarmoniaTextField(
+    HoloTextField(
         value = state.value,
         onValueChange = { state.value = it },
         label = "Email",

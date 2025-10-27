@@ -22,7 +22,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun HarmoniaTextField(
+fun HoloTextField(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
@@ -39,7 +39,7 @@ fun HarmoniaTextField(
     Column(modifier = modifier) {
         Text(
             text = label,
-            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.4f),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.labelLarge,
             modifier = Modifier.padding(bottom = 8.dp)
         )
@@ -47,7 +47,7 @@ fun HarmoniaTextField(
             value = value,
             onValueChange = onValueChange,
             modifier = Modifier.fillMaxWidth(),
-            textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.secondary),
+            textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
             keyboardOptions = keyboardOptions,
             visualTransformation = visualTransformation,
             singleLine = true,
@@ -59,14 +59,14 @@ fun HarmoniaTextField(
                     Icon(
                         imageVector = leadingIcon,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Box(modifier = Modifier.weight(1f)) {
                         if (value.isEmpty()) {
                             Text(
                                 placeholder,
-                                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 style = MaterialTheme.typography.bodyLarge
                             )
                         }
@@ -77,7 +77,7 @@ fun HarmoniaTextField(
                             Icon(
                                 imageVector = trailingIcon,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -86,9 +86,7 @@ fun HarmoniaTextField(
         )
         HorizontalDivider(
             thickness = 1.dp,
-            color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondary.copy(
-                alpha = 0.3f
-            )
+            color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline
         )
         if (isError && supportingText != null) {
             Text(

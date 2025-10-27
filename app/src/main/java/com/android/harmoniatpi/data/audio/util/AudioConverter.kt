@@ -8,11 +8,15 @@ import android.net.Uri
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
+import com.naman14.androidlame.AndroidLame
+import com.naman14.androidlame.LameBuilder
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import javax.inject.Inject
@@ -26,6 +30,8 @@ class AudioConverter @Inject constructor(
     private val TARGET_SAMPLE_RATE = 44100
     private val TARGET_CHANNEL_COUNT = 1 // Mono
     private val BYTES_PER_SAMPLE = 2 // 16-bit PCM
+    private val MP3_BIT_RATE = 128
+    private val MP3_QUALITY = 5
 
     /**
      * Convierte el audio desde la URI de origen (ej. MP3, WAV) a PCM y lo guarda en el archivo de destino.
@@ -172,4 +178,90 @@ class AudioConverter @Inject constructor(
 
         return monoBytes
     }
+
+    suspend fun convertPcmToMp3(inputPcmFile: File, outputMp3File: File): Result<Unit> = withContext(Dispatchers.IO) {
+        if (!inputPcmFile.exists() || inputPcmFile.length() == 0L) {
+            return@withContext Result.failure(IOException("El archivo PCM de entrada no existe o está vacío: ${inputPcmFile.path}"))
+        }
+
+        var androidLame: AndroidLame? = null
+        var inputStream: FileInputStream? = null
+        var outputStream: FileOutputStream? = null
+
+        try {
+            androidLame = LameBuilder()
+                .setInSampleRate(TARGET_SAMPLE_RATE)
+                .setOutChannels(TARGET_CHANNEL_COUNT)
+                .setOutBitrate(MP3_BIT_RATE)
+                .setOutSampleRate(TARGET_SAMPLE_RATE)
+                .setQuality(MP3_QUALITY)
+                .build()
+
+            inputStream = FileInputStream(inputPcmFile)
+            outputStream = FileOutputStream(outputMp3File)
+
+            val pcmReadBufferSize = 8192
+            val pcmByteBuffer = ByteArray(pcmReadBufferSize)
+            val pcmShortBuffer = ShortArray(pcmReadBufferSize / 2)
+            val mp3BufferSize = (pcmReadBufferSize * 1.25 + 7200).toInt()
+            val mp3Buffer = ByteArray(mp3BufferSize)
+
+            var bytesRead: Int
+            var totalMp3BytesWritten = 0
+
+            Log.d(TAG, "[LAME] Iniciando codificación de ${inputPcmFile.name} a ${outputMp3File.name}")
+
+            while (inputStream.read(pcmByteBuffer).also { bytesRead = it } > 0) {
+
+                val samplesRead = bytesRead / 2
+                ByteBuffer.wrap(pcmByteBuffer, 0, bytesRead)
+                    .order(ByteOrder.LITTLE_ENDIAN) // ¡IMPORTANTE para PCM!
+                    .asShortBuffer()
+                    .get(pcmShortBuffer, 0, samplesRead)
+
+                val mp3BytesEncoded = androidLame.encode(
+                    pcmShortBuffer,
+                    pcmShortBuffer,
+                    samplesRead,
+                    mp3Buffer
+                )
+
+
+                if (mp3BytesEncoded > 0) {
+                    outputStream.write(mp3Buffer, 0, mp3BytesEncoded)
+                    totalMp3BytesWritten += mp3BytesEncoded
+                    Log.v(TAG, "[LAME] PCM samples ($samplesRead) -> MP3 chunk ($mp3BytesEncoded bytes)")
+                } else if (mp3BytesEncoded < 0) {
+                    throw IOException("Error de codificación LAME: código $mp3BytesEncoded")
+                }
+            }
+
+            val finalMp3Bytes = androidLame.flush(mp3Buffer)
+            if (finalMp3Bytes > 0) {
+                outputStream.write(mp3Buffer, 0, finalMp3Bytes)
+                totalMp3BytesWritten += finalMp3Bytes
+                Log.d(TAG, "[LAME] flush escribió $finalMp3Bytes bytes finales.")
+            } else if (finalMp3Bytes < 0) {
+                throw IOException("Error de LAME al hacer flush: código $finalMp3Bytes")
+            }
+
+            Log.i(TAG, "[LAME] Codificación a ${outputMp3File.path} completada. Total MP3: $totalMp3BytesWritten bytes.")
+            Result.success(Unit)
+
+        } catch (e: Exception) {
+            Log.e(TAG, "[LAME] Error durante la conversión PCM a MP3", e)
+            if (outputMp3File.exists()) outputMp3File.delete()
+            Result.failure(e)
+        } finally {
+            try { inputStream?.close() } catch (e: IOException) { Log.e(TAG, "Error cerrando InputStream", e) }
+            try { outputStream?.close() } catch (e: IOException) { Log.e(TAG, "Error cerrando OutputStream", e) }
+            try {
+                androidLame?.close()
+                Log.d(TAG, "[LAME] Recursos LAME liberados.")
+            } catch (e: Exception) { Log.e(TAG, "Error liberando LAME", e) }
+        }
+    }
+
+
+
 }

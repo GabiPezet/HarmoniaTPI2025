@@ -97,7 +97,15 @@ fun ProjectManagementScreen(
         modifier = Modifier.fillMaxSize(),
         topBar = { //Impl de top bar
             TopAppBar(
-                title = { Text("Gestión de Proyectos") },
+                title = {
+                    Text(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(end = 16.dp),
+                        text = "Nombre del Proyecto",
+                        textAlign = TextAlign.Center
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = {
                         viewModel.updateCurrentProjectWithTracks()
@@ -108,14 +116,15 @@ fun ProjectManagementScreen(
                     }
                 },
                 colors = TopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
-                    titleContentColor = MaterialTheme.colorScheme.secondary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.secondary,
-                    actionIconContentColor = MaterialTheme.colorScheme.secondary,
-                    scrolledContainerColor = MaterialTheme.colorScheme.secondaryContainer
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+                    actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest
                 )
             )
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
 
         Column(
@@ -134,9 +143,8 @@ fun ProjectManagementScreen(
             }
             LazyColumn(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight()
-                    .padding(horizontal = 8.dp),
+                    .fillMaxWidth().padding(vertical = 16.dp)
+                    .wrapContentHeight(),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -147,7 +155,11 @@ fun ProjectManagementScreen(
                         onDelete = { viewModel.deleteTrack() },
                         onTrim = {
                             if (track.waveForm.isNullOrEmpty() || track.durationMs < 50L) {
-                                Toast.makeText(context, "La pista no tiene audio para recortar", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    context,
+                                    "La pista no tiene audio para recortar",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                                 Log.d("Trim", "Pista sin audio o muy corta para recortar.")
                             } else {
                                 trackForTrimming = track
@@ -183,9 +195,9 @@ fun ProjectManagementScreen(
                     showSheet = true
                 },
                 modifier = Modifier
-                    .padding(top = 8.dp, start = 8.dp)
-                    .size(36.dp)
-                    .align(Alignment.Start),
+                    .padding(top = 16.dp, end = 32.dp)
+                    .size(50.dp)
+                    .align(Alignment.End),
 
                 colors = IconButtonDefaults.iconButtonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -196,7 +208,6 @@ fun ProjectManagementScreen(
                     imageVector = Icons.Default.Add,
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
-                    tint = MaterialTheme.colorScheme.onPrimary
                 )
             }
             Spacer(modifier = Modifier.weight(1f))
@@ -206,8 +217,13 @@ fun ProjectManagementScreen(
                 onPlay = { viewModel.play() },
                 onPause = { viewModel.pause() },
                 startRecording = {
-                    Toast.makeText(context, "Para una mejor calidad, usa auriculares.", Toast.LENGTH_LONG).show()
-                    viewModel.startRecording() },
+                    Toast.makeText(
+                        context,
+                        "Para una mejor calidad, usa auriculares.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    viewModel.startRecording()
+                },
                 stopRecording = { viewModel.stopRecording() },
                 isRecording = state.isRecording,
                 isPlaying = state.isPlaying,
@@ -220,7 +236,9 @@ fun ProjectManagementScreen(
                     sheetState = sheetState
                 ) {
                     Column(
-                        Modifier.fillMaxWidth().padding(16.dp),
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text("Añadir Pista", style = MaterialTheme.typography.titleLarge)
@@ -239,7 +257,10 @@ fun ProjectManagementScreen(
                             Text("🎸 Grabar Instrumento (alta fidelidad)")
                         }
 
-                        Button(onClick = { pickAudioLauncher.launch("audio/*") }, modifier = Modifier.fillMaxWidth()) {
+                        Button(
+                            onClick = { pickAudioLauncher.launch("audio/*") },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
                             Text("📁 Importar desde archivo")
                         }
                     }

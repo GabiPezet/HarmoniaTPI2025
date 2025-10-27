@@ -6,6 +6,7 @@ import com.android.harmoniatpi.domain.model.userPreferences.Comment
 
 data class Project(
     val id: String,
+    val ownerId: String,
     val name: String,
     val lastName: String,
     val title: String,
@@ -19,9 +20,13 @@ data class Project(
     val urlCompleteAudio: AudioTrack? = null,
     val urlAudioTracks: List<AudioTrack> = emptyList(),
     val hashtags: List<String>,
+    val forkedByUserIds: List<String> = emptyList(),
+    val originalProjectId: String? = null,
+    val isPublished: Boolean = false
 ) {
     fun toDataBase(jsonUtils: JsonUtils) = ProjectEntity(
         id = id,
+        ownerId = ownerId,
         name = name,
         lastName = lastName,
         title = title,
@@ -34,6 +39,9 @@ data class Project(
         comments = jsonUtils.encodeToJson(comments),
         urlCompleteAudio = if (urlCompleteAudio != null) jsonUtils.encodeToJson(urlCompleteAudio) else null,
         urlAudioTracks = jsonUtils.encodeToJson(urlAudioTracks),
-        hashtags = jsonUtils.encodeToJson(hashtags)
+        hashtags = jsonUtils.encodeToJson(hashtags),
+        forkedByUserIds = jsonUtils.encodeToJson(forkedByUserIds),
+        originalProjectId = originalProjectId,
+        isPublished = isPublished
     )
 }

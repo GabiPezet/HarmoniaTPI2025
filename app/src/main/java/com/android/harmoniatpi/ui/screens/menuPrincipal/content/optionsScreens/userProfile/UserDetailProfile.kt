@@ -5,8 +5,10 @@ import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -45,7 +47,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -142,21 +143,17 @@ fun UserDetailProfile(
                             fontWeight = FontWeight.SemiBold
                         ), fontSize = 24.sp
                     )
-                }, navigationIcon = {
+                },
+                navigationIcon = {
                     IconButton(onClick = {
                         viewModel.changeOptionsMenu(OptionsMenu.MAIN_CONTENT_SCREEN)
                     }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Volver al menú anterior",
-                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
-                }, colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onBackground
-                )
+                },
             )
         },
     ) { paddingValues ->
@@ -192,7 +189,12 @@ fun UserDetailProfile(
                             contentDescription = "Foto de perfil",
                             modifier = Modifier
                                 .size(150.dp)
-                                .clip(CircleShape),
+                                .clip(CircleShape)
+                                .border(
+                                    BorderStroke(2.dp, MaterialTheme.colorScheme.outlineVariant),
+                                    CircleShape
+                                ),
+
                             contentScale = ContentScale.Crop
                         )
                     }
