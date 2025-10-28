@@ -441,8 +441,8 @@ fun OptionCard(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .size(36.dp)
-                    .background(Color(0xFFFFC107), CircleShape),
-                contentAlignment = Alignment.Center
+                    .background(Color(0xFFFF8117), CircleShape),
+                contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = icon,
