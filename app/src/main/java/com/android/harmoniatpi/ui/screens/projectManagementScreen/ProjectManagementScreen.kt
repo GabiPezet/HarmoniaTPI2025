@@ -104,7 +104,13 @@ fun ProjectManagementScreen(
         modifier = Modifier.fillMaxSize(),
         topBar = { //Impl de top bar
             TopAppBar(
-                title = { Text("Gestión de Proyectos") },
+                title = { Text(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(end = 16.dp),
+                    text = "Nombre del Proyecto",
+                    textAlign = TextAlign.Center
+                ) },
                 navigationIcon = {
                     IconButton(onClick = {
                         viewModel.updateCurrentProjectWithTracks()
@@ -115,14 +121,15 @@ fun ProjectManagementScreen(
                     }
                 },
                 colors = TopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
-                    titleContentColor = MaterialTheme.colorScheme.secondary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.secondary,
-                    actionIconContentColor = MaterialTheme.colorScheme.secondary,
-                    scrolledContainerColor = MaterialTheme.colorScheme.secondaryContainer
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+                    actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest
                 )
             )
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
 
         Column(
@@ -142,9 +149,8 @@ fun ProjectManagementScreen(
             }
             LazyColumn(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight()
-                    .padding(horizontal = 8.dp),
+                    .fillMaxWidth().padding(vertical = 16.dp)
+                    .wrapContentHeight(),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -191,9 +197,9 @@ fun ProjectManagementScreen(
                     showSheet = true
                 },
                 modifier = Modifier
-                    .padding(top = 8.dp, start = 8.dp)
-                    .size(36.dp)
-                    .align(Alignment.Start),
+                    .padding(top = 16.dp, start = 32.dp)
+                    .size(50.dp)
+                    .align(Alignment.End),
 
                 colors = IconButtonDefaults.iconButtonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -204,7 +210,6 @@ fun ProjectManagementScreen(
                     imageVector = Icons.Default.Add,
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
-                    tint = MaterialTheme.colorScheme.onPrimary
                 )
             }
             Spacer(modifier = Modifier.weight(1f))
@@ -226,7 +231,7 @@ fun ProjectManagementScreen(
                 ModalBottomSheet(
                     onDismissRequest = { showSheet = false },
                     sheetState = sheetState,
-                    containerColor = Color(0xFF121212), // Fondo oscuro o adaptalo a tu paleta
+                    containerColor = Color(0xFF121212), // Fondo oscuro del MBS
                     tonalElevation = 8.dp
                 ) {
                     Column(
@@ -241,12 +246,11 @@ fun ProjectManagementScreen(
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
 
-                        // Primer fila: Voz + Instrumento
+                        // Primera Fila - Pista de Voz y Pista de instrumento
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            // 🎤 Grabar Voz
                             OptionCard(
                                 title = "Grabar Voz\n(Cancelación\n de eco)",
                                 icon = Icons.Default.Mic,
@@ -256,8 +260,6 @@ fun ProjectManagementScreen(
                                 },
                                 modifier = Modifier.weight(1f)
                             )
-
-                            // 🎸 Grabar Instrumento
                             OptionCard(
                                 title = "Grabar Instrumento\n(Hi-Fi)",
                                 icon = Icons.Default.MusicNote,
@@ -269,7 +271,7 @@ fun ProjectManagementScreen(
                             )
                         }
 
-                        // Segunda fila: Importar desde archivo
+                        // Segunda fila - Importar desde un archivo
                         OptionCard(
                             title = "Importar desde archivo",
                             icon = Icons.Default.Folder,
