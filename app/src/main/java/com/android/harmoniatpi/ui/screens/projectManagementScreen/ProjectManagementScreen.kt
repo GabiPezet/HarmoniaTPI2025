@@ -7,6 +7,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +27,9 @@ import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -48,7 +52,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
@@ -219,34 +225,92 @@ fun ProjectManagementScreen(
             if (showSheet) {
                 ModalBottomSheet(
                     onDismissRequest = { showSheet = false },
-                    sheetState = sheetState
+                    sheetState = sheetState,
+                    containerColor = Color(0xFF121212), // Fondo oscuro o adaptalo a tu paleta
+                    tonalElevation = 8.dp
                 ) {
                     Column(
-                        Modifier.fillMaxWidth().padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Text("Añadir Pista", style = MaterialTheme.typography.titleLarge)
+                        Text(
+                            text = "Añadir pista",
+                            style = MaterialTheme.typography.titleLarge.copy(color = Color.White),
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
 
-                        Button(onClick = {
-                            showSheet = false
-                            viewModel.addNewTrack(AudioSourceType.VOICE)
-                        }, modifier = Modifier.fillMaxWidth()) {
-                            Text("🎤 Grabar Voz (con cancelación de eco)")
+                        // Primer fila: Voz + Instrumento
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            // 🎤 Grabar Voz
+                            OptionCard(
+                                title = "Grabar Voz\n(Cancelación\n de eco)",
+                                icon = Icons.Default.Mic,
+                                onClick = {
+                                    showSheet = false
+                                    viewModel.addNewTrack(AudioSourceType.VOICE)
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
+
+                            // 🎸 Grabar Instrumento
+                            OptionCard(
+                                title = "Grabar Instrumento\n(Hi-Fi)",
+                                icon = Icons.Default.MusicNote,
+                                onClick = {
+                                    showSheet = false
+                                    viewModel.addNewTrack(AudioSourceType.INSTRUMENT)
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
                         }
 
-                        Button(onClick = {
-                            showSheet = false
-                            viewModel.addNewTrack(AudioSourceType.INSTRUMENT)
-                        }, modifier = Modifier.fillMaxWidth()) {
-                            Text("🎸 Grabar Instrumento (alta fidelidad)")
-                        }
-
-                        Button(onClick = { pickAudioLauncher.launch("audio/*") }, modifier = Modifier.fillMaxWidth()) {
-                            Text("📁 Importar desde archivo")
-                        }
+                        // Segunda fila: Importar desde archivo
+                        OptionCard(
+                            title = "Importar desde archivo",
+                            icon = Icons.Default.Folder,
+                            onClick = { pickAudioLauncher.launch("audio/*") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
                 }
             }
+
+//            if (showSheet) {
+//                ModalBottomSheet(
+//                    onDismissRequest = { showSheet = false },
+//                    sheetState = sheetState
+//                ) {
+//                    Column(
+//                        Modifier.fillMaxWidth().padding(16.dp),
+//                        verticalArrangement = Arrangement.spacedBy(8.dp)
+//                    ) {
+//                        Text("Añadir Pista", style = MaterialTheme.typography.titleLarge)
+//
+//                        Button(onClick = {
+//                            showSheet = false
+//                            viewModel.addNewTrack(AudioSourceType.VOICE)
+//                        }, modifier = Modifier.fillMaxWidth()) {
+//                            Text("🎤 Grabar Voz (con cancelación de eco)")
+//                        }
+//
+//                        Button(onClick = {
+//                            showSheet = false
+//                            viewModel.addNewTrack(AudioSourceType.INSTRUMENT)
+//                        }, modifier = Modifier.fillMaxWidth()) {
+//                            Text("🎸 Grabar Instrumento (alta fidelidad)")
+//                        }
+//
+//                        Button(onClick = { pickAudioLauncher.launch("audio/*") }, modifier = Modifier.fillMaxWidth()) {
+//                            Text("📁 Importar desde archivo")
+//                        }
+//                    }
+//                }
+//            }
         }
     }
 
@@ -334,6 +398,59 @@ fun EmptyProjectMessage(modifier: Modifier = Modifier) {
                 fontSize = 18.sp,
                 lineHeight = 28.sp
             )
+        }
+    }
+}
+
+// Composable para cada opción de la BottomSheet
+@Composable
+fun OptionCard(
+    title: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        onClick = onClick,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFF1E1E1E)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        modifier = modifier
+            .height(100.dp)
+            .clip(RoundedCornerShape(16.dp))
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                ),
+                modifier = Modifier.align(Alignment.CenterStart)
+            )
+            Spacer(modifier = Modifier.padding(240.dp))
+            // Icono circular flotante
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .size(36.dp)
+                    .background(Color(0xFFFFC107), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = Color.Black,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
         }
     }
 }
