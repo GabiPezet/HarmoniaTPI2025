@@ -11,6 +11,7 @@ import com.android.harmoniatpi.domain.cache.HoloJamCache
 import com.android.harmoniatpi.domain.model.audio.AudioSourceType
 import com.android.harmoniatpi.domain.usecases.audioUseCases.AddTrackFromFileUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.AddTrackUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.ApplyDelayEffectUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.DeleteTrackUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.GenerateWaveformUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.GetCurrentPlaybackPositionUseCase
@@ -70,7 +71,8 @@ class ProjectManagementScreenViewModel @Inject constructor(
     private val getCurrentPlaybackPosition: GetCurrentPlaybackPositionUseCase,
     private val seekToUseCase: SeekToUseCase,
     private val loadProjectTrackUseCase: LoadProjectTrackUseCase,
-    private val setTrackOffsetUseCase: SetTrackOffsetUseCase
+    private val setTrackOffsetUseCase: SetTrackOffsetUseCase,
+    private val applyDelayEffectUseCase: ApplyDelayEffectUseCase
 ) : ViewModel() {
     private val _state = MutableStateFlow(ProyectScreenUiState())
     private var selectedTrack: TrackUi? = null
@@ -514,6 +516,23 @@ class ProjectManagementScreenViewModel @Inject constructor(
                 if (track.id == trackId) track.copy(volume = volume) else track
             }
             currentState.copy(tracks = updatedTracks)
+        }
+    }
+
+
+    fun applyDelayEffect(trackId: Long, delayTimeInSeconds: Float, decay: Float) {
+        viewModelScope.launch {
+            applyDelayEffectUseCase(trackId, delayTimeInSeconds, decay)
+                .onSuccess {
+                    Log.i(TAG, "Efecto de delay aplicado a $trackId")
+                    Toast.makeText(context, "Efecto aplicado", Toast.LENGTH_SHORT).show()
+
+                    updateTrackUiAfterModification(trackId)
+                }
+                .onFailure { e ->
+                    Log.e(TAG, "Error aplicando delay", e)
+                    Toast.makeText(context, "Error al aplicar efecto", Toast.LENGTH_SHORT).show()
+                }
         }
     }
 

@@ -75,6 +75,7 @@ fun TrackItem(
     onTrim: () -> Unit,
     onUndo: () -> Unit,
     onMute: () -> Unit,
+    onShowEffects: () -> Unit,
     scrollState: ScrollState,
     isBeingRecorded: Boolean,
     currentPlaybackMs: Long,
@@ -176,6 +177,7 @@ fun TrackItem(
                         onTrim = onTrim,
                         onMute = onMute,
                         onUndo = onUndo,
+                        onShowEffects = onShowEffects,
                         isUndoAvailable = track.isUndoAvailable,
                         isMuted = track.isMuted
                     )
@@ -254,6 +256,7 @@ private fun TrackOptionsMenu(
     onTrim: () -> Unit,
     onMute: () -> Unit,
     onUndo: () -> Unit,
+    onShowEffects: () -> Unit,
     isUndoAvailable: Boolean,
     isMuted: Boolean,
     modifier: Modifier = Modifier
@@ -313,16 +316,17 @@ private fun TrackOptionsMenu(
             onClick = {}
         )
         DropdownMenuItem(
-            text = {
-                Text(text = "Efectos")
-            },
+            text = { Text(text = "Efectos") },
             leadingIcon = {
                 Icon(
                     painter = painterResource(R.drawable.fx_icon),
                     contentDescription = "Efectos"
                 )
             },
-            onClick = {}
+            onClick = {
+                onDismiss()
+                onShowEffects()
+            }
         )
 
         DropdownMenuItem(
@@ -495,6 +499,7 @@ private fun TrackPrev() {
             onTrim = {},
             onUndo = {},
             onMute = {},
+            onShowEffects = {},
             scrollState = rememberScrollState(),
             isBeingRecorded = true,
             timelineWidth = 500,

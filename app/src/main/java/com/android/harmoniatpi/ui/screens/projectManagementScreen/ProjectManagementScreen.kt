@@ -11,9 +11,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -30,7 +32,9 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -67,6 +71,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.android.harmoniatpi.domain.model.audio.AudioSourceType
+import com.android.harmoniatpi.ui.components.EffectsAudioDialog
 import com.android.harmoniatpi.ui.components.ProyectControlButtonRow
 import com.android.harmoniatpi.ui.components.TrackItem
 import com.android.harmoniatpi.ui.components.TrimAudioDialog
@@ -85,6 +90,7 @@ fun ProjectManagementScreen(
     val sharedScrollState = rememberScrollState()
     var trackForTrimming by remember { mutableStateOf<TrackUi?>(null) }
     val context = LocalContext.current
+    var trackForEffects by remember { mutableStateOf<TrackUi?>(null) }
     val pickAudioLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -167,6 +173,7 @@ fun ProjectManagementScreen(
                                 trackForTrimming = track
                             }
                         },
+                        onShowEffects = { trackForEffects = track },
                         onUndo = {
                             viewModel.undoTrim(track.id)
                         },
@@ -281,38 +288,6 @@ fun ProjectManagementScreen(
                     }
                 }
             }
-
-//            if (showSheet) {
-//                ModalBottomSheet(
-//                    onDismissRequest = { showSheet = false },
-//                    sheetState = sheetState
-//                ) {
-//                    Column(
-//                        Modifier.fillMaxWidth().padding(16.dp),
-//                        verticalArrangement = Arrangement.spacedBy(8.dp)
-//                    ) {
-//                        Text("Añadir Pista", style = MaterialTheme.typography.titleLarge)
-//
-//                        Button(onClick = {
-//                            showSheet = false
-//                            viewModel.addNewTrack(AudioSourceType.VOICE)
-//                        }, modifier = Modifier.fillMaxWidth()) {
-//                            Text("🎤 Grabar Voz (con cancelación de eco)")
-//                        }
-//
-//                        Button(onClick = {
-//                            showSheet = false
-//                            viewModel.addNewTrack(AudioSourceType.INSTRUMENT)
-//                        }, modifier = Modifier.fillMaxWidth()) {
-//                            Text("🎸 Grabar Instrumento (alta fidelidad)")
-//                        }
-//
-//                        Button(onClick = { pickAudioLauncher.launch("audio/*") }, modifier = Modifier.fillMaxWidth()) {
-//                            Text("📁 Importar desde archivo")
-//                        }
-//                    }
-//                }
-//            }
         }
     }
 
@@ -330,6 +305,16 @@ fun ProjectManagementScreen(
             },
             onStopPreview = { id ->
                 viewModel.stopPreviewTrim(id)
+            }
+        )
+    }
+    trackForEffects?.let { trackToEffect ->
+        EffectsAudioDialog(
+            track = trackToEffect,
+            onDismiss = { trackForEffects = null },
+            onApplyDelay = { id, delay, decay ->
+                viewModel.applyDelayEffect(id, delay, decay)
+                trackForEffects = null
             }
         )
     }
