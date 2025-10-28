@@ -135,8 +135,8 @@ fun ProjectManagementScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .background(Color(0xFF858585)),
+                .padding(padding),
+                //.background(Color(0xFF858585)),
             verticalArrangement = Arrangement.Bottom,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
