@@ -120,7 +120,8 @@ fun TrackItem(
     Row(
         modifier = modifier
             .clip(RoundedCornerShape(0.dp))
-            .background(color = MaterialTheme.colorScheme.background)
+            //.background(color = MaterialTheme.colorScheme.background)
+            .background(Color(0xFF858585)) //Pasar ESTE Background al Theme Colors
             .fillMaxWidth()
             .height(130.dp),
         verticalAlignment = Alignment.CenterVertically,
