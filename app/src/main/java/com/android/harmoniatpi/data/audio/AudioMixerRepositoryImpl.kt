@@ -45,6 +45,7 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
+import java.util.Arrays
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import kotlin.math.roundToLong
@@ -260,17 +261,20 @@ class AudioMixerRepositoryImpl @Inject constructor(
     override fun trimTrack(id: Long, startMs: Long, endMs: Long): Result<Unit> {
         return tracks.value.find { it.id == id }?.let { track ->
             val originalFile = File(track.path)
-            val backupFile = File(track.originalPath) // nueva ruta del backup
+            val backupFile = File(track.originalPath)
 
             if (!originalFile.exists()) {
                 return Result.failure(Exception("Archivo de audio original no encontrado: ${track.path}"))
             }
 
             try {
-                // si no hay backup, creo copia
-                if (!backupFile.exists()) {
-                    originalFile.copyTo(backupFile, overwrite = true)
-                    Log.i(TAG, "Copia de seguridad creada en ${track.originalPath}")
+
+                if (backupFile.exists()) {
+                    backupFile.delete()
+                }
+
+                if (!originalFile.renameTo(backupFile)) {
+                    return Result.failure(IOException("No se pudo crear el backup para deshacer."))
                 }
 
                 val sampleRate = 44100
@@ -282,54 +286,45 @@ class AudioMixerRepositoryImpl @Inject constructor(
                 val startByte = startSamples * bytesPerSample
                 val endByte = endSamples * bytesPerSample
 
-                val length = originalFile.length()
+                val length = backupFile.length()
                 if (startByte < 0 || endByte > length || startByte >= endByte) {
-                    return Result.failure(IllegalArgumentException("Rango de recorte inválido: fuera de límites o invertido."))
+
+                    backupFile.renameTo(originalFile)
+                    return Result.failure(IllegalArgumentException("Rango de recorte inválido."))
                 }
 
-                // archivo temporal
                 val tempFile = File(track.path.replace(".pcm", "_temp.pcm"))
                 val bufferSize = 8192
 
-                FileInputStream(originalFile).use { fis ->
+                FileInputStream(backupFile).use { fis ->
                     FileOutputStream(tempFile).use { fos ->
-
                         fis.skip(startByte)
-
                         val bytesToRead = endByte - startByte
                         var totalRead = 0L
                         val buffer = ByteArray(bufferSize)
 
                         while (totalRead < bytesToRead) {
-                            val remaining =
-                                (bytesToRead - totalRead).toInt().coerceAtMost(bufferSize)
+                            val remaining = (bytesToRead - totalRead).toInt().coerceAtMost(bufferSize)
                             val readCount = fis.read(buffer, 0, remaining)
-
                             if (readCount <= 0) break
-
                             fos.write(buffer, 0, readCount)
                             totalRead += readCount
                         }
                     }
                 }
 
-                // reemplazo original por recortado
-                if (originalFile.delete()) {
-                    if (tempFile.renameTo(originalFile)) {
-                        return Result.success(Unit)
-                    } else {
-                        Log.e(TAG, "Fallo al renombrar el archivo temporal a la ruta original.")
-                        return Result.failure(IOException("Fallo al aplicar el recorte: no se pudo renombrar el archivo temporal."))
-                    }
+                if (tempFile.renameTo(originalFile)) {
+                    return Result.success(Unit)
                 } else {
-                    tempFile.delete()
-                    Log.e(TAG, "Fallo al eliminar el archivo original para el reemplazo.")
-                    return Result.failure(IOException("Fallo al aplicar el recorte: no se pudo eliminar el archivo original."))
+                    backupFile.renameTo(originalFile)
+                    return Result.failure(IOException("Fallo al aplicar el recorte: no se pudo renombrar el archivo temporal."))
                 }
 
             } catch (e: Exception) {
                 Log.e(TAG, "Error recortando pista ${track.id}", e)
-                File(track.originalPath).delete() // limpio backup si falla el recorte
+                if (backupFile.exists() && !originalFile.exists()) {
+                    backupFile.renameTo(originalFile)
+                }
                 return Result.failure(e)
             }
         } ?: Result.failure(NoSuchElementException("Pista con ID $id no encontrada"))
@@ -489,16 +484,18 @@ class AudioMixerRepositoryImpl @Inject constructor(
             }
 
             val backupFile = File(track.originalPath)
-            if (!backupFile.exists()) {
-                Files.copy(originalFile.toPath(), backupFile.toPath())
+            if (backupFile.exists()) {
+                backupFile.delete()
             }
 
-            val tempFile = File(track.path + ".tmp")
+            originalFile.renameTo(backupFile)
+
+            val tempFile = File(track.path + ".tmp") // Archivo temporal
             var fileInputStream: FileInputStream? = null
             var fileOutputStream: FileOutputStream? = null
 
             try {
-                fileInputStream = FileInputStream(originalFile)
+                fileInputStream = FileInputStream(backupFile)
                 fileOutputStream = FileOutputStream(tempFile)
 
                 val delayEffect = DelayEffect(
@@ -514,24 +511,38 @@ class AudioMixerRepositoryImpl @Inject constructor(
                 audioEvent.setFloatBuffer(floatBuffer)
 
                 var bytesRead = fileInputStream.read(byteBuffer, 0, byteBuffer.size)
-
                 while (bytesRead != -1) {
                     audioEvent.setBytesProcessing(bytesRead)
-
                     converter.toFloatArray(byteBuffer, floatBuffer)
-                    delayEffect.process(audioEvent)
-                    converter.toByteArray(floatBuffer, byteBuffer)
-                    fileOutputStream.write(byteBuffer, 0, bytesRead)
-
+                    delayEffect.process(audioEvent) // Procesa floats
+                    converter.toByteArray(floatBuffer, byteBuffer) // Convierte de vuelta
+                    fileOutputStream.write(byteBuffer, 0, bytesRead) // Escribe bytes
                     bytesRead = fileInputStream.read(byteBuffer, 0, byteBuffer.size)
                 }
 
-                delayEffect.processingFinished()
+                Arrays.fill(floatBuffer, 0.0f)
+                audioEvent.setBytesProcessing(byteBuffer.size)
+                delayEffect.process(audioEvent)
 
-                Files.move(tempFile.toPath(), originalFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+                var rms = AudioEvent.calculateRMS(floatBuffer)
+                var tailLoops = 0
+                val maxTailLoops = (delayTimeInSeconds * 2 * TARSOS_FORMAT.sampleRate) / 1024
+
+                while (rms > 0.0001 && tailLoops < maxTailLoops) {
+                    converter.toByteArray(floatBuffer, byteBuffer)
+                    fileOutputStream.write(byteBuffer, 0, byteBuffer.size)
+
+                    Arrays.fill(floatBuffer, 0.0f)
+
+                    delayEffect.process(audioEvent)
+
+                    rms = AudioEvent.calculateRMS(floatBuffer)
+                    tailLoops++
+                }
+                delayEffect.processingFinished()
+                tempFile.renameTo(originalFile)
 
             } finally {
-
                 fileInputStream?.close()
                 fileOutputStream?.close()
                 if (tempFile.exists()) {
