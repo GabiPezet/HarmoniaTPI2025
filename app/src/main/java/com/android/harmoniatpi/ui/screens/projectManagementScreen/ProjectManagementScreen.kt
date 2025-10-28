@@ -129,14 +129,14 @@ fun ProjectManagementScreen(
                 )
             )
         },
-        containerColor = MaterialTheme.colorScheme.background,
+        //containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding),
-                //.background(Color(0xFF858585)),
+                .padding(padding)
+                .background(Color(0xFF858585)), //Pasar ESTE background al Theme Colors
             verticalArrangement = Arrangement.Bottom,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
