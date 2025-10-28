@@ -60,6 +60,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.android.harmoniatpi.domain.model.audio.AudioSourceType
+import com.android.harmoniatpi.ui.components.EffectsAudioDialog
 import com.android.harmoniatpi.ui.components.ProyectControlButtonRow
 import com.android.harmoniatpi.ui.components.TrackItem
 import com.android.harmoniatpi.ui.components.TrimAudioDialog
@@ -78,6 +79,7 @@ fun ProjectManagementScreen(
     val sharedScrollState = rememberScrollState()
     var trackForTrimming by remember { mutableStateOf<TrackUi?>(null) }
     val context = LocalContext.current
+    var trackForEffects by remember { mutableStateOf<TrackUi?>(null) }
     val pickAudioLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -165,6 +167,7 @@ fun ProjectManagementScreen(
                                 trackForTrimming = track
                             }
                         },
+                        onShowEffects = { trackForEffects = track },
                         onUndo = {
                             viewModel.undoTrim(track.id)
                         },
@@ -247,25 +250,27 @@ fun ProjectManagementScreen(
                             showSheet = false
                             viewModel.addNewTrack(AudioSourceType.VOICE)
                         }, modifier = Modifier.fillMaxWidth()) {
-                            Text("🎤 Grabar Voz (con cancelación de eco)")
+                            Text("Grabar Voz (con cancelación de eco)")
                         }
 
                         Button(onClick = {
                             showSheet = false
                             viewModel.addNewTrack(AudioSourceType.INSTRUMENT)
                         }, modifier = Modifier.fillMaxWidth()) {
-                            Text("🎸 Grabar Instrumento (alta fidelidad)")
+                            Text("Grabar Instrumento (alta fidelidad)")
                         }
 
                         Button(
                             onClick = { pickAudioLauncher.launch("audio/*") },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("📁 Importar desde archivo")
+                            Text("Importar desde archivo")
                         }
                     }
                 }
             }
+
+
         }
     }
 
@@ -286,73 +291,84 @@ fun ProjectManagementScreen(
             }
         )
     }
+    trackForEffects?.let { trackToEffect ->
+        EffectsAudioDialog(
+            track = trackToEffect,
+            onDismiss = { trackForEffects = null },
+            onApplyDelay = { id, delay, decay ->
+                viewModel.applyDelayEffect(id, delay, decay)
+                trackForEffects = null
+            }
+        )
+    }
 }
 
-@Composable
-fun EmptyProjectMessage(modifier: Modifier = Modifier) {
-    // Usamos un mapa para definir el contenido del ícono en línea
-    val inlineContentMap = mapOf(
-        "add_icon" to InlineTextContent(
-            Placeholder(
-                width = 24.sp,
-                height = 24.sp,
-                placeholderVerticalAlign = PlaceholderVerticalAlign.TextCenter
-            )
+    @Composable
+    fun EmptyProjectMessage(modifier: Modifier = Modifier) {
+        // Usamos un mapa para definir el contenido del ícono en línea
+        val inlineContentMap = mapOf(
+            "add_icon" to InlineTextContent(
+                Placeholder(
+                    width = 24.sp,
+                    height = 24.sp,
+                    placeholderVerticalAlign = PlaceholderVerticalAlign.TextCenter
+                )
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Agregar",
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+        )
+
+        // Creamos el texto anotado
+        val annotatedText = buildAnnotatedString {
+            append("Presione ")
+            // Adjuntamos el ícono en línea usando su ID
+            appendInlineContent("add_icon", "[icono agregar]")
+            append(" para agregar una nueva pista para ")
+            withStyle(
+                style = SpanStyle(
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
+            ) {
+                append("grabar, insertar un archivo")
+            }
+            append(" o buscar en la biblioteca de sonidos.")
+        }
+
+        Card(
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(horizontal = 32.dp),
+            shape = RoundedCornerShape(16.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        shape = CircleShape
-                    ),
+                modifier = Modifier.padding(24.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Agregar",
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(16.dp)
+                Text(
+                    text = annotatedText,
+                    inlineContent = inlineContentMap,
+                    textAlign = TextAlign.Center,
+                    fontSize = 18.sp,
+                    lineHeight = 28.sp
                 )
             }
         }
-    )
-
-    // Creamos el texto anotado
-    val annotatedText = buildAnnotatedString {
-        append("Presione ")
-        // Adjuntamos el ícono en línea usando su ID
-        appendInlineContent("add_icon", "[icono agregar]")
-        append(" para agregar una nueva pista para ")
-        withStyle(
-            style = SpanStyle(
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold
-            )
-        ) {
-            append("grabar, insertar un archivo")
-        }
-        append(" o buscar en la biblioteca de sonidos.")
     }
 
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 32.dp),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Box(
-            modifier = Modifier.padding(24.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = annotatedText,
-                inlineContent = inlineContentMap,
-                textAlign = TextAlign.Center,
-                fontSize = 18.sp,
-                lineHeight = 28.sp
-            )
-        }
-    }
-}

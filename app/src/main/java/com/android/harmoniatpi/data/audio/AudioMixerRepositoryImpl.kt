@@ -6,7 +6,17 @@ import android.net.Uri
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
+import be.tarsos.dsp.AudioDispatcher
+import be.tarsos.dsp.AudioEvent
+import be.tarsos.dsp.AudioProcessor
+import be.tarsos.dsp.effects.DelayEffect
+import be.tarsos.dsp.io.TarsosDSPAudioFloatConverter
+import be.tarsos.dsp.io.TarsosDSPAudioFormat
+import be.tarsos.dsp.io.jvm.AudioDispatcherFactory
+
+import be.tarsos.dsp.io.jvm.JVMAudioInputStream
 import com.android.harmoniatpi.data.audio.player.PcmAudioPlayer
+import com.android.harmoniatpi.data.audio.record.TARSOS_FORMAT
 import com.android.harmoniatpi.data.audio.util.AudioConverter
 import com.android.harmoniatpi.di.TrackFactory
 import com.android.harmoniatpi.domain.interfaces.AudioMixerRepository
@@ -33,10 +43,11 @@ import java.io.FileInputStream
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.IOException
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import kotlin.math.roundToLong
-
 /**
  * Maneja las pistas creadas y se encarga de reproducirlas, pausarlas y pararlas.
  */
@@ -69,6 +80,8 @@ class AudioMixerRepositoryImpl @Inject constructor(
 
     private var previewPlayer: PcmAudioPlayer? = null
     private val _previewCompletedFlow = MutableSharedFlow<Unit>(replay = 0)
+    private val bufferSize = 2048
+
 
     override fun play(excludeTrackId: Long?) {
 
@@ -465,7 +478,70 @@ class AudioMixerRepositoryImpl @Inject constructor(
     override fun onPreviewCompleted(): SharedFlow<Unit> = _previewCompletedFlow.asSharedFlow()
 
 
+    override suspend fun applyDelayEffect(trackId: Long, delayTimeInSeconds: Float, decay: Float): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val track = tracks.value.find { it.id == trackId }
+                ?: throw IllegalStateException("Track no encontrado con id: $trackId")
 
+            val originalFile = File(track.path)
+            if (!originalFile.exists()) {
+                throw IllegalStateException("Archivo de pista no encontrado: ${track.path}")
+            }
+
+            val backupFile = File(track.originalPath)
+            if (!backupFile.exists()) {
+                Files.copy(originalFile.toPath(), backupFile.toPath())
+            }
+
+            val tempFile = File(track.path + ".tmp")
+            var fileInputStream: FileInputStream? = null
+            var fileOutputStream: FileOutputStream? = null
+
+            try {
+                fileInputStream = FileInputStream(originalFile)
+                fileOutputStream = FileOutputStream(tempFile)
+
+                val delayEffect = DelayEffect(
+                    delayTimeInSeconds.toDouble(),
+                    decay.toDouble(),
+                    TARSOS_FORMAT.sampleRate.toDouble()
+                )
+
+                val converter = TarsosDSPAudioFloatConverter.getConverter(TARSOS_FORMAT)
+                val byteBuffer = ByteArray(2048)
+                val floatBuffer = FloatArray(1024)
+                val audioEvent = AudioEvent(TARSOS_FORMAT)
+                audioEvent.setFloatBuffer(floatBuffer)
+
+                var bytesRead = fileInputStream.read(byteBuffer, 0, byteBuffer.size)
+
+                while (bytesRead != -1) {
+                    audioEvent.setBytesProcessing(bytesRead)
+
+                    converter.toFloatArray(byteBuffer, floatBuffer)
+                    delayEffect.process(audioEvent)
+                    converter.toByteArray(floatBuffer, byteBuffer)
+                    fileOutputStream.write(byteBuffer, 0, bytesRead)
+
+                    bytesRead = fileInputStream.read(byteBuffer, 0, byteBuffer.size)
+                }
+
+                delayEffect.processingFinished()
+
+                Files.move(tempFile.toPath(), originalFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+
+            } finally {
+
+                fileInputStream?.close()
+                fileOutputStream?.close()
+                if (tempFile.exists()) {
+                    tempFile.delete()
+                }
+            }
+
+            Unit
+        }
+    }
 
     override fun clearAllTracks() {
         tracks.update { emptyList() }

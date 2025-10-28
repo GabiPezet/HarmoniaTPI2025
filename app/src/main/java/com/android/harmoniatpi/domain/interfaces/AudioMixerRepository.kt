@@ -116,6 +116,6 @@ interface AudioMixerRepository {
 
     fun onPreviewCompleted(): SharedFlow<Unit>
 
-
+    suspend fun applyDelayEffect(trackId: Long, delayTimeInSeconds: Float, decay: Float): Result<Unit>
 
 }
