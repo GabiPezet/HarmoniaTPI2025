@@ -45,7 +45,7 @@ fun ProjectsScreen(
     val uiState by viewModel.uiState.collectAsState()
     val sharedState by viewModel.sharedMenuUiState.uiState.collectAsState()
     var projectToEdit by remember { mutableStateOf<Project?>(null) }
-    var showCreateForm by remember { mutableStateOf(false) } // 👈 Mantenemos este estado aquí
+    var showCreateForm by remember { mutableStateOf(false) }
 
     //Calcula si el mini-reproductor debe mostrarse
     val showMiniPlayer = uiState.currentlyPlayingProject != null

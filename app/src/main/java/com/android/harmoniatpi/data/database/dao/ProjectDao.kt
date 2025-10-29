@@ -24,5 +24,8 @@ interface ProjectDao {
 
     @Query("SELECT * FROM project WHERE id = :projectId LIMIT 1")
     suspend fun getProjectById(projectId: String): ProjectEntity?
+
+    @Query("SELECT * FROM project WHERE ownerId = :ownerId AND originalProjectId IS NULL AND isPublished = 0") // isPublished = 0 para false en SQLite
+    fun getUnpublishedLocalOriginalsByUser(ownerId: String): Flow<List<ProjectEntity>>
 }
 

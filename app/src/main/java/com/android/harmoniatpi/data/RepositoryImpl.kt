@@ -8,6 +8,7 @@ import com.android.harmoniatpi.data.database.dao.UserPreferencesDao
 import com.android.harmoniatpi.data.database.entities.MyPostEntity
 import com.android.harmoniatpi.data.database.entities.UserPreferencesEntity
 import com.android.harmoniatpi.data.local.model.PostFirebaseModel
+import com.android.harmoniatpi.data.local.model.ProjectFirebaseModel
 import com.android.harmoniatpi.data.local.model.UserFirebaseModel
 import com.android.harmoniatpi.di.util.JsonUtils
 import com.android.harmoniatpi.domain.interfaces.Repository
@@ -36,7 +37,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
 
-class RepositoryImpl @Inject constructor(
+    class RepositoryImpl @Inject constructor(
     private val firebaseAuth: FirebaseAuth,
     private val userPreferencesDao: UserPreferencesDao,
     private val jsonUtils: JsonUtils,
@@ -265,6 +266,66 @@ class RepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
+
+    override suspend fun upsertProjectInFirestore(projectModel: ProjectFirebaseModel): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            Log.d("RepositoryImpl", "Guardando proyecto en Firestore: ${projectModel.id}")
+            firestore.collection("projects") // Nombre de tu colección
+                .document(projectModel.id) // Usa el ID del proyecto como ID del documento
+                .set(projectModel) // 'set' crea o sobrescribe el documento
+                .await() // Espera a que termine la operación
+            Log.d("RepositoryImpl", "Proyecto guardado exitosamente en Firestore.")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e("RepositoryImpl", "Error al guardar proyecto en Firestore (${projectModel.id})", e)
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getFirestoreProjectsByUser(userId: String): Flow<List<ProjectFirebaseModel>> = callbackFlow {
+        // Referencia a la colección 'projects'
+        val projectsCollection = firestore.collection("projects")
+
+        // Crea la consulta: filtra por 'ownerId' igual al userId actual
+        val query = projectsCollection.whereEqualTo("ownerId", userId)
+
+        // Escucha cambios en los documentos que coinciden con la consulta
+        val listenerRegistration = query.addSnapshotListener { snapshots, error ->
+            if (error != null) {
+                Log.w("RepositoryImpl", "Error escuchando proyectos de Firestore", error)
+                close(error) // Cierra el flow con error si falla el listener
+                return@addSnapshotListener
+            }
+
+            if (snapshots != null) {
+                // Mapea los documentos a tu ProjectFirebaseModel
+                val firestoreProjects = snapshots.documents.mapNotNull { doc ->
+                    doc.toObject(ProjectFirebaseModel::class.java)
+                }
+                Log.d("RepositoryImpl", "Proyectos de Firestore recibidos para $userId: ${firestoreProjects.size}")
+                // Envía la lista actualizada al flow
+                trySend(firestoreProjects).isSuccess // Ignora si el flow ya está cerrado
+            }
+        }
+
+        // Se ejecuta cuando el flow es cancelado (ej. ViewModel se destruye)
+        awaitClose {
+            Log.d("RepositoryImpl", "Cancelando listener de proyectos de Firestore para $userId")
+            listenerRegistration.remove() // Detiene la escucha
+        }
+    }
+
+        override suspend fun getUnpublishedLocalOriginalsByUser(userId: String): Flow<List<Project>> {
+            Log.d("RepositoryImpl", "Obteniendo locales no publicados para $userId desde DAO")
+            // Llama a la función del DAO
+            return projectDao.getUnpublishedLocalOriginalsByUser(userId)
+                .map { listEntity -> // Mapea la lista de Entity
+                    listEntity.map { entity -> // Mapea cada Entity a Domain
+                        entity.toDomain(jsonUtils)
+                    }
+                }
+        }
+
 
     override fun getMyPosts(): Flow<List<Post>> {
         return myPostDao.getMyPosts().map { list -> list.map { it.toDomain(jsonUtils) } }

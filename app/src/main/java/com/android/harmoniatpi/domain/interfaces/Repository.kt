@@ -1,8 +1,7 @@
 package com.android.harmoniatpi.domain.interfaces
 
-
-import com.android.harmoniatpi.data.database.entities.ProjectEntity
 import com.android.harmoniatpi.data.database.entities.MyPostEntity
+import com.android.harmoniatpi.data.local.model.ProjectFirebaseModel
 import com.android.harmoniatpi.domain.model.UserPreferences
 import com.android.harmoniatpi.domain.model.project.Project
 import com.android.harmoniatpi.domain.model.userPreferences.Post
@@ -51,6 +50,12 @@ interface Repository {
         localFilePath: String,
         remotePath: String
     ): Result<String>
+
+    suspend fun upsertProjectInFirestore(projectModel: ProjectFirebaseModel): Result<Unit>
+
+    suspend fun getFirestoreProjectsByUser(userId: String): Flow<List<ProjectFirebaseModel>>
+
+    suspend fun getUnpublishedLocalOriginalsByUser(userId: String): Flow<List<Project>>
 
     fun getMyPosts(): Flow<List<Post>>
 
