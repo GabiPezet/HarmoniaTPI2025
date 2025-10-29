@@ -23,6 +23,8 @@ class Track @AssistedInject constructor(
     val path = existingFilePath ?: "$folderPath/$id.pcm"
     val originalPath = "$path.original"
     var startOffsetMs: Long = 0L
+    private var playbackStartMs: Long = 0L
+    private var playbackEndMs: Long = -1L
 
     init {
         player.setFile(path)
@@ -33,13 +35,32 @@ class Track @AssistedInject constructor(
      * Reproduce la pista.
      */
     fun play(internalStartMs: Long = 0L) {
-        player.play(internalStartMs)
-            .onSuccess {
-                Log.i(TAG, "Track $id played from internal position ${internalStartMs}ms")
-            }
-            .onFailure {
-                Log.e(TAG, "Error playing track $id", it)
-            }
+
+        val startTime = maxOf(internalStartMs, playbackStartMs)
+
+        if (playbackEndMs != -1L && internalStartMs >= playbackEndMs) {
+            Log.i(TAG, "Track $id: Seek está más allá del final del clip. No reproducir.")
+            player.stop()
+            return
+        }
+
+        if (playbackEndMs == -1L) {
+            player.play(startTime)
+                .onSuccess {
+                    Log.i(TAG, "Track $id played from $startTime ms (no end trim)")
+                }
+                .onFailure {
+                    Log.e(TAG, "Error playing track $id", it)
+                }
+        } else {
+            player.playSegment(startTime, playbackEndMs)
+                .onSuccess {
+                    Log.i(TAG, "Track $id segment played: $startTime to $playbackEndMs")
+                }
+                .onFailure {
+                    Log.e(TAG, "Error playing track segment $id", it)
+                }
+        }
     }
 
 
@@ -90,6 +111,15 @@ class Track @AssistedInject constructor(
         player.setOnPlaybackCompletedCallback {
             callback()
         }
+    }
+
+    fun setPlaybackRange(startMs: Long, endMs: Long, totalDurationMs: Long) {
+        playbackStartMs = startMs.coerceAtLeast(0L)
+
+        playbackEndMs = if (endMs >= totalDurationMs) -1L else endMs.coerceAtLeast(0L)
+
+        Log.i(TAG, "Track $id range set: $playbackStartMs to $playbackEndMs")
+
     }
 
     /**

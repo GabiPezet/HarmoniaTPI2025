@@ -165,14 +165,6 @@ fun ProjectManagementScreen(
                         track = track,
                         onClick = { viewModel.selectTrack(track.id) },
                         onDelete = { viewModel.deleteTrack() },
-                        onTrim = {
-                            if (track.waveForm.isNullOrEmpty() || track.durationMs < 50L) {
-                                Toast.makeText(context, "La pista no tiene audio para recortar", Toast.LENGTH_SHORT).show()
-                                Log.d("Trim", "Pista sin audio o muy corta para recortar.")
-                            } else {
-                                trackForTrimming = track
-                            }
-                        },
                         onShowEffects = { trackForEffects = track },
                         onUndo = {
                             viewModel.undoTrim(track.id)
@@ -194,6 +186,11 @@ fun ProjectManagementScreen(
                                 trackId,
                                 newOffset
                             )
+                        },
+                        trimStartMs = track.trimStartMs,
+                        trimEndMs = if (track.trimEndMs == -1L) track.durationMs else track.trimEndMs, // Pasamos el valor real, no -1
+                        onTrimRangeChanged = { startMs, endMs ->
+                            viewModel.updateTrackPlaybackRange(track.id, startMs, endMs)
                         }
                     )
                 }

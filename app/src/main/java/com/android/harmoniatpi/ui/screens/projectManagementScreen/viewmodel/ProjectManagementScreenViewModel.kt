@@ -23,6 +23,7 @@ import com.android.harmoniatpi.domain.usecases.audioUseCases.PauseAudioUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.PlayAudioUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.SeekToUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.SetTrackOffsetUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.SetTrackPlaybackRangeUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.SetTrackVolumeUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.StartRecordingAudioUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.StopAudioUseCase
@@ -72,7 +73,8 @@ class ProjectManagementScreenViewModel @Inject constructor(
     private val seekToUseCase: SeekToUseCase,
     private val loadProjectTrackUseCase: LoadProjectTrackUseCase,
     private val setTrackOffsetUseCase: SetTrackOffsetUseCase,
-    private val applyDelayEffectUseCase: ApplyDelayEffectUseCase
+    private val applyDelayEffectUseCase: ApplyDelayEffectUseCase,
+    private val setTrackPlaybackRangeUseCase: SetTrackPlaybackRangeUseCase
 ) : ViewModel() {
     private val _state = MutableStateFlow(ProyectScreenUiState())
     private var selectedTrack: TrackUi? = null
@@ -518,6 +520,37 @@ class ProjectManagementScreenViewModel @Inject constructor(
             currentState.copy(tracks = updatedTracks)
         }
     }
+
+    fun updateTrackPlaybackRange(trackId: Long, newStartMs: Long, newEndMs: Long) {
+        val trackUi = _state.value.tracks.find { it.id == trackId }
+        if (trackUi == null) {
+            Log.e(TAG, "TrackUI no encontrado para actualizar rango.")
+            return
+        }
+
+        val totalDuration = trackUi.durationMs
+
+        setTrackPlaybackRangeUseCase(trackId, newStartMs, newEndMs, totalDuration)
+            .onSuccess {
+                _state.update { currentState ->
+                    val updatedTracks = currentState.tracks.map { track ->
+                        if (track.id == trackId) {
+                            track.copy(
+                                trimStartMs = newStartMs,
+                                trimEndMs = if (newEndMs >= totalDuration) -1L else newEndMs
+                            )
+                        } else {
+                            track
+                        }
+                    }
+                    currentState.copy(tracks = updatedTracks)
+                }
+            }
+            .onFailure {
+                Log.e(TAG, "Error al actualizar el rango de reproducción", it)
+            }
+    }
+
 
 
     fun applyDelayEffect(trackId: Long, delayTimeInSeconds: Float, decay: Float) {

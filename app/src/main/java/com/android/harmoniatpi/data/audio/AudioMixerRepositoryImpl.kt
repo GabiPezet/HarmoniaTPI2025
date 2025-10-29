@@ -470,6 +470,14 @@ class AudioMixerRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun setPlaybackRange(trackId: Long, startMs: Long, endMs: Long, totalDurationMs: Long): Result<Unit> {
+        return runCatching {
+            tracks.value.find { it.id == trackId }?.let { track ->
+                track.setPlaybackRange(startMs, endMs, totalDurationMs)
+            } ?: throw NoSuchElementException("Track no encontrado: $trackId")
+        }
+    }
+
     override fun onPreviewCompleted(): SharedFlow<Unit> = _previewCompletedFlow.asSharedFlow()
 
 

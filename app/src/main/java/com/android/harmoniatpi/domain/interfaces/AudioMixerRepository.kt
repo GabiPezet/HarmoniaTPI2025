@@ -105,6 +105,7 @@ interface AudioMixerRepository {
      */
     fun seekTo(ms: Long)
 
+    fun setPlaybackRange(trackId: Long, startMs: Long, endMs: Long, totalDurationMs: Long): Result<Unit>
 
     suspend fun loadPcmTrack(file: File, id: Long, sourceType: AudioSourceType)
 
