@@ -16,14 +16,14 @@ class LoadProjectTrackUseCase @Inject constructor(
      * @param pcmFilePath Ruta absoluta del archivo PCM.
      * @return Result<Unit> indicando el éxito o fallo de la operación.
      */
-    suspend operator fun invoke(pcmFilePath: String, id: Long, sourceType: AudioSourceType): Result<Unit> {
+    suspend operator fun invoke(pcmFilePath: String, id: Long, sourceType: AudioSourceType, startOffsetMs: Long): Result<Unit> {
         return try {
             val file = File(pcmFilePath)
             if (!file.exists()) {
                 return Result.failure(FileNotFoundException("Archivo PCM no encontrado: $pcmFilePath"))
             }
 
-            mixer.loadPcmTrack(file, id,  sourceType)
+            mixer.loadPcmTrack(file, id, sourceType, startOffsetMs)
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)

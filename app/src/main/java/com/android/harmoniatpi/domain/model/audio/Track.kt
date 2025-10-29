@@ -38,8 +38,8 @@ class Track @AssistedInject constructor(
 
         val startTime = maxOf(internalStartMs, playbackStartMs)
 
-        if (playbackEndMs != -1L && internalStartMs >= playbackEndMs) {
-            Log.i(TAG, "Track $id: Seek está más allá del final del clip. No reproducir.")
+        if (playbackEndMs != -1L && startTime >= playbackEndMs) {
+            Log.i(TAG, "Track $id: Seek ($startTime) está más allá del final del clip ($playbackEndMs). No reproducir.")
             player.stop()
             return
         }
