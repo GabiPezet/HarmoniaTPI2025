@@ -55,7 +55,7 @@ class ProjectViewModel @Inject constructor(
     private val getProjectByIdUseCase: GetProjectByIdUseCase,
     private val insertProjectInDBUseCase: UpdateOrInsertProjectInDBUseCase,
     private val deleteProjectByIdFromDBUseCase: DeleteProjectByIdFromDBUseCase,
-    private val insertNewPostFirebaseDataBaseUseCase: InsertNewPostFirebaseDataBaseUseCase, //para crear el post
+    private val insertNewPostFirebaseDataBaseUseCase: InsertNewPostFirebaseDataBaseUseCase,
     private val exportProjectUseCase: ExportProjectUseCase,
     private val getProjectByIdFromDBUseCase: GetProjectByIdFromDBUseCase,
     private val playPreviewUseCase: PlayPreviewUseCase,
@@ -77,7 +77,7 @@ class ProjectViewModel @Inject constructor(
         listenForPreviewCompletion()
     }
 
-    // --- Cargar todos los proyectos de la base de datos
+
     fun loadAllProjects() {
         viewModelScope.launch {
             getAllProjectsFromDBUseCase()
@@ -88,7 +88,7 @@ class ProjectViewModel @Inject constructor(
                 }
         }
     }
-    // Filtrando por usuario
+
     fun loadMyProjects() {
         val currentUserId = sharedMenuUiState.uiState.value.userID
         if (currentUserId.isBlank()) {
@@ -99,7 +99,7 @@ class ProjectViewModel @Inject constructor(
         viewModelScope.launch {
             getProjectsByUserUseCase(currentUserId)
                 .collect { projects ->
-                    // Actualiza solo la lista de "mis proyectos"
+
                     _uiState.update { it.copy(myProjects = projects) }
                 }
         }
@@ -164,21 +164,21 @@ class ProjectViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                // 1. Obtenemos el proyecto ANTES de borrarlo
+
                 val projectToDelete = getProjectByIdUseCase(id)
 
-                // 2. Lo borramos
+
                 deleteProjectByIdFromDBUseCase(id)
 
-                // 3. Verificamos si era un clon nuestro
+
                 if (projectToDelete.originalProjectId != null && projectToDelete.ownerId == currentUserId) {
 
-                    // 4. Si era un clon, buscamos el original
+
                     val originalProject = try {
                         getProjectByIdUseCase(projectToDelete.originalProjectId)
-                    } catch (e: Exception) { null } // El original ya no existe
+                    } catch (e: Exception) { null }
 
-                    // 5. Si el original existe y nos tiene en su lista, nos quitamos
+
                     if (originalProject != null && originalProject.forkedByUserIds.contains(currentUserId)) {
                         val updatedForkedIds = originalProject.forkedByUserIds.filter { it != currentUserId }
                         val updatedOriginal = originalProject.copy(
@@ -188,12 +188,12 @@ class ProjectViewModel @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
-                // Manejar error si no se pudo encontrar el proyecto a borrar
+
             }
         }
     }
 
-    // --- Handlers de campos
+
     fun onTitleChange(title: String) {
         _uiState.update { it.copy(title = title) }
         validateForm()
@@ -209,7 +209,7 @@ class ProjectViewModel @Inject constructor(
         validateForm()
     }
 
-    // --- Guardar un proyecto nuevo
+
     fun saveProject(
         onSuccess: () -> Unit,
         onError: (String) -> Unit
@@ -281,14 +281,17 @@ class ProjectViewModel @Inject constructor(
 
             try {
                 Log.d("ProjectViewModel", "Iniciando generación de MP3 para publicación de ${project.id}...")
+
                 val updatedProject = getProjectByIdFromDBUseCase(project.id)
-                val trackPaths = updatedProject.urlAudioTracks.map { it.path }
+                val tracksToExport = updatedProject.urlAudioTracks
 
-                if (trackPaths.isEmpty()) throw IOException("El proyecto no tiene audio para publicar.")
+                if (tracksToExport.isEmpty()) throw IOException("El proyecto no tiene audio para publicar.")
 
-                val exportResult = exportProjectUseCase(project.id, trackPaths).getOrThrow()
+                // **Pasa la lista de AudioTrack a exportProjectUseCase**
+                val exportResult = exportProjectUseCase(project.id, tracksToExport).getOrThrow()
+
                 mixedMp3File = exportResult.mixedMp3
-                individualMp3Files = exportResult.individualMp3s // Guarda las individuales
+                individualMp3Files = exportResult.individualMp3s
                 Log.i("ProjectViewModel", "MP3 generados localmente en: ${mixedMp3File?.parent ?: "N/A"}")
 
                 val mainMp3ToUse = mixedMp3File ?: exportResult.individualMp3s.firstOrNull()
@@ -298,7 +301,7 @@ class ProjectViewModel @Inject constructor(
 
                 Log.d("ProjectViewModel", "-> PASO PENDIENTE: Subir ${mainMp3ToUse.name} a Firebase Storage.")
                 // aca iria el codigo real para la subida a storage
-                withContext(Dispatchers.Main){ Toast.makeText(context, "Subiendo audio...", Toast.LENGTH_SHORT).show() } // Feedback
+                withContext(Dispatchers.Main){ Toast.makeText(context, "Subiendo audio...", Toast.LENGTH_SHORT).show() }
                 delay(2000)
                 finalAudioUrl = "https://firebasestorage.googleapis.com/v0/b/your-bucket/o/project_audio%2F${project.id}%2F${mainMp3ToUse.name}?alt=media" // URL simulada
                 Log.d("ProjectViewModel", "URL (simulada) obtenida: $finalAudioUrl")
@@ -377,9 +380,10 @@ class ProjectViewModel @Inject constructor(
 
     private fun startPreviewPlayback(project: Project) {
         previewMixJob = viewModelScope.launch(Dispatchers.IO) {
-            val trackPaths = project.urlAudioTracks.map { it.path }
-            if (trackPaths.isEmpty()) {
-                Log.w("ProjectViewModel", "Proyecto ${project.id} sin pistas para preview.")
+
+            val tracksToMix = project.urlAudioTracks
+            if (tracksToMix.isEmpty()) {
+                Log.w("ProjectViewModel", "Project ${project.id} has no tracks for preview.")
                 withContext(Dispatchers.Main){ Toast.makeText(context, "El proyecto no tiene pistas.", Toast.LENGTH_SHORT).show()}
                 resetPlaybackState()
                 return@launch
@@ -390,40 +394,55 @@ class ProjectViewModel @Inject constructor(
 
             try {
 
-                if (!mixedPcmFile.exists() || trackPaths.size > 1) {
-                    Log.d("ProjectViewModel", "Mezclando/Copiando para preview de ${project.id}...")
-                    val sourceFile = if(trackPaths.size > 1) {
-                        mixTracksUseCase(project.id, trackPaths)
-                    } else {
-                        File(trackPaths.first())
+
+                var needsMixing = true
+
+                if (needsMixing || !mixedPcmFile.exists()) {
+                    Log.d("ProjectViewModel", "Mixing tracks for preview of ${project.id}...")
+
+                    val mixedFileResult = mixTracksUseCase(project.id, tracksToMix)
+
+                    val finalMixedFile = mixedFileResult ?: mixedPcmFile 
+                    if (!finalMixedFile.exists() || finalMixedFile.length() == 0L) {
+                        
+                        throw IOException("Fallo CRÍTICO al generar o encontrar el archivo PCM mezclado: ${finalMixedFile.absolutePath}")
                     }
-
-                    if (sourceFile == null || !sourceFile.exists()) {
-                        throw IOException("Fallo al obtener archivo fuente para preview.")
+                    
+                    if (finalMixedFile.absolutePath != mixedPcmFile.absolutePath) {
+                        finalMixedFile.copyTo(mixedPcmFile, overwrite = true)
+                        
                     }
-                    sourceFile.copyTo(mixedPcmFile, overwrite = true)
-                    Log.d("ProjectViewModel", "PCM para preview listo en caché: ${mixedPcmFile.absolutePath}")
+                    Log.d("ProjectViewModel", "Archivo de mezcla verificado OK: ${mixedPcmFile.absolutePath}, Tamaño: ${mixedPcmFile.length()}")
 
-                    if(trackPaths.size > 1 && sourceFile.absolutePath != mixedPcmFile.absolutePath) sourceFile.delete()
 
+                    if (mixedFileResult == null || !mixedFileResult.exists()) {
+                        throw IOException("Failed to generate mixed PCM file for preview.")
+                    }
+                    
+                    
+                    
+                    
+
+                    Log.d("ProjectViewModel", "PCM for preview ready in cache: ${mixedPcmFile.absolutePath}")
                 } else {
-                    Log.d("ProjectViewModel", "Usando PCM de preview existente en caché: ${mixedPcmFile.absolutePath}")
+                    Log.d("ProjectViewModel", "Using existing preview PCM from cache: ${mixedPcmFile.absolutePath}")
                 }
 
 
                 if (!isActive) return@launch
 
                 _uiState.update { it.copy(isPreviewLoading = false) }
+                
                 playPreviewUseCase(mixedPcmFile.absolutePath)
                     .onFailure { error ->
-                        Log.e("ProjectViewModel", "Error al iniciar preview desde UseCase", error)
+                        Log.e("ProjectViewModel", "Error starting preview playback from UseCase", error)
                         withContext(Dispatchers.Main){Toast.makeText(context, "Error al reproducir preview.", Toast.LENGTH_SHORT).show()}
                         resetPlaybackState()
                     }
 
             } catch (e: Exception) {
-                Log.e("ProjectViewModel", "Error preparando preview (mezcla/copia)", e)
-                withContext(Dispatchers.Main){ Toast.makeText(context, "Error al preparar preview.", Toast.LENGTH_SHORT).show()}
+                Log.e("ProjectViewModel", "Error preparing preview (mixing/copying)", e)
+                withContext(Dispatchers.Main){ Toast.makeText(context, "Error al preparar preview: ${e.message}", Toast.LENGTH_SHORT).show()}
                 resetPlaybackState()
             }
         }
@@ -439,7 +458,7 @@ class ProjectViewModel @Inject constructor(
     }
 
     private fun resetPlaybackState() {
-        // Solo actualiza si realmente hay algo que resetear, evita updates innecesarios
+        
         if(_uiState.value.currentlyPlayingProject != null || _uiState.value.isPreviewLoading){
             Log.d("ProjectViewModel", "Reseteando estado de playback.")
             _uiState.update { it.copy(currentlyPlayingProject = null, isPreviewLoading = false) }

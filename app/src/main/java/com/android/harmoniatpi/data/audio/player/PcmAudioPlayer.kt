@@ -14,6 +14,8 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileInputStream
+import java.io.FileNotFoundException
+import java.io.IOException
 import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
 import kotlin.math.roundToLong
@@ -24,14 +26,14 @@ import kotlin.math.roundToLong
  */
 class PcmAudioPlayer @Inject constructor() : AudioPlayer {
 
-    private var file: File? = null
+    internal var file: File? = null
     private var playJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var lastPos: Long = 0L
     private val sampleRate = 44100
     private val channel = AudioFormat.CHANNEL_OUT_MONO
     private val encoding = AudioFormat.ENCODING_PCM_16BIT
-    private val bytesPerSample = 2 // 16-bit PCM
+    private val bytesPerSample = 2
     private val currentPosMs = AtomicLong(0L)
     private val bufferSize = AudioTrack.getMinBufferSize(sampleRate, channel, encoding)
     val audioTrack = AudioTrack.Builder()
@@ -76,73 +78,177 @@ class PcmAudioPlayer @Inject constructor() : AudioPlayer {
         return playRange(startMs, endMs)
     }
 
-    private fun playRange(startMs: Long, endMs: Long): Result<Unit> { // Función auxiliar unificada
+    private fun playRange(startMs: Long, endMs: Long): Result<Unit> {
+
+        val currentFile = file
+        if (currentFile == null || !currentFile.exists()) {
+            Log.e(TAG, "playRange - Error: Archivo no establecido o no existe.")
+            return Result.failure(FileNotFoundException("Archivo de audio no configurado o no encontrado."))
+        }
+        val fileLengthBytes = currentFile.length()
+        if (fileLengthBytes == 0L) {
+            Log.e(TAG, "playRange - Error: El archivo PCM está vacío (${currentFile.path}).")
+
+            return Result.failure(IOException("El archivo de audio está vacío."))
+        }
+
+
+
         if (playJob != null && audioTrack.playState == AudioTrack.PLAYSTATE_PLAYING) {
-            return Result.failure(IllegalStateException("Playback already in progress"))
+            Log.w(
+                TAG,
+                "playRange - Advertencia: La reproducción ya estaba en progreso. Deteniendo la anterior."
+            )
+
+            stop()
+
         }
 
         if (audioTrack.state != AudioTrack.STATE_INITIALIZED) {
+            Log.e(
+                TAG,
+                "playRange - Error: AudioTrack no inicializado (Estado: ${audioTrack.state})."
+            )
             return Result.failure(IllegalStateException("Error initializing AudioTrack"))
         }
 
-        // defino pos inicial y final con bytes
-        val startByteOffset = msToByteOffset(startMs)
-        val endByteOffset =
-            if (endMs == Long.MAX_VALUE) file?.length() ?: Long.MAX_VALUE else msToByteOffset(endMs)
 
-        if (startByteOffset >= endByteOffset) {
-            Log.e(TAG, "Rango de reproducción inválido o vacío: $startMs ms a $endMs ms")
+        val startByteOffset = msToByteOffset(startMs)
+
+        val endByteOffset = if (endMs == Long.MAX_VALUE) {
+            fileLengthBytes
+        } else {
+            msToByteOffset(endMs).coerceAtMost(fileLengthBytes)
+        }
+
+
+
+        Log.d(TAG, "playRange - Intentando reproducir: ${currentFile.path}")
+        Log.d(
+            TAG,
+            "playRange - Rango (ms): $startMs a ${if (endMs == Long.MAX_VALUE) "Fin" else endMs}"
+        )
+        Log.d(
+            TAG,
+            "playRange - Rango (bytes): $startByteOffset a $endByteOffset (Longitud total: $fileLengthBytes)"
+        )
+
+
+
+
+
+
+        if (startByteOffset < 0 || endByteOffset <= startByteOffset) {
+            Log.e(
+                TAG,
+                "playRange - Error CRÍTICO: Rango de bytes inválido. Start: $startByteOffset, End: $endByteOffset, Length: $fileLengthBytes"
+            )
             return Result.failure(IllegalArgumentException("Rango de reproducción inválido."))
         }
 
-        audioTrack.play()
-        playJob?.cancel() // cancelo lo anterior
+
+
+
+        try {
+            audioTrack.play()
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "playRange - Error al llamar a audioTrack.play()", e)
+            return Result.failure(e)
+        }
+        playJob?.cancel()
 
         currentPosMs.set(startMs)
 
         playJob = scope.launch {
             val buffer = ByteArray(bufferSize)
             try {
-                file?.let { f ->
-                    FileInputStream(f).use { fis ->
-                        fis.skip(startByteOffset)
 
-                        var bytesReadFromStart = startByteOffset
+                FileInputStream(currentFile).use { fis ->
 
-                        var read: Int
-                        while (fis.read(buffer).also { read = it } > 0 && isActive) {
+                    var skippedBytes = 0L
+                    while (skippedBytes < startByteOffset) {
+                        val skipped = fis.skip(startByteOffset - skippedBytes)
+                        if (skipped <= 0) {
 
-                            // compruebo
-                            if (bytesReadFromStart + read > endByteOffset) {
-                                val remainingBytes = (endByteOffset - bytesReadFromStart).toInt()
-                                if (remainingBytes > 0) {
-                                    audioTrack.write(buffer, 0, remainingBytes)
-                                    bytesReadFromStart = endByteOffset
-                                }
-                                break // Detener al alcanzar el fin del segmento
-                            }
+                            Log.e(
+                                TAG,
+                                "playRange - Error: No se pudo saltar a startByteOffset $startByteOffset. Archivo demasiado corto?"
+                            )
+                            throw IOException("Fallo al buscar el inicio del audio.")
+                        }
+                        skippedBytes += skipped
+                    }
 
-                            while (audioTrack.playState == AudioTrack.PLAYSTATE_PAUSED && isActive) {
 
-                                delay(50)
-                            }
+                    var bytesReadFromStart = startByteOffset
 
-                            audioTrack.write(buffer, 0, read)
-                            bytesReadFromStart += read
+                    var read: Int
+                    while (fis.read(buffer).also { read = it } > 0 && isActive) {
 
-                            val currentSamples = (bytesReadFromStart / bytesPerSample)
-                            currentPosMs.set(currentSamples * 1000L / sampleRate)
+
+                        val bytesToWrite = if (bytesReadFromStart + read > endByteOffset) {
+                            (endByteOffset - bytesReadFromStart).toInt().coerceAtLeast(0)
+                        } else {
+                            read
+                        }
+
+                        if (bytesToWrite <= 0) {
+                            break
+                        }
+
+
+                        while (audioTrack.playState == AudioTrack.PLAYSTATE_PAUSED && isActive) {
+                            delay(50)
+                        }
+                        if (!isActive) break
+
+
+                        val written = audioTrack.write(buffer, 0, bytesToWrite)
+                        if (written < 0) {
+                            Log.e(
+                                TAG,
+                                "playRange - Error escribiendo en AudioTrack. Código de error: $written"
+                            )
+                            throw IOException("Error al escribir datos en AudioTrack")
+                        }
+                        bytesReadFromStart += written
+
+
+                        val currentSamples = (bytesReadFromStart / bytesPerSample)
+                        currentPosMs.set(currentSamples * 1000L / sampleRate)
+
+
+                        if (bytesReadFromStart >= endByteOffset) {
+                            break
                         }
                     }
                 }
 
-                audioTrack.stop()
-                audioTrack.flush()
-                currentPosMs.set(0L)
-                onPlaybackCompletedCallback?.invoke()
+
             } catch (e: Exception) {
-                Log.e(TAG, "Error during playback", e)
+                Log.e(TAG, "playRange - Error durante la reproducción en el Job", e)
+
+            } finally {
+
+                if (isActive) {
+                    Log.d(TAG, "playRange - Reproducción completada.")
+                    onPlaybackCompletedCallback?.invoke()
+                } else {
+                    Log.d(TAG, "playRange - Reproducción cancelada.")
+                }
+                try {
+                    if (audioTrack.playState != AudioTrack.PLAYSTATE_STOPPED) {
+                        audioTrack.stop()
+                        audioTrack.flush()
+                    }
+                } catch (e: IllegalStateException) {
+                    Log.w(
+                        TAG,
+                        "playRange - Advertencia: Excepción al detener/limpiar AudioTrack en finally: ${e.message}"
+                    )
+                }
                 currentPosMs.set(0L)
+                playJob = null
             }
         }
 

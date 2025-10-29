@@ -105,8 +105,9 @@ interface AudioMixerRepository {
      */
     fun seekTo(ms: Long)
 
+    fun setPlaybackRange(trackId: Long, startMs: Long, endMs: Long, totalDurationMs: Long): Result<Unit>
 
-    suspend fun loadPcmTrack(file: File, id: Long, sourceType: AudioSourceType)
+    suspend fun loadPcmTrack(file: File, id: Long, sourceType: AudioSourceType, startOffsetMs: Long)
 
     fun clearAllTracks()
 
@@ -116,6 +117,12 @@ interface AudioMixerRepository {
 
     fun onPreviewCompleted(): SharedFlow<Unit>
 
+    fun cutAudioSegment(id: Long, startMs: Long, endMs: Long): Result<Unit>
+
+    suspend fun addTrackFromSegment(sourcePath: String, startMs: Long, endMs: Long): Result<Unit>
+
     suspend fun applyDelayEffect(trackId: Long, delayTimeInSeconds: Float, decay: Float): Result<Unit>
+
+    fun undoEffect(id: Long): Result<Unit>
 
 }
