@@ -61,7 +61,6 @@ data class ProjectEntity(
             description = this.description,
             duration = this.duration.toLongOrNull() ?: 0L,
             createdAt = this.createdAt,
-            // Pasa los Strings JSON directamente
             hashtags = this.hashtags,
             forkedByUserIds = this.forkedByUserIds,
             publishedAudioUrl = this.urlCompleteAudio,

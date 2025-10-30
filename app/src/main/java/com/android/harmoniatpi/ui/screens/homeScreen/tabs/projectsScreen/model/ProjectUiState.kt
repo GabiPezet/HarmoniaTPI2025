@@ -1,5 +1,6 @@
 package com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.model
 
+import com.android.harmoniatpi.domain.model.UserPreferences
 import com.android.harmoniatpi.domain.model.project.Project
 
 data class ProjectUiState(
@@ -14,5 +15,6 @@ data class ProjectUiState(
     val allProjects : List<Project> = emptyList(),
     val tabSelected : ProjectTab = ProjectTab.MY_PROJECTS,
     val currentlyPlayingProject: Project? = null,
-    val isPreviewLoading: Boolean = false
+    val isPreviewLoading: Boolean = false,
+    val allUsers: List<UserPreferences> = emptyList()
 )

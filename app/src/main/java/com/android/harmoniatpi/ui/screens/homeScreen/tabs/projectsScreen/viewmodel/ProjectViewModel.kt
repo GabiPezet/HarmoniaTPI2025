@@ -1,8 +1,6 @@
 package com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.viewmodel
 
 import android.content.Context
-import android.media.AudioAttributes
-import android.media.MediaPlayer
 import android.util.Log
 import android.widget.Toast
 import androidx.lifecycle.ViewModel
@@ -10,7 +8,9 @@ import androidx.lifecycle.viewModelScope
 import com.android.harmoniatpi.data.local.model.ProjectFirebaseModel
 import com.android.harmoniatpi.di.util.JsonUtils
 import com.android.harmoniatpi.domain.cache.HoloJamCache
+import com.android.harmoniatpi.domain.model.UserPreferences
 import com.android.harmoniatpi.domain.model.project.Project
+import com.android.harmoniatpi.domain.model.user.User
 import com.android.harmoniatpi.domain.model.userPreferences.Post
 
 import com.android.harmoniatpi.domain.usecases.GetProjectByIdUseCase
@@ -20,6 +20,9 @@ import com.android.harmoniatpi.domain.usecases.audioUseCases.MixTracksUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.OnPreviewCompletedUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.PlayPreviewUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.StopPreviewUseCase
+import com.android.harmoniatpi.domain.usecases.firebaseUseCases.DeleteFileFromStorageUseCase
+import com.android.harmoniatpi.domain.usecases.firebaseUseCases.DeleteProjectFromFirestoreUseCase
+import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetAllUserFromDBUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetFirestoreProjectsByUserUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetUnpublishedLocalOriginalsByUserUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.InsertNewPostFirebaseDataBaseUseCase
@@ -47,7 +50,6 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -79,7 +81,10 @@ class ProjectViewModel @Inject constructor(
     private val holoJamCache: HoloJamCache,
     private val uploadAudioToStorageUseCase: UploadAudioToStorageUseCase,
     private val upsertProjectInFirestoreUseCase: UpsertProjectInFirestoreUseCase,
-    private val jsonUtils: JsonUtils
+    private val deleteProjectFromFirestoreUseCase: DeleteProjectFromFirestoreUseCase,
+    private val deleteFileFromStorageUseCase: DeleteFileFromStorageUseCase,
+    private val getAllUsersUseCase : GetAllUserFromDBUseCase,
+    private val jsonUtils: JsonUtils,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProjectUiState())
@@ -88,9 +93,19 @@ class ProjectViewModel @Inject constructor(
 
 
     init {
-        loadMyProjectsCombinedAndSync()
+
+        // 1. Inicia la sincronización en segundo plano.
+        //    Esto escucha Firestore y actualiza Room.
+        syncFirestoreToRoomInBackground()
+        // 2. Carga los proyectos de "Mis Proyectos" DESDE ROOM.
+        //    Room es ahora la única fuente de verdad para la UI.
+        loadMyProjectsFromRoom()
+        // 3. Carga los clones
         loadCollabProjects()
+        // 4. Escucha el reproductor
         listenForPreviewCompletion()
+        loadAllUsers()
+
     }
 
     // --- Cargar todos los proyectos de la base de datos
@@ -104,8 +119,10 @@ class ProjectViewModel @Inject constructor(
                 }
         }
     }
-    // Filtrando por usuario
-    fun loadMyProjectsCombinedAndSync() {
+
+
+     // Carga "Mis Proyectos" a la UI, leyendo ÚNICAMENTE desde Room.
+    private fun loadMyProjectsFromRoom() {
         val currentUserId = sharedMenuUiState.uiState.value.userID
         if (currentUserId.isBlank()) {
             _uiState.update { it.copy(myProjects = emptyList()) }
@@ -113,94 +130,110 @@ class ProjectViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            Log.d("ProjectViewModel", "Iniciando carga combinada para 'Mis Proyectos'...")
+            // getProjectsByUserUseCase -> DAO.getAllProjectsByUser (solo originales)
+            // Esto mostrará publicados y no publicados, todos desde Room.
+            getProjectsByUserUseCase(currentUserId)
+                .catch { e ->
+                    Log.e("ProjectViewModel", "[Room MyProjects Flow] Error", e)
+                    emit(emptyList())
+                }
+                .collect { myProjectsFromRoom ->
+                    Log.d("ProjectViewModel", "[Room MyProjects Flow] Recibidos ${myProjectsFromRoom.size} proyectos desde Room.")
+                    _uiState.update {
+                        it.copy(myProjects = myProjectsFromRoom.sortedByDescending { p -> p.createdAt })
+                    }
+                }
+        }
+    }
+    // Trae Los proyectos de firestore y los sincroniza con room
+    private fun syncFirestoreToRoomInBackground() {
+        val currentUserId = sharedMenuUiState.uiState.value.userID
+        if (currentUserId.isBlank()) return
 
-            // --- Flow 1: Proyectos publicados desde Firestore ---
-            val firestoreFlow: Flow<List<Project>> = getFirestoreProjectsByUserUseCase(currentUserId)
-                .map { firestoreList: List<ProjectFirebaseModel> -> // Tipo explícito
-                    Log.d("ProjectViewModel", "[Firestore Flow] Recibidos ${firestoreList.size} proyectos.")
-                    // 👇 ***** CORRECCIÓN AQUÍ ***** 👇
-                    // El error estaba aquí. Seguimos tu patrón User/Post
+        viewModelScope.launch(Dispatchers.IO) { // Sincronización en hilo IO
+            Log.d("ProjectViewModel", "Iniciando listener de Firestore en background...")
+
+            getFirestoreProjectsByUserUseCase(currentUserId)
+                .map { firestoreList ->
                     // Flujo: FirebaseModel -> Entity -> Domain
                     firestoreList.map { firebaseModel ->
-                        // 1. Convierte FirebaseModel a Entity (pasa Strings JSON)
-                        val entity = firebaseModel.toEntity()
-                        // 2. Convierte Entity a Domain (decodifica JSON)
-                        entity.toDomain(jsonUtils)
+                        firebaseModel.toEntity().toDomain(jsonUtils)
                     }
                 }
-                .onEach { firestoreDomainProjects ->
-                    // --- Sincronización Firestore -> Room ---
-                    launch(Dispatchers.IO) {
-                        // Pasamos los Project (Domain) a la sincronización
-                        synchronizeFirestoreToRoom(currentUserId, firestoreDomainProjects)
-                    }
-                }
-                .catch { e ->
-                    Log.e("ProjectViewModel", "[Firestore Flow] Error", e)
-                    emit(emptyList())
-                }
-
-            // --- Flow 2: Proyectos locales NO publicados ---
-            val localUnpublishedFlow: Flow<List<Project>> = getUnpublishedLocalOriginalsByUserUseCase(currentUserId)
-                .catch { e ->
-                    Log.e("ProjectViewModel", "[Local Unpublished Flow] Error", e)
-                    emit(emptyList())
-                }
-
-            // --- Combinación ---
-            combine(firestoreFlow, localUnpublishedFlow) { firestoreProjects, localUnpublished ->
-                Log.d("ProjectViewModel", "Combinando ${firestoreProjects.size} (Firestore) + ${localUnpublished.size} (Local NP)")
-                (firestoreProjects + localUnpublished).sortedByDescending { it.createdAt }
-            }
-                .collect { combinedList ->
-                    _uiState.update { it.copy(myProjects = combinedList) }
+                .catch { e -> Log.e("ProjectViewModel", "[Firestore Sync] Error fatal", e) }
+                .collect { firestoreDomainProjects ->
+                    // Sincroniza los datos recibidos con Room usando la lógica de FUSIÓN
+                    Log.d("ProjectViewModel", "[Firestore Sync] Recibidos ${firestoreDomainProjects.size} proyectos. Sincronizando...")
+                    synchronizeFirestoreToRoom(currentUserId, firestoreDomainProjects)
                 }
         }
     }
 
-    // ✨ FUNCIÓN AUXILIAR DE SINCRONIZACIÓN (CORREGIDA) ✨
-    private suspend fun synchronizeFirestoreToRoom(userId: String, firestoreProjects: List<Project>) { // Recibe List<Project>
+    private suspend fun synchronizeFirestoreToRoom(
+        userId: String,
+        firestoreProjects: List<Project>,
+    ) {
         Log.d("ProjectViewModel", "SYNC: Iniciando Firestore -> Room...")
         try {
             // Obtiene TODOS los originales locales (pub y no pub) para comparar
             val allLocalOriginals = getProjectsByUserUseCase(userId).firstOrNull() ?: emptyList()
-            Log.d("ProjectViewModel", "SYNC: Comparando ${firestoreProjects.size} Firestore con ${allLocalOriginals.size} locales.")
+            val localProjectsMap = allLocalOriginals.associateBy { it.id }
+            Log.d(
+                "ProjectViewModel",
+                "SYNC: Comparando ${firestoreProjects.size} Firestore con ${allLocalOriginals.size} locales."
+            )
 
             // 1. Asegurar que los de Firestore estén en Room y publicados
-            firestoreProjects.forEach { firestoreProjectAsDomain ->
-                val localMatch = allLocalOriginals.find { it.id == firestoreProjectAsDomain.id }
+            firestoreProjects.forEach { firestoreProject ->
+                val localMatch = localProjectsMap[firestoreProject.id]
+
                 if (localMatch == null) {
-                    Log.i("ProjectViewModel", "SYNC: Insertando ${firestoreProjectAsDomain.id} desde Firestore en Room.")
-                    // Inserta el Project (dominio) en Room (el UseCase lo convertirá a Entity)
-                    insertProjectInDBUseCase(firestoreProjectAsDomain)
-                } else if (!localMatch.isPublished) {
-                    Log.i("ProjectViewModel", "SYNC: Marcando ${localMatch.id} como publicado en Room.")
-                    // Actualiza el flag en Room (el UseCase lo convertirá a Entity)
-                    insertProjectInDBUseCase(localMatch.copy(isPublished = true))
+                    // CASO A: No existe localmente.
+                    // Lo insertamos tal cual viene de Firestore (sin pistas locales).
+                    Log.i("ProjectViewModel", "SYNC: Insertando ${firestoreProject.id} (de Firestore) en Room.")
+                    insertProjectInDBUseCase(firestoreProject)
+                } else {
+                    // CASO B: Existe localmente. ¡FUSIONAMOS!
+                    // Mantenemos las pistas locales (urlAudioTracks) de 'localMatch',
+                    // pero actualizamos los metadatos desde 'firestoreProject'.
+                    Log.i("ProjectViewModel", "SYNC: Fusionando metadatos de ${localMatch.id} desde Firestore.")
+
+                    val updatedProject = localMatch.copy(
+                        // --- Metadatos de Firestore ---
+                        isPublished = firestoreProject.isPublished,
+                        urlCompleteAudio = firestoreProject.urlCompleteAudio,
+                        likes = firestoreProject.likes,
+                        totalShared = firestoreProject.totalShared,
+                        // (Añade cualquier otro campo que Firebase deba controlar)
+
+                        // --- Datos Locales (implícitos en .copy) ---
+                        // urlAudioTracks = localMatch.urlAudioTracks (¡SE PRESERVAN!)
+                    )
+                    insertProjectInDBUseCase(updatedProject)
                 }
             }
 
-            // 2. Asegurar que los locales publicados que NO están en Firestore se desmarquen
+            // --- 2. Desmarcar locales que ya no están en Firestore ---
             allLocalOriginals.forEach { localProject ->
                 if (localProject.isPublished) {
                     val firestoreMatch = firestoreProjects.find { it.id == localProject.id }
                     if (firestoreMatch == null) {
-                        Log.i("ProjectViewModel", "SYNC: Desmarcando ${localProject.id} en Room (no en Firestore).")
-                        insertProjectInDBUseCase(localProject.copy(isPublished = false))
+                        // Fue borrado en otro dispositivo
+                        Log.i("ProjectViewModel", "SYNC: Desmarcando ${localProject.id} en Room (ya no está en Firestore).")
+                        insertProjectInDBUseCase(localProject.copy(isPublished = false, urlCompleteAudio = null))
                     }
                 }
             }
             Log.d("ProjectViewModel", "SYNC: Sincronización Firestore -> Room completada.")
         } catch (e: Exception) {
-            Log.e("ProjectViewModel", "SYNC: Error durante sincronización", e)
+            Log.e("ProjectViewModel", "SYNC: Error fatal durante sincronización", e)
         }
     }
 
     fun saveProjectEdits(
         projectToSave: Project,
         onSuccess: () -> Unit,
-        onError: (String) -> Unit
+        onError: (String) -> Unit,
     ) {
         val currentUserId = sharedMenuUiState.uiState.value.userID
         if (currentUserId.isBlank()) {
@@ -224,6 +257,7 @@ class ProjectViewModel @Inject constructor(
             }
         }
     }
+
     // Esta función ahora filtra la lista para Colaboraciones
     fun loadCollabProjects() {
         val currentUserId = sharedMenuUiState.uiState.value.userID
@@ -255,35 +289,68 @@ class ProjectViewModel @Inject constructor(
         if (currentUserId.isBlank()) return
 
         viewModelScope.launch {
+            var projectToDelete: Project? = null
             try {
-                // 1. Obtenemos el proyecto ANTES de borrarlo
-                val projectToDelete = getProjectByIdUseCase(id)
+                // 1. Obtenemos el proyecto ANTES de borrarlo (de Room)
+                projectToDelete = getProjectByIdUseCase(id)
 
-                // 2. Lo borramos
+                // 2. Lo borramos de Room
                 deleteProjectByIdFromDBUseCase(id)
+                Log.d("ProjectViewModel", "Proyecto $id borrado de Room.")
 
+                // 3. Si estaba publicado, borrar de Firebase
+                if (projectToDelete.isPublished) {
+                    Log.d("ProjectViewModel", "Borrando $id de Firebase...")
+
+                    // Borrar de Firestore
+                    deleteProjectFromFirestoreUseCase(id).onFailure {
+                        Log.e("ProjectViewModel", "Error al borrar $id de Firestore", it)
+                        // Opcional: ¿Mostrar error al usuario?
+                    }
+
+                    // Borrar MP3 de Storage
+                    // (Asumimos que la ruta es "projectId/mix.mp3" basado en tu `publishProject`)
+                    val remotePath = "project_audio/${projectToDelete.id}/mix.mp3"
+                    deleteFileFromStorageUseCase(remotePath).onFailure {
+                        Log.e("ProjectViewModel", "Error al borrar $remotePath de Storage", it)
+                    }
+                    // TODO: Borrar el Post de Realtime DB
+                    // Esto es más complejo porque el Post tiene su propio ID.
+                    // Necesitarías un caso de uso que "busque el post por projectId y lo borre".
+                    // Por ahora, esto borra el Proyecto y el Audio.
+                    Log.i("ProjectViewModel", "Borrado de Firebase para $id completado (excepto Post RTDB).")
+                }
                 // 3. Verificamos si era un clon nuestro
                 if (projectToDelete.originalProjectId != null && projectToDelete.ownerId == currentUserId) {
 
                     // 4. Si era un clon, buscamos el original
                     val originalProject = try {
                         getProjectByIdUseCase(projectToDelete.originalProjectId)
-                    } catch (e: Exception) { null } // El original ya no existe
+                    } catch (e: Exception) {
+                        null
+                    } // El original ya no existe
 
                     // 5. Si el original existe y nos tiene en su lista, nos quitamos
-                    if (originalProject != null && originalProject.forkedByUserIds.contains(currentUserId)) {
-                        val updatedForkedIds = originalProject.forkedByUserIds.filter { it != currentUserId }
+                    if (originalProject != null && originalProject.forkedByUserIds.contains(
+                            currentUserId
+                        )
+                    ) {
+                        val updatedForkedIds =
+                            originalProject.forkedByUserIds.filter { it != currentUserId }
                         val updatedOriginal = originalProject.copy(
                             forkedByUserIds = updatedForkedIds
                         )
                         insertProjectInDBUseCase(updatedOriginal)
                     }
                 }
-            } catch (e: Exception) {
-                // Manejar error si no se pudo encontrar el proyecto a borrar
+                } catch (e: Exception) {
+                    Log.e("ProjectViewModel", "Error al borrar proyecto $id", e)
+                    if (projectToDelete == null) {
+                        Log.e("ProjectViewModel", "El proyecto $id no se encontró en Room para borrar.")
+                    }
+                }
             }
         }
-    }
 
     // --- Handlers de campos
     fun onTitleChange(title: String) {
@@ -304,7 +371,7 @@ class ProjectViewModel @Inject constructor(
     // --- Guardar un proyecto nuevo
     fun saveProject(
         onSuccess: () -> Unit,
-        onError: (String) -> Unit
+        onError: (String) -> Unit,
     ) {
         if (!_uiState.value.isFormValid) return
 
@@ -374,10 +441,16 @@ class ProjectViewModel @Inject constructor(
             // Usaremos 'projectDataToPublish' para asegurar que usamos datos consistentes
             var projectDataToPublish: Project? = null
 
-            withContext(Dispatchers.Main) { Toast.makeText(context, "Preparando publicación...", Toast.LENGTH_SHORT).show() }
+            withContext(Dispatchers.Main) {
+                Toast.makeText(
+                    context,
+                    "Preparando publicación...",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
 
             try {
-                // --- PASO 1: Exportar MP3 localmente ---
+                // Exportar MP3 localmente ---
                 Log.d("ProjectViewModel", "Iniciando generación de MP3 para ${project.id}...")
                 // Carga los datos más frescos del proyecto desde la DB local ANTES de hacer nada más
                 projectDataToPublish = getProjectByIdFromDBUseCase(project.id)
@@ -392,29 +465,40 @@ class ProjectViewModel @Inject constructor(
                 val mainMp3ToUse = mixedMp3File ?: individualMp3Files.firstOrNull()
                 if (mainMp3ToUse == null) throw IOException("No se pudo generar el archivo MP3 principal.")
 
-                // --- PASO 2: Subir MP3 a Firebase Storage ---
+                // Subir MP3 a Firebase Storage ---
                 Log.d("ProjectViewModel", "Subiendo MP3 principal a Storage...")
-                withContext(Dispatchers.Main) { Toast.makeText(context, "Subiendo audio...", Toast.LENGTH_SHORT).show() }
-                finalAudioUrl = uploadAudioToStorageUseCase(project.id, mainMp3ToUse, "mix.mp3").getOrThrow()
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        context,
+                        "Subiendo audio...",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+                finalAudioUrl =
+                    uploadAudioToStorageUseCase(project.id, mainMp3ToUse, "mix.mp3").getOrThrow()
                 Log.i("ProjectViewModel", "Audio principal subido. URL: $finalAudioUrl")
 
-                // (Opcional) Subir tracks individuales
+                // Subir tracks individuales
                 coroutineScope { /* ... (tu código para subir tracks individuales) */ }
                 Log.d("ProjectViewModel", "Subida de tracks individuales completada (si aplica).")
 
-                // --- PASO 3: Guardar datos del Proyecto en Firestore ---
+                // Guardar datos del Proyecto en Firestore ---
                 Log.d("ProjectViewModel", "Guardando datos del proyecto en Firestore...")
-                withContext(Dispatchers.Main) { Toast.makeText(context, "Guardando información...", Toast.LENGTH_SHORT).show() }
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        context,
+                        "Guardando información...",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
 
-                // ✨✨✨ CORRECCIÓN AQUÍ ✨✨✨
-                // 1. Convierte Project (Dominio) -> ProjectEntity (Room)
-                //    (Asegúrate de que 'projectDataToPublish' no sea null)
-                val projectEntity = projectDataToPublish!!.toDataBase(jsonUtils)
+                // Convierte Project (Dominio) -> ProjectEntity (Room)
+                val projectEntity = projectDataToPublish.toDataBase(jsonUtils)
 
-                // 2. Convierte ProjectEntity (Room) -> ProjectFirebaseModel (Firebase)
+                // Convierte ProjectEntity (Room) -> ProjectFirebaseModel (Firebase)
                 var projectFirebaseModel = projectEntity.toFirebaseModel()
 
-                // 3. Sobrescribe las URLs en el FirebaseModel con las URLs finales de Storage
+                // Sobrescribe las URLs en el FirebaseModel con las URLs finales de Storage
                 //    (Porque las de 'projectEntity' son probablemente paths locales)
                 projectFirebaseModel = projectFirebaseModel.copy(
                     publishedAudioUrl = finalAudioUrl, // URL principal de Storage
@@ -423,16 +507,22 @@ class ProjectViewModel @Inject constructor(
                 )
                 upsertProjectInFirestoreUseCase(projectFirebaseModel).getOrThrow() // Guarda en Firestore
                 Log.i("ProjectViewModel", "Datos del proyecto guardados en Firestore.")
-                // --- PASO 4: Marcar Proyecto como publicado LOCALMENTE ---
+                // Marcar Proyecto como publicado LOCALMENTE (¡Y guardar URL!) ---
                 // Usa 'projectDataToPublish' como base para marcarlo como publicado
-                val finalPublishedProjectLocal = projectDataToPublish.copy(isPublished = true)
+                Log.d("ProjectViewModel", "Actualizando Room localmente con URL: $finalAudioUrl")
+                val finalPublishedProjectLocal = projectDataToPublish.copy(
+                    isPublished = true,
+                    urlCompleteAudio = finalAudioUrl
+                )
+                // Guarda la versión local fusionada (con pistas Y la URL de la nube)
                 withContext(Dispatchers.IO){ insertProjectInDBUseCase(finalPublishedProjectLocal)}
                 Log.d("ProjectViewModel", "Proyecto ${project.id} marcado como publicado localmente.")
 
-                // --- PASO 5: Crear Post en Realtime Database ---
+                // Crear Post en Realtime Database ---
                 Log.d("ProjectViewModel", "Creando Post en Realtime DB...")
                 val post = Post(
-                    id = System.currentTimeMillis().toString(), // Genera ID aquí o usa uno basado en el proyecto
+                    id = System.currentTimeMillis()
+                        .toString(), // Genera ID aquí o usa uno basado en el proyecto
                     userID = projectDataToPublish.ownerId,
                     userImagePathURL = sharedMenuUiState.uiState.value.userPhotoPathRemote,
                     title = projectDataToPublish.title,
@@ -453,34 +543,41 @@ class ProjectViewModel @Inject constructor(
                 insertNewPostFirebaseDataBaseUseCase(post)
                 Log.i("ProjectViewModel", "Post creado en Firebase Realtime DB para ${project.id}")
 
-                // --- PASO 6: Éxito ---
+                // Éxito
                 withContext(Dispatchers.Main) {
                     Toast.makeText(context, "¡Proyecto publicado!", Toast.LENGTH_LONG).show()
                     // Refrescar la lista local si es necesario (aunque el Flow debería hacerlo)
-                    // if (_uiState.value.tabSelected == ProjectTab.MY_PROJECTS) loadMyProjects()
                 }
 
             } catch (e: Exception) {
                 // --- Manejo de Errores ---
                 Log.e("ProjectViewModel", "Error publicando proyecto ${project.id}", e)
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(context, "Error al publicar: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        context,
+                        "Error al publicar: ${e.localizedMessage}",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
                 // Intenta revertir el estado local si falló
                 try {
                     // Usa 'projectDataToPublish' si no es null, si no, usa el 'project' original
                     val projectToRevert = projectDataToPublish ?: project
-                    if(projectToRevert.isPublished){
+                    if (projectToRevert.isPublished) {
                         insertProjectInDBUseCase(projectToRevert.copy(isPublished = false))
                     }
-                } catch (_: Exception){}
+                } catch (_: Exception) {
+                }
 
             } finally {
                 // --- Limpieza ---
-                withContext(Dispatchers.IO){
+                withContext(Dispatchers.IO) {
                     mixedMp3File?.delete()
                     individualMp3Files.forEach { it.delete() }
-                    Log.d("ProjectViewModel", "Archivos MP3 locales temporales eliminados (si existían).")
+                    Log.d(
+                        "ProjectViewModel",
+                        "Archivos MP3 locales temporales eliminados (si existían)."
+                    )
                 }
                 // TODO: Quitar estado de carga específico para publicación
                 // _uiState.update { it.copy(isPublishing = false, currentlyPublishingId = null) }
@@ -529,7 +626,13 @@ class ProjectViewModel @Inject constructor(
             val trackPaths = project.urlAudioTracks.map { it.path }
             if (trackPaths.isEmpty()) {
                 Log.w("ProjectViewModel", "Proyecto ${project.id} sin pistas para preview.")
-                withContext(Dispatchers.Main){ Toast.makeText(context, "El proyecto no tiene pistas.", Toast.LENGTH_SHORT).show()}
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        context,
+                        "El proyecto no tiene pistas.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
                 resetPlaybackState()
                 return@launch
             }
@@ -541,7 +644,7 @@ class ProjectViewModel @Inject constructor(
 
                 if (!mixedPcmFile.exists() || trackPaths.size > 1) {
                     Log.d("ProjectViewModel", "Mezclando/Copiando para preview de ${project.id}...")
-                    val sourceFile = if(trackPaths.size > 1) {
+                    val sourceFile = if (trackPaths.size > 1) {
                         mixTracksUseCase(project.id, trackPaths)
                     } else {
                         File(trackPaths.first())
@@ -551,12 +654,18 @@ class ProjectViewModel @Inject constructor(
                         throw IOException("Fallo al obtener archivo fuente para preview.")
                     }
                     sourceFile.copyTo(mixedPcmFile, overwrite = true)
-                    Log.d("ProjectViewModel", "PCM para preview listo en caché: ${mixedPcmFile.absolutePath}")
+                    Log.d(
+                        "ProjectViewModel",
+                        "PCM para preview listo en caché: ${mixedPcmFile.absolutePath}"
+                    )
 
-                    if(trackPaths.size > 1 && sourceFile.absolutePath != mixedPcmFile.absolutePath) sourceFile.delete()
+                    if (trackPaths.size > 1 && sourceFile.absolutePath != mixedPcmFile.absolutePath) sourceFile.delete()
 
                 } else {
-                    Log.d("ProjectViewModel", "Usando PCM de preview existente en caché: ${mixedPcmFile.absolutePath}")
+                    Log.d(
+                        "ProjectViewModel",
+                        "Usando PCM de preview existente en caché: ${mixedPcmFile.absolutePath}"
+                    )
                 }
 
 
@@ -566,13 +675,25 @@ class ProjectViewModel @Inject constructor(
                 playPreviewUseCase(mixedPcmFile.absolutePath)
                     .onFailure { error ->
                         Log.e("ProjectViewModel", "Error al iniciar preview desde UseCase", error)
-                        withContext(Dispatchers.Main){Toast.makeText(context, "Error al reproducir preview.", Toast.LENGTH_SHORT).show()}
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(
+                                context,
+                                "Error al reproducir preview.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
                         resetPlaybackState()
                     }
 
             } catch (e: Exception) {
                 Log.e("ProjectViewModel", "Error preparando preview (mezcla/copia)", e)
-                withContext(Dispatchers.Main){ Toast.makeText(context, "Error al preparar preview.", Toast.LENGTH_SHORT).show()}
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        context,
+                        "Error al preparar preview.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
                 resetPlaybackState()
             }
         }
@@ -589,18 +710,19 @@ class ProjectViewModel @Inject constructor(
 
     private fun resetPlaybackState() {
         // Solo actualiza si realmente hay algo que resetear, evita updates innecesarios
-        if(_uiState.value.currentlyPlayingProject != null || _uiState.value.isPreviewLoading){
+        if (_uiState.value.currentlyPlayingProject != null || _uiState.value.isPreviewLoading) {
             Log.d("ProjectViewModel", "Reseteando estado de playback.")
             _uiState.update { it.copy(currentlyPlayingProject = null, isPreviewLoading = false) }
         }
     }
+
     private fun listenForPreviewCompletion() {
         onPreviewCompletedUseCase()
             .onEach {
                 Log.d("ProjectViewModel", "Preview completion event received.")
 
                 withContext(Dispatchers.Main.immediate) {
-                    if (_uiState.value.currentlyPlayingProject != null){
+                    if (_uiState.value.currentlyPlayingProject != null) {
                         resetPlaybackState()
                     }
                 }
@@ -609,12 +731,26 @@ class ProjectViewModel @Inject constructor(
     }
 
 
-
-
     override fun onCleared() {
         super.onCleared()
         stopPlayback()
         Log.d("ProjectViewModel", "ViewModel cleared.")
     }
 
+    private fun loadAllUsers() {
+        viewModelScope.launch {
+            getAllUsersUseCase().collect { usersList ->
+                _uiState.update { it.copy(allUsers = usersList) }
+            }
+        }
+    }
+
+
+    fun buscarporID(
+        userID: String
+    ): UserPreferences? {
+        return uiState.value.allUsers.find {
+            it.userID == userID
+        }
+    }
 }

@@ -92,13 +92,15 @@ class CommunityViewModel @Inject constructor(
                 val clonedProject = originalProject.copy(
                     id = UUID.randomUUID().toString(),
                     ownerId = currentUserId,
+                    name = _uiState.value.userName,
+                    lastName = _uiState.value.userLastName,
                     originalProjectId = originalProject.id,
                     forkedByUserIds = emptyList()
                 )
                 insertProjectInDBUseCase(clonedProject)
 
                 // 3. Actualiza el original (local)
-                val updatedForkedIds = originalProject.forkedByUserIds + currentUserId
+                val updatedForkedIds = originalProject.forkedByUserIds + (currentUserId)
                 val updatedOriginal = originalProject.copy(
                     forkedByUserIds = updatedForkedIds
                 )

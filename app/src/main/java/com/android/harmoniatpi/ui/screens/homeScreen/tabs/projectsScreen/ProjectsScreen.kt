@@ -91,11 +91,17 @@ fun ProjectsScreen(
                 items(listToShow) { project ->
                     val isCurrentlyPlaying = uiState.currentlyPlayingProject?.id == project.id
                     val isPreviewLoading = uiState.isPreviewLoading && isCurrentlyPlaying
+                    val forkedByUsers = remember(project.forkedByUserIds, uiState.allUsers) {
+                        project.forkedByUserIds
+                            .mapNotNull { userId -> viewModel.buscarporID(userId) }
+                            .filter { it.userID != project.ownerId } // Filtramos al dueño
+                    }
                     Spacer(modifier = Modifier.height(8.dp))
                     ProjectCard(
                         project = project,
                         currentUserId = sharedState.userID,
                         selectedTab = uiState.tabSelected,
+                        forkedByUsers = forkedByUsers,
                         onNavigateToManagement = {
                             viewModel.setCurrentProject(project)
                             onNavigateToProjectManagementScreen()

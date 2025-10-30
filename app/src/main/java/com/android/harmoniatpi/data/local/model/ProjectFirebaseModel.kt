@@ -13,23 +13,14 @@ data class ProjectFirebaseModel(
     val description: String = "",
     val duration: Long = 0L,
     val createdAt: String = "",
-    // --- Campos como JSON String ---
-    val hashtags: String = "",        // ✨ TIPO STRING
-    val forkedByUserIds: String = "", // ✨ TIPO STRING
-    // --- URLs / JSON ---
+    val hashtags: String = "",
+    val forkedByUserIds: String = "",
     val publishedAudioUrl: String? = null,
-    val publishedTrackUrls: String = "", // ✨ TIPO STRING
-    // --- Otros campos ---
+    val publishedTrackUrls: String = "",
     val likes: Int = 0,
     val totalShared: Int = 0,
     val isPublished: Boolean = true
 ) {
-    // Constructor sin argumentos (generado por Kotlin)
-
-    /**
-     * Convierte este modelo de Firestore al modelo Entity de Room.
-     * Pasa los Strings JSON directamente.
-     */
     fun toEntity(): ProjectEntity {
         return ProjectEntity(
             id = this.id,
@@ -45,21 +36,11 @@ data class ProjectFirebaseModel(
             totalShared = this.totalShared,
             comments = "[]",
             urlCompleteAudio = this.publishedAudioUrl,
-            urlAudioTracks = this.publishedTrackUrls, // Pasa String JSON
-            hashtags = this.hashtags,                 // Pasa String JSON
-            forkedByUserIds = this.forkedByUserIds, // Pasa String JSON
+            urlAudioTracks = this.publishedTrackUrls,
+            hashtags = this.hashtags,
+            forkedByUserIds = this.forkedByUserIds,
             originalProjectId = null,
             isPublished = this.isPublished
         )
     }
-
-    /**
-     * Convierte este modelo de Firestore al modelo de dominio 'Project'.
-     * (Función auxiliar que usa la lógica Entity -> Domain)
-     */
-    fun toDomain(jsonUtils: JsonUtils): Project {
-        // Sigue el flujo Firebase -> Entity -> Domain
-        return this.toEntity().toDomain(jsonUtils)
-    }
 }
-// Función de extensión para convertir tu modelo de dominio a FirebaseModel

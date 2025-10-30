@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.android.harmoniatpi.domain.model.project.Project
 import com.android.harmoniatpi.ui.core.navigation.BottomBarRoutes
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.CommunityScreen
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.ProjectsScreen
@@ -15,7 +16,7 @@ fun NavigationBottomWrapper(
     drawerState: DrawerState,
     onExitApp: () -> Unit,
     onNavigateToProjectManagementScreen: () -> Unit,
-    onNavigateToVersion: () -> Unit,
+    onNavigateToVersion: (Project) -> Unit,
 ) {
     NavHost(
         navController = navController,
@@ -30,7 +31,7 @@ fun NavigationBottomWrapper(
         composable<BottomBarRoutes.RehearsalRoomRoute> {
             ProjectsScreen(
                 onNavigateToProjectManagementScreen = { onNavigateToProjectManagementScreen() },
-                onNavigateToVersion = { onNavigateToVersion() }
+                onNavigateToVersion = { project -> onNavigateToVersion(project) }
             )
         }
 

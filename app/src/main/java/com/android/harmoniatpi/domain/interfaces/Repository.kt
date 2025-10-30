@@ -4,6 +4,7 @@ import com.android.harmoniatpi.data.database.entities.MyPostEntity
 import com.android.harmoniatpi.data.local.model.ProjectFirebaseModel
 import com.android.harmoniatpi.domain.model.UserPreferences
 import com.android.harmoniatpi.domain.model.project.Project
+import com.android.harmoniatpi.domain.model.user.User
 import com.android.harmoniatpi.domain.model.userPreferences.Post
 import com.google.firebase.auth.FirebaseUser
 import kotlinx.coroutines.flow.Flow
@@ -30,6 +31,8 @@ interface Repository {
 
     fun getAllProjects ():Flow<List<Project>>
 
+    fun getAllUser (): Flow<List<UserPreferences>>
+
     fun getAllProjectsByUser(ownerId: String): Flow<List<Project>>
 
     suspend fun deleteProject(projectId: String)
@@ -52,6 +55,10 @@ interface Repository {
     ): Result<String>
 
     suspend fun upsertProjectInFirestore(projectModel: ProjectFirebaseModel): Result<Unit>
+
+    suspend fun deleteProjectFromFirestore(projectId: String): Result<Unit>
+
+    suspend fun deleteFileFromStorage(remotePath: String): Result<Unit>
 
     suspend fun getFirestoreProjectsByUser(userId: String): Flow<List<ProjectFirebaseModel>>
 

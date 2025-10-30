@@ -80,7 +80,7 @@ fun CommunityScreen(
                 items(uiState.posts) { post ->
 
                     val projectData = uiState.localProjects.find {
-                        it.originalProjectId == post.idProject
+                        it.originalProjectId == post.idProject && it.ownerId == uiState.userID
                     }
                     val isAlreadyCloned = projectData != null
 
