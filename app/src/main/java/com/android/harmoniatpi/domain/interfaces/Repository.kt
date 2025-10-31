@@ -64,6 +64,8 @@ interface Repository {
 
     suspend fun getUnpublishedLocalOriginalsByUser(userId: String): Flow<List<Project>>
 
+    suspend fun getProjectByIdFromFirestore(projectId: String): Project?
+
     fun getMyPosts(): Flow<List<Post>>
 
     suspend fun insertMyPost(post: MyPostEntity)

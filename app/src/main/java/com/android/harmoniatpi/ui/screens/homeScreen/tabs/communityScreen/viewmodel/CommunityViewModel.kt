@@ -19,6 +19,8 @@ import java.time.LocalDateTime
 import javax.inject.Inject
 import java.util.UUID
 import com.android.harmoniatpi.domain.usecases.GetProjectByIdUseCase
+import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetFirestoreProjectsByUserUseCase
+import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetProjectByIdFromFirestoreUseCase
 import com.android.harmoniatpi.domain.usecases.roomUseCases.GetAllProjectsFromDBUseCase
 import com.android.harmoniatpi.domain.usecases.roomUseCases.UpdateOrInsertProjectInDBUseCase
 import kotlinx.coroutines.flow.combine
@@ -33,7 +35,7 @@ class CommunityViewModel @Inject constructor(
     private val getAllPostFromFirebaseDataBaseUseCase: GetAllPostFromFirebaseDataBaseUseCase,
     private val updatePostFirebaseDataBaseUseCase: UpdatePostFirebaseDataBaseUseCase,
     private val deletePostFirebaseDataBaseUseCase: DeletePostFirebaseDataBaseUseCase,
-
+    private val getProjectByIdFromFirestoreUseCase: GetProjectByIdFromFirestoreUseCase,
     private val getAllProjectsFromDBUseCase: GetAllProjectsFromDBUseCase,
     private val getProjectByIdUseCase: GetProjectByIdUseCase,
     private val insertProjectInDBUseCase: UpdateOrInsertProjectInDBUseCase
@@ -85,7 +87,12 @@ class CommunityViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 // 1. Obtiene el proyecto original (asumiendo que está en la DB local por ahora)
-                val originalProject = getProjectByIdUseCase(post.idProject)
+                val originalProject = getProjectByIdFromFirestoreUseCase(post.idProject)
+
+                if (originalProject == null) {
+                    _toastEvents.emit("Error: No se pudo encontrar el proyecto original.")
+                    return@launch
+                }
 
                 // 2. Crea el clon (local)
                 val clonedProject = originalProject.copy(
@@ -95,21 +102,9 @@ class CommunityViewModel @Inject constructor(
                     lastName = _uiState.value.userLastName,
                     originalProjectId = originalProject.id,
                     forkedByUserIds = emptyList(),
-                    isPublished = false
+                    isPublished = false // <-- El clon siempre empieza como no publicado
                 )
                 insertProjectInDBUseCase(clonedProject)
-
-                /*// 3. Actualiza el original (local)
-                val updatedForkedIds = originalProject.forkedByUserIds + (currentUserId)
-                val updatedOriginal = originalProject.copy(
-                    forkedByUserIds = updatedForkedIds
-                )
-                insertProjectInDBUseCase(updatedOriginal)*/
-
-                // 4. Actualiza el Post (remoto) para sumar un "clon"
-                /* val updatedPost = post.copy(totalShared = post.totalShared + 1)
-                updatePostFirebaseDataBaseUseCase(updatedPost)
-                */
 
                 _toastEvents.emit("Proyecto clonado en colaboraciones.")
 
@@ -118,6 +113,7 @@ class CommunityViewModel @Inject constructor(
             }
         }
     }
+
     fun onNewPostClicked() {
         _uiState.update { it.copy(showCreateDialog = true) }
     }

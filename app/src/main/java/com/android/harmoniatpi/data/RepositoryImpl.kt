@@ -408,4 +408,31 @@ class RepositoryImpl @Inject constructor(
                 }
             }
         }
+
+    override suspend fun getProjectByIdFromFirestore(projectId: String): Project? =
+        withContext(Dispatchers.IO) {
+            try {
+                // 1. Busca el documento por ID en la colección "projects"
+                val document = firestore.collection("projects")
+                    .document(projectId)
+                    .get()
+                    .await()
+
+                if (document.exists()) {
+                    // 2. Lo convierte al modelo de Firebase
+                    val firebaseModel = document.toObject(ProjectFirebaseModel::class.java)
+
+                    // 3. Lo convierte al modelo de Dominio (FirebaseModel -> Entity -> Domain)
+                    // (Esta es la misma lógica que usas en tu 'sync')
+                    firebaseModel?.toEntity()?.toDomain(jsonUtils)
+                } else {
+                    // El proyecto no existe en Firestore
+                    Log.w("RepositoryImpl", "No se encontró el proyecto $projectId en Firestore.")
+                    null
+                }
+            } catch (e: Exception) {
+                Log.e("RepositoryImpl", "Error al obtener $projectId de Firestore", e)
+                null
+            }
+        }
 }
