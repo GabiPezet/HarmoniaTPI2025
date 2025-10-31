@@ -16,5 +16,6 @@ data class ProjectUiState(
     val tabSelected : ProjectTab = ProjectTab.MY_PROJECTS,
     val currentlyPlayingProject: Project? = null,
     val isPreviewLoading: Boolean = false,
-    val allUsers: List<UserPreferences> = emptyList()
+    val allUsers: List<UserPreferences> = emptyList(),
+    val isPublishing: Boolean = false
 )

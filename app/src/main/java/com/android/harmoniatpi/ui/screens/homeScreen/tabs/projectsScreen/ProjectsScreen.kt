@@ -35,7 +35,7 @@ import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.viewmod
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.PublishCloneDialog
-
+import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.PublishOriginalDialog
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProjectsScreen(
@@ -52,6 +52,7 @@ fun ProjectsScreen(
     val showMiniPlayer = uiState.currentlyPlayingProject != null
     // Padding inferior dinámico
     val bottomPadding = if (showMiniPlayer) 64.dp else 0.dp
+    var projectToPublishAsOriginal by remember { mutableStateOf<Project?>(null) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
@@ -113,11 +114,11 @@ fun ProjectsScreen(
                         onDeleteClick = { viewModel.deleteProject(project.id) },
                         onPublishClick = {
                             if (project.originalProjectId != null && project.ownerId == sharedState.userID) {
-                                // Es un clon mío, mostrar diálogo personalizado
+                                // Es un clon mío, mostrar diálogo de clon
                                 projectToPublishAsClone = project
                             } else {
-                                // Es un proyecto original, publicar directamente
-                                viewModel.publishProject(project)
+                                // Es un proyecto original, mostrar diálogo original
+                                projectToPublishAsOriginal = project
                             }
                         },
                         onNavigateToVersions = { onNavigateToVersion(project) },
@@ -172,6 +173,14 @@ fun ProjectsScreen(
             project = project,
             viewModel = viewModel,
             onDismiss = { projectToPublishAsClone = null }
+        )
+    }
+
+    projectToPublishAsOriginal?.let { project ->
+        PublishOriginalDialog(
+            project = project,
+            viewModel = viewModel,
+            onDismiss = { projectToPublishAsOriginal = null }
         )
     }
 }
