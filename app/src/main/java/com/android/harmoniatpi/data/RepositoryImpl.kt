@@ -435,4 +435,75 @@ class RepositoryImpl @Inject constructor(
                 null
             }
         }
+
+    override suspend fun getDerivedProjectsFromFirestore(originalProjectId: String): List<Project> =
+        withContext(Dispatchers.IO) {
+            try {
+                // 1. Prepara la consulta a Firestore
+                val querySnapshot = firestore.collection("projects")
+                    .whereEqualTo("originalProjectId", originalProjectId) // Busca por ID original
+                    .whereEqualTo("published", true) // Solo los que estén publicados
+                    .get()
+                    .await()
+
+                // 2. Mapea los resultados (FirebaseModel -> Entity -> Domain)
+                val projects = querySnapshot.documents.mapNotNull { document ->
+                    val firebaseModel = document.toObject(ProjectFirebaseModel::class.java)
+                    firebaseModel?.toEntity()?.toDomain(jsonUtils)
+                }
+
+                Log.d("RepositoryImpl", "Encontrados ${projects.size} derivados publicados de $originalProjectId")
+                projects
+
+            } catch (e: Exception) {
+                Log.e("RepositoryImpl", "Error al obtener derivados de Firestore", e)
+                emptyList<Project>() // Devuelve lista vacía en caso de error
+            }
+        }
+
+    override suspend fun fetchAndSyncUsersFromFirestore(userIds: List<String>): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            try {
+                val chunks = userIds.distinct().chunked(30)
+                Log.d("RepositoryImpl", "Iniciando fetch de ${userIds.size} usuarios en ${chunks.size} lotes.")
+
+                chunks.forEach { chunk ->
+                    val querySnapshot = firestore.collection("users")
+                        .whereIn("userID", chunk)
+                        .get()
+                        .await()
+
+                    // 1. Mapea de FirebaseModel a Entity
+                    querySnapshot.documents.mapNotNull { doc ->
+                        doc.toObject(UserFirebaseModel::class.java)
+                            ?.toEntity() // Convierte a UserPreferencesEntity
+
+                        // --- ✨ 2. SANITIZA LA INFORMACIÓN ANTES DE GUARDAR ✨ ---
+                    }.forEach { entity ->
+                        // Creamos una copia de la entidad, pero borrando
+                        // todos los datos privados/innecesarios.
+                        val sanitizedEntity = entity.copy(
+                            friendsList = "[]", // Borra la lista de amigos de otros
+                            projectsList = "[]", // Borra sus proyectos
+                            myPostsList = "[]", // Borra sus posts
+                            notificationList = "[]", // Borra sus notificaciones
+                            friendRequestReceived = "[]",
+                            friendRequestSent = "[]"
+                            // Dejamos intactos: userID, userName, userLastName,
+                            // userPhotoPath y userPhotoPathRemote
+                        )
+
+                        // 3. Inserta la entidad "limpia" en Room
+                        userPreferencesDao.insertUserPreferences(sanitizedEntity)
+                    }
+                }
+
+                Log.d("RepositoryImpl", "Sincronización de usuarios (sanitizada) completada.")
+                Result.success(Unit)
+
+            } catch (e: Exception) {
+                Log.e("RepositoryImpl", "Error en fetchAndSyncUsersFromFirestore", e)
+                Result.failure(e)
+            }
+        }
 }

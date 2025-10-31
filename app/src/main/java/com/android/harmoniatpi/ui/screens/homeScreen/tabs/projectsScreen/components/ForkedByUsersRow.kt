@@ -49,7 +49,7 @@ fun ForkedByUsersRow(
             Image(
                 painter = rememberAsyncImagePainter(
                     model = ImageRequest.Builder(LocalContext.current)
-                        .data(user.userPhotoPath.ifBlank { "https://picsum.photos/seed/profile/150/150" })
+                        .data(user.userPhotoPathRemote.ifBlank { "https://picsum.photos/seed/profile/150/150" })
                         .size(Size(pxSize, pxSize))
                         .crossfade(true)
                         .build()

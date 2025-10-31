@@ -66,6 +66,10 @@ interface Repository {
 
     suspend fun getProjectByIdFromFirestore(projectId: String): Project?
 
+    suspend fun getDerivedProjectsFromFirestore(originalProjectId: String): List<Project>
+
+    suspend fun fetchAndSyncUsersFromFirestore(userIds: List<String>): Result<Unit>
+
     fun getMyPosts(): Flow<List<Post>>
 
     suspend fun insertMyPost(post: MyPostEntity)

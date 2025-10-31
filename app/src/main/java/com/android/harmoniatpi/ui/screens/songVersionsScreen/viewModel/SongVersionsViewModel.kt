@@ -25,17 +25,19 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import com.android.harmoniatpi.domain.model.song.VersionType
+import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetDerivedProjectsFromFirestoreUseCase
+import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetProjectByIdFromFirestoreUseCase
 
 /**
  * ViewModel para la pantalla de detalles de canciones [com.android.harmoniatpi.ui.screens.songVersionsScreen.SongVersionsScreen]¨.
  */
 @HiltViewModel
 class SongVersionsViewModel @Inject constructor(
-    private val getSongDetailsUseCase: GetSongDetailsUseCase, // Puedes borrarlo si no se usa
     private val exoAudioPlayer: ExoAudioPlayerRepository,
-    private val savedStateHandle: SavedStateHandle, // <-- 1. INYECTAR
-    private val getProjectByIdUseCase: GetProjectByIdUseCase, // <-- 2. INYECTAR
-    private val getAllProjectsFromDBUseCase: GetAllProjectsFromDBUseCase // <-- 2. INYECTAR
+    private val savedStateHandle: SavedStateHandle,
+    private val getProjectByIdUseCase: GetProjectByIdUseCase,
+    private val getDerivedProjectsFromFirestoreUseCase: GetDerivedProjectsFromFirestoreUseCase,
+    private val getProjectByIdFromFirestoreUseCase: GetProjectByIdFromFirestoreUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SongVersionsUiState())
@@ -65,32 +67,33 @@ class SongVersionsViewModel @Inject constructor(
         _uiState.update { it.copy(isLoading = true) }
         viewModelScope.launch {
             try {
-                // 1. Obtener el proyecto en el que se hizo clic
+                // 1. Obtener el proyecto clickeado (de Room, esto está bien)
                 val clickedProject = getProjectByIdUseCase(clickedProjectId)
 
-                // 2. Determinar cuál es el proyecto original
-                val originalProject: Project
-                if (clickedProject.originalProjectId != null) {
-                    // Es un clon, buscar el original
-                    originalProject = getProjectByIdUseCase(clickedProject.originalProjectId)
-                } else {
-                    // Ya es el original
-                    originalProject = clickedProject
+                // 2. Determinar el ID del original
+                val originalProjectId = clickedProject.originalProjectId ?: clickedProject.id
+
+                // 3. Buscar el original SIEMPRE en Firestore (Correcto)
+                Log.d("SongVersionsViewModel", "Buscando original $originalProjectId en Firestore...")
+                val originalProject = getProjectByIdFromFirestoreUseCase(originalProjectId)
+
+                if (originalProject == null) {
+                    Log.e("SongVersionsViewModel", "¡Error fatal! No se encontró el proyecto original $originalProjectId en Firestore.")
+                    _uiState.update { it.copy(isLoading = false) }
+                    return@launch
                 }
 
-                // 3. Obtener TODOS los proyectos de la DB para filtrar las versiones derivadas
-                // .firstOrNull() toma el primer valor del Flow y cancela la colección
-                val allProjects = getAllProjectsFromDBUseCase().firstOrNull() ?: emptyList()
+                // DESPUÉS (Correcto, busca en remoto):
+                Log.d("SongVersionsViewModel", "Buscando derivados de ${originalProject.id} en Firestore...")
+                val derivedProjects = getDerivedProjectsFromFirestoreUseCase(originalProject.id)
+                // --- FIN DEL ARREGLO ---
 
-                // 4. Filtrar para encontrar solo las versiones derivadas (proyectos que apuntan al original)
-                val derivedProjects = allProjects.filter {
-                    it.originalProjectId == originalProject.id && it.isPublished
-                }
-                // 5. Mapear los Proyectos a los modelos que espera la UI (Song y DerivedVersion)
+
+                // 5. Mapear los Proyectos (Esto está bien)
                 val originalSong = mapProjectToSong(originalProject)
                 val derivedVersions = derivedProjects.map { mapProjectToDerivedVersion(it) }
 
-                // 6. Actualizar el UI State con los datos reales
+                // 6. Actualizar el UI State (Esto está bien)
                 _uiState.update { currentState ->
                     currentState.copy(
                         song = originalSong,
@@ -100,7 +103,6 @@ class SongVersionsViewModel @Inject constructor(
                 }
 
             } catch (e: Exception) {
-                // Manejar error (ej. proyecto no encontrado)
                 Log.e("SongVersionsViewModel", "Error al cargar datos del proyecto", e)
                 _uiState.update { it.copy(isLoading = false) }
             }

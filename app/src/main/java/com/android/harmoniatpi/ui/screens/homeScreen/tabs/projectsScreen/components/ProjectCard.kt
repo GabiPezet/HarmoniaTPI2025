@@ -157,7 +157,7 @@ fun ProjectCard(
                         maxLines = 1
                     )
                     Spacer(Modifier.height(2.dp))
-                    if (isMyProject && project.originalProjectId == null && hasBeenForkedByOthers && selectedTab == ProjectTab.MY_PROJECTS) {
+                    if (project.originalProjectId == null && selectedTab == ProjectTab.MY_PROJECTS) {
                         Spacer(Modifier.height(8.dp))
                         ForkedByUsersRow(users = forkedByUsers)
                     }

@@ -93,7 +93,7 @@ class CommunityViewModel @Inject constructor(
                     _toastEvents.emit("Error: No se pudo encontrar el proyecto original.")
                     return@launch
                 }
-
+                insertProjectInDBUseCase(originalProject)
                 // 2. Crea el clon (local)
                 val clonedProject = originalProject.copy(
                     id = UUID.randomUUID().toString(),

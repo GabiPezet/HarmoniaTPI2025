@@ -22,6 +22,7 @@ import com.android.harmoniatpi.domain.usecases.audioUseCases.PlayPreviewUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.StopPreviewUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.DeleteFileFromStorageUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.DeleteProjectFromFirestoreUseCase
+import com.android.harmoniatpi.domain.usecases.firebaseUseCases.FetchAndSyncUsersUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetAllUserFromDBUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetFirestoreProjectsByUserUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetUnpublishedLocalOriginalsByUserUseCase
@@ -84,6 +85,7 @@ class ProjectViewModel @Inject constructor(
     private val deleteProjectFromFirestoreUseCase: DeleteProjectFromFirestoreUseCase,
     private val deleteFileFromStorageUseCase: DeleteFileFromStorageUseCase,
     private val getAllUsersUseCase : GetAllUserFromDBUseCase,
+    private val fetchAndSyncUsersUseCase: FetchAndSyncUsersUseCase,
     private val jsonUtils: JsonUtils,
 ) : ViewModel() {
 
@@ -97,6 +99,8 @@ class ProjectViewModel @Inject constructor(
         // 1. Inicia la sincronización en segundo plano.
         //    Esto escucha Firestore y actualiza Room.
         syncFirestoreToRoomInBackground()
+        //OBSERVADOR DE USUARIOS ---
+        observeProjectsAndFetchUsers()
         // 2. Carga los proyectos de "Mis Proyectos" DESDE ROOM.
         //    Room es ahora la única fuente de verdad para la UI.
         loadMyProjectsFromRoom()
@@ -104,7 +108,7 @@ class ProjectViewModel @Inject constructor(
         loadCollabProjects()
         // 4. Escucha el reproductor
         listenForPreviewCompletion()
-        loadAllUsers()
+        observeAllUsersFromRoom()
 
     }
 
@@ -202,7 +206,8 @@ class ProjectViewModel @Inject constructor(
                         isPublished = firestoreProject.isPublished,
                         urlCompleteAudio = firestoreProject.urlCompleteAudio,
                         likes = firestoreProject.likes,
-                        totalShared = firestoreProject.totalShared
+                        totalShared = firestoreProject.totalShared,
+                        forkedByUserIds = firestoreProject.forkedByUserIds
                     )
                     insertProjectInDBUseCase(updatedProject)
                 }
@@ -730,10 +735,36 @@ class ProjectViewModel @Inject constructor(
         Log.d("ProjectViewModel", "ViewModel cleared.")
     }
 
-    private fun loadAllUsers() {
+    private fun observeAllUsersFromRoom() {
         viewModelScope.launch {
-            getAllUsersUseCase().collect { usersList ->
-                _uiState.update { it.copy(allUsers = usersList) }
+            // getAllUsersUseCase() ya devuelve un Flow<List<UserPreferences>>
+            // (gracias a cómo arreglamos el DAO de Room antes)
+            getAllUsersUseCase().collect { usersListFromRoom ->
+                _uiState.update { it.copy(allUsers = usersListFromRoom) }
+            }
+        }
+    }
+
+    private fun observeProjectsAndFetchUsers() {
+        viewModelScope.launch(Dispatchers.IO) { // Hilo IO para red/base de datos
+
+            // Este flow se re-ejecuta cada vez que 'myProjects' cambia (ej. por un sync)
+            uiState.map { it.myProjects }.collect { myProjectsList ->
+
+                // 1. Obtiene TODOS los IDs únicos de la lista de 'forkedByUserIds'
+                val allForkedUserIds = myProjectsList
+                    .flatMap { it.forkedByUserIds }
+                    .distinct()
+
+                if (allForkedUserIds.isNotEmpty()) {
+                    Log.d("ProjectViewModel", "IDs de usuarios detectados: $allForkedUserIds. Sincronizando...")
+                    // 2. Llama al UseCase para buscar esos IDs en Firestore
+                    //    y guardarlos en Room.
+                    fetchAndSyncUsersUseCase(allForkedUserIds)
+                        .onFailure { e ->
+                            Log.e("ProjectViewModel", "[Users Sync] Error fatal", e)
+                        }
+                }
             }
         }
     }
@@ -789,7 +820,8 @@ class ProjectViewModel @Inject constructor(
                 projectFirebaseModel = projectFirebaseModel.copy(
                     publishedAudioUrl = finalAudioUrl,
                     publishedTrackUrls = jsonUtils.encodeToJson(emptyList<String>()), // Asumimos que no subimos tracks individuales
-                    originalProjectId = projectDataToPublish.originalProjectId
+                    originalProjectId = projectDataToPublish.originalProjectId,
+                    isPublished = true
                 )
                 upsertProjectInFirestoreUseCase(projectFirebaseModel).getOrThrow()
 
@@ -849,6 +881,16 @@ class ProjectViewModel @Inject constructor(
                             )
                             insertProjectInDBUseCase(updatedOriginal)
                             Log.i("ProjectViewModel", "Proyecto original ${originalProject.id} actualizado con el fork de $clonerUserId")
+                            try {
+                                val originalFirebaseModel = updatedOriginal.toDataBase(jsonUtils).toFirebaseModel()
+                                    // Asegurarnos que también esté marcado como publicado en Firestore
+                                    .copy(isPublished = true)
+
+                                upsertProjectInFirestoreUseCase(originalFirebaseModel)
+                                Log.i("ProjectViewModel", "Proyecto original ${originalProject.id} actualizado en Firestore.")
+                            } catch (e: Exception) {
+                                Log.e("ProjectViewModel", "Fallo al actualizar el original en Firestore", e)
+                            }
                         }
                     }
                 } catch (e: Exception) {
