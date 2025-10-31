@@ -1,10 +1,10 @@
 package com.android.harmoniatpi.domain.interfaces
 
-
-import com.android.harmoniatpi.data.database.entities.ProjectEntity
 import com.android.harmoniatpi.data.database.entities.MyPostEntity
+import com.android.harmoniatpi.data.local.model.ProjectFirebaseModel
 import com.android.harmoniatpi.domain.model.UserPreferences
 import com.android.harmoniatpi.domain.model.project.Project
+import com.android.harmoniatpi.domain.model.user.User
 import com.android.harmoniatpi.domain.model.userPreferences.Post
 import com.google.firebase.auth.FirebaseUser
 import kotlinx.coroutines.flow.Flow
@@ -29,15 +29,7 @@ interface Repository {
 
     suspend fun signInWithGoogle(idToken: String): Result<FirebaseUser>
 
-    fun getAllProjects ():Flow<List<Project>>
-
-    fun getAllProjectsByUser(ownerId: String): Flow<List<Project>>
-
-    suspend fun deleteProject(projectId: String)
-
-    suspend fun insertOrUpdateProject(project: Project)
-
-    suspend fun getProjectById(projectId: String): Project
+    fun getAllUser (): Flow<List<UserPreferences>>
 
     fun getAllPostsFlowRealTimeDB(): Flow<List<Post>>
 
@@ -52,6 +44,10 @@ interface Repository {
         remotePath: String
     ): Result<String>
 
+    suspend fun deleteFileFromStorage(remotePath: String): Result<Unit>
+
+    suspend fun fetchAndSyncUsersFromFirestore(userIds: List<String>): Result<Unit>
+
     fun getMyPosts(): Flow<List<Post>>
 
     suspend fun insertMyPost(post: MyPostEntity)
@@ -59,4 +55,27 @@ interface Repository {
     suspend fun updateMyPost(post: MyPostEntity)
 
     suspend fun deleteMyPostById(id: String)
+
+    //--------------------Proyectos------------------------TODO(PROYECTOS)
+    fun getAllProjects ():Flow<List<Project>>
+
+    suspend fun getAllProjectsByUser(ownerId: String): Flow<List<Project>>
+
+    suspend fun deleteProject(projectId: String)
+
+    suspend fun insertOrUpdateProject(project: Project)
+
+    suspend fun getProjectById(projectId: String): Project
+
+    suspend fun getDerivedProjectsFromFirestore(originalProjectId: String): List<Project>
+
+    suspend fun getProjectByIdFromFirestore(projectId: String): Project?
+
+    suspend fun getFirestoreProjectsByUser(userId: String): Flow<List<ProjectFirebaseModel>>
+
+    suspend fun deleteProjectFromFirestore(projectId: String): Result<Unit>
+
+    suspend fun upsertProjectInFirestore(projectModel: ProjectFirebaseModel): Result<Unit>
+    //--------------------ProyectosFin------------------------
+
 }

@@ -34,7 +34,8 @@ import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.model.P
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.viewmodel.ProjectViewModel
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
-
+import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.PublishCloneDialog
+import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.PublishOriginalDialog
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProjectsScreen(
@@ -45,12 +46,13 @@ fun ProjectsScreen(
     val uiState by viewModel.uiState.collectAsState()
     val sharedState by viewModel.sharedMenuUiState.uiState.collectAsState()
     var projectToEdit by remember { mutableStateOf<Project?>(null) }
-    var showCreateForm by remember { mutableStateOf(false) } // 👈 Mantenemos este estado aquí
-
+    var showCreateForm by remember { mutableStateOf(false) }
+    var projectToPublishAsClone by remember { mutableStateOf<Project?>(null) }
     //Calcula si el mini-reproductor debe mostrarse
     val showMiniPlayer = uiState.currentlyPlayingProject != null
     // Padding inferior dinámico
     val bottomPadding = if (showMiniPlayer) 64.dp else 0.dp
+    var projectToPublishAsOriginal by remember { mutableStateOf<Project?>(null) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
@@ -91,11 +93,17 @@ fun ProjectsScreen(
                 items(listToShow) { project ->
                     val isCurrentlyPlaying = uiState.currentlyPlayingProject?.id == project.id
                     val isPreviewLoading = uiState.isPreviewLoading && isCurrentlyPlaying
+                    val forkedByUsers = remember(project.forkedByUserIds, uiState.allUsers) {
+                        project.forkedByUserIds
+                            .mapNotNull { userId -> viewModel.buscarporID(userId) }
+                            .filter { it.userID != project.ownerId } // Filtramos al dueño
+                    }
                     Spacer(modifier = Modifier.height(8.dp))
                     ProjectCard(
                         project = project,
                         currentUserId = sharedState.userID,
                         selectedTab = uiState.tabSelected,
+                        forkedByUsers = forkedByUsers,
                         onNavigateToManagement = {
                             viewModel.setCurrentProject(project)
                             onNavigateToProjectManagementScreen()
@@ -104,7 +112,15 @@ fun ProjectsScreen(
                         isCurrentlyPlaying = isCurrentlyPlaying,
                         onEditClick = { projectToEdit = project },
                         onDeleteClick = { viewModel.deleteProject(project.id) },
-                        onPublishClick = { viewModel.publishProject(project) },
+                        onPublishClick = {
+                            if (project.originalProjectId != null && project.ownerId == sharedState.userID) {
+                                // Es un clon mío, mostrar diálogo de clon
+                                projectToPublishAsClone = project
+                            } else {
+                                // Es un proyecto original, mostrar diálogo original
+                                projectToPublishAsOriginal = project
+                            }
+                        },
                         onNavigateToVersions = { onNavigateToVersion(project) },
                         isPreviewLoading = isPreviewLoading,
                     )
@@ -151,5 +167,22 @@ fun ProjectsScreen(
             onDismiss = { showCreateForm = false /* viewModel.dismissCreateDialog() */ }
         )
     }
+
+    projectToPublishAsClone?.let { project ->
+        PublishCloneDialog(
+            project = project,
+            viewModel = viewModel,
+            onDismiss = { projectToPublishAsClone = null }
+        )
+    }
+
+    projectToPublishAsOriginal?.let { project ->
+        PublishOriginalDialog(
+            project = project,
+            viewModel = viewModel,
+            onDismiss = { projectToPublishAsOriginal = null }
+        )
+    }
 }
+
 

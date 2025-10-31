@@ -19,12 +19,12 @@ class SongRepositoryImpl @Inject constructor(
     /**
      * Obtiene los detalles de una canción, incluyendo su versión original y sus versiones derivadas.
      */
-    override suspend fun getSongDetails(songId: String): Result<SongDetails> {
+    override suspend fun getSongDetails(proyectId: String): Result<SongDetails> {
         return try {
             // 1. Obtener el documento de la canción original
-            val songDocument = firestore.collection("songs").document(songId).get().await()
+            val songDocument = firestore.collection("songs").document(proyectId).get().await()
             if (!songDocument.exists()) {
-                throw Exception("La canción con ID $songId no fue encontrada.")
+                throw Exception("La canción con ID $proyectId no fue encontrada.")
             }
 
             // 2. Obtener el creador de la canción original a partir de su ID

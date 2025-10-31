@@ -39,6 +39,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.android.harmoniatpi.R
 import com.android.harmoniatpi.data.local.ext.findActivity
+import com.android.harmoniatpi.domain.model.project.Project
 import com.android.harmoniatpi.ui.components.CircularProgressBar
 import com.android.harmoniatpi.ui.components.ShowConfirmationDialog
 import com.android.harmoniatpi.ui.core.navigation.bottomNavigationBar.BottomBarItem
@@ -54,7 +55,7 @@ fun HomeScreen(
     drawerViewModel: DrawerContentViewModel,
     onNavigateToNotifications: () -> Unit,
     onNavigateToProjectManagementScreen: () -> Unit,
-    onNavigateToVersion: () -> Unit,
+    onNavigateToVersion: (Project) -> Unit,
     viewModel: HomeScreenViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -138,8 +139,8 @@ fun HomeScreen(
                     drawerState = drawerState,
                     onExitApp = { showExitAppDialog = true },
                     onNavigateToProjectManagementScreen = {onNavigateToProjectManagementScreen()},
-                    onNavigateToVersion = {onNavigateToVersion()})
-
+                    onNavigateToVersion = onNavigateToVersion
+                )
             }
 
         }

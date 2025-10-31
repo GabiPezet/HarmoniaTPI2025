@@ -25,6 +25,7 @@ import com.android.harmoniatpi.ui.screens.projectManagementScreen.ProjectManagem
 import com.android.harmoniatpi.ui.screens.registerScreen.RegisterScreen
 import com.android.harmoniatpi.ui.screens.songVersionsScreen.SongVersionsScreen
 import kotlinx.coroutines.launch
+import com.android.harmoniatpi.domain.model.project.Project
 
 @Composable
 fun NavigationWrapper(
@@ -88,7 +89,9 @@ fun NavigationWrapper(
                                 ProjectManagementScreenRoute
                             )
                         },
-                        onNavigateToVersion = { navController.navigate(SongVersionsScreenRoute) }
+                        onNavigateToVersion = { project: Project ->
+                            navController.navigate(SongVersionsScreenRoute(projectId = project.id))
+                        }
                     )
                 }
             )

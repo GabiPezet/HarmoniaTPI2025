@@ -16,7 +16,8 @@ data class AudioTrack(
     val volume: Float = 1f,
     val startOffsetMs: Long = 0L,
     val trimStartMs: Long = 0L,
-    val trimEndMs: Long = -1L
+    val trimEndMs: Long = -1L,
+    val remoteUrl: String? = null
 ) {
     fun toTrackUi(): TrackUi {
         return TrackUi(
@@ -30,7 +31,8 @@ data class AudioTrack(
             isUndoAvailable = isUndoAvailable,
             isMuted = isMuted,
             volume = volume,
-            startOffsetMs = startOffsetMs
+            startOffsetMs = startOffsetMs,
+            remoteUrl = remoteUrl
         )
     }
 }

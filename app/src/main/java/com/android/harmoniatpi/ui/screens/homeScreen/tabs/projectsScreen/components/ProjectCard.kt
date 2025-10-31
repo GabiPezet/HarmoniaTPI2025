@@ -45,6 +45,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
+import com.android.harmoniatpi.domain.model.UserPreferences
 import com.android.harmoniatpi.domain.model.project.Project
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.model.ProjectTab
 
@@ -53,6 +54,7 @@ fun ProjectCard(
     project: Project,
     currentUserId: String,
     selectedTab: ProjectTab,
+    forkedByUsers: List<UserPreferences>,
     onNavigateToManagement: () -> Unit,
     onTogglePlayPause: () -> Unit,
     isCurrentlyPlaying: Boolean,
@@ -60,13 +62,13 @@ fun ProjectCard(
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
     onPublishClick: () -> Unit,
-    onNavigateToVersions: () -> Unit,
+    onNavigateToVersions: (project:Project)-> Unit,
 ) {
     var showMenu by remember { mutableStateOf(false) }
     val isMyProject = project.ownerId == currentUserId
     val isMyClone = isMyProject && project.originalProjectId != null
     val forksByOthers = project.forkedByUserIds.filter { it != project.ownerId }
-    val hasBeenForkedByOthers = forksByOthers.isNotEmpty()
+    val hasBeenForkedByOthers = forkedByUsers.isNotEmpty()
 
     Card(
         modifier = Modifier
@@ -155,9 +157,9 @@ fun ProjectCard(
                         maxLines = 1
                     )
                     Spacer(Modifier.height(2.dp))
-                    if (isMyProject && project.originalProjectId == null && hasBeenForkedByOthers && selectedTab == ProjectTab.MY_PROJECTS) {
+                    if (project.originalProjectId == null && selectedTab == ProjectTab.MY_PROJECTS) {
                         Spacer(Modifier.height(8.dp))
-                        ForkedByUsersRow(forkedByUserIds = forksByOthers)
+                        ForkedByUsersRow(users = forkedByUsers)
                     }
                 }
 
@@ -193,7 +195,7 @@ fun ProjectCard(
                         // --- Opciones Condicionales ---
 
                         // Opción: Publicar (Solo para mis proyectos originales NO publicados)
-                        if (isMyProject && project.originalProjectId == null && !project.isPublished && selectedTab == ProjectTab.MY_PROJECTS) {
+                        if (!project.isPublished) {
                             DropdownMenuItem(
                                 text = { Text("Publicar") },
                                 onClick = { onPublishClick(); showMenu = false },
@@ -202,13 +204,13 @@ fun ProjectCard(
                         }
 
                         // Opción: Ver Versiones (Solo para mis proyectos originales publicados Y con forks)
-                        //if (isMyProject && project.originalProjectId == null && project.isPublished && hasBeenForkedByOthers && selectedTab == ProjectTab.MY_PROJECTS) {
+                        if (project.isPublished) {
                             DropdownMenuItem(
                                 text = { Text("Ver Versiones") },
-                                onClick = { onNavigateToVersions(); showMenu = false },
+                                onClick = { onNavigateToVersions(project); showMenu = false },
                                 leadingIcon = { Icon(Icons.Default.LibraryMusic, null) }
                             )
-                        //}
+                        }
 
                         // Opción: Editar (Solo para mis proyectos o mis clones)
                         if (isMyProject) { // Esto incluye originales y clones

@@ -10,12 +10,15 @@ import androidx.lifecycle.viewModelScope
 import com.android.harmoniatpi.domain.cache.HoloJamCache
 import com.android.harmoniatpi.domain.model.audio.AudioSourceType
 import com.android.harmoniatpi.domain.model.audio.WaveformResult
+import com.android.harmoniatpi.domain.model.project.AudioTrack
 import com.android.harmoniatpi.domain.usecases.audioUseCases.AddTrackFromFileUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.AddTrackFromSegmentUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.AddTrackUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.ApplyDelayEffectUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.ConvertMp3ToPcmUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.CutAudioSegmentUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.DeleteTrackUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.DownloadFileUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.GenerateWaveformUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.GetCurrentPlaybackPositionUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.GetIfAllTracksWherePlayedUseCase
@@ -41,6 +44,7 @@ import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -82,6 +86,8 @@ class ProjectManagementScreenViewModel @Inject constructor(
     private val addTrackFromSegmentUseCase: AddTrackFromSegmentUseCase,
     private val setTrackPlaybackRangeUseCase: SetTrackPlaybackRangeUseCase,
     private val undoEffectUseCase: UndoEffectUseCase,
+    private val downloadFileUseCase: DownloadFileUseCase,
+    private val convertMp3ToPcmUseCase: ConvertMp3ToPcmUseCase
 ) : ViewModel() {
     private val _state = MutableStateFlow(ProyectScreenUiState())
     private var selectedTrack: TrackUi? = null
@@ -105,7 +111,50 @@ class ProjectManagementScreenViewModel @Inject constructor(
                 Log.i("KlyxDevs", "Restaurando pistas del proyecto guardado...")
                 loadProjectTrackUseCase.clearAllTracks()
 
-                project.urlAudioTracks.forEach { audioTrack ->
+                coroutineScope {
+                    project.urlAudioTracks.forEach { audioTrack ->
+                        launch(Dispatchers.IO) { // Cada pista en su propio hilo
+                            val pcmFile = File(audioTrack.path)
+
+                            // --- LÓGICA DE RESTAURACIÓN ---
+                            if (!pcmFile.exists() && audioTrack.remoteUrl != null) {
+
+                                Log.w("KlyxDevs", "Falta archivo local ${pcmFile.name}. Descargando desde ${audioTrack.remoteUrl}...")
+                                val tempMp3File = File(context.cacheDir, "restore_${audioTrack.id}.mp3")
+
+                                try {
+                                    // 1. Descargar MP3
+                                    downloadFileUseCase(audioTrack.remoteUrl, tempMp3File).getOrThrow()
+
+                                    // 2. Convertir MP3 -> PCM (en la ruta final)
+                                    Log.i("KlyxDevs", "Descarga completa. Convirtiendo ${tempMp3File.name} a ${pcmFile.name}...")
+                                    convertMp3ToPcmUseCase(tempMp3File, pcmFile).getOrThrow() // Usa el UseCase corregido
+
+                                    // 3. Cargar en el mixer
+                                    Log.i("KlyxDevs", "Pista ${audioTrack.id} restaurada. Cargando en mixer...")
+                                    loadTrackIntoMixer(audioTrack)
+
+                                } catch (e: Exception) {
+                                    Log.e("KlyxDevs", "Error restaurando pista ${audioTrack.id} desde backup", e)
+                                } finally {
+                                    // 4. Borrar MP3 temporal
+                                    tempMp3File.delete()
+                                }
+
+                            } else if (pcmFile.exists()) {
+                                // LOCAL: Cargar como siempre
+                                loadTrackIntoMixer(audioTrack)
+                            } else {
+                                // ERROR: No local, no remoto
+                                Log.e("KlyxDevs", "Archivo no encontrado y sin backup remoto: ${audioTrack.path}")
+                            }
+                        }
+                    }
+                }
+
+                Log.d("KlyxDevs", "Todas las tareas de carga de pistas lanzadas.")
+
+               /* project.urlAudioTracks.forEach { audioTrack ->
                     val file = File(audioTrack.path)
                     if (file.exists()) {
                         loadProjectTrackUseCase(
@@ -132,7 +181,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
                             "Archivo no encontrado para pista ${audioTrack.id}: ${audioTrack.path}"
                         )
                     }
-                }
+                }*/
                 fetchTracks()
             }
         } else {
@@ -588,15 +637,13 @@ class ProjectManagementScreenViewModel @Inject constructor(
 
     private fun fetchTracks() {
         viewModelScope.launch {
-
             getTracks().collect { domainTracks ->
                 val savedTracksState =
                     _state.value.currentProjectSelected?.urlAudioTracks ?: emptyList()
                 val currentUiTracksMap = _state.value.tracks.associateBy { it.id }
+
                 val updatedTracksPromises = domainTracks.map { domainTrack ->
-                    // Intenta obtener datos guardados específicos de ESTA pista si existen
                     val savedTrackInfo = savedTracksState.find { it.id == domainTrack.id }
-                    // Reutiliza estado de UI si existe (para 'selected', 'selectionStart/EndMs')
                     val existingUiTrack = currentUiTracksMap[domainTrack.id]
                     val title = savedTrackInfo?.title
                         ?: if (domainTrack.sourceType == AudioSourceType.VOICE) "Voz" else "Instrumento"
@@ -631,7 +678,8 @@ class ProjectManagementScreenViewModel @Inject constructor(
                         isMuted = domainTrack.isMuted(),
                         volume = domainTrack.getVolume(),
                         selectionStartMs = existingUiTrack?.selectionStartMs,
-                        selectionEndMs = existingUiTrack?.selectionEndMs
+                        selectionEndMs = existingUiTrack?.selectionEndMs,
+                        remoteUrl = savedTrackInfo?.remoteUrl
                     )
                 }
 
@@ -705,6 +753,30 @@ class ProjectManagementScreenViewModel @Inject constructor(
         }
     }
 
+
+    private suspend fun loadTrackIntoMixer(audioTrack: AudioTrack) {
+        loadProjectTrackUseCase(
+            pcmFilePath = audioTrack.path,
+            id = audioTrack.id,
+            sourceType = audioTrack.sourceType,
+            startOffsetMs = audioTrack.startOffsetMs
+        )
+            .onSuccess {
+                Log.i("KlyxDevs", "Pista restaurada en el mixer: ${audioTrack.id}")
+            }
+            .onFailure { e ->
+                Log.e("KlyxDevs", "Error restaurando pista ${audioTrack.id}: ${e.message}", e)
+            }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        // Limpia todas las pistas del AudioMixerRepository
+        loadProjectTrackUseCase.clearAllTracks()
+        Log.d("PManagementViewModel", "ViewModel destruido, limpiando pistas del mixer.")
+    }
+
+
     fun zoomIn() {
         val currentScale = _state.value.msPerDpScale
         val newScale = (currentScale / 1.5f).coerceIn(2f, 50f)
@@ -730,7 +802,6 @@ class ProjectManagementScreenViewModel @Inject constructor(
             )
         }
     }
-
 
 
     private companion object {

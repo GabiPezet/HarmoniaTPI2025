@@ -2,6 +2,7 @@ package com.android.harmoniatpi.data.database.entities
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.android.harmoniatpi.data.local.model.ProjectFirebaseModel
 import com.android.harmoniatpi.di.util.JsonUtils
 import com.android.harmoniatpi.domain.model.project.AudioTrack
 import com.android.harmoniatpi.domain.model.project.Project
@@ -42,13 +43,31 @@ data class ProjectEntity(
         likes = likes,
         totalShared = totalShared,
         comments = jsonUtils.decodeJsonToListObject<Comment>(comments),
-        urlCompleteAudio = if (urlCompleteAudio.isNullOrEmpty()) null else jsonUtils.decodeJsonToObject<AudioTrack>(
-            urlCompleteAudio
-        ),
+        urlCompleteAudio = urlCompleteAudio,
         urlAudioTracks = jsonUtils.decodeJsonToListObject<AudioTrack>(urlAudioTracks),
         hashtags = jsonUtils.decodeJsonToListObject<String>(hashtags),
         forkedByUserIds = jsonUtils.decodeJsonToListObject<String>(forkedByUserIds),
         originalProjectId = originalProjectId,
         isPublished = isPublished
     )
+
+    fun toFirebaseModel(): ProjectFirebaseModel {
+        return ProjectFirebaseModel(
+            id = this.id,
+            ownerId = this.ownerId,
+            name = this.name,
+            lastName = this.lastName,
+            title = this.title,
+            description = this.description,
+            duration = this.duration.toLongOrNull() ?: 0L,
+            createdAt = this.createdAt,
+            hashtags = this.hashtags,
+            forkedByUserIds = this.forkedByUserIds,
+            publishedAudioUrl = this.urlCompleteAudio,
+            publishedTrackUrls = this.urlAudioTracks,
+            likes = this.likes,
+            totalShared = this.totalShared,
+            isPublished = this.isPublished
+        )
+    }
 }

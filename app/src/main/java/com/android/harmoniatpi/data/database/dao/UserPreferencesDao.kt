@@ -5,7 +5,11 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import com.android.harmoniatpi.data.database.entities.ProjectEntity
 import com.android.harmoniatpi.data.database.entities.UserPreferencesEntity
+import com.android.harmoniatpi.domain.model.UserPreferences
+import com.android.harmoniatpi.domain.model.user.User
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface UserPreferencesDao {
@@ -15,6 +19,9 @@ interface UserPreferencesDao {
 
     @Update
     suspend fun updateUserPreferences(userPreferences: UserPreferencesEntity)
+
+    @Query("SELECT * FROM UserPreferencesTable")
+    fun getAllUser(): Flow<List<UserPreferencesEntity>>
 
     @Query("SELECT * FROM UserPreferencesTable WHERE userID = :userID LIMIT 1")
     suspend fun getUserPreferences(userID: String): UserPreferencesEntity?
@@ -29,6 +36,8 @@ interface UserPreferencesDao {
             friendRequestSent = COALESCE(:friendRequestSent, friendRequestSent)
         WHERE userID = :userID
     """)
+
+
     suspend fun updateSocialData(
         userID: String,
         friendsList: String? = null,

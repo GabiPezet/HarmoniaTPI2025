@@ -172,8 +172,7 @@ fun PostCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 12.dp),
-                    // AQUÍ ESTÁ EL CAMBIO:
-                    horizontalArrangement = Arrangement.End, // Alineados al final
+                    horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     val defaultTint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -188,8 +187,8 @@ fun PostCard(
 
                     Spacer(Modifier.width(24.dp)) // <-- Spacer fijo
 
-                    // 2. Clonar (en lugar de Retweet)
-                    if (post.idProject.isNotBlank()) {
+                    // 2. Clonar
+                    if (post.idProject.isNotBlank() && post.clonedOption == true) {
                         val isCloneEnabled = !isAlreadyCloned && !isMyPost
                         val (cloneIcon, cloneTint) = if (isAlreadyCloned) {
                             Icons.Default.Check to MaterialTheme.colorScheme.primary
