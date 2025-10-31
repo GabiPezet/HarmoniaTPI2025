@@ -76,6 +76,13 @@ class ExoAudioPlayerRepositoryImpl @Inject constructor(
     }
 
     /**
+     * Reanuda la reproducción si está pausada.
+     */
+    override fun resume() {
+        exoPlayer?.play()
+    }
+
+    /**
      * Salta a una posición especifica en el audio.
      * @param positionMs Posición en milisegundos a la que saltar.
      */

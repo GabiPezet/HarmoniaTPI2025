@@ -1,35 +1,32 @@
 package com.android.harmoniatpi.ui.screens.songVersionsScreen.viewModel
+
 import android.util.Log
-import androidx.lifecycle.SavedStateHandle // <-- 1. IMPORTAR
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.harmoniatpi.domain.interfaces.ExoAudioPlayerRepository
-import com.android.harmoniatpi.domain.model.project.Project // <-- IMPORTAR
-// 2. IMPORTAR LOS MODELOS QUE LA UI ESPERA
+import com.android.harmoniatpi.domain.model.project.Project
 import com.android.harmoniatpi.domain.model.song.DerivedVersion
 import com.android.harmoniatpi.domain.model.song.Song
+import com.android.harmoniatpi.domain.model.song.VersionType
 import com.android.harmoniatpi.domain.model.user.User
-import com.android.harmoniatpi.domain.usecases.GetProjectByIdUseCase // <-- 3. IMPORTAR USE CASE
-import com.android.harmoniatpi.domain.usecases.GetSongDetailsUseCase
-import com.android.harmoniatpi.domain.usecases.roomUseCases.GetAllProjectsFromDBUseCase // <-- 3. IMPORTAR USE CASE
+import com.android.harmoniatpi.domain.usecases.GetProjectByIdUseCase
+import com.android.harmoniatpi.domain.usecases.firebaseUseCases.FetchAndSyncUsersUseCase
+import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetAllUserFromDBUseCase
+import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetDerivedProjectsFromFirestoreUseCase
+import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetProjectByIdFromFirestoreUseCase
 import com.android.harmoniatpi.ui.screens.songVersionsScreen.createMockDerivedVersions
 import com.android.harmoniatpi.ui.screens.songVersionsScreen.createMockSong
 import com.android.harmoniatpi.ui.screens.songVersionsScreen.model.PlaybackState
 import com.android.harmoniatpi.ui.screens.songVersionsScreen.model.SongVersionsUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.firstOrNull // <-- IMPORTAR
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import com.android.harmoniatpi.domain.model.song.VersionType
-import com.android.harmoniatpi.domain.usecases.firebaseUseCases.FetchAndSyncUsersUseCase
-import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetAllUserFromDBUseCase
-import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetDerivedProjectsFromFirestoreUseCase
-import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetProjectByIdFromFirestoreUseCase
-import kotlinx.coroutines.Dispatchers
 
 /**
  * ViewModel para la pantalla de detalles de canciones [com.android.harmoniatpi.ui.screens.songVersionsScreen.SongVersionsScreen]¨.
@@ -50,7 +47,8 @@ class SongVersionsViewModel @Inject constructor(
 
     init {
         // 3. Obtener el ID del proyecto desde la navegación
-        val clickedProjectId: String? = savedStateHandle["projectId"] // Asume que la ruta es ".../{projectId}"
+        val clickedProjectId: String? =
+            savedStateHandle["projectId"] // Asume que la ruta es ".../{projectId}"
 
         if (clickedProjectId != null) {
             // 4. Cargar datos reales en lugar de los mocks
@@ -80,22 +78,32 @@ class SongVersionsViewModel @Inject constructor(
                 val originalProjectId = clickedProject.originalProjectId ?: clickedProject.id
 
                 // 3. Buscar el original SIEMPRE en Firestore (Correcto)
-                Log.d("SongVersionsViewModel", "Buscando original $originalProjectId en Firestore...")
+                Log.d(
+                    "SongVersionsViewModel",
+                    "Buscando original $originalProjectId en Firestore..."
+                )
                 val originalProject = getProjectByIdFromFirestoreUseCase(originalProjectId)
 
                 if (originalProject == null) {
-                    Log.e("SongVersionsViewModel", "¡Error fatal! No se encontró el proyecto original $originalProjectId en Firestore.")
+                    Log.e(
+                        "SongVersionsViewModel",
+                        "¡Error fatal! No se encontró el proyecto original $originalProjectId en Firestore."
+                    )
                     _uiState.update { it.copy(isLoading = false) }
                     return@launch
                 }
 
                 // DESPUÉS (Correcto, busca en remoto):
-                Log.d("SongVersionsViewModel", "Buscando derivados de ${originalProject.id} en Firestore...")
+                Log.d(
+                    "SongVersionsViewModel",
+                    "Buscando derivados de ${originalProject.id} en Firestore..."
+                )
                 val derivedProjects = getDerivedProjectsFromFirestoreUseCase(originalProject.id)
                 // --- FIN DEL ARREGLO ---
 
                 viewModelScope.launch(Dispatchers.IO) {
-                    val allOwnerIds = (derivedProjects.map { it.ownerId } + originalProject.ownerId).distinct()
+                    val allOwnerIds =
+                        (derivedProjects.map { it.ownerId } + originalProject.ownerId).distinct()
                     if (allOwnerIds.isNotEmpty()) {
                         Log.d("SongVersionsViewModel", "Sincronizando avatares para: $allOwnerIds")
                         fetchAndSyncUsersUseCase(allOwnerIds)
@@ -179,11 +187,41 @@ class SongVersionsViewModel @Inject constructor(
     private fun observePlaybackPosition() {
         viewModelScope.launch {
             exoAudioPlayer.getCurrentPositionMs().collect { currentPositionMs ->
-                if (_uiState.value.playbackState.isPlaying) {
-                    _uiState.update {
-                        it.copy(playbackState = it.playbackState.copy(currentPositionMs = currentPositionMs))
+                // Leemos el estado actual
+                val currentState = _uiState.value
+                val playbackState = currentState.playbackState
+
+                // SOLO actualizamos la posición si el ViewModel CREE que está sonando
+                if (playbackState.isPlaying) {
+
+                    val totalDuration = playbackState.totalDurationMs
+
+                    // Comprobamos si la canción terminó (mientras sonaba)
+                    if (totalDuration > 0 && currentPositionMs >= totalDuration) {
+
+                        // --- Lógica de FIN DE CANCIÓN ---
+                        _uiState.update {
+                            it.copy(
+                                playbackState = it.playbackState.copy(
+                                    isPlaying = false,
+                                    currentPositionMs = totalDuration // Fija el slider al final
+                                ),
+                                playingSongId = null // Libera el ID
+                            )
+                        }
+                    } else {
+                        // --- Lógica de REPRODUCCIÓN ---
+                        // Sigue sonando, solo actualiza la posición
+                        _uiState.update {
+                            it.copy(playbackState = it.playbackState.copy(currentPositionMs = currentPositionMs))
+                        }
                     }
                 }
+
+                // Si 'playbackState.isPlaying' es false (es decir, pausado o detenido),
+                // no hacemos NADA. El 'currentPositionMs' del UiState
+                // se queda "congelado" en el último valor que tuvo,
+                // que es exactamente lo que queremos.
             }
         }
     }
@@ -209,14 +247,23 @@ class SongVersionsViewModel @Inject constructor(
     fun onPlayPauseOriginal() {
         val currentState = _uiState.value
         val song = currentState.song ?: return
-        val isPlayingThis = currentState.playingSongId == song.id
 
-        if (isPlayingThis) {
+        val isThisSongActive = currentState.playingSongId == song.id
+        val isCurrentlyPlaying = currentState.playbackState.isPlaying
+
+        if (isThisSongActive && isCurrentlyPlaying) {
             exoAudioPlayer.pause()
-            _uiState.update { it.copy(playbackState = it.playbackState.copy(isPlaying = false)) }
+            _uiState.update {
+                it.copy(playbackState = it.playbackState.copy(isPlaying = false))
+            }
+        } else if (isThisSongActive && !isCurrentlyPlaying) {
+            exoAudioPlayer.resume()
+            _uiState.update {
+                it.copy(playbackState = it.playbackState.copy(isPlaying = true))
+            }
         } else {
             exoAudioPlayer.stop()
-            exoAudioPlayer.play(song.audioUrl) // Usa la URL del 'Song' mapeado
+            exoAudioPlayer.play(song.audioUrl)
             _uiState.update {
                 it.copy(
                     playingSongId = song.id,
@@ -235,20 +282,26 @@ class SongVersionsViewModel @Inject constructor(
     fun onPlayPauseDerived(versionId: String) {
         val currentState = _uiState.value
         val targetVersion = currentState.derivedVersions.find { it.id == versionId } ?: return
-        val isPlayingThis = currentState.playingSongId == versionId
 
-        if (isPlayingThis) {
+        val isThisSongActive = currentState.playingSongId == versionId
+        val isCurrentlyPlaying = currentState.playbackState.isPlaying
+
+        if (isThisSongActive && isCurrentlyPlaying) {
             exoAudioPlayer.pause()
             _uiState.update {
                 it.copy(
                     playbackState = it.playbackState.copy(isPlaying = false),
-                    playingSongId = null
                 )
+            }
+        } else if (isThisSongActive && !isCurrentlyPlaying) {
+            exoAudioPlayer.resume()
+            _uiState.update {
+                it.copy(playbackState = it.playbackState.copy(isPlaying = true))
             }
         } else {
             exoAudioPlayer.stop()
             targetVersion.audioUrl?.let { url ->
-                exoAudioPlayer.play(url) // Usa la URL de la 'DerivedVersion' mapeada
+                exoAudioPlayer.play(url)
                 _uiState.update {
                     it.copy(
                         playingSongId = versionId,
