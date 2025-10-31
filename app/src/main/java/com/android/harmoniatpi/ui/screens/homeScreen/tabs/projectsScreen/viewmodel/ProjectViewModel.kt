@@ -65,7 +65,7 @@ class ProjectViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val getAllProjectsFromDBUseCase: GetAllProjectsFromDBUseCase,
     private val getProjectsByUserUseCase: GetProjectsByUserUseCase,
-    private val getProjectByIdUseCase: GetProjectByIdUseCase,
+    internal val getProjectByIdUseCase: GetProjectByIdUseCase,
     private val getFirestoreProjectsByUserUseCase: GetFirestoreProjectsByUserUseCase,
     private val getUnpublishedLocalOriginalsByUserUseCase: GetUnpublishedLocalOriginalsByUserUseCase,
     private val insertProjectInDBUseCase: UpdateOrInsertProjectInDBUseCase,
@@ -176,11 +176,11 @@ class ProjectViewModel @Inject constructor(
         Log.d("ProjectViewModel", "SYNC: Iniciando Firestore -> Room...")
         try {
             // Obtiene TODOS los originales locales (pub y no pub) para comparar
-            val allLocalOriginals = getProjectsByUserUseCase(userId).firstOrNull() ?: emptyList()
-            val localProjectsMap = allLocalOriginals.associateBy { it.id }
+            val allLocalProjects = getAllProjectsFromDBUseCase().firstOrNull() ?: emptyList()
+            val localProjectsMap = allLocalProjects.associateBy { it.id }
             Log.d(
                 "ProjectViewModel",
-                "SYNC: Comparando ${firestoreProjects.size} Firestore con ${allLocalOriginals.size} locales."
+                "SYNC: Comparando ${firestoreProjects.size} Firestore con ${allLocalProjects.size} locales."
             )
 
             // 1. Asegurar que los de Firestore estén en Room y publicados
@@ -199,21 +199,17 @@ class ProjectViewModel @Inject constructor(
                     Log.i("ProjectViewModel", "SYNC: Fusionando metadatos de ${localMatch.id} desde Firestore.")
 
                     val updatedProject = localMatch.copy(
-                        // --- Metadatos de Firestore ---
                         isPublished = firestoreProject.isPublished,
                         urlCompleteAudio = firestoreProject.urlCompleteAudio,
                         likes = firestoreProject.likes,
-                        totalShared = firestoreProject.totalShared,
-                        // (Añade cualquier otro campo que Firebase deba controlar)
-
-                        // --- Datos Locales (implícitos en .copy) ---
-                        // urlAudioTracks = localMatch.urlAudioTracks (¡SE PRESERVAN!)
+                        totalShared = firestoreProject.totalShared
                     )
                     insertProjectInDBUseCase(updatedProject)
                 }
             }
 
             // --- 2. Desmarcar locales que ya no están en Firestore ---
+            val allLocalOriginals = getProjectsByUserUseCase(userId).firstOrNull() ?: emptyList()
             allLocalOriginals.forEach { localProject ->
                 if (localProject.isPublished) {
                     val firestoreMatch = firestoreProjects.find { it.id == localProject.id }
@@ -745,12 +741,141 @@ class ProjectViewModel @Inject constructor(
         }
     }
 
-
     fun buscarporID(
         userID: String
     ): UserPreferences? {
         return uiState.value.allUsers.find {
             it.userID == userID
+        }
+    }
+
+    fun publishClonedProject(
+        projectToPublish: Project,
+        postTitle: String,
+        postDescription: String,
+        onComplete: () -> Unit
+    ) {
+        // Esta función es casi idéntica a `publishProject`,
+        // pero está pensada para CLONES.
+
+        viewModelScope.launch {
+            var mixedMp3File: File? = null
+            var finalAudioUrl: String? = null
+            // Usamos el 'projectToPublish' que recibimos
+            val projectDataToPublish: Project = projectToPublish
+
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, "Publicando versión...", Toast.LENGTH_SHORT).show()
+            }
+
+            try {
+                // --- PASO 1: Exportar MP3 localmente ---
+                val trackPaths = projectDataToPublish.urlAudioTracks.map { it.path }
+                if (trackPaths.isEmpty()) throw IOException("El proyecto no tiene audio para publicar.")
+
+                val exportResult = exportProjectUseCase(projectDataToPublish.id, trackPaths).getOrThrow()
+                mixedMp3File = exportResult.mixedMp3
+                val mainMp3ToUse = mixedMp3File ?: exportResult.individualMp3s.firstOrNull()
+                if (mainMp3ToUse == null) throw IOException("No se pudo generar el archivo MP3.")
+
+                // --- PASO 2: Subir MP3 a Firebase Storage ---
+                withContext(Dispatchers.Main) { Toast.makeText(context, "Subiendo audio...", Toast.LENGTH_SHORT).show() }
+                finalAudioUrl = uploadAudioToStorageUseCase(projectDataToPublish.id, mainMp3ToUse, "mix.mp3").getOrThrow()
+
+                // --- PASO 3: Guardar datos del Proyecto en Firestore ---
+                // (Exactamente como en publishProject)
+                val projectEntity = projectDataToPublish.toDataBase(jsonUtils)
+                var projectFirebaseModel = projectEntity.toFirebaseModel()
+                projectFirebaseModel = projectFirebaseModel.copy(
+                    publishedAudioUrl = finalAudioUrl,
+                    publishedTrackUrls = jsonUtils.encodeToJson(emptyList<String>()), // Asumimos que no subimos tracks individuales
+                    originalProjectId = projectDataToPublish.originalProjectId
+                )
+                upsertProjectInFirestoreUseCase(projectFirebaseModel).getOrThrow()
+
+                // --- PASO 4: Marcar Proyecto como publicado LOCALMENTE ---
+                val finalPublishedProjectLocal = projectDataToPublish.copy(
+                    isPublished = true,
+                    urlCompleteAudio = finalAudioUrl
+                )
+                withContext(Dispatchers.IO){ insertProjectInDBUseCase(finalPublishedProjectLocal)}
+
+                // --- PASO 5: Crear Post en Realtime Database (LA PARTE CLAVE) ---
+                Log.d("ProjectViewModel", "Creando Post para el CLON...")
+                val post = Post(
+                    id = System.currentTimeMillis().toString(),
+                    userID = projectDataToPublish.ownerId,
+                    userImagePathURL = sharedMenuUiState.uiState.value.userPhotoPathRemote,
+
+                    // DATOS PERSONALIZADOS DEL DIÁLOGO ---
+                    title = postTitle,
+                    description = postDescription,
+
+
+                    name = projectDataToPublish.name,
+                    lasName = projectDataToPublish.lastName,
+                    hashtags = projectDataToPublish.hashtags, // Usamos los hashtags del proyecto
+
+                    // --- ✨ ASOCIACIÓN ✨ ---
+                    // El idProject ES el ID del clon.
+                    // La conexión con el original está DENTRO del 'projectDataToPublish'
+                    idProject = projectDataToPublish.id,
+                    // --- ✨ ------------ ✨ ---
+
+                    urlCompleteAudio = finalAudioUrl ?: "",
+                    urlAudioTracks = emptyList(), // No subimos tracks individuales por ahora
+                    imageUrl = "",
+                    createdAt = LocalDateTime.now().toString(),
+                    likes = 0,
+                    totalShared = 0, // Inicia en 0 clones (este post es de un clon, pero puede ser clonado a su vez)
+                    comments = emptyList(),
+                    clonedOption = false // Permitir que este clon sea clonado
+                )
+                insertNewPostFirebaseDataBaseUseCase(post)
+                Log.i("ProjectViewModel", "Post creado en Firebase Realtime DB para el clon ${projectDataToPublish.id}")
+
+                Log.d("ProjectViewModel", "Actualizando el proyecto original localmente...")
+                try {
+                    val originalId = projectDataToPublish.originalProjectId
+                    if (originalId != null) {
+                        val originalProject = getProjectByIdUseCase(originalId)
+                        val clonerUserId = projectDataToPublish.ownerId // El ID del usuario que está publicando el clon
+
+                        // Añadir el ID solo si no está ya (para evitar duplicados)
+                        if (!originalProject.forkedByUserIds.contains(clonerUserId)) {
+                            val updatedForkedIds = originalProject.forkedByUserIds + clonerUserId
+                            val updatedOriginal = originalProject.copy(
+                                forkedByUserIds = updatedForkedIds
+                            )
+                            insertProjectInDBUseCase(updatedOriginal)
+                            Log.i("ProjectViewModel", "Proyecto original ${originalProject.id} actualizado con el fork de $clonerUserId")
+                        }
+                    }
+                } catch (e: Exception) {
+                    // Si esto falla, no queremos que falle toda la publicación.
+                    // Simplemente registramos el error.
+                    Log.e("ProjectViewModel", "Fallo al actualizar el proyecto original, pero la publicación del clon fue exitosa.", e)
+                }
+                // --- PASO 6: Éxito ---
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "¡Versión publicada!", Toast.LENGTH_LONG).show()
+                }
+
+            } catch (e: Exception) {
+                // --- Manejo de Errores ---
+                Log.e("ProjectViewModel", "Error publicando clon ${projectToPublish.id}", e)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Error al publicar: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                }
+                // (Opcional: Revertir estado local)
+
+            } finally {
+                // --- Limpieza ---
+                withContext(Dispatchers.IO) {
+                    mixedMp3File?.delete()
+                }
+                onComplete()
+            }
         }
     }
 }

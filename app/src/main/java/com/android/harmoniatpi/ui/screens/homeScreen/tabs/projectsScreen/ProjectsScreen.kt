@@ -34,6 +34,7 @@ import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.model.P
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.viewmodel.ProjectViewModel
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
+import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.PublishCloneDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,7 +47,7 @@ fun ProjectsScreen(
     val sharedState by viewModel.sharedMenuUiState.uiState.collectAsState()
     var projectToEdit by remember { mutableStateOf<Project?>(null) }
     var showCreateForm by remember { mutableStateOf(false) }
-
+    var projectToPublishAsClone by remember { mutableStateOf<Project?>(null) }
     //Calcula si el mini-reproductor debe mostrarse
     val showMiniPlayer = uiState.currentlyPlayingProject != null
     // Padding inferior dinámico
@@ -110,7 +111,15 @@ fun ProjectsScreen(
                         isCurrentlyPlaying = isCurrentlyPlaying,
                         onEditClick = { projectToEdit = project },
                         onDeleteClick = { viewModel.deleteProject(project.id) },
-                        onPublishClick = { viewModel.publishProject(project) },
+                        onPublishClick = {
+                            if (project.originalProjectId != null && project.ownerId == sharedState.userID) {
+                                // Es un clon mío, mostrar diálogo personalizado
+                                projectToPublishAsClone = project
+                            } else {
+                                // Es un proyecto original, publicar directamente
+                                viewModel.publishProject(project)
+                            }
+                        },
                         onNavigateToVersions = { onNavigateToVersion(project) },
                         isPreviewLoading = isPreviewLoading,
                     )
@@ -157,5 +166,14 @@ fun ProjectsScreen(
             onDismiss = { showCreateForm = false /* viewModel.dismissCreateDialog() */ }
         )
     }
+
+    projectToPublishAsClone?.let { project ->
+        PublishCloneDialog(
+            project = project,
+            viewModel = viewModel,
+            onDismiss = { projectToPublishAsClone = null }
+        )
+    }
 }
+
 

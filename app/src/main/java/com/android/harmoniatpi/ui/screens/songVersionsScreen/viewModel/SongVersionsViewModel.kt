@@ -84,9 +84,8 @@ class SongVersionsViewModel @Inject constructor(
 
                 // 4. Filtrar para encontrar solo las versiones derivadas (proyectos que apuntan al original)
                 val derivedProjects = allProjects.filter {
-                    it.originalProjectId == originalProject.id
+                    it.originalProjectId == originalProject.id && it.isPublished
                 }
-
                 // 5. Mapear los Proyectos a los modelos que espera la UI (Song y DerivedVersion)
                 val originalSong = mapProjectToSong(originalProject)
                 val derivedVersions = derivedProjects.map { mapProjectToDerivedVersion(it) }

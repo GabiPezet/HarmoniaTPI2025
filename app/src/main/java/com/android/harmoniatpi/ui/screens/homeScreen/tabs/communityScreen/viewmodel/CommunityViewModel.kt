@@ -85,41 +85,39 @@ class CommunityViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 // 1. Obtiene el proyecto original (asumiendo que está en la DB local por ahora)
-                // (En el futuro, esto sería una llamada a Firebase: getRemoteProjectByIdUseCase(post.idProject))
                 val originalProject = getProjectByIdUseCase(post.idProject)
 
-                // 2. Crea el clon
+                // 2. Crea el clon (local)
                 val clonedProject = originalProject.copy(
                     id = UUID.randomUUID().toString(),
                     ownerId = currentUserId,
                     name = _uiState.value.userName,
                     lastName = _uiState.value.userLastName,
                     originalProjectId = originalProject.id,
-                    forkedByUserIds = emptyList()
+                    forkedByUserIds = emptyList(),
+                    isPublished = false
                 )
                 insertProjectInDBUseCase(clonedProject)
 
-                // 3. Actualiza el original (local)
+                /*// 3. Actualiza el original (local)
                 val updatedForkedIds = originalProject.forkedByUserIds + (currentUserId)
                 val updatedOriginal = originalProject.copy(
                     forkedByUserIds = updatedForkedIds
                 )
-                insertProjectInDBUseCase(updatedOriginal)
+                insertProjectInDBUseCase(updatedOriginal)*/
 
                 // 4. Actualiza el Post (remoto) para sumar un "clon"
-                val updatedPost = post.copy(totalShared = post.totalShared + 1)
+                /* val updatedPost = post.copy(totalShared = post.totalShared + 1)
                 updatePostFirebaseDataBaseUseCase(updatedPost)
+                */
 
                 _toastEvents.emit("Proyecto clonado en colaboraciones.")
 
-                // (Opcional: puedes añadir un callback 'onSuccess' para navegar)
-
             } catch (e: Exception) {
-                // Manejar error (ej. el proyecto original no se encontró localmente)
+                _toastEvents.emit("Error al clonar: ${e.message}")
             }
         }
     }
-
     fun onNewPostClicked() {
         _uiState.update { it.copy(showCreateDialog = true) }
     }

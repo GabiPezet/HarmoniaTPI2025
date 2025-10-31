@@ -19,7 +19,8 @@ data class ProjectFirebaseModel(
     val publishedTrackUrls: String = "",
     val likes: Int = 0,
     val totalShared: Int = 0,
-    val isPublished: Boolean = true
+    val isPublished: Boolean = true,
+    val originalProjectId: String? = null
 ) {
     fun toEntity(): ProjectEntity {
         return ProjectEntity(
@@ -39,7 +40,7 @@ data class ProjectFirebaseModel(
             urlAudioTracks = this.publishedTrackUrls,
             hashtags = this.hashtags,
             forkedByUserIds = this.forkedByUserIds,
-            originalProjectId = null,
+            originalProjectId = this.originalProjectId,
             isPublished = this.isPublished
         )
     }

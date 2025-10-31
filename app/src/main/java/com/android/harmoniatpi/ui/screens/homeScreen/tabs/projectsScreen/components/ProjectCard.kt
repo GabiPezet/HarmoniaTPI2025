@@ -195,7 +195,7 @@ fun ProjectCard(
                         // --- Opciones Condicionales ---
 
                         // Opción: Publicar (Solo para mis proyectos originales NO publicados)
-                        if (isMyProject && project.originalProjectId == null && !project.isPublished && selectedTab == ProjectTab.MY_PROJECTS) {
+                        if (!project.isPublished) {
                             DropdownMenuItem(
                                 text = { Text("Publicar") },
                                 onClick = { onPublishClick(); showMenu = false },
@@ -204,13 +204,13 @@ fun ProjectCard(
                         }
 
                         // Opción: Ver Versiones (Solo para mis proyectos originales publicados Y con forks)
-                        //if (isMyProject && project.originalProjectId == null && project.isPublished && hasBeenForkedByOthers && selectedTab == ProjectTab.MY_PROJECTS) {
+                        if (project.isPublished) {
                             DropdownMenuItem(
                                 text = { Text("Ver Versiones") },
                                 onClick = { onNavigateToVersions(project); showMenu = false },
                                 leadingIcon = { Icon(Icons.Default.LibraryMusic, null) }
                             )
-                        //}
+                        }
 
                         // Opción: Editar (Solo para mis proyectos o mis clones)
                         if (isMyProject) { // Esto incluye originales y clones

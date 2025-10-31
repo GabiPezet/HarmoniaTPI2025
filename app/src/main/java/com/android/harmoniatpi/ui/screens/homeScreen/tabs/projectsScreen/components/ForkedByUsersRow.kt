@@ -1,16 +1,12 @@
 package com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,14 +15,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.rememberAsyncImagePainter
 import com.android.harmoniatpi.domain.model.UserPreferences
-import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.viewmodel.ProjectViewModel
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import coil.request.ImageRequest // <-- IMPORTANTE: Necesitas esto
-import coil.size.Size // <-- IMPORTANTE: Necesitas esto
+import coil.request.ImageRequest
+import coil.size.Size
 
 @Composable
 fun ForkedByUsersRow(
@@ -48,7 +42,7 @@ fun ForkedByUsersRow(
         Spacer(modifier = Modifier.width(8.dp))
 
         // CAMBIO 4: Itera directamente sobre la lista de usuarios
-        users.take(3).forEach { user -> // 'user' ya no es nullable
+        users.take(2).forEach { user -> // 'user' ya no es nullable
 
             val pxSize = with(density) { avatarSize.roundToPx() }
 
@@ -70,9 +64,9 @@ fun ForkedByUsersRow(
         }
 
         // CAMBIO 5: Compara con el tamaño de la lista de usuarios
-        if (users.size > 3) {
+        if (users.size > 2) {
             Text(
-                text = "+${users.size - 3}",
+                text = "+${users.size - 2}",
                 style = MaterialTheme.typography.labelMedium,
                 modifier = Modifier.padding(start = 12.dp)
             )
