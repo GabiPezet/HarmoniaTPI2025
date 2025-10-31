@@ -153,25 +153,12 @@ class RepositoryImpl @Inject constructor(
         return userPreferencesDao.getAllUser().map { list -> list.map { it.toDomain(jsonUtils) } }
     }
 
-    override fun getAllProjects(): Flow<List<Project>> {
-        return projectDao.getAllProjects().map { list -> list.map { it.toDomain(jsonUtils) } }
-    }
-
-    override fun getAllProjectsByUser(ownerId: String): Flow<List<Project>> {
-        return projectDao.getAllProjectsByUser(ownerId)
-            .map { list -> list.map { it.toDomain(jsonUtils) } }
-    }
-
     override suspend fun deleteProject(projectId: String) {
         projectDao.deleteById(projectId)
     }
 
     override suspend fun insertOrUpdateProject(project: Project) {
         projectDao.insertOrUpdate(project.toDataBase(jsonUtils))
-    }
-
-    override suspend fun getProjectById(projectId: String): Project {
-        return projectDao.getProjectById(projectId)!!.toDomain(jsonUtils)
     }
 
     override fun getAllPostsFlowRealTimeDB(): Flow<List<Post>> = callbackFlow {
@@ -273,6 +260,50 @@ class RepositoryImpl @Inject constructor(
         }
     }
 
+    override fun getMyPosts(): Flow<List<Post>> {
+        return myPostDao.getMyPosts().map { list -> list.map { it.toDomain(jsonUtils) } }
+    }
+
+    override suspend fun insertMyPost(post: MyPostEntity) {
+        myPostDao.insertPost(post)
+    }
+
+    override suspend fun updateMyPost(post: MyPostEntity) {
+        myPostDao.updatePost(post)
+    }
+
+    override suspend fun deleteMyPostById(id: String) {
+        myPostDao.deletePostById(id)
+    }
+
+    private suspend fun syncFireStoreToLocal(userId: String) {
+        val snapshot = firestore.collection("users").document(userId).get().await()
+        if (snapshot.exists()) {
+            val remoteUser = snapshot.toObject(UserFirebaseModel::class.java)
+            remoteUser?.let {
+                val entity = it.toEntity()
+                userPreferencesDao.insertUserPreferences(entity)
+            }
+        }
+    }
+
+
+//--------------------Proyectos------------------------TODO(PROYECTOS)
+
+
+    override fun getAllProjects(): Flow<List<Project>> {
+        return projectDao.getAllProjects().map { list -> list.map { it.toDomain(jsonUtils) } }
+    }
+
+    override suspend fun getAllProjectsByUser(ownerId: String): Flow<List<Project>> {
+        return projectDao.getAllProjectsByUser(ownerId)
+            .map { list -> list.map { it.toDomain(jsonUtils) } }
+    }
+
+    override suspend fun getProjectById(projectId: String): Project {
+        return projectDao.getProjectById(projectId)!!.toDomain(jsonUtils)
+    }
+
     override suspend fun upsertProjectInFirestore(projectModel: ProjectFirebaseModel): Result<Unit> =
         withContext(Dispatchers.IO) {
             try {
@@ -292,6 +323,7 @@ class RepositoryImpl @Inject constructor(
                 Result.failure(e)
             }
         }
+
 
     override suspend fun getFirestoreProjectsByUser(userId: String): Flow<List<ProjectFirebaseModel>> =
         callbackFlow {
@@ -333,45 +365,6 @@ class RepositoryImpl @Inject constructor(
             }
         }
 
-    override suspend fun getUnpublishedLocalOriginalsByUser(userId: String): Flow<List<Project>> {
-        Log.d("RepositoryImpl", "Obteniendo locales no publicados para $userId desde DAO")
-        // Llama a la función del DAO
-        return projectDao.getUnpublishedLocalOriginalsByUser(userId)
-            .map { listEntity -> // Mapea la lista de Entity
-                listEntity.map { entity -> // Mapea cada Entity a Domain
-                    entity.toDomain(jsonUtils)
-                }
-            }
-    }
-
-
-    override fun getMyPosts(): Flow<List<Post>> {
-        return myPostDao.getMyPosts().map { list -> list.map { it.toDomain(jsonUtils) } }
-    }
-
-    override suspend fun insertMyPost(post: MyPostEntity) {
-        myPostDao.insertPost(post)
-    }
-
-    override suspend fun updateMyPost(post: MyPostEntity) {
-        myPostDao.updatePost(post)
-    }
-
-    override suspend fun deleteMyPostById(id: String) {
-        myPostDao.deletePostById(id)
-    }
-
-    private suspend fun syncFireStoreToLocal(userId: String) {
-        val snapshot = firestore.collection("users").document(userId).get().await()
-        if (snapshot.exists()) {
-            val remoteUser = snapshot.toObject(UserFirebaseModel::class.java)
-            remoteUser?.let {
-                val entity = it.toEntity()
-                userPreferencesDao.insertUserPreferences(entity)
-            }
-        }
-    }
-
     override suspend fun deleteProjectFromFirestore(projectId: String): Result<Unit> =
         withContext(Dispatchers.IO) {
             try {
@@ -409,32 +402,32 @@ class RepositoryImpl @Inject constructor(
             }
         }
 
-    override suspend fun getProjectByIdFromFirestore(projectId: String): Project? =
-        withContext(Dispatchers.IO) {
-            try {
-                // 1. Busca el documento por ID en la colección "projects"
-                val document = firestore.collection("projects")
-                    .document(projectId)
-                    .get()
-                    .await()
+override suspend fun getProjectByIdFromFirestore(projectId: String): Project? =
+    withContext(Dispatchers.IO) {
+        try {
+            // 1. Busca el documento por ID en la colección "projects"
+            val document = firestore.collection("projects")
+                .document(projectId)
+                .get()
+                .await()
 
-                if (document.exists()) {
-                    // 2. Lo convierte al modelo de Firebase
-                    val firebaseModel = document.toObject(ProjectFirebaseModel::class.java)
+            if (document.exists()) {
+                // 2. Lo convierte al modelo de Firebase
+                val firebaseModel = document.toObject(ProjectFirebaseModel::class.java)
 
-                    // 3. Lo convierte al modelo de Dominio (FirebaseModel -> Entity -> Domain)
-                    // (Esta es la misma lógica que usas en tu 'sync')
-                    firebaseModel?.toEntity()?.toDomain(jsonUtils)
-                } else {
-                    // El proyecto no existe en Firestore
-                    Log.w("RepositoryImpl", "No se encontró el proyecto $projectId en Firestore.")
-                    null
-                }
-            } catch (e: Exception) {
-                Log.e("RepositoryImpl", "Error al obtener $projectId de Firestore", e)
+                // 3. Lo convierte al modelo de Dominio (FirebaseModel -> Entity -> Domain)
+                // (Esta es la misma lógica que usas en tu 'sync')
+                firebaseModel?.toEntity()?.toDomain(jsonUtils)
+            } else {
+                // El proyecto no existe en Firestore
+                Log.w("RepositoryImpl", "No se encontró el proyecto $projectId en Firestore.")
                 null
             }
+        } catch (e: Exception) {
+            Log.e("RepositoryImpl", "Error al obtener $projectId de Firestore", e)
+            null
         }
+    }
 
     override suspend fun getDerivedProjectsFromFirestore(originalProjectId: String): List<Project> =
         withContext(Dispatchers.IO) {
@@ -506,4 +499,7 @@ class RepositoryImpl @Inject constructor(
                 Result.failure(e)
             }
         }
+
+    //--------------------ProyectosFin------------------------
+
 }

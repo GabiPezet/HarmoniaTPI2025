@@ -29,17 +29,7 @@ interface Repository {
 
     suspend fun signInWithGoogle(idToken: String): Result<FirebaseUser>
 
-    fun getAllProjects ():Flow<List<Project>>
-
     fun getAllUser (): Flow<List<UserPreferences>>
-
-    fun getAllProjectsByUser(ownerId: String): Flow<List<Project>>
-
-    suspend fun deleteProject(projectId: String)
-
-    suspend fun insertOrUpdateProject(project: Project)
-
-    suspend fun getProjectById(projectId: String): Project
 
     fun getAllPostsFlowRealTimeDB(): Flow<List<Post>>
 
@@ -54,19 +44,7 @@ interface Repository {
         remotePath: String
     ): Result<String>
 
-    suspend fun upsertProjectInFirestore(projectModel: ProjectFirebaseModel): Result<Unit>
-
-    suspend fun deleteProjectFromFirestore(projectId: String): Result<Unit>
-
     suspend fun deleteFileFromStorage(remotePath: String): Result<Unit>
-
-    suspend fun getFirestoreProjectsByUser(userId: String): Flow<List<ProjectFirebaseModel>>
-
-    suspend fun getUnpublishedLocalOriginalsByUser(userId: String): Flow<List<Project>>
-
-    suspend fun getProjectByIdFromFirestore(projectId: String): Project?
-
-    suspend fun getDerivedProjectsFromFirestore(originalProjectId: String): List<Project>
 
     suspend fun fetchAndSyncUsersFromFirestore(userIds: List<String>): Result<Unit>
 
@@ -77,4 +55,27 @@ interface Repository {
     suspend fun updateMyPost(post: MyPostEntity)
 
     suspend fun deleteMyPostById(id: String)
+
+    //--------------------Proyectos------------------------TODO(PROYECTOS)
+    fun getAllProjects ():Flow<List<Project>>
+
+    suspend fun getAllProjectsByUser(ownerId: String): Flow<List<Project>>
+
+    suspend fun deleteProject(projectId: String)
+
+    suspend fun insertOrUpdateProject(project: Project)
+
+    suspend fun getProjectById(projectId: String): Project
+
+    suspend fun getDerivedProjectsFromFirestore(originalProjectId: String): List<Project>
+
+    suspend fun getProjectByIdFromFirestore(projectId: String): Project?
+
+    suspend fun getFirestoreProjectsByUser(userId: String): Flow<List<ProjectFirebaseModel>>
+
+    suspend fun deleteProjectFromFirestore(projectId: String): Result<Unit>
+
+    suspend fun upsertProjectInFirestore(projectModel: ProjectFirebaseModel): Result<Unit>
+    //--------------------ProyectosFin------------------------
+
 }

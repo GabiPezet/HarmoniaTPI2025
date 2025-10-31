@@ -118,7 +118,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
 
                             // --- LÓGICA DE RESTAURACIÓN ---
                             if (!pcmFile.exists() && audioTrack.remoteUrl != null) {
-                                // FALTA: Descargar y reconstruir
+
                                 Log.w("KlyxDevs", "Falta archivo local ${pcmFile.name}. Descargando desde ${audioTrack.remoteUrl}...")
                                 val tempMp3File = File(context.cacheDir, "restore_${audioTrack.id}.mp3")
 
@@ -148,10 +148,9 @@ class ProjectManagementScreenViewModel @Inject constructor(
                                 // ERROR: No local, no remoto
                                 Log.e("KlyxDevs", "Archivo no encontrado y sin backup remoto: ${audioTrack.path}")
                             }
-                            // --- FIN LÓGICA DE RESTAURACIÓN ---
                         }
                     }
-                } // Fin de coroutineScope
+                }
 
                 Log.d("KlyxDevs", "Todas las tareas de carga de pistas lanzadas.")
 
