@@ -29,6 +29,7 @@ import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MusicNote
@@ -103,7 +104,7 @@ fun ProjectManagementScreen(
     BackHandler {
         viewModel.updateCurrentProjectWithTracks()
         onBack()
-        viewModel.clearAllTracks()
+        //viewModel.clearAllTracks()
     }
 
     Scaffold(
@@ -121,7 +122,7 @@ fun ProjectManagementScreen(
                     IconButton(onClick = {
                         viewModel.updateCurrentProjectWithTracks()
                         onBack()
-                        viewModel.clearAllTracks()
+                        //viewModel.clearAllTracks()
                     }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
@@ -165,14 +166,6 @@ fun ProjectManagementScreen(
                         track = track,
                         onClick = { viewModel.selectTrack(track.id) },
                         onDelete = { viewModel.deleteTrack() },
-                        onTrim = {
-                            if (track.waveForm.isNullOrEmpty() || track.durationMs < 50L) {
-                                Toast.makeText(context, "La pista no tiene audio para recortar", Toast.LENGTH_SHORT).show()
-                                Log.d("Trim", "Pista sin audio o muy corta para recortar.")
-                            } else {
-                                trackForTrimming = track
-                            }
-                        },
                         onShowEffects = { trackForEffects = track },
                         onUndo = {
                             viewModel.undoTrim(track.id)
@@ -194,7 +187,16 @@ fun ProjectManagementScreen(
                                 trackId,
                                 newOffset
                             )
-                        }
+                        },
+                        onSelectionChanged = { startMs, endMs ->
+                            viewModel.updateTrackSelection(track.id, startMs, endMs)
+                        },
+                        onCopy = { viewModel.copySelection() },
+                        onCut = { viewModel.cutSelection() },
+                        onUndoEffect = { viewModel.undoEffect(track.id) },
+                        isUndoEffectAvailable = track.isUndoEffectAvailable,
+                        isSelectionActive = track.selectionStartMs != null &&
+                                (track.selectionEndMs == null || track.selectionEndMs!! > track.selectionStartMs!!),
                     )
                 }
             }
@@ -285,6 +287,19 @@ fun ProjectManagementScreen(
                             onClick = { pickAudioLauncher.launch("audio/*") },
                             modifier = Modifier.fillMaxWidth()
                         )
+
+                        if (state.isClipboardFull) {
+                            OptionCard(
+                                title = "Pegar Pista",
+                                icon = Icons.Default.ContentPaste,
+                                onClick = {
+                                    showSheet = false
+                                    viewModel.pasteFromClipboard()
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+
                     }
                 }
             }
