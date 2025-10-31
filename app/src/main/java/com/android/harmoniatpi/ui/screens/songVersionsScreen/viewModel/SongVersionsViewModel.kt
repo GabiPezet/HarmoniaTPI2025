@@ -25,8 +25,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import com.android.harmoniatpi.domain.model.song.VersionType
+import com.android.harmoniatpi.domain.usecases.firebaseUseCases.FetchAndSyncUsersUseCase
+import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetAllUserFromDBUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetDerivedProjectsFromFirestoreUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetProjectByIdFromFirestoreUseCase
+import kotlinx.coroutines.Dispatchers
 
 /**
  * ViewModel para la pantalla de detalles de canciones [com.android.harmoniatpi.ui.screens.songVersionsScreen.SongVersionsScreen]¨.
@@ -37,7 +40,9 @@ class SongVersionsViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
     private val getProjectByIdUseCase: GetProjectByIdUseCase,
     private val getDerivedProjectsFromFirestoreUseCase: GetDerivedProjectsFromFirestoreUseCase,
-    private val getProjectByIdFromFirestoreUseCase: GetProjectByIdFromFirestoreUseCase
+    private val getProjectByIdFromFirestoreUseCase: GetProjectByIdFromFirestoreUseCase,
+    private val getAllUsersUseCase: GetAllUserFromDBUseCase,
+    private val fetchAndSyncUsersUseCase: FetchAndSyncUsersUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SongVersionsUiState())
@@ -58,6 +63,7 @@ class SongVersionsViewModel @Inject constructor(
 
         observePlaybackPosition()
         observePlaybackDuration()
+        observeAllUsersFromRoom()
     }
 
     /**
@@ -88,6 +94,13 @@ class SongVersionsViewModel @Inject constructor(
                 val derivedProjects = getDerivedProjectsFromFirestoreUseCase(originalProject.id)
                 // --- FIN DEL ARREGLO ---
 
+                viewModelScope.launch(Dispatchers.IO) {
+                    val allOwnerIds = (derivedProjects.map { it.ownerId } + originalProject.ownerId).distinct()
+                    if (allOwnerIds.isNotEmpty()) {
+                        Log.d("SongVersionsViewModel", "Sincronizando avatares para: $allOwnerIds")
+                        fetchAndSyncUsersUseCase(allOwnerIds)
+                    }
+                }
 
                 // 5. Mapear los Proyectos (Esto está bien)
                 val originalSong = mapProjectToSong(originalProject)
@@ -270,6 +283,14 @@ class SongVersionsViewModel @Inject constructor(
         if (projectId == null) return
         // TODO: Lógica para navegar a la pantalla del proyecto
         // (Esta lógica ya estaba en tu VM)
+    }
+
+    private fun observeAllUsersFromRoom() {
+        viewModelScope.launch {
+            getAllUsersUseCase().collect { usersListFromRoom ->
+                _uiState.update { it.copy(allUsers = usersListFromRoom) }
+            }
+        }
     }
 
     /**

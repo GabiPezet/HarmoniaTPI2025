@@ -186,13 +186,18 @@ fun SongVersionsContent(
                         Spacer(modifier = Modifier.height(16.dp))
                         SongHeader(song = originalSong)
                         Spacer(modifier = Modifier.height(16.dp))
+                        val originalCreatorUserPref = remember(originalSong.creator.id, uiState.allUsers) {
+                            uiState.allUsers.find { it.userID == originalSong.creator.id }
+                        }
                         PrincipalSongPlayer(
                             song = originalSong,
                             isPlaying = uiState.playingSongId == originalSong.id && uiState.playbackState.isPlaying,
                             playbackState = uiState.playbackState,
                             onPlayClick = onPlayOriginal,
                             onOpenProjectClick = { onOpenOriginalProject(originalSong.projectId) },
-                            onSliderValueChange = onSliderChange
+                            onSliderValueChange = onSliderChange,
+                            // 2. Pasa la URL remota
+                            creatorAvatarUrl = originalCreatorUserPref?.userPhotoPathRemote
                         )
                         Spacer(modifier = Modifier.height(32.dp))
                         Text(
@@ -208,12 +213,16 @@ fun SongVersionsContent(
                     items(uiState.derivedVersions) { version ->
                         val isThisPlaying =
                             uiState.playingSongId == version.id && uiState.playbackState.isPlaying
+                        val derivedCreatorUserPref = remember(version.creator.id, uiState.allUsers) {
+                            uiState.allUsers.find { it.userID == version.creator.id }
+                        }
                         DerivedVersionItem(
                             version = version,
                             isPlaying = isThisPlaying,
                             playbackState = uiState.playbackState,
                             onPlayClick = { onPlayDerived(version.id) },
                             onSliderChange = onSliderChange,
+                            creatorAvatarUrl = derivedCreatorUserPref?.userPhotoPathRemote,
                             modifier = Modifier.padding(vertical = 4.dp)
                         )
                     }
@@ -276,6 +285,7 @@ fun PrincipalSongPlayer(
     onPlayClick: () -> Unit,
     onOpenProjectClick: () -> Unit,
     onSliderValueChange: (Float) -> Unit,
+    creatorAvatarUrl: String?,
     modifier: Modifier = Modifier,
 ) {
     Card(
@@ -311,7 +321,7 @@ fun PrincipalSongPlayer(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 // Reemplazar con Coil o Glide para cargar imágenes desde URL y borrar background
                 AsyncImage(
-                    model = song.creator.avatarUrl,
+                    model = creatorAvatarUrl, // <-- USA EL PARÁMETRO
                     placeholder = painterResource(id = R.drawable.holojamperfildefaultblackmode),
                     error = painterResource(id = R.drawable.holojamperfildefaultblackmode),
                     contentDescription = "Imagen de artista: ${song.creator.name}",
@@ -526,6 +536,7 @@ private fun CustomTrack(
  */
 @Composable
 fun DerivedVersionItem(
+    creatorAvatarUrl: String?,
     version: DerivedVersion,
     isPlaying: Boolean,
     playbackState: PlaybackState,
@@ -548,7 +559,7 @@ fun DerivedVersionItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 AsyncImage(
-                    model = version.creator.avatarUrl,
+                    model = creatorAvatarUrl, // <-- USA EL PARÁMETRO
                     placeholder = painterResource(id = R.drawable.holojamperfildefaultblackmode),
                     contentDescription = "Avatar de artista: ${version.creator.name}",
                     modifier = Modifier
