@@ -77,7 +77,6 @@ import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
-private const val MS_PER_DP_SCALE = 10f
 
 @Composable
 fun TrackItem(
@@ -100,6 +99,7 @@ fun TrackItem(
     isSelectionActive: Boolean,
     modifier: Modifier = Modifier,
     timelineWidth: Int,
+    msPerDpScale: Float
 ) {
     var showOptions by remember { mutableStateOf(false) }
 
@@ -119,7 +119,7 @@ fun TrackItem(
     LaunchedEffect(currentPlaybackMs) {
         if (currentPlaybackMs > 0 && scrollState.maxValue > 0) {
 
-            val playbackDp = (currentPlaybackMs / MS_PER_DP_SCALE).dp
+            val playbackDp = (currentPlaybackMs / msPerDpScale).dp
             val playbackPx = with(density) { playbackDp.toPx() }
 
             //desplazamiento de track en reproduccion
@@ -240,7 +240,8 @@ fun TrackItem(
                     onOffsetChange = { newOffset -> onOffsetChange(track.id, newOffset) },
                     selectionStartMs = track.selectionStartMs,
                     selectionEndMs = track.selectionEndMs,
-                    onSelectionChanged = { startMs, endMs -> onSelectionChanged(startMs, endMs) }
+                    onSelectionChanged = { startMs, endMs -> onSelectionChanged(startMs, endMs) },
+                    msPerDpScale = msPerDpScale
                 )
 
 
@@ -270,7 +271,7 @@ fun TrackItem(
                         )
                 ) {
                     if (currentPlaybackMs > 0) {
-                        val xPos = (currentPlaybackMs / MS_PER_DP_SCALE) * density.density
+                        val xPos = (currentPlaybackMs / msPerDpScale) * density.density
                         if (xPos in 0f..size.width) {
                             drawLine(
                                 color = Color.Red,
@@ -454,6 +455,7 @@ fun DbWaveform(
     selectionStartMs: Long?,
     selectionEndMs: Long?,
     onSelectionChanged: (startMs: Long?, endMs: Long?) -> Unit,
+    msPerDpScale: Float,
     color: Color = MaterialTheme.colorScheme.onPrimaryContainer
 ) {
     val waveformColor = if (isMuted) color else MaterialTheme.colorScheme.primary
@@ -463,21 +465,21 @@ fun DbWaveform(
         )
     val density = LocalDensity.current
 
-    val canvasWidthDp = (maxDurationMs / MS_PER_DP_SCALE).dp
+    val canvasWidthDp = (maxDurationMs / msPerDpScale).dp
     var dragOffsetMs by remember { mutableLongStateOf(0L) }
-    val visualOffsetDp = ((startOffsetMs + dragOffsetMs) / MS_PER_DP_SCALE).dp
+    val visualOffsetDp = ((startOffsetMs + dragOffsetMs) / msPerDpScale).dp
 
-    val totalWidthPx = with(density) { (maxDurationMs / MS_PER_DP_SCALE).dp.toPx() }
-    val startOffsetPx = with(density) { (startOffsetMs / MS_PER_DP_SCALE).dp.toPx() }
+    val totalWidthPx = with(density) { (maxDurationMs / msPerDpScale).dp.toPx() }
+    val startOffsetPx = with(density) { (startOffsetMs / msPerDpScale).dp.toPx() }
 
     var handleStartPx by remember(selectionStartMs, density) {
         mutableFloatStateOf(
-            selectionStartMs?.let { with(density) { (it / MS_PER_DP_SCALE).dp.toPx() } } ?: 0f
+            selectionStartMs?.let { with(density) { (it / msPerDpScale).dp.toPx() } } ?: 0f
         )
     }
     var handleEndPx by remember(selectionEndMs, maxDurationMs, density) {
         mutableFloatStateOf(
-            selectionEndMs?.let { with(density) { (it / MS_PER_DP_SCALE).dp.toPx() } } ?: totalWidthPx
+            selectionEndMs?.let { with(density) { (it / msPerDpScale).dp.toPx() } } ?: totalWidthPx
         )
     }
 
@@ -515,7 +517,7 @@ fun DbWaveform(
                             onDrag = { change, dragAmount ->
                                 change.consume()
                                 val dragMs =
-                                    (dragAmount.x / density.density * MS_PER_DP_SCALE).toLong()
+                                    (dragAmount.x / density.density * msPerDpScale).toLong()
                                 val newOffsetCandidate = startOffsetMs + dragOffsetMs + dragMs
 
                                 if (newOffsetCandidate >= 0) {
@@ -530,7 +532,7 @@ fun DbWaveform(
                     .pointerInput(Unit) {
                         detectTapGestures(onTap = { offset ->
                             val tappedMs =
-                                startOffsetMs + (offset.x / density.density * MS_PER_DP_SCALE).toLong()
+                                startOffsetMs + (offset.x / density.density * msPerDpScale).toLong()
                             onSeekClick(tappedMs)
                         })
                     }
@@ -589,8 +591,8 @@ fun DbWaveform(
                         handleStartPx = newPos
                     },
                     onDragStopped = {
-                        val startMs = (handleStartPx / density.density * MS_PER_DP_SCALE).coerceAtLeast(0f).toLong()
-                        val endMs = (handleEndPx / density.density * MS_PER_DP_SCALE).coerceAtMost(maxDurationMs.toFloat()).toLong()
+                        val startMs = (handleStartPx / density.density * msPerDpScale).coerceAtLeast(0f).toLong()
+                        val endMs = (handleEndPx / density.density * msPerDpScale).coerceAtMost(maxDurationMs.toFloat()).toLong()
                         onSelectionChanged(startMs, endMs)
                     }
                 )
@@ -613,8 +615,8 @@ fun DbWaveform(
                     },
                     onDragStopped = {
 
-                        val startMs = (handleStartPx / density.density * MS_PER_DP_SCALE).coerceAtLeast(0f).toLong()
-                        val endMs = (handleEndPx / density.density * MS_PER_DP_SCALE).coerceAtMost(maxDurationMs.toFloat()).toLong()
+                        val startMs = (handleStartPx / density.density * msPerDpScale).coerceAtLeast(0f).toLong()
+                        val endMs = (handleEndPx / density.density * msPerDpScale).coerceAtMost(maxDurationMs.toFloat()).toLong()
                         onSelectionChanged(startMs, endMs)
                     }
                 )
@@ -663,7 +665,8 @@ private fun TrackPrev() {
             onCut = {},
             isUndoEffectAvailable = false,
             onUndoEffect = {},
-            isSelectionActive = false
+            isSelectionActive = false,
+            msPerDpScale = 0F,
         )
     }
 }
