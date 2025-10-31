@@ -142,18 +142,19 @@ class ProjectManagementScreenViewModel @Inject constructor(
     }
 
 
-    private fun getUpdatedTimeline(updatedTracks: List<TrackUi>): Int {
-        if (updatedTracks.isEmpty()) return 500 // Valor base
 
+    private fun getUpdatedTimeline(updatedTracks: List<TrackUi>, msPerDpScale: Float): Int {
+        if (updatedTracks.isEmpty()) return 500
 
         val maxDurationPlusOffset = updatedTracks.maxOf {
             (it.durationMs + it.startOffsetMs).coerceAtLeast(0L)
         }
 
-        val timelineWidthInDp = (maxDurationPlusOffset / MS_PER_DP_SCALE).toInt()
+        val timelineWidthInDp = (maxDurationPlusOffset / msPerDpScale).toInt()
 
         return timelineWidthInDp.coerceAtLeast(500)
     }
+
 
 
     fun updateCurrentProjectWithTracks() {
@@ -233,7 +234,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
                                     trackUi
                                 }
                             }
-                            val timelineWidth = getUpdatedTimeline(updatedTracks)
+                            val timelineWidth = getUpdatedTimeline(updatedTracks, _state.value.msPerDpScale)
                             currentState.copy(
                                 tracks = updatedTracks,
                                 timelineWidth = timelineWidth
@@ -478,13 +479,15 @@ class ProjectManagementScreenViewModel @Inject constructor(
                             waveForm = result.waveform,
                             durationMs = result.durationMs,
                             isUndoAvailable = isUndoTrimAvailable,
-                            isUndoEffectAvailable = isUndoEffectAvailable
+                            isUndoEffectAvailable = isUndoEffectAvailable,
+                            selectionStartMs = null,
+                            selectionEndMs = null
                         )
                     } else {
                         track
                     }
                 }
-                val timelineWidth = getUpdatedTimeline(updatedTracks)
+                val timelineWidth = getUpdatedTimeline(updatedTracks, currentState.msPerDpScale)
                 currentState.copy(
                     tracks = updatedTracks,
                     timelineWidth = timelineWidth
@@ -554,7 +557,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
                 }
             }
             // debo recalcular ancho de la timeline
-            val timelineWidth = getUpdatedTimeline(updatedTracks)
+            val timelineWidth = getUpdatedTimeline(updatedTracks, currentState.msPerDpScale)
 
             currentState.copy(
                 tracks = updatedTracks,
@@ -633,7 +636,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
                 }
 
                 val updatedTracks = updatedTracksPromises
-                val timelineWidth = getUpdatedTimeline(updatedTracks)
+                val timelineWidth = getUpdatedTimeline(updatedTracks, _state.value.msPerDpScale)
                 _state.update { it.copy(tracks = updatedTracks, timelineWidth = timelineWidth) }
             }
         }
@@ -701,6 +704,34 @@ class ProjectManagementScreenViewModel @Inject constructor(
                 }
         }
     }
+
+    fun zoomIn() {
+        val currentScale = _state.value.msPerDpScale
+        val newScale = (currentScale / 1.5f).coerceIn(2f, 50f)
+
+        _state.update {
+            val newTimelineWidth = getUpdatedTimeline(it.tracks, newScale)
+            it.copy(
+                msPerDpScale = newScale,
+                timelineWidth = newTimelineWidth
+            )
+        }
+    }
+
+    fun zoomOut() {
+        val currentScale = _state.value.msPerDpScale
+        val newScale = (currentScale * 1.5f).coerceIn(2f, 50f)
+
+        _state.update {
+            val newTimelineWidth = getUpdatedTimeline(it.tracks, newScale)
+            it.copy(
+                msPerDpScale = newScale,
+                timelineWidth = newTimelineWidth
+            )
+        }
+    }
+
+
 
     private companion object {
         const val TAG = "AudioTestsViewModel"

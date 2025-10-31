@@ -36,6 +36,8 @@ import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.ZoomIn
+import androidx.compose.material.icons.filled.ZoomOut
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -127,6 +129,16 @@ fun ProjectManagementScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 },
+
+                actions = {
+                    IconButton(onClick = { viewModel.zoomOut() }) {
+                        Icon(Icons.Default.ZoomOut, "Zoom Out")
+                    }
+                    IconButton(onClick = { viewModel.zoomIn() }) {
+                        Icon(Icons.Default.ZoomIn, "Zoom In")
+                    }
+                },
+
                 colors = TopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                     titleContentColor = MaterialTheme.colorScheme.onSurface,
@@ -197,6 +209,7 @@ fun ProjectManagementScreen(
                         isUndoEffectAvailable = track.isUndoEffectAvailable,
                         isSelectionActive = track.selectionStartMs != null &&
                                 (track.selectionEndMs == null || track.selectionEndMs!! > track.selectionStartMs!!),
+                        msPerDpScale = state.msPerDpScale
                     )
                 }
             }
