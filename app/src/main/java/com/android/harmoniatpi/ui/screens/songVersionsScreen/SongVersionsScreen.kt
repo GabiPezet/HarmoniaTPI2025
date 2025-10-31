@@ -542,7 +542,8 @@ fun DerivedVersionItem(
     playbackState: PlaybackState,
     onPlayClick: () -> Unit,
     onSliderChange: (Float) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onLeftClick: () -> Unit = {}
 ) {
     Card(
         shape = RoundedCornerShape(12.dp),
@@ -572,7 +573,7 @@ fun DerivedVersionItem(
                 Spacer(modifier = Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     TextButton(
-                        onClick = { TODO("ir a perfil del artista seleccionado") },
+                        onClick = onLeftClick,
                         colors = ButtonDefaults.textButtonColors(
                             contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                         )
