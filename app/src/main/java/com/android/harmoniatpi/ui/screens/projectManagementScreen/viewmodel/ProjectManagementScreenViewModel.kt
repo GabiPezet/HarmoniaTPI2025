@@ -45,6 +45,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -630,9 +631,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
         seekToUseCase(ms)
     }
 
-    fun clearAllTracks() {
-        loadProjectTrackUseCase.clearAllTracks()
-    }
+
 
 
     private fun fetchTracks() {
@@ -686,6 +685,16 @@ class ProjectManagementScreenViewModel @Inject constructor(
                 val updatedTracks = updatedTracksPromises
                 val timelineWidth = getUpdatedTimeline(updatedTracks, _state.value.msPerDpScale)
                 _state.update { it.copy(tracks = updatedTracks, timelineWidth = timelineWidth) }
+
+                if (updatedTracks.isNotEmpty()) {
+                    // Verificar si el último track es nuevo (no estaba en la lista anterior)
+                    val lastTrack = updatedTracks.last()
+                    val wasLastTrackInPreviousList = currentUiTracksMap.containsKey(lastTrack.id)
+                    // Solo seleccionar si es un track nuevo
+                    if (!wasLastTrackInPreviousList) {
+                        selectTrack(id = lastTrack.id)
+                    }
+                }
             }
         }
     }

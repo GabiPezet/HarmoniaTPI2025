@@ -120,7 +120,7 @@ class HamoniaServices : Service() {
                         // --- Nuevo COMENTARIO ---
                         if (post.hasNewComment && post.comments.isNotEmpty()) {
                             val lastComment = post.comments.last()
-                            val title = "💬 ${lastComment.name} ${lastComment.lastName}"
+                            val title = " ${lastComment.name} ${lastComment.lastName}"
                             val content = "Comentó en '${post.title}': \"${lastComment.comment}\""
                             notificationManger(title, content)
                             shouldUpdate = true

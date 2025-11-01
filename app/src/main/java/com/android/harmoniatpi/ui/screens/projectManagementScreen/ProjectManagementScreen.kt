@@ -1,13 +1,11 @@
 package com.android.harmoniatpi.ui.screens.projectManagementScreen
 
 import android.net.Uri
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,9 +28,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ContentPaste
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MusicNote
@@ -76,6 +71,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.android.harmoniatpi.domain.model.audio.AudioSourceType
 import com.android.harmoniatpi.ui.components.EffectsAudioDialog
 import com.android.harmoniatpi.ui.components.ProyectControlButtonRow
+import com.android.harmoniatpi.ui.components.ShowConfirmationDialog
 import com.android.harmoniatpi.ui.components.TrackItem
 import com.android.harmoniatpi.ui.components.TrimAudioDialog
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
@@ -91,6 +87,7 @@ fun ProjectManagementScreen(
     var showSheet by remember { mutableStateOf(false) }
     val state by viewModel.state.collectAsState()
     val sharedScrollState = rememberScrollState()
+    var showDeleteDialog by remember { mutableStateOf(false) }
     var trackForTrimming by remember { mutableStateOf<TrackUi?>(null) }
     val context = LocalContext.current
     var trackForEffects by remember { mutableStateOf<TrackUi?>(null) }
@@ -106,25 +103,39 @@ fun ProjectManagementScreen(
     BackHandler {
         viewModel.updateCurrentProjectWithTracks()
         onBack()
-        //viewModel.clearAllTracks()
+    }
+
+    if (showDeleteDialog) {
+        ShowConfirmationDialog(
+            show = true,
+            onDismiss = { showDeleteDialog = false },
+            onConfirm = {
+                viewModel.deleteTrack()
+                showDeleteDialog = false
+            },
+            title = "¿Estas seguro?",
+            message = "Vas a perder los cambios si borras la pista",
+            confirmText = "Borrar"
+        )
     }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = { //Impl de top bar
             TopAppBar(
-                title = { Text(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(end = 16.dp),
-                    text = "Nombre del Proyecto",
-                    textAlign = TextAlign.Center
-                ) },
+                title = {
+                    Text(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(end = 16.dp),
+                        text = state.currentProjectSelected!!.title,
+                        textAlign = TextAlign.Center
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = {
                         viewModel.updateCurrentProjectWithTracks()
                         onBack()
-                        //viewModel.clearAllTracks()
                     }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
@@ -168,7 +179,8 @@ fun ProjectManagementScreen(
             }
             LazyColumn(
                 modifier = Modifier
-                    .fillMaxWidth().padding(vertical = 16.dp)
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp)
                     .wrapContentHeight(),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -177,7 +189,7 @@ fun ProjectManagementScreen(
                     TrackItem(
                         track = track,
                         onClick = { viewModel.selectTrack(track.id) },
-                        onDelete = { viewModel.deleteTrack() },
+                        onDelete = { showDeleteDialog = true },
                         onShowEffects = { trackForEffects = track },
                         onUndo = {
                             viewModel.undoTrim(track.id)
@@ -208,7 +220,7 @@ fun ProjectManagementScreen(
                         onUndoEffect = { viewModel.undoEffect(track.id) },
                         isUndoEffectAvailable = track.isUndoEffectAvailable,
                         isSelectionActive = track.selectionStartMs != null &&
-                                (track.selectionEndMs == null || track.selectionEndMs!! > track.selectionStartMs!!),
+                                (track.selectionEndMs == null || track.selectionEndMs > track.selectionStartMs),
                         msPerDpScale = state.msPerDpScale
                     )
                 }
@@ -241,8 +253,13 @@ fun ProjectManagementScreen(
                 onPlay = { viewModel.play() },
                 onPause = { viewModel.pause() },
                 startRecording = {
-                    Toast.makeText(context, "Para una mejor calidad, usa auriculares.", Toast.LENGTH_LONG).show()
-                    viewModel.startRecording() },
+                    Toast.makeText(
+                        context,
+                        "Para una mejor calidad, usa auriculares.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    viewModel.startRecording()
+                },
                 stopRecording = { viewModel.stopRecording() },
                 isRecording = state.isRecording,
                 isPlaying = state.isPlaying,

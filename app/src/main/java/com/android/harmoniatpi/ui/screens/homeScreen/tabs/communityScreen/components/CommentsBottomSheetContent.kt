@@ -32,6 +32,7 @@ fun CommentsBottomSheetContent(
 ) {
     var newComment by remember { mutableStateOf("") }
 
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -100,3 +101,4 @@ fun CommentsBottomSheetContent(
         Spacer(Modifier.height(16.dp))
     }
 }
+
