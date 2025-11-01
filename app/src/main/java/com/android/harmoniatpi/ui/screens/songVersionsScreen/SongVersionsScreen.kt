@@ -186,12 +186,19 @@ fun SongVersionsContent(
                         Spacer(modifier = Modifier.height(16.dp))
                         SongHeader(song = originalSong)
                         Spacer(modifier = Modifier.height(16.dp))
-                        val originalCreatorUserPref = remember(originalSong.creator.id, uiState.allUsers) {
-                            uiState.allUsers.find { it.userID == originalSong.creator.id }
-                        }
+
+                        val isOriginalSongActive = uiState.playingSongId == originalSong.id
+                        val isOriginalSongPlaying =
+                            isOriginalSongActive && uiState.playbackState.isPlaying
+
+                        val originalCreatorUserPref =
+                            remember(originalSong.creator.id, uiState.allUsers) {
+                                uiState.allUsers.find { it.userID == originalSong.creator.id }
+                            }
                         PrincipalSongPlayer(
                             song = originalSong,
-                            isPlaying = uiState.playingSongId == originalSong.id && uiState.playbackState.isPlaying,
+                            isPlaying = isOriginalSongPlaying,
+                            isSongActive = isOriginalSongActive,
                             playbackState = uiState.playbackState,
                             onPlayClick = onPlayOriginal,
                             onOpenProjectClick = { onOpenOriginalProject(originalSong.projectId) },
@@ -211,14 +218,19 @@ fun SongVersionsContent(
                     }
 
                     items(uiState.derivedVersions) { version ->
+                        val isThisSongActive = uiState.playingSongId == version.id
+
                         val isThisPlaying =
                             uiState.playingSongId == version.id && uiState.playbackState.isPlaying
-                        val derivedCreatorUserPref = remember(version.creator.id, uiState.allUsers) {
-                            uiState.allUsers.find { it.userID == version.creator.id }
-                        }
+
+                        val derivedCreatorUserPref =
+                            remember(version.creator.id, uiState.allUsers) {
+                                uiState.allUsers.find { it.userID == version.creator.id }
+                            }
                         DerivedVersionItem(
                             version = version,
                             isPlaying = isThisPlaying,
+                            isSongActive = isThisSongActive,
                             playbackState = uiState.playbackState,
                             onPlayClick = { onPlayDerived(version.id) },
                             onSliderChange = onSliderChange,
@@ -275,12 +287,23 @@ fun SongHeader(song: Song, modifier: Modifier = Modifier) {
 
 /**
  * Composable para mostrar la información de una canción base [Song]
+ * y el botón de play/pause.
+ * @param song La canción a mostrar.
+ * @param isPlaying Indica si la canción está sonando, para manejar el ícono del botón.
+ * @param isSongActive indica si la canción está activa (sonando) para el estado del slider
+ * @param playbackState El estado actual de la reproducción.
+ * @param onPlayClick Lambda que se invoca al presionar el botón de play/pause.
+ * @param onOpenProjectClick Lambda que se invoca al presionar el botón "Abrir proyecto".
+ * @param onSliderValueChange Lambda que se invoca cuando se cambia el valor del slider.
+ * @param creatorAvatarUrl URL de la imagen del avatar del artista.
+ * @param modifier Modificador de Compose para personalizar la apariencia o comportamiento.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PrincipalSongPlayer(
     song: Song,
     isPlaying: Boolean,
+    isSongActive: Boolean,
     playbackState: PlaybackState,
     onPlayClick: () -> Unit,
     onOpenProjectClick: () -> Unit,
@@ -366,8 +389,8 @@ fun PrincipalSongPlayer(
             )
 
             val displayDurationMs =
-                if (isPlaying) playbackState.totalDurationMs else song.durationMillis
-            val displayPositionMs = if (isPlaying) playbackState.currentPositionMs else 0L
+                if (isSongActive) playbackState.totalDurationMs else song.durationMillis
+            val displayPositionMs = if (isSongActive) playbackState.currentPositionMs else 0L
             val currentProgress = if (displayDurationMs > 0) {
                 displayPositionMs.toFloat() / displayDurationMs.toFloat()
             } else 0f
@@ -539,6 +562,7 @@ fun DerivedVersionItem(
     creatorAvatarUrl: String?,
     version: DerivedVersion,
     isPlaying: Boolean,
+    isSongActive: Boolean,
     playbackState: PlaybackState,
     onPlayClick: () -> Unit,
     onSliderChange: (Float) -> Unit,
@@ -596,11 +620,11 @@ fun DerivedVersionItem(
                     iconColor = MaterialTheme.colorScheme.onTertiary
                 )
             }
-            AnimatedVisibility(visible = isPlaying) {
+            AnimatedVisibility(visible = isSongActive) {
                 val displayDurationMs =
-                    if (isPlaying) playbackState.totalDurationMs else version.durationMillis
+                    if (isSongActive) playbackState.totalDurationMs else version.durationMillis
                         ?: 0L
-                val displayPositionMs = if (isPlaying) playbackState.currentPositionMs else 0L
+                val displayPositionMs = if (isSongActive) playbackState.currentPositionMs else 0L
                 val currentProgress = if (displayDurationMs > 0) {
                     displayPositionMs.toFloat() / displayDurationMs.toFloat()
                 } else 0f
