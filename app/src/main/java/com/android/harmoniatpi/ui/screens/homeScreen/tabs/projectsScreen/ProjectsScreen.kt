@@ -129,16 +129,18 @@ fun ProjectsScreen(
         } // Fin del LazyColumn
 
         // 3. Botón "Crear" (FAB)
-        FloatingActionButton(
-            onClick = { showCreateForm = true },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp)
-                .padding(bottom = bottomPadding + 8.dp), // Lo subimos encima del mini-reproductor
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary
-        ) {
-            Icon(Icons.Default.Add, contentDescription = "Nuevo Proyecto")
+        if (uiState.tabSelected == ProjectTab.MY_PROJECTS) {
+            FloatingActionButton(
+                onClick = { showCreateForm = true },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp)
+                    .padding(bottom = bottomPadding + 8.dp), // Lo subimos encima del mini-reproductor
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Nuevo Proyecto")
+            }
         }
 
         // 4. Mini-Reproductor Fijo

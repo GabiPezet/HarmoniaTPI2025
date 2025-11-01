@@ -630,9 +630,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
         seekToUseCase(ms)
     }
 
-    fun clearAllTracks() {
-        loadProjectTrackUseCase.clearAllTracks()
-    }
+
 
 
     private fun fetchTracks() {
@@ -686,6 +684,16 @@ class ProjectManagementScreenViewModel @Inject constructor(
                 val updatedTracks = updatedTracksPromises
                 val timelineWidth = getUpdatedTimeline(updatedTracks, _state.value.msPerDpScale)
                 _state.update { it.copy(tracks = updatedTracks, timelineWidth = timelineWidth) }
+
+                if (updatedTracks.isNotEmpty()) {
+                    // Verificar si el último track es nuevo (no estaba en la lista anterior)
+                    val lastTrack = updatedTracks.last()
+                    val wasLastTrackInPreviousList = currentUiTracksMap.containsKey(lastTrack.id)
+                    // Solo seleccionar si es un track nuevo
+                    if (!wasLastTrackInPreviousList) {
+                        selectTrack(id = lastTrack.id)
+                    }
+                }
             }
         }
     }

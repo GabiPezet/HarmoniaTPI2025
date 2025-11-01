@@ -31,7 +31,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.android.harmoniatpi.domain.model.userPreferences.Post
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.components.CommentsBottomSheetContent
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.components.CreatePostDialog
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.components.PostCard
@@ -47,8 +46,14 @@ fun CommunityScreen(
 ) {
     val scope = rememberCoroutineScope()
     val uiState by viewModel.uiState.collectAsState()
+
     val modalBottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    var selectedPostForComments by remember { mutableStateOf<Post?>(null) }
+    var selectedPostIdForComments by remember { mutableStateOf<String?>(null) } // Cambiar a ID
+
+    // Encontrar el post seleccionado actualizado
+    val selectedPostForComments = remember(selectedPostIdForComments, uiState.posts) {
+        uiState.posts.find { it.id == selectedPostIdForComments }
+    }
 
     // 1. Obtenemos el contexto actual
     val context = LocalContext.current
@@ -74,8 +79,6 @@ fun CommunityScreen(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            // Quitamos el verticalArrangement y el padding
-            // PostCard ahora gestiona su propio espaciado y divisores.
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(uiState.posts) { post ->
 
@@ -88,15 +91,13 @@ fun CommunityScreen(
                         post = post,
                         onLikeClicked = { viewModel.updateLikes(post) },
                         onCommentClicked = {
-                            selectedPostForComments = post
+                            selectedPostIdForComments = post.id // Guardar solo el ID
                         },
                         onDeleteClicked = { viewModel.deleteMyPost(post) },
                         isMyPost = post.userID == uiState.userID,
                         isAlreadyCloned = isAlreadyCloned,
                         onCloneClicked = {
                             viewModel.cloneProject(post)
-                            // Aquí es donde llamarías a la navegación
-                            // onNavigateToProjectsTab()
                         }
                     )
                 }
@@ -129,13 +130,13 @@ fun CommunityScreen(
     // ModalBottomSheet
     if (selectedPostForComments != null) {
         ModalBottomSheet(
-            onDismissRequest = { selectedPostForComments = null },
+            onDismissRequest = { selectedPostIdForComments = null },
             sheetState = modalBottomSheetState
         ) {
             CommentsBottomSheetContent(
-                post = selectedPostForComments!!,
+                post = selectedPostForComments, // Este se actualiza automáticamente
                 onCommentAdded = { comment ->
-                    viewModel.updateComments(selectedPostForComments!!, comment)
+                    viewModel.updateComments(selectedPostForComments, comment)
                 }
             )
         }
