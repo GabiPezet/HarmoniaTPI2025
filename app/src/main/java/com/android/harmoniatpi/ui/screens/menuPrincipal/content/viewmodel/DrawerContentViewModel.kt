@@ -11,6 +11,7 @@ import com.android.harmoniatpi.domain.usecases.firebaseUseCases.DeletePostFireba
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.LogOutFirebaseUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.UpdatePostFirebaseDataBaseUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.UploadLocalFileToFirebaseStorage
+import com.android.harmoniatpi.domain.usecases.roomUseCases.GetAllProjectsFromDBUseCase
 import com.android.harmoniatpi.domain.usecases.roomUseCases.GetMyPostFromDataBaseUseCase
 import com.android.harmoniatpi.domain.usecases.roomUseCases.GetUserPreferencesUseCase
 import com.android.harmoniatpi.domain.usecases.roomUseCases.SetUserPreferencesUseCase
@@ -36,7 +37,8 @@ class DrawerContentViewModel @Inject constructor(
     private val uploadLocalFileToFirebaseStorage: UploadLocalFileToFirebaseStorage,
     private val getMyPostFromDataBaseUseCase: GetMyPostFromDataBaseUseCase,
     private val updatePostFirebaseDataBaseUseCase: UpdatePostFirebaseDataBaseUseCase,
-    private val deletePostFirebaseDataBaseUseCase: DeletePostFirebaseDataBaseUseCase
+    private val deletePostFirebaseDataBaseUseCase: DeletePostFirebaseDataBaseUseCase,
+    private val getAllProjectsFromDBUseCase: GetAllProjectsFromDBUseCase
 ) : ViewModel() {
 
     val uiState = sharedMenuUiState.uiState
@@ -88,6 +90,13 @@ class DrawerContentViewModel @Inject constructor(
             getMyPostFromDataBaseUseCase().collect { posts ->
                 sharedMenuUiState.updateState { it.copy(myPostsList = posts) }
                 Log.i("KlyxDevs", "Posts: $posts")
+            }
+        }
+
+        viewModelScope.launch {
+            getAllProjectsFromDBUseCase().collect { projects ->
+                sharedMenuUiState.updateState { it.copy(projectsList = projects) }
+                Log.i("KlyxDevs", "Projects: $projects")
             }
         }
     }

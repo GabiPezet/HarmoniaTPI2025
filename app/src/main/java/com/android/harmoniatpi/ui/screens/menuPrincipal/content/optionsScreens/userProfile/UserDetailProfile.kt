@@ -326,7 +326,7 @@ fun UserDetailProfile(
             ) {
                 when (selectedTab) {
                     ProfileTab.WORK -> WorkProfileCard(uiState = uiState, viewModel = viewModel)
-                    ProfileTab.MEDIA -> MediaProjectList(projects = uiState.listProjects)
+                    ProfileTab.MEDIA -> MediaProjectList(projects = uiState.projectsList)
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))
