@@ -23,7 +23,8 @@ data class Post(
     val totalShared: Int = 0,
     val clonedOption: Boolean = false,
     val hasNewComment: Boolean = false,
-    val hasNewLike: Boolean = false
+    val hasNewLike: Boolean = false,
+    val hasNewClone : Boolean = false
 ) {
     fun toPostFirebaseModel(jsonUtils: JsonUtils): PostFirebaseModel {
         return PostFirebaseModel(
@@ -50,7 +51,8 @@ data class Post(
     fun toDataBase(
         jsonUtils: JsonUtils,
         hasNewComment: Boolean = false,
-        hasNewLike: Boolean = false
+        hasNewLike: Boolean = false,
+        hasNewClone: Boolean = false
     ) = MyPostEntity(
         id = id,
         userID = userID,
@@ -70,6 +72,7 @@ data class Post(
         totalShared = totalShared,
         clonedOption = clonedOption,
         hasNewComment = hasNewComment,
-        hasNewLike = hasNewLike
+        hasNewLike = hasNewLike,
+        hasNewClone = hasNewClone
     )
 }

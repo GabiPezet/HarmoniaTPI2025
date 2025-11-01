@@ -125,7 +125,9 @@ fun MyPostsScreen(
                                 onDeleteClicked = { viewModel.deleteMyPost(post.id) },
                                 isMyPost = true, // En esta pantalla, siempre es tu post
                                 isAlreadyCloned = false, // No relevante
-                                onCloneClicked = { /* No relevante */ }
+                                onCloneClicked = { /* No relevante */ },
+                                viewUserProfile = {}
+
                             )
                         }
                     }

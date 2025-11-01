@@ -19,15 +19,15 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun PostActionItem(
     icon: ImageVector,
+    totalCloned: Int = 0,
     text: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
     enabled: Boolean = true // <-- 1. AÑADIMOS ESTE PARÁMETRO
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         // Hacemos que toda la fila (icono + texto) sea clickeable
-        modifier = modifier
+        modifier = Modifier
             // 2. USAMOS EL PARÁMETRO AQUÍ
             .clickable(enabled = enabled, onClick = onClick)
             .padding(vertical = 4.dp, horizontal = 6.dp)
@@ -40,9 +40,9 @@ fun PostActionItem(
         Spacer(Modifier.width(4.dp))
 
         // Solo mostramos el texto si el contador no es "0"
-        if (text.isNotEmpty() && text != "0") {
+        if (totalCloned != 0) {
             Text(
-                text = text,
+                text = totalCloned.toString(),
                 style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
             )
         }

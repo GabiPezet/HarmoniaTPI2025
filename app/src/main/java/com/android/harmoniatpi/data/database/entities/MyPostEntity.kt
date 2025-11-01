@@ -47,7 +47,9 @@ data class MyPostEntity(
     @ColumnInfo(name = "hasNewComment", defaultValue = "0")
     val hasNewComment: Boolean = false,
     @ColumnInfo(name = "hasNewLike", defaultValue = "0")
-    val hasNewLike: Boolean = false
+    val hasNewLike: Boolean = false,
+    @ColumnInfo(name = "hasNewClone", defaultValue = "0")
+    val hasNewClone: Boolean = false,
 ) {
     fun toDomain(jsonUtils: JsonUtils) = Post(
         id = id,
@@ -68,6 +70,7 @@ data class MyPostEntity(
         totalShared = totalShared,
         clonedOption = clonedOption,
         hasNewComment = hasNewComment,
-        hasNewLike = hasNewLike
+        hasNewLike = hasNewLike,
+        hasNewClone = hasNewClone
     )
 }

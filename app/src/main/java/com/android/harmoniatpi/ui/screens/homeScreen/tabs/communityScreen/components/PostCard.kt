@@ -78,7 +78,8 @@ fun PostCard(
     onDeleteClicked: () -> Unit,
     isMyPost: Boolean,
     isAlreadyCloned: Boolean,
-    onCloneClicked: () -> Unit
+    onCloneClicked: () -> Unit,
+    viewUserProfile: (String) -> Unit
 ) {
     val postAudio = post.urlCompleteAudio
     val context = LocalContext.current
@@ -157,7 +158,11 @@ fun PostCard(
                 .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 8.dp)
         ) {
             Box(
-                modifier = Modifier.padding(top = 4.dp)
+                modifier = Modifier
+                    .padding(top = 4.dp)
+                    .clickable {
+                        viewUserProfile(post.userID)
+                    }
             ) {
                 if (post.userImagePathURL.isNotBlank()) {
                     AsyncImage(
@@ -297,6 +302,7 @@ fun PostCard(
 
                         PostActionItem(
                             icon = cloneIcon,
+                            totalCloned = post.totalShared,
                             text = "",
                             onClick = onCloneClicked,
                             enabled = isCloneEnabled

@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.Flow
 interface Repository {
     fun getFirebaseCurrentUser(): FirebaseUser?
 
+    suspend fun getUserById(userId: String): UserPreferences?
+
     suspend fun updateUserPreferences(userPreferences: UserPreferences)
 
     suspend fun getUserPreferences(): UserPreferences?

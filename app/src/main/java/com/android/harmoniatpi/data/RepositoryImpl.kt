@@ -14,7 +14,6 @@ import com.android.harmoniatpi.di.util.JsonUtils
 import com.android.harmoniatpi.domain.interfaces.Repository
 import com.android.harmoniatpi.domain.model.UserPreferences
 import com.android.harmoniatpi.domain.model.project.Project
-import com.android.harmoniatpi.domain.model.user.User
 import com.android.harmoniatpi.domain.model.userPreferences.Post
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -50,6 +49,26 @@ class RepositoryImpl @Inject constructor(
 ) : Repository {
 
     override fun getFirebaseCurrentUser(): FirebaseUser? = firebaseAuth.currentUser
+
+    override suspend fun getUserById(userId: String): UserPreferences? {
+        return try {
+            val document = firestore.collection("users")
+                .document(userId)
+                .get()
+                .await()
+
+            if (document.exists()) {
+                val userFirebaseModel = document.toObject(UserFirebaseModel::class.java)
+                userFirebaseModel?.toEntity()!!.toDomain(jsonUtils)
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            // Manejar el error según tu necesidad
+            Log.e("FirestoreRepository", "Error getting user by ID: $userId", e)
+            null
+        }
+    }
 
     override suspend fun updateUserPreferences(userPreferences: UserPreferences) {
         val entity = userPreferences.toDataBase(jsonUtils)
@@ -189,12 +208,14 @@ class RepositoryImpl @Inject constructor(
                                 val hasNewLike = remotePost.likes != localPost.likes
                                 val hasNewComment =
                                     remotePost.comments.size != localPost.comments.size
-                                if (hasNewLike || hasNewComment) {
+                                val hasNewClone = remotePost.totalShared != localPost.totalShared
+                                if (hasNewLike || hasNewComment || hasNewClone) {
                                     Log.i("KlyxDevs", "Actualizando post ${remotePost.id}")
                                     val updatedEntity = remotePost.toDataBase(
                                         jsonUtils = jsonUtils,
                                         hasNewComment = hasNewComment,
-                                        hasNewLike = hasNewLike
+                                        hasNewLike = hasNewLike,
+                                        hasNewClone = hasNewClone
                                     )
                                     updateMyPost(updatedEntity)
                                 }
@@ -402,32 +423,32 @@ class RepositoryImpl @Inject constructor(
             }
         }
 
-override suspend fun getProjectByIdFromFirestore(projectId: String): Project? =
-    withContext(Dispatchers.IO) {
-        try {
-            // 1. Busca el documento por ID en la colección "projects"
-            val document = firestore.collection("projects")
-                .document(projectId)
-                .get()
-                .await()
+    override suspend fun getProjectByIdFromFirestore(projectId: String): Project? =
+        withContext(Dispatchers.IO) {
+            try {
+                // 1. Busca el documento por ID en la colección "projects"
+                val document = firestore.collection("projects")
+                    .document(projectId)
+                    .get()
+                    .await()
 
-            if (document.exists()) {
-                // 2. Lo convierte al modelo de Firebase
-                val firebaseModel = document.toObject(ProjectFirebaseModel::class.java)
+                if (document.exists()) {
+                    // 2. Lo convierte al modelo de Firebase
+                    val firebaseModel = document.toObject(ProjectFirebaseModel::class.java)
 
-                // 3. Lo convierte al modelo de Dominio (FirebaseModel -> Entity -> Domain)
-                // (Esta es la misma lógica que usas en tu 'sync')
-                firebaseModel?.toEntity()?.toDomain(jsonUtils)
-            } else {
-                // El proyecto no existe en Firestore
-                Log.w("RepositoryImpl", "No se encontró el proyecto $projectId en Firestore.")
+                    // 3. Lo convierte al modelo de Dominio (FirebaseModel -> Entity -> Domain)
+                    // (Esta es la misma lógica que usas en tu 'sync')
+                    firebaseModel?.toEntity()?.toDomain(jsonUtils)
+                } else {
+                    // El proyecto no existe en Firestore
+                    Log.w("RepositoryImpl", "No se encontró el proyecto $projectId en Firestore.")
+                    null
+                }
+            } catch (e: Exception) {
+                Log.e("RepositoryImpl", "Error al obtener $projectId de Firestore", e)
                 null
             }
-        } catch (e: Exception) {
-            Log.e("RepositoryImpl", "Error al obtener $projectId de Firestore", e)
-            null
         }
-    }
 
     override suspend fun getDerivedProjectsFromFirestore(originalProjectId: String): List<Project> =
         withContext(Dispatchers.IO) {
@@ -445,7 +466,10 @@ override suspend fun getProjectByIdFromFirestore(projectId: String): Project? =
                     firebaseModel?.toEntity()?.toDomain(jsonUtils)
                 }
 
-                Log.d("RepositoryImpl", "Encontrados ${projects.size} derivados publicados de $originalProjectId")
+                Log.d(
+                    "RepositoryImpl",
+                    "Encontrados ${projects.size} derivados publicados de $originalProjectId"
+                )
                 projects
 
             } catch (e: Exception) {
@@ -458,7 +482,10 @@ override suspend fun getProjectByIdFromFirestore(projectId: String): Project? =
         withContext(Dispatchers.IO) {
             try {
                 val chunks = userIds.distinct().chunked(30)
-                Log.d("RepositoryImpl", "Iniciando fetch de ${userIds.size} usuarios en ${chunks.size} lotes.")
+                Log.d(
+                    "RepositoryImpl",
+                    "Iniciando fetch de ${userIds.size} usuarios en ${chunks.size} lotes."
+                )
 
                 chunks.forEach { chunk ->
                     val querySnapshot = firestore.collection("users")
