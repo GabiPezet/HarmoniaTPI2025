@@ -28,6 +28,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Groups
@@ -82,7 +83,7 @@ fun ContentMainMenu(
     ) {
         // Header
         UserProfileCard(
-            userName = uiState.userName.ifEmpty { "Pepe ArgEnTo" },
+            userName = uiState.userName.ifEmpty { "Nombre vacío o error de red." },
             uiState = uiState,
             onCloseDrawer = {
                 drawerViewModel.updateUserPreferences()
@@ -185,34 +186,35 @@ private fun UserProfileCard(
                     .weight(1f)
                     .padding(16.dp)
             ) {
-                if (uiState.userPhotoPathRemote.isNotBlank()) {
+                val imagePath = uiState.userPhotoPathRemote.ifBlank {
+                    uiState.userPhotoPath
+                }
+
+                if (imagePath.isNotBlank()) {
                     Image(
-                        painter = rememberAsyncImagePainter(uiState.userPhotoPathRemote),
+                        painter = rememberAsyncImagePainter(imagePath),
                         contentDescription = "Foto de perfil",
                         modifier = Modifier
                             .size(80.dp)
-                            .clip(CircleShape),
+                            .clip(CircleShape)
+                            .border(
+                                BorderStroke(2.dp, MaterialTheme.colorScheme.outline),
+                                CircleShape
+                            ),
                         contentScale = ContentScale.Crop
                     )
-                } else
-                    if (uiState.userPhotoPath.isBlank()) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.holojamperfildefaultblackmode),
-                            contentDescription = "Foto de perfil",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(80.dp)
-                        )
-                    } else {
-                        Image(
-                            painter = rememberAsyncImagePainter(uiState.userPhotoPath),
-                            contentDescription = "Foto de perfil",
-                            modifier = Modifier
-                                .size(150.dp)
-                                .clip(CircleShape)
-                                .border(BorderStroke(2.dp, MaterialTheme.colorScheme.outlineVariant), CircleShape),
-                            contentScale = ContentScale.Crop,
-                        )
-                    }
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.AccountCircle,
+                        contentDescription = "Foto de perfil por defecto",
+                        tint = MaterialTheme.colorScheme.outline,
+                        modifier = Modifier.size(80.dp)
+                            .border(
+                                BorderStroke(2.dp, MaterialTheme.colorScheme.outline),
+                                CircleShape
+                            ),
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
@@ -228,14 +230,12 @@ private fun UserProfileCard(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
-                        text = "Violero",
+                        text = uiState.instrument.ifEmpty { "Completa tu instrumento desde perfil." },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
-
-
             Box {
                 IconButton(
                     onClick = onCloseDrawer,

@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -21,11 +23,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
-import com.android.harmoniatpi.R
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.MenuUiState
 
 @Composable
@@ -40,36 +40,35 @@ fun UserProfileHeader(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Imagen de Perfil
-        if (sharedState.userPhotoPathRemote.isNotBlank()) {
+        val imagePath = sharedState.userPhotoPathRemote.ifBlank {
+            sharedState.userPhotoPath
+        }
+
+        if (imagePath.isNotBlank()) {
             Image(
-                painter = rememberAsyncImagePainter(sharedState.userPhotoPathRemote),
+                painter = rememberAsyncImagePainter(imagePath),
                 contentDescription = "Foto de perfil",
                 modifier = Modifier
                     .size(80.dp)
-                    .clip(CircleShape),
+                    .clip(CircleShape)
+                    .border(
+                        BorderStroke(2.dp, MaterialTheme.colorScheme.outlineVariant),
+                        CircleShape
+                    ),
                 contentScale = ContentScale.Crop
             )
-        } else
-            if (sharedState.userPhotoPath.isBlank()) {
-                Icon(
-                    painter = painterResource(id = R.drawable.holojamperfildefaultblackmode),
-                    contentDescription = "Foto de perfil",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .border(BorderStroke(2.dp, MaterialTheme.colorScheme.outlineVariant), CircleShape)
-                )
-            } else {
-                Image(
-                    painter = rememberAsyncImagePainter(sharedState.userPhotoPath),
-                    contentDescription = "Foto de perfil",
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .border(BorderStroke(2.dp, MaterialTheme.colorScheme.outlineVariant), CircleShape),
-                    contentScale = ContentScale.Crop,
-                )
-            }
+        } else {
+            Icon(
+                imageVector = Icons.Default.AccountCircle,
+                contentDescription = "Foto de perfil por defecto",
+                tint = MaterialTheme.colorScheme.outline,
+                modifier = Modifier.size(80.dp)
+                    .border(
+                        BorderStroke(2.dp, MaterialTheme.colorScheme.outline),
+                        CircleShape
+                    ),
+            )
+        }
 
         Spacer(Modifier.width(16.dp))
 
@@ -85,7 +84,8 @@ fun UserProfileHeader(
                 maxLines = 1
             )
             // Instrumento/Ubicación (Mostrar si no está vacío)
-            val detailText = sharedState.instrument.ifBlank { sharedState.location } // O combina ambos
+            val detailText =
+                sharedState.instrument.ifBlank { sharedState.location } // O combina ambos
             if (detailText.isNotBlank()) {
                 Text(
                     text = detailText,

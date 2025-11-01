@@ -39,6 +39,7 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.SliderState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -159,6 +160,8 @@ fun SongVersionsContent(
                         Icon(
                             painter = painterResource(R.drawable.ic_harmonyicon),
                             contentDescription = "Slider Thumb",
+                            modifier = Modifier.size(62.dp)
+
                         )
                     },
                     navigationIcon = {
@@ -169,6 +172,9 @@ fun SongVersionsContent(
                             )
                         }
                     },
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                    )
                 )
             },
         ) { paddingValues ->
@@ -312,7 +318,7 @@ fun PrincipalSongPlayer(
     modifier: Modifier = Modifier,
 ) {
     Card(
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(8.dp),
         modifier = modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         colors = CardDefaults.cardColors(
@@ -344,7 +350,7 @@ fun PrincipalSongPlayer(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 // Reemplazar con Coil o Glide para cargar imágenes desde URL y borrar background
                 AsyncImage(
-                    model = creatorAvatarUrl, // <-- USA EL PARÁMETRO
+                    model = creatorAvatarUrl,
                     placeholder = painterResource(id = R.drawable.holojamperfildefaultblackmode),
                     error = painterResource(id = R.drawable.holojamperfildefaultblackmode),
                     contentDescription = "Imagen de artista: ${song.creator.name}",
@@ -384,7 +390,7 @@ fun PrincipalSongPlayer(
                 isPlaying = isPlaying,
                 modifier = Modifier
                     .size(48.dp),
-                background = MaterialTheme.colorScheme.secondary,
+                background = MaterialTheme.colorScheme.primary,
                 iconColor = MaterialTheme.colorScheme.onSecondary
             )
 
