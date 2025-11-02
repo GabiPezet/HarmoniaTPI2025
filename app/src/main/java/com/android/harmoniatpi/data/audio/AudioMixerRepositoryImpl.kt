@@ -108,7 +108,8 @@ class AudioMixerRepositoryImpl @Inject constructor(
 
             track.setOnPlaybackCompletedCallback {
                 val count = completedCount.incrementAndGet()
-                if (count >= tracksToPlay.size) {
+                Log.i(TAG, "Track ${track.id} completed. Count: $count")
+                if (count == tracksToPlay.size) {
                     stop()
                 }
             }
