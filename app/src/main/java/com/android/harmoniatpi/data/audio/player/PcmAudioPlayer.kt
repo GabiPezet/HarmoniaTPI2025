@@ -62,11 +62,11 @@ class PcmAudioPlayer @Inject constructor() : AudioPlayer {
         return samples * bytesPerSample
     }
 
-    override fun play(startMs: Long): Result<Unit> {
-        return playRange(startMs, Long.MAX_VALUE)
+    override fun play(startMs: Long, delayPlay: Long): Result<Unit> {
+        return playRange(startMs, Long.MAX_VALUE, delayPlay)
     }
 
-    override fun playSegment(startMs: Long, endMs: Long): Result<Unit> {
+    override fun playSegment(startMs: Long, endMs: Long, delayPlay: Long): Result<Unit> {
         setAudioTrackVolume(1f)
         playJob?.invokeOnCompletion {
             if (isMuted) {
@@ -75,10 +75,10 @@ class PcmAudioPlayer @Inject constructor() : AudioPlayer {
                 setAudioTrackVolume(volume)
             }
         }
-        return playRange(startMs, endMs)
+        return playRange(startMs, endMs, delayPlay)
     }
 
-    private fun playRange(startMs: Long, endMs: Long): Result<Unit> {
+    private fun playRange(startMs: Long, endMs: Long, delayPlay: Long): Result<Unit> {
 
         val currentFile = file
         if (currentFile == null || !currentFile.exists()) {
@@ -160,6 +160,9 @@ class PcmAudioPlayer @Inject constructor() : AudioPlayer {
         currentPosMs.set(startMs)
 
         playJob = scope.launch {
+            if (delayPlay > 0) {
+                delay(delayPlay)
+            }
             val buffer = ByteArray(bufferSize)
             try {
 
