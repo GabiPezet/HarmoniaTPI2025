@@ -1,6 +1,8 @@
 package com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,6 +13,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,17 +40,35 @@ fun UserProfileHeader(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Imagen de Perfil
-        Image(
-            painter = rememberAsyncImagePainter(
-                model = sharedState.userPhotoPath.ifBlank { "https://picsum.photos/seed/profile/150/150" } // Usa placeholder si está vacía
-            ),
-            contentDescription = "Foto de perfil",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .size(64.dp)
-                .clip(CircleShape)
-        )
+        val imagePath = sharedState.userPhotoPathRemote.ifBlank {
+            sharedState.userPhotoPath
+        }
+
+        if (imagePath.isNotBlank()) {
+            Image(
+                painter = rememberAsyncImagePainter(imagePath),
+                contentDescription = "Foto de perfil",
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(CircleShape)
+                    .border(
+                        BorderStroke(2.dp, MaterialTheme.colorScheme.outlineVariant),
+                        CircleShape
+                    ),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Icon(
+                imageVector = Icons.Default.AccountCircle,
+                contentDescription = "Foto de perfil por defecto",
+                tint = MaterialTheme.colorScheme.outline,
+                modifier = Modifier.size(80.dp)
+                    .border(
+                        BorderStroke(2.dp, MaterialTheme.colorScheme.outline),
+                        CircleShape
+                    ),
+            )
+        }
 
         Spacer(Modifier.width(16.dp))
 
@@ -61,7 +84,8 @@ fun UserProfileHeader(
                 maxLines = 1
             )
             // Instrumento/Ubicación (Mostrar si no está vacío)
-            val detailText = sharedState.instrument.ifBlank { sharedState.location } // O combina ambos
+            val detailText =
+                sharedState.instrument.ifBlank { sharedState.location } // O combina ambos
             if (detailText.isNotBlank()) {
                 Text(
                     text = detailText,

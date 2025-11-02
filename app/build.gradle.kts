@@ -140,4 +140,7 @@ dependencies {
     implementation(libs.androidx.media3.exoplayer)
     //LAME
     implementation(libs.lame)
+    //TARSOS
+    implementation ("be.tarsos.dsp:core:2.5")
+    implementation ("be.tarsos.dsp:jvm:2.5")
 }

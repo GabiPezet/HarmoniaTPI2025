@@ -44,6 +44,7 @@ performance = "2.0.0"
 lottieCompose = "6.6.6"
 playServicesAuth = "21.2.0"
 lame = "1.1"
+tarsosDSP = "2.4"
 
 [libraries]
 # Core AndroidX
@@ -134,6 +135,8 @@ googleid = { module = "com.google.android.libraries.identity.googleid:googleid",
 lottie-compose = { module = "com.airbnb.android:lottie-compose", version.ref = "lottieCompose" }
 #LAME
 lame = {module = "com.github.naman14:TAndroidLame", version.ref = "lame" }
+#TARSOS DSP
+tarsos-dsp = { module = "com.github.JorenSix:TarsosDSP", version.ref = "tarsosDSP" }
 
 
 [plugins]

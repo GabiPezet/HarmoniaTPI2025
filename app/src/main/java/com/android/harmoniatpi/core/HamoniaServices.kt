@@ -108,6 +108,15 @@ class HamoniaServices : Service() {
                     posts.forEach { post ->
                         var shouldUpdate = false
 
+                        // --- Nuevo Clone ---
+                        if (post.hasNewClone) {
+                            val title = "¡Tienes una nueva colaboración!"
+                            val content =
+                                "Tu projecto '${post.title}' ha recibido nueva clonación."
+                            notificationManger(title, content)
+                            shouldUpdate = true
+                        }
+
                         // --- Nuevo LIKE ---
                         if (post.hasNewLike) {
                             val title = "👍 ¡Tienes un nuevo like!"
@@ -120,7 +129,7 @@ class HamoniaServices : Service() {
                         // --- Nuevo COMENTARIO ---
                         if (post.hasNewComment && post.comments.isNotEmpty()) {
                             val lastComment = post.comments.last()
-                            val title = "💬 ${lastComment.name} ${lastComment.lastName}"
+                            val title = " ${lastComment.name} ${lastComment.lastName}"
                             val content = "Comentó en '${post.title}': \"${lastComment.comment}\""
                             notificationManger(title, content)
                             shouldUpdate = true
@@ -130,7 +139,8 @@ class HamoniaServices : Service() {
                         if (shouldUpdate) {
                             val updatedPost = post.copy(
                                 hasNewLike = false,
-                                hasNewComment = false
+                                hasNewComment = false,
+                                hasNewClone = false
                             )
                             updateMyPostFromDataBaseUseCase(updatedPost)
                         }

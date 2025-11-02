@@ -6,7 +6,17 @@ import android.net.Uri
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
+import be.tarsos.dsp.AudioDispatcher
+import be.tarsos.dsp.AudioEvent
+import be.tarsos.dsp.AudioProcessor
+import be.tarsos.dsp.effects.DelayEffect
+import be.tarsos.dsp.io.TarsosDSPAudioFloatConverter
+import be.tarsos.dsp.io.TarsosDSPAudioFormat
+import be.tarsos.dsp.io.jvm.AudioDispatcherFactory
+
+import be.tarsos.dsp.io.jvm.JVMAudioInputStream
 import com.android.harmoniatpi.data.audio.player.PcmAudioPlayer
+import com.android.harmoniatpi.data.audio.record.TARSOS_FORMAT
 import com.android.harmoniatpi.data.audio.util.AudioConverter
 import com.android.harmoniatpi.di.TrackFactory
 import com.android.harmoniatpi.domain.interfaces.AudioMixerRepository
@@ -33,6 +43,9 @@ import java.io.FileInputStream
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.IOException
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+import java.util.Arrays
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import kotlin.math.roundToLong
@@ -69,6 +82,8 @@ class AudioMixerRepositoryImpl @Inject constructor(
 
     private var previewPlayer: PcmAudioPlayer? = null
     private val _previewCompletedFlow = MutableSharedFlow<Unit>(replay = 0)
+    private val bufferSize = 2048
+
 
     override fun play(excludeTrackId: Long?) {
 
@@ -247,17 +262,26 @@ class AudioMixerRepositoryImpl @Inject constructor(
     override fun trimTrack(id: Long, startMs: Long, endMs: Long): Result<Unit> {
         return tracks.value.find { it.id == id }?.let { track ->
             val originalFile = File(track.path)
-            val backupFile = File(track.originalPath) // nueva ruta del backup
+            val backupFile = File(track.path + ".original_trim")
 
             if (!originalFile.exists()) {
                 return Result.failure(Exception("Archivo de audio original no encontrado: ${track.path}"))
             }
 
             try {
-                // si no hay backup, creo copia
-                if (!backupFile.exists()) {
-                    originalFile.copyTo(backupFile, overwrite = true)
-                    Log.i(TAG, "Copia de seguridad creada en ${track.originalPath}")
+
+                if (backupFile.exists()) {
+                    backupFile.delete()
+                }
+
+                val effectBackupFile = File(track.path + ".original_effect")
+                if (effectBackupFile.exists()) {
+                    effectBackupFile.delete()
+                    Log.d(TAG, "Backup de efecto eliminado al hacer trim.")
+                }
+
+                if (!originalFile.renameTo(backupFile)) {
+                    return Result.failure(IOException("No se pudo crear el backup para deshacer."))
                 }
 
                 val sampleRate = 44100
@@ -269,20 +293,19 @@ class AudioMixerRepositoryImpl @Inject constructor(
                 val startByte = startSamples * bytesPerSample
                 val endByte = endSamples * bytesPerSample
 
-                val length = originalFile.length()
+                val length = backupFile.length()
                 if (startByte < 0 || endByte > length || startByte >= endByte) {
-                    return Result.failure(IllegalArgumentException("Rango de recorte inválido: fuera de límites o invertido."))
+
+                    backupFile.renameTo(originalFile)
+                    return Result.failure(IllegalArgumentException("Rango de recorte inválido."))
                 }
 
-                // archivo temporal
                 val tempFile = File(track.path.replace(".pcm", "_temp.pcm"))
                 val bufferSize = 8192
 
-                FileInputStream(originalFile).use { fis ->
+                FileInputStream(backupFile).use { fis ->
                     FileOutputStream(tempFile).use { fos ->
-
                         fis.skip(startByte)
-
                         val bytesToRead = endByte - startByte
                         var totalRead = 0L
                         val buffer = ByteArray(bufferSize)
@@ -291,32 +314,25 @@ class AudioMixerRepositoryImpl @Inject constructor(
                             val remaining =
                                 (bytesToRead - totalRead).toInt().coerceAtMost(bufferSize)
                             val readCount = fis.read(buffer, 0, remaining)
-
                             if (readCount <= 0) break
-
                             fos.write(buffer, 0, readCount)
                             totalRead += readCount
                         }
                     }
                 }
 
-                // reemplazo original por recortado
-                if (originalFile.delete()) {
-                    if (tempFile.renameTo(originalFile)) {
-                        return Result.success(Unit)
-                    } else {
-                        Log.e(TAG, "Fallo al renombrar el archivo temporal a la ruta original.")
-                        return Result.failure(IOException("Fallo al aplicar el recorte: no se pudo renombrar el archivo temporal."))
-                    }
+                if (tempFile.renameTo(originalFile)) {
+                    return Result.success(Unit)
                 } else {
-                    tempFile.delete()
-                    Log.e(TAG, "Fallo al eliminar el archivo original para el reemplazo.")
-                    return Result.failure(IOException("Fallo al aplicar el recorte: no se pudo eliminar el archivo original."))
+                    backupFile.renameTo(originalFile)
+                    return Result.failure(IOException("Fallo al aplicar el recorte: no se pudo renombrar el archivo temporal."))
                 }
 
             } catch (e: Exception) {
                 Log.e(TAG, "Error recortando pista ${track.id}", e)
-                File(track.originalPath).delete() // limpio backup si falla el recorte
+                if (backupFile.exists() && !originalFile.exists()) {
+                    backupFile.renameTo(originalFile)
+                }
                 return Result.failure(e)
             }
         } ?: Result.failure(NoSuchElementException("Pista con ID $id no encontrada"))
@@ -326,7 +342,7 @@ class AudioMixerRepositoryImpl @Inject constructor(
     override fun undoTrim(id: Long): Result<Unit> {
         return tracks.value.find { it.id == id }?.let { track ->
             val currentFile = File(track.path)
-            val backupFile = File(track.originalPath)
+            val backupFile = File(track.path + ".original_trim")
 
             if (!backupFile.exists()) {
                 Log.w(
@@ -395,7 +411,12 @@ class AudioMixerRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun loadPcmTrack(file: File, id: Long, sourceType: AudioSourceType) {
+    override suspend fun loadPcmTrack(
+        file: File,
+        id: Long,
+        sourceType: AudioSourceType,
+        startOffsetMs: Long
+    ) {
         if (!file.exists()) {
             Log.e(TAG, "PCM file not found: ${file.absolutePath}")
             return
@@ -403,6 +424,8 @@ class AudioMixerRepositoryImpl @Inject constructor(
 
         val track =
             trackFactory.create(file.parent!!, file.absolutePath, id, sourceType = sourceType)
+        track.startOffsetMs = startOffsetMs
+
         tracks.update { it + track }
         Log.i(TAG, "Track restored from PCM: ${file.name} with path ${track.path}")
     }
@@ -420,6 +443,23 @@ class AudioMixerRepositoryImpl @Inject constructor(
             previewPlayer = player
 
             player.setFile(filePath)
+
+            val internalFile = player.file
+            if (internalFile == null || !internalFile.exists() || internalFile.length() == 0L) {
+                Log.e(
+                    TAG,
+                    "playPreview - ¡ERROR POST-SETFILE! El archivo interno es null, no existe o está vacío."
+                )
+                Log.e(TAG, "playPreview - Path intentado: $filePath")
+
+                throw FileNotFoundException("El archivo de audio ($filePath) no se pudo establecer o es inválido en el reproductor.")
+            } else {
+                Log.d(
+                    TAG,
+                    "playPreview - Verificación post-setFile OK: (${internalFile.path}, Tamaño: ${internalFile.length()})"
+                )
+            }
+
             player.setOnPlaybackCompletedCallback {
                 Log.d(TAG, "Preview completado para: $filePath")
                 stopPreviewInternal()
@@ -434,7 +474,8 @@ class AudioMixerRepositoryImpl @Inject constructor(
                 Result.success(Unit)
             } else {
 
-                val exception = playResult.exceptionOrNull() ?: IllegalStateException("Unknown error during player.play()")
+                val exception = playResult.exceptionOrNull()
+                    ?: IllegalStateException("Unknown error during player.play()")
                 Log.e(TAG, "Fallo al iniciar previewPlayer.play()", exception)
                 stopPreviewInternal()
                 Result.failure(exception)
@@ -462,9 +503,281 @@ class AudioMixerRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun setPlaybackRange(
+        trackId: Long,
+        startMs: Long,
+        endMs: Long,
+        totalDurationMs: Long
+    ): Result<Unit> {
+        return runCatching {
+            tracks.value.find { it.id == trackId }?.let { track ->
+                track.setPlaybackRange(startMs, endMs, totalDurationMs)
+            } ?: throw NoSuchElementException("Track no encontrado: $trackId")
+        }
+    }
+
     override fun onPreviewCompleted(): SharedFlow<Unit> = _previewCompletedFlow.asSharedFlow()
 
 
+    override fun cutAudioSegment(id: Long, startMs: Long, endMs: Long): Result<Unit> {
+        return tracks.value.find { it.id == id }?.let { track ->
+            val originalFile = File(track.path)
+            val backupFile = File(track.originalPath)
+
+            if (!originalFile.exists()) {
+                return Result.failure(Exception("Archivo de audio original no encontrado: ${track.path}"))
+            }
+
+            try {
+
+                if (backupFile.exists()) {
+                    backupFile.delete()
+                }
+                if (!originalFile.renameTo(backupFile)) {
+                    return Result.failure(IOException("No se pudo crear el backup."))
+                }
+
+
+                val sampleRate = TARSOS_FORMAT.sampleRate.toInt()
+                val bytesPerSample = TARSOS_FORMAT.frameSize
+                val startByte = (startMs * sampleRate / 1000f).roundToLong() * bytesPerSample
+                val endByte = (endMs * sampleRate / 1000f).roundToLong() * bytesPerSample
+                val totalLength = backupFile.length()
+
+                if (startByte < 0 || endByte > totalLength || startByte >= endByte) {
+                    backupFile.renameTo(originalFile)
+                    return Result.failure(IllegalArgumentException("Rango de corte inválido."))
+                }
+
+                val tempFile = File(track.path.replace(".pcm", "_tempcut.pcm"))
+                val bufferSize = 8192
+                val buffer = ByteArray(bufferSize)
+
+                FileInputStream(backupFile).use { fis ->
+                    FileOutputStream(tempFile).use { fos ->
+                        var totalRead = 0L
+                        while (totalRead < startByte) {
+                            val remaining = (startByte - totalRead).toInt().coerceAtMost(bufferSize)
+                            val readCount = fis.read(buffer, 0, remaining)
+                            if (readCount <= 0) break
+                            fos.write(buffer, 0, readCount)
+                            totalRead += readCount
+                        }
+
+                        val bytesToSkip = endByte - startByte
+                        var skipped = 0L
+                        while (skipped < bytesToSkip) {
+                            val s = fis.skip(bytesToSkip - skipped)
+                            if (s <= 0) break
+                            skipped += s
+                        }
+
+                        var readCount = fis.read(buffer, 0, bufferSize)
+                        while (readCount > 0) {
+                            fos.write(buffer, 0, readCount)
+                            readCount = fis.read(buffer, 0, bufferSize)
+                        }
+                    }
+                }
+
+                if (tempFile.renameTo(originalFile)) {
+                    return Result.success(Unit)
+                } else {
+                    backupFile.renameTo(originalFile)
+                    return Result.failure(IOException("Fallo al aplicar el corte."))
+                }
+
+            } catch (e: Exception) {
+                Log.e(TAG, "Error cortando pista ${track.id}", e)
+                if (backupFile.exists() && !originalFile.exists()) {
+                    backupFile.renameTo(originalFile)
+                }
+                return Result.failure(e)
+            }
+        } ?: Result.failure(NoSuchElementException("Pista con ID $id no encontrada"))
+    }
+
+    override suspend fun addTrackFromSegment(
+        sourcePath: String,
+        startMs: Long,
+        endMs: Long
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+
+            val sourceFile = File(sourcePath)
+            if (!sourceFile.exists()) {
+                throw FileNotFoundException("Archivo de origen no encontrado: $sourcePath")
+            }
+
+            val newTrack = trackFactory.create(
+                folderPath = context.filesDir.absolutePath,
+                sourceType = AudioSourceType.INSTRUMENT
+            )
+            val destinationFile = File(newTrack.path)
+
+            val sampleRate = TARSOS_FORMAT.sampleRate.toInt()
+            val bytesPerSample = TARSOS_FORMAT.frameSize
+            val startByte = (startMs * sampleRate / 1000f).roundToLong() * bytesPerSample
+            val endByte = (endMs * sampleRate / 1000f).roundToLong() * bytesPerSample
+            val length = sourceFile.length()
+
+            if (startByte < 0 || endByte > length || startByte >= endByte) {
+                destinationFile.delete()
+                throw IllegalArgumentException("Rango de copiado inválido.")
+            }
+
+            val bufferSize = 8192
+            FileInputStream(sourceFile).use { fis ->
+                FileOutputStream(destinationFile).use { fos ->
+                    fis.skip(startByte)
+                    val bytesToRead = endByte - startByte
+                    var totalRead = 0L
+                    val buffer = ByteArray(bufferSize)
+
+                    while (totalRead < bytesToRead) {
+                        val remaining = (bytesToRead - totalRead).toInt().coerceAtMost(bufferSize)
+                        val readCount = fis.read(buffer, 0, remaining)
+                        if (readCount <= 0) break
+                        fos.write(buffer, 0, readCount)
+                        totalRead += readCount
+                    }
+                }
+            }
+
+            tracks.update { it + newTrack }
+            Log.i(TAG, "Track pegado exitosamente en: ${newTrack.path}")
+
+
+            Unit
+
+        }.onFailure {
+
+            Log.e(TAG, "Error en addTrackFromSegment", it)
+        }
+
+    }
+
+
+    override suspend fun applyDelayEffect(
+        trackId: Long,
+        delayTimeInSeconds: Float,
+        decay: Float
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val track = tracks.value.find { it.id == trackId }
+                ?: throw IllegalStateException("Track no encontrado con id: $trackId")
+
+            val originalFile = File(track.path)
+            if (!originalFile.exists()) {
+                throw IllegalStateException("Archivo de pista no encontrado: ${track.path}")
+            }
+
+            val backupFile = File(track.path + ".original_effect")
+            if (backupFile.exists()) {
+                backupFile.delete()
+            }
+
+            val trimBackupFile = File(track.path + ".original_trim")
+            if (trimBackupFile.exists()) {
+                trimBackupFile.delete()
+                Log.d(TAG, "Backup de trim eliminado al aplicar efecto.")
+            }
+
+            originalFile.renameTo(backupFile)
+
+            val tempFile = File(track.path + ".tmp")
+            var fileInputStream: FileInputStream? = null
+            var fileOutputStream: FileOutputStream? = null
+
+            try {
+                fileInputStream = FileInputStream(backupFile)
+                fileOutputStream = FileOutputStream(tempFile)
+
+                val delayEffect = DelayEffect(
+                    delayTimeInSeconds.toDouble(),
+                    decay.toDouble(),
+                    TARSOS_FORMAT.sampleRate.toDouble()
+                )
+
+                val converter = TarsosDSPAudioFloatConverter.getConverter(TARSOS_FORMAT)
+                val byteBuffer = ByteArray(2048)
+                val floatBuffer = FloatArray(1024)
+                val audioEvent = AudioEvent(TARSOS_FORMAT)
+                audioEvent.setFloatBuffer(floatBuffer)
+
+                var bytesRead = fileInputStream.read(byteBuffer, 0, byteBuffer.size)
+                while (bytesRead != -1) {
+                    audioEvent.setBytesProcessing(bytesRead)
+                    converter.toFloatArray(byteBuffer, floatBuffer)
+                    delayEffect.process(audioEvent)
+                    converter.toByteArray(floatBuffer, byteBuffer)
+                    fileOutputStream.write(byteBuffer, 0, bytesRead)
+                    bytesRead = fileInputStream.read(byteBuffer, 0, byteBuffer.size)
+                }
+
+                Arrays.fill(floatBuffer, 0.0f)
+                audioEvent.setBytesProcessing(byteBuffer.size)
+                delayEffect.process(audioEvent)
+
+                var rms = AudioEvent.calculateRMS(floatBuffer)
+                var tailLoops = 0
+                val maxTailLoops = (delayTimeInSeconds * 2 * TARSOS_FORMAT.sampleRate) / 1024
+
+                while (rms > 0.0001 && tailLoops < maxTailLoops) {
+                    converter.toByteArray(floatBuffer, byteBuffer)
+                    fileOutputStream.write(byteBuffer, 0, byteBuffer.size)
+
+                    Arrays.fill(floatBuffer, 0.0f)
+
+                    delayEffect.process(audioEvent)
+
+                    rms = AudioEvent.calculateRMS(floatBuffer)
+                    tailLoops++
+                }
+                delayEffect.processingFinished()
+                tempFile.renameTo(originalFile)
+
+            } finally {
+                fileInputStream?.close()
+                fileOutputStream?.close()
+                if (tempFile.exists()) {
+                    tempFile.delete()
+                }
+            }
+
+            Unit
+        }
+    }
+
+    override fun undoEffect(id: Long): Result<Unit> {
+        return tracks.value.find { it.id == id }?.let { track ->
+            val currentFile = File(track.path)
+            val backupFile = File(track.path + ".original_effect")
+
+            if (!backupFile.exists()) {
+                Log.w(
+                    TAG,
+                    "No hay copia de seguridad para deshacer el efecto en la pista ${track.id}"
+                )
+                return Result.failure(FileNotFoundException("No hay copia de seguridad de efecto disponible."))
+            }
+            try {
+                if (currentFile.exists()) {
+                    currentFile.delete()
+                }
+                if (backupFile.renameTo(currentFile)) {
+                    Log.i(TAG, "Efecto deshecho exitosamente para la pista ${track.id}")
+                    return Result.success(Unit)
+                } else {
+                    Log.e(TAG, "Fallo al renombrar el backup de efecto como archivo actual.")
+                    return Result.failure(IOException("Fallo al deshacer el efecto."))
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error al deshacer el efecto para la pista ${track.id}", e)
+                return Result.failure(e)
+            }
+        } ?: Result.failure(NoSuchElementException("Pista con ID $id no encontrada"))
+    }
 
 
     override fun clearAllTracks() {

@@ -9,5 +9,8 @@ data class ProyectScreenUiState(
     val tracks: List<TrackUi> = emptyList(),
     val timelineWidth: Int = 500,
     val previewTrackId: Long? = null,
-    val currentPlaybackMs: Long = 0L
+    val currentPlaybackMs: Long = 0L,
+    val isClipboardFull: Boolean = false,
+    val isRestoringTracks: Boolean = false,
+    val msPerDpScale: Float = 10f
 )

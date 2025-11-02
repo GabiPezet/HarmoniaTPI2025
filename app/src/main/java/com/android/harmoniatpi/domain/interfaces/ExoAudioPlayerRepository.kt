@@ -24,6 +24,11 @@ interface ExoAudioPlayerRepository {
     fun stop()
 
     /**
+     * Reanuda la reproducción del audio.
+     */
+    fun resume()
+
+    /**
      * Salta a una posición especifica en el audio
      */
     fun seekTo(positionMs: Long)

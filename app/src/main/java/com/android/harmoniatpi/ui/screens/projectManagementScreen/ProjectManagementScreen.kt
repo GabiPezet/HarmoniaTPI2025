@@ -1,7 +1,6 @@
 package com.android.harmoniatpi.ui.screens.projectManagementScreen
 
 import android.net.Uri
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -10,9 +9,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -26,7 +27,12 @@ import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.filled.ContentPaste
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.ZoomIn
+import androidx.compose.material.icons.filled.ZoomOut
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -48,6 +54,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
@@ -60,7 +69,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.android.harmoniatpi.domain.model.audio.AudioSourceType
+import com.android.harmoniatpi.ui.components.EffectsAudioDialog
 import com.android.harmoniatpi.ui.components.ProyectControlButtonRow
+import com.android.harmoniatpi.ui.components.ShowConfirmationDialog
 import com.android.harmoniatpi.ui.components.TrackItem
 import com.android.harmoniatpi.ui.components.TrimAudioDialog
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
@@ -76,8 +87,10 @@ fun ProjectManagementScreen(
     var showSheet by remember { mutableStateOf(false) }
     val state by viewModel.state.collectAsState()
     val sharedScrollState = rememberScrollState()
+    var showDeleteDialog by remember { mutableStateOf(false) }
     var trackForTrimming by remember { mutableStateOf<TrackUi?>(null) }
     val context = LocalContext.current
+    var trackForEffects by remember { mutableStateOf<TrackUi?>(null) }
     val pickAudioLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -90,7 +103,20 @@ fun ProjectManagementScreen(
     BackHandler {
         viewModel.updateCurrentProjectWithTracks()
         onBack()
-        viewModel.clearAllTracks()
+    }
+
+    if (showDeleteDialog) {
+        ShowConfirmationDialog(
+            show = true,
+            onDismiss = { showDeleteDialog = false },
+            onConfirm = {
+                viewModel.deleteTrack()
+                showDeleteDialog = false
+            },
+            title = "¿Estas seguro?",
+            message = "Vas a perder los cambios si borras la pista",
+            confirmText = "Borrar"
+        )
     }
 
     Scaffold(
@@ -102,7 +128,7 @@ fun ProjectManagementScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(end = 16.dp),
-                        text = "Nombre del Proyecto",
+                        text = state.currentProjectSelected!!.title,
                         textAlign = TextAlign.Center
                     )
                 },
@@ -110,11 +136,20 @@ fun ProjectManagementScreen(
                     IconButton(onClick = {
                         viewModel.updateCurrentProjectWithTracks()
                         onBack()
-                        viewModel.clearAllTracks()
                     }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 },
+
+                actions = {
+                    IconButton(onClick = { viewModel.zoomOut() }) {
+                        Icon(Icons.Default.ZoomOut, "Zoom Out")
+                    }
+                    IconButton(onClick = { viewModel.zoomIn() }) {
+                        Icon(Icons.Default.ZoomIn, "Zoom In")
+                    }
+                },
+
                 colors = TopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                     titleContentColor = MaterialTheme.colorScheme.onSurface,
@@ -124,13 +159,14 @@ fun ProjectManagementScreen(
                 )
             )
         },
-        containerColor = MaterialTheme.colorScheme.background,
+        //containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding),
+                .padding(padding)
+                .background(Color(0xFF858585)), //Pasar ESTE background al Theme Colors
             verticalArrangement = Arrangement.Bottom,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -143,7 +179,8 @@ fun ProjectManagementScreen(
             }
             LazyColumn(
                 modifier = Modifier
-                    .fillMaxWidth().padding(vertical = 16.dp)
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp)
                     .wrapContentHeight(),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -152,19 +189,8 @@ fun ProjectManagementScreen(
                     TrackItem(
                         track = track,
                         onClick = { viewModel.selectTrack(track.id) },
-                        onDelete = { viewModel.deleteTrack() },
-                        onTrim = {
-                            if (track.waveForm.isNullOrEmpty() || track.durationMs < 50L) {
-                                Toast.makeText(
-                                    context,
-                                    "La pista no tiene audio para recortar",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                                Log.d("Trim", "Pista sin audio o muy corta para recortar.")
-                            } else {
-                                trackForTrimming = track
-                            }
-                        },
+                        onDelete = { showDeleteDialog = true },
+                        onShowEffects = { trackForEffects = track },
                         onUndo = {
                             viewModel.undoTrim(track.id)
                         },
@@ -185,7 +211,17 @@ fun ProjectManagementScreen(
                                 trackId,
                                 newOffset
                             )
-                        }
+                        },
+                        onSelectionChanged = { startMs, endMs ->
+                            viewModel.updateTrackSelection(track.id, startMs, endMs)
+                        },
+                        onCopy = { viewModel.copySelection() },
+                        onCut = { viewModel.cutSelection() },
+                        onUndoEffect = { viewModel.undoEffect(track.id) },
+                        isUndoEffectAvailable = track.isUndoEffectAvailable,
+                        isSelectionActive = track.selectionStartMs != null &&
+                                (track.selectionEndMs == null || track.selectionEndMs > track.selectionStartMs),
+                        msPerDpScale = state.msPerDpScale
                     )
                 }
             }
@@ -195,7 +231,7 @@ fun ProjectManagementScreen(
                     showSheet = true
                 },
                 modifier = Modifier
-                    .padding(top = 16.dp, end = 32.dp)
+                    .padding(top = 16.dp, start = 32.dp)
                     .size(50.dp)
                     .align(Alignment.End),
 
@@ -233,36 +269,67 @@ fun ProjectManagementScreen(
             if (showSheet) {
                 ModalBottomSheet(
                     onDismissRequest = { showSheet = false },
-                    sheetState = sheetState
+                    sheetState = sheetState,
+                    containerColor = Color(0xFF121212), // Fondo oscuro del MBS
+                    tonalElevation = 8.dp
                 ) {
                     Column(
-                        Modifier
+                        modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                            .padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Text("Añadir Pista", style = MaterialTheme.typography.titleLarge)
+                        Text(
+                            text = "Añadir pista",
+                            style = MaterialTheme.typography.titleLarge.copy(color = Color.White),
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
 
-                        Button(onClick = {
-                            showSheet = false
-                            viewModel.addNewTrack(AudioSourceType.VOICE)
-                        }, modifier = Modifier.fillMaxWidth()) {
-                            Text("🎤 Grabar Voz (con cancelación de eco)")
+                        // Primera Fila - Pista de Voz y Pista de instrumento
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            OptionCard(
+                                title = "Grabar Voz\n(Cancelación\n de eco)",
+                                icon = Icons.Default.Mic,
+                                onClick = {
+                                    showSheet = false
+                                    viewModel.addNewTrack(AudioSourceType.VOICE)
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
+                            OptionCard(
+                                title = "Grabar Instrumento\n(Hi-Fi)",
+                                icon = Icons.Default.MusicNote,
+                                onClick = {
+                                    showSheet = false
+                                    viewModel.addNewTrack(AudioSourceType.INSTRUMENT)
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
                         }
 
-                        Button(onClick = {
-                            showSheet = false
-                            viewModel.addNewTrack(AudioSourceType.INSTRUMENT)
-                        }, modifier = Modifier.fillMaxWidth()) {
-                            Text("🎸 Grabar Instrumento (alta fidelidad)")
-                        }
-
-                        Button(
+                        // Segunda fila - Importar desde un archivo
+                        OptionCard(
+                            title = "Importar desde archivo",
+                            icon = Icons.Default.Folder,
                             onClick = { pickAudioLauncher.launch("audio/*") },
                             modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("📁 Importar desde archivo")
+                        )
+
+                        if (state.isClipboardFull) {
+                            OptionCard(
+                                title = "Pegar Pista",
+                                icon = Icons.Default.ContentPaste,
+                                onClick = {
+                                    showSheet = false
+                                    viewModel.pasteFromClipboard()
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            )
                         }
+
                     }
                 }
             }
@@ -283,6 +350,16 @@ fun ProjectManagementScreen(
             },
             onStopPreview = { id ->
                 viewModel.stopPreviewTrim(id)
+            }
+        )
+    }
+    trackForEffects?.let { trackToEffect ->
+        EffectsAudioDialog(
+            track = trackToEffect,
+            onDismiss = { trackForEffects = null },
+            onApplyDelay = { id, delay, decay ->
+                viewModel.applyDelayEffect(id, delay, decay)
+                trackForEffects = null
             }
         )
     }
@@ -353,6 +430,59 @@ fun EmptyProjectMessage(modifier: Modifier = Modifier) {
                 fontSize = 18.sp,
                 lineHeight = 28.sp
             )
+        }
+    }
+}
+
+// Composable para cada opción de la BottomSheet
+@Composable
+fun OptionCard(
+    title: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        onClick = onClick,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFF1E1E1E)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        modifier = modifier
+            .height(100.dp)
+            .clip(RoundedCornerShape(16.dp))
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                ),
+                modifier = Modifier.align(Alignment.CenterStart)
+            )
+            Spacer(modifier = Modifier.padding(240.dp))
+            // Icono circular flotante
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .size(36.dp)
+                    .background(Color(0xFFFF8117), CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = Color.Black,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
         }
     }
 }

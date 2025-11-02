@@ -8,6 +8,7 @@ import com.android.harmoniatpi.data.database.dao.UserPreferencesDao
 import com.android.harmoniatpi.data.database.entities.MyPostEntity
 import com.android.harmoniatpi.data.database.entities.UserPreferencesEntity
 import com.android.harmoniatpi.data.local.model.PostFirebaseModel
+import com.android.harmoniatpi.data.local.model.ProjectFirebaseModel
 import com.android.harmoniatpi.data.local.model.UserFirebaseModel
 import com.android.harmoniatpi.di.util.JsonUtils
 import com.android.harmoniatpi.domain.interfaces.Repository
@@ -44,10 +45,30 @@ class RepositoryImpl @Inject constructor(
     private val projectDao: ProjectDao,
     private val myPostDao: MyPostDao,
     private val database: FirebaseDatabase,
-    private val storage: FirebaseStorage
+    private val storage: FirebaseStorage,
 ) : Repository {
 
     override fun getFirebaseCurrentUser(): FirebaseUser? = firebaseAuth.currentUser
+
+    override suspend fun getUserById(userId: String): UserPreferences? {
+        return try {
+            val document = firestore.collection("users")
+                .document(userId)
+                .get()
+                .await()
+
+            if (document.exists()) {
+                val userFirebaseModel = document.toObject(UserFirebaseModel::class.java)
+                userFirebaseModel?.toEntity()!!.toDomain(jsonUtils)
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            // Manejar el error según tu necesidad
+            Log.e("FirestoreRepository", "Error getting user by ID: $userId", e)
+            null
+        }
+    }
 
     override suspend fun updateUserPreferences(userPreferences: UserPreferences) {
         val entity = userPreferences.toDataBase(jsonUtils)
@@ -90,7 +111,7 @@ class RepositoryImpl @Inject constructor(
         email: String,
         password: String,
         name: String,
-        lastName: String
+        lastName: String,
     ): Result<FirebaseUser> =
         withContext(Dispatchers.IO) {
             try {
@@ -147,12 +168,8 @@ class RepositoryImpl @Inject constructor(
             }
         }
 
-    override fun getAllProjects(): Flow<List<Project>> {
-        return projectDao.getAllProjects().map { list -> list.map { it.toDomain(jsonUtils) } }
-    }
-
-    override fun getAllProjectsByUser(ownerId: String): Flow<List<Project>> {
-        return projectDao.getAllProjectsByUser(ownerId).map { list -> list.map { it.toDomain(jsonUtils) } }
+    override fun getAllUser(): Flow<List<UserPreferences>> {
+        return userPreferencesDao.getAllUser().map { list -> list.map { it.toDomain(jsonUtils) } }
     }
 
     override suspend fun deleteProject(projectId: String) {
@@ -161,10 +178,6 @@ class RepositoryImpl @Inject constructor(
 
     override suspend fun insertOrUpdateProject(project: Project) {
         projectDao.insertOrUpdate(project.toDataBase(jsonUtils))
-    }
-
-    override suspend fun getProjectById(projectId: String): Project {
-        return projectDao.getProjectById(projectId)!!.toDomain(jsonUtils)
     }
 
     override fun getAllPostsFlowRealTimeDB(): Flow<List<Post>> = callbackFlow {
@@ -195,12 +208,14 @@ class RepositoryImpl @Inject constructor(
                                 val hasNewLike = remotePost.likes != localPost.likes
                                 val hasNewComment =
                                     remotePost.comments.size != localPost.comments.size
-                                if (hasNewLike || hasNewComment) {
+                                val hasNewClone = remotePost.totalShared != localPost.totalShared
+                                if (hasNewLike || hasNewComment || hasNewClone) {
                                     Log.i("KlyxDevs", "Actualizando post ${remotePost.id}")
                                     val updatedEntity = remotePost.toDataBase(
                                         jsonUtils = jsonUtils,
                                         hasNewComment = hasNewComment,
-                                        hasNewLike = hasNewLike
+                                        hasNewLike = hasNewLike,
+                                        hasNewClone = hasNewClone
                                     )
                                     updateMyPost(updatedEntity)
                                 }
@@ -243,7 +258,7 @@ class RepositoryImpl @Inject constructor(
 
     override suspend fun uploadLocalFileToFirebaseStorage(
         localFilePath: String,
-        remotePath: String
+        remotePath: String,
     ): Result<String> = withContext(Dispatchers.IO) {
         try {
             val file = File(localFilePath)
@@ -292,4 +307,226 @@ class RepositoryImpl @Inject constructor(
             }
         }
     }
+
+
+//--------------------Proyectos------------------------TODO(PROYECTOS)
+
+
+    override fun getAllProjects(): Flow<List<Project>> {
+        return projectDao.getAllProjects().map { list -> list.map { it.toDomain(jsonUtils) } }
+    }
+
+    override suspend fun getAllProjectsByUser(ownerId: String): Flow<List<Project>> {
+        return projectDao.getAllProjectsByUser(ownerId)
+            .map { list -> list.map { it.toDomain(jsonUtils) } }
+    }
+
+    override suspend fun getProjectById(projectId: String): Project {
+        return projectDao.getProjectById(projectId)!!.toDomain(jsonUtils)
+    }
+
+    override suspend fun upsertProjectInFirestore(projectModel: ProjectFirebaseModel): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            try {
+                Log.d("RepositoryImpl", "Guardando proyecto en Firestore: ${projectModel.id}")
+                firestore.collection("projects") // Nombre de tu colección
+                    .document(projectModel.id) // Usa el ID del proyecto como ID del documento
+                    .set(projectModel) // 'set' crea o sobrescribe el documento
+                    .await() // Espera a que termine la operación
+                Log.d("RepositoryImpl", "Proyecto guardado exitosamente en Firestore.")
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Log.e(
+                    "RepositoryImpl",
+                    "Error al guardar proyecto en Firestore (${projectModel.id})",
+                    e
+                )
+                Result.failure(e)
+            }
+        }
+
+
+    override suspend fun getFirestoreProjectsByUser(userId: String): Flow<List<ProjectFirebaseModel>> =
+        callbackFlow {
+            // Referencia a la colección 'projects'
+            val projectsCollection = firestore.collection("projects")
+
+            // Crea la consulta: filtra por 'ownerId' igual al userId actual
+            val query = projectsCollection.whereEqualTo("ownerId", userId)
+
+            // Escucha cambios en los documentos que coinciden con la consulta
+            val listenerRegistration = query.addSnapshotListener { snapshots, error ->
+                if (error != null) {
+                    Log.w("RepositoryImpl", "Error escuchando proyectos de Firestore", error)
+                    close(error) // Cierra el flow con error si falla el listener
+                    return@addSnapshotListener
+                }
+
+                if (snapshots != null) {
+                    // Mapea los documentos a tu ProjectFirebaseModel
+                    val firestoreProjects = snapshots.documents.mapNotNull { doc ->
+                        doc.toObject(ProjectFirebaseModel::class.java)
+                    }
+                    Log.d(
+                        "RepositoryImpl",
+                        "Proyectos de Firestore recibidos para $userId: ${firestoreProjects.size}"
+                    )
+                    // Envía la lista actualizada al flow
+                    trySend(firestoreProjects).isSuccess // Ignora si el flow ya está cerrado
+                }
+            }
+
+            // Se ejecuta cuando el flow es cancelado (ej. ViewModel se destruye)
+            awaitClose {
+                Log.d(
+                    "RepositoryImpl",
+                    "Cancelando listener de proyectos de Firestore para $userId"
+                )
+                listenerRegistration.remove() // Detiene la escucha
+            }
+        }
+
+    override suspend fun deleteProjectFromFirestore(projectId: String): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            try {
+                firestore.collection("projects").document(projectId).delete().await()
+                Log.d("RepositoryImpl", "Proyecto $projectId borrado de Firestore.")
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Log.e("RepositoryImpl", "Error al borrar de Firestore: $projectId", e)
+                Result.failure(e)
+            }
+        }
+
+    override suspend fun deleteFileFromStorage(remotePath: String): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            try {
+                // Si el path está vacío, no hacer nada
+                if (remotePath.isBlank()) {
+                    return@withContext Result.success(Unit)
+                }
+                storage.reference.child(remotePath).delete().await()
+                Log.d("RepositoryImpl", "Archivo $remotePath borrado de Storage.")
+                Result.success(Unit)
+            } catch (e: Exception) {
+                // Manejar si el objeto no existe (quizás ya fue borrado)
+                if (e is com.google.firebase.storage.StorageException && e.errorCode == com.google.firebase.storage.StorageException.ERROR_OBJECT_NOT_FOUND) {
+                    Log.w(
+                        "RepositoryImpl",
+                        "Archivo no encontrado en Storage (quizás ya borrado): $remotePath"
+                    )
+                    Result.success(Unit) // Es éxito si ya no existe
+                } else {
+                    Log.e("RepositoryImpl", "Error al borrar de Storage: $remotePath", e)
+                    Result.failure(e)
+                }
+            }
+        }
+
+    override suspend fun getProjectByIdFromFirestore(projectId: String): Project? =
+        withContext(Dispatchers.IO) {
+            try {
+                // 1. Busca el documento por ID en la colección "projects"
+                val document = firestore.collection("projects")
+                    .document(projectId)
+                    .get()
+                    .await()
+
+                if (document.exists()) {
+                    // 2. Lo convierte al modelo de Firebase
+                    val firebaseModel = document.toObject(ProjectFirebaseModel::class.java)
+
+                    // 3. Lo convierte al modelo de Dominio (FirebaseModel -> Entity -> Domain)
+                    // (Esta es la misma lógica que usas en tu 'sync')
+                    firebaseModel?.toEntity()?.toDomain(jsonUtils)
+                } else {
+                    // El proyecto no existe en Firestore
+                    Log.w("RepositoryImpl", "No se encontró el proyecto $projectId en Firestore.")
+                    null
+                }
+            } catch (e: Exception) {
+                Log.e("RepositoryImpl", "Error al obtener $projectId de Firestore", e)
+                null
+            }
+        }
+
+    override suspend fun getDerivedProjectsFromFirestore(originalProjectId: String): List<Project> =
+        withContext(Dispatchers.IO) {
+            try {
+                // 1. Prepara la consulta a Firestore
+                val querySnapshot = firestore.collection("projects")
+                    .whereEqualTo("originalProjectId", originalProjectId) // Busca por ID original
+                    .whereEqualTo("published", true) // Solo los que estén publicados
+                    .get()
+                    .await()
+
+                // 2. Mapea los resultados (FirebaseModel -> Entity -> Domain)
+                val projects = querySnapshot.documents.mapNotNull { document ->
+                    val firebaseModel = document.toObject(ProjectFirebaseModel::class.java)
+                    firebaseModel?.toEntity()?.toDomain(jsonUtils)
+                }
+
+                Log.d(
+                    "RepositoryImpl",
+                    "Encontrados ${projects.size} derivados publicados de $originalProjectId"
+                )
+                projects
+
+            } catch (e: Exception) {
+                Log.e("RepositoryImpl", "Error al obtener derivados de Firestore", e)
+                emptyList<Project>() // Devuelve lista vacía en caso de error
+            }
+        }
+
+    override suspend fun fetchAndSyncUsersFromFirestore(userIds: List<String>): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            try {
+                val chunks = userIds.distinct().chunked(30)
+                Log.d(
+                    "RepositoryImpl",
+                    "Iniciando fetch de ${userIds.size} usuarios en ${chunks.size} lotes."
+                )
+
+                chunks.forEach { chunk ->
+                    val querySnapshot = firestore.collection("users")
+                        .whereIn("userID", chunk)
+                        .get()
+                        .await()
+
+                    // 1. Mapea de FirebaseModel a Entity
+                    querySnapshot.documents.mapNotNull { doc ->
+                        doc.toObject(UserFirebaseModel::class.java)
+                            ?.toEntity() // Convierte a UserPreferencesEntity
+
+                        // --- ✨ 2. SANITIZA LA INFORMACIÓN ANTES DE GUARDAR ✨ ---
+                    }.forEach { entity ->
+                        // Creamos una copia de la entidad, pero borrando
+                        // todos los datos privados/innecesarios.
+                        val sanitizedEntity = entity.copy(
+                            friendsList = "[]", // Borra la lista de amigos de otros
+                            projectsList = "[]", // Borra sus proyectos
+                            myPostsList = "[]", // Borra sus posts
+                            notificationList = "[]", // Borra sus notificaciones
+                            friendRequestReceived = "[]",
+                            friendRequestSent = "[]"
+                            // Dejamos intactos: userID, userName, userLastName,
+                            // userPhotoPath y userPhotoPathRemote
+                        )
+
+                        // 3. Inserta la entidad "limpia" en Room
+                        userPreferencesDao.insertUserPreferences(sanitizedEntity)
+                    }
+                }
+
+                Log.d("RepositoryImpl", "Sincronización de usuarios (sanitizada) completada.")
+                Result.success(Unit)
+
+            } catch (e: Exception) {
+                Log.e("RepositoryImpl", "Error en fetchAndSyncUsersFromFirestore", e)
+                Result.failure(e)
+            }
+        }
+
+    //--------------------ProyectosFin------------------------
+
 }

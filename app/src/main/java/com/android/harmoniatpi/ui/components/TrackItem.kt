@@ -12,24 +12,33 @@ import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Undo
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.ContentCut
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -40,6 +49,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,6 +57,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -57,6 +68,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.android.harmoniatpi.R
 import com.android.harmoniatpi.domain.model.audio.AudioSourceType
@@ -65,23 +77,29 @@ import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
-private const val MS_PER_DP_SCALE = 10f
 
 @Composable
 fun TrackItem(
     track: TrackUi,
     onClick: () -> Unit,
     onDelete: () -> Unit,
-    onTrim: () -> Unit,
     onUndo: () -> Unit,
     onMute: () -> Unit,
+    onShowEffects: () -> Unit,
     scrollState: ScrollState,
     isBeingRecorded: Boolean,
     currentPlaybackMs: Long,
     onSeekClick: (Long) -> Unit,
     onOffsetChange: (Long, Long) -> Unit,
+    onSelectionChanged: (startMs: Long?, endMs: Long?) -> Unit,
+    onCopy: () -> Unit,
+    onCut: () -> Unit,
+    onUndoEffect: () -> Unit,
+    isUndoEffectAvailable: Boolean,
+    isSelectionActive: Boolean,
     modifier: Modifier = Modifier,
     timelineWidth: Int,
+    msPerDpScale: Float
 ) {
     var showOptions by remember { mutableStateOf(false) }
 
@@ -101,7 +119,7 @@ fun TrackItem(
     LaunchedEffect(currentPlaybackMs) {
         if (currentPlaybackMs > 0 && scrollState.maxValue > 0) {
 
-            val playbackDp = (currentPlaybackMs / MS_PER_DP_SCALE).dp
+            val playbackDp = (currentPlaybackMs / msPerDpScale).dp
             val playbackPx = with(density) { playbackDp.toPx() }
 
             //desplazamiento de track en reproduccion
@@ -120,7 +138,8 @@ fun TrackItem(
     Row(
         modifier = modifier
             .clip(RoundedCornerShape(0.dp))
-            .background(color = MaterialTheme.colorScheme.background)
+            //.background(color = MaterialTheme.colorScheme.background)
+            .background(Color(0xFF858585)) //Pasar ESTE Background al Theme Colors
             .fillMaxWidth()
             .height(130.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -143,19 +162,34 @@ fun TrackItem(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(6.dp),
-                verticalArrangement = Arrangement.Top,
-                horizontalAlignment = Alignment.Start
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f),
+                        .padding(top = 4.dp),
                     text = track.title,
                     textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.titleSmall
-
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = 2
                 )
-                Box {
+
+                Spacer(Modifier.weight(1f))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onMute) {
+                        val muteOptionText = if (track.isMuted) "Activar" else "Silenciar"
+                        val muteOptionIcon = if (track.isMuted) R.drawable.mute_icon else R.drawable.unmute_icon
+                        Icon(
+                            painter = painterResource(muteOptionIcon),
+                            contentDescription = muteOptionText,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
 
                     IconButton(onClick = {
                         onClick()
@@ -165,20 +199,25 @@ fun TrackItem(
                             imageVector = Icons.Default.MoreVert,
                             contentDescription = "Mostrar opciones de la pista",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
-
                         )
                     }
-                    TrackOptionsMenu(
-                        visible = showOptions,
-                        onDismiss = { showOptions = false },
-                        onDelete = onDelete,
-                        onTrim = onTrim,
-                        onMute = onMute,
-                        onUndo = onUndo,
-                        isUndoAvailable = track.isUndoAvailable,
-                        isMuted = track.isMuted
-                    )
                 }
+
+                TrackOptionsMenu(
+                    visible = showOptions,
+                    onDismiss = { showOptions = false },
+                    onDelete = onDelete,
+                    onMute = onMute,
+                    onUndo = onUndo,
+                    onShowEffects = onShowEffects,
+                    isUndoAvailable = track.isUndoAvailable,
+                    isMuted = track.isMuted,
+                    onCopy = onCopy,
+                    onCut = onCut,
+                    onUndoEffect = onUndoEffect,
+                    isUndoEffectAvailable = isUndoEffectAvailable,
+                    isSelectionActive = isSelectionActive
+                )
             }
         }
         Box(
@@ -199,6 +238,10 @@ fun TrackItem(
                     startOffsetMs = track.startOffsetMs,
                     onSeekClick = onSeekClick,
                     onOffsetChange = { newOffset -> onOffsetChange(track.id, newOffset) },
+                    selectionStartMs = track.selectionStartMs,
+                    selectionEndMs = track.selectionEndMs,
+                    onSelectionChanged = { startMs, endMs -> onSelectionChanged(startMs, endMs) },
+                    msPerDpScale = msPerDpScale
                 )
 
 
@@ -228,7 +271,7 @@ fun TrackItem(
                         )
                 ) {
                     if (currentPlaybackMs > 0) {
-                        val xPos = (currentPlaybackMs / MS_PER_DP_SCALE) * density.density
+                        val xPos = (currentPlaybackMs / msPerDpScale) * density.density
                         if (xPos in 0f..size.width) {
                             drawLine(
                                 color = Color.Red,
@@ -250,31 +293,22 @@ private fun TrackOptionsMenu(
     visible: Boolean,
     onDismiss: () -> Unit,
     onDelete: () -> Unit,
-    onTrim: () -> Unit,
     onMute: () -> Unit,
     onUndo: () -> Unit,
+    onShowEffects: () -> Unit,
     isUndoAvailable: Boolean,
     isMuted: Boolean,
+    onCopy: () -> Unit,
+    onCut: () -> Unit,
+    onUndoEffect: () -> Unit,
+    isUndoEffectAvailable: Boolean,
+    isSelectionActive: Boolean,
     modifier: Modifier = Modifier
 ) {
     DropdownMenu(
         expanded = visible, onDismissRequest = onDismiss, modifier = modifier
     ) {
-        val muteOptionText = if (isMuted) "Activar" else "Silenciar"
-        val muteOptionIcon = if (isMuted) R.drawable.mute_icon else R.drawable.unmute_icon
 
-        DropdownMenuItem(
-            text = {
-                Text(text = muteOptionText)
-            },
-            leadingIcon = {
-                Icon(
-                    painter = painterResource(muteOptionIcon),
-                    contentDescription = muteOptionText
-                )
-            },
-            onClick = onMute
-        )
         DropdownMenuItem(
             text = {
                 Text(text = "Volumen")
@@ -311,34 +345,55 @@ private fun TrackOptionsMenu(
             },
             onClick = {}
         )
+
+
         DropdownMenuItem(
-            text = {
-                Text(text = "Efectos")
+            text = { Text(text = "Copiar") },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.ContentCopy,
+                    contentDescription = "Copiar"
+                )
             },
+            onClick = {
+                onDismiss()
+                onCopy()
+            },
+            enabled = isSelectionActive
+        )
+
+        DropdownMenuItem(
+            text = { Text(text = "Cortar") },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.ContentCut,
+                    contentDescription = "Cortar"
+                )
+            },
+            onClick = {
+                onDismiss()
+                onCut()
+            },
+            enabled = isSelectionActive // Solo se activa si hay algo seleccionado
+        )
+
+
+
+        DropdownMenuItem(
+            text = { Text(text = "Efectos") },
             leadingIcon = {
                 Icon(
                     painter = painterResource(R.drawable.fx_icon),
                     contentDescription = "Efectos"
                 )
             },
-            onClick = {}
-        )
-
-        DropdownMenuItem(
-            text = {
-                Text(text = "Recortar")
-            },
-            leadingIcon = {
-                Icon(
-                    painter = painterResource(R.drawable.edit_icon),
-                    contentDescription = "Recortar"
-                )
-            },
             onClick = {
                 onDismiss()
-                onTrim()
+                onShowEffects()
             }
         )
+
+
 
         DropdownMenuItem(
             text = {
@@ -374,6 +429,18 @@ private fun TrackOptionsMenu(
             )
         }
 
+        if (isUndoEffectAvailable) {
+            DropdownMenuItem(
+                text = { Text(text = "Deshacer Efecto") },
+                leadingIcon = { Icon(Icons.Default.RestartAlt, "Deshacer efecto") },
+                onClick = {
+                    onDismiss()
+                    onUndoEffect()
+                }
+            )
+        }
+
+
     }
 }
 
@@ -385,6 +452,10 @@ fun DbWaveform(
     startOffsetMs: Long,
     onSeekClick: (Long) -> Unit,
     onOffsetChange: (Long) -> Unit,
+    selectionStartMs: Long?,
+    selectionEndMs: Long?,
+    onSelectionChanged: (startMs: Long?, endMs: Long?) -> Unit,
+    msPerDpScale: Float,
     color: Color = MaterialTheme.colorScheme.onPrimaryContainer
 ) {
     val waveformColor = if (isMuted) color else MaterialTheme.colorScheme.primary
@@ -394,10 +465,30 @@ fun DbWaveform(
         )
     val density = LocalDensity.current
 
-    val canvasWidthDp = (maxDurationMs / MS_PER_DP_SCALE).dp
+    val canvasWidthDp = (maxDurationMs / msPerDpScale).dp
     var dragOffsetMs by remember { mutableLongStateOf(0L) }
-    val visualOffsetDp = ((startOffsetMs + dragOffsetMs) / MS_PER_DP_SCALE).dp
+    val visualOffsetDp = ((startOffsetMs + dragOffsetMs) / msPerDpScale).dp
 
+    val totalWidthPx = with(density) { (maxDurationMs / msPerDpScale).dp.toPx() }
+    val startOffsetPx = with(density) { (startOffsetMs / msPerDpScale).dp.toPx() }
+
+    var handleStartPx by remember(selectionStartMs, density) {
+        mutableFloatStateOf(
+            selectionStartMs?.let { with(density) { (it / msPerDpScale).dp.toPx() } } ?: 0f
+        )
+    }
+    var handleEndPx by remember(selectionEndMs, maxDurationMs, density) {
+        mutableFloatStateOf(
+            selectionEndMs?.let { with(density) { (it / msPerDpScale).dp.toPx() } } ?: totalWidthPx
+        )
+    }
+
+    // Estado para arrastrar la pista (offset)
+    var dragOffsetPx by remember { mutableFloatStateOf(0f) }
+    val visualOffsetPx = (startOffsetPx + dragOffsetPx).coerceAtLeast(0f)
+
+    // Tamaño mínimo visual del clip recortado (ej. 10dp)
+    val minClipWidthPx = with(density) { 10.dp.toPx() }
 
     Box(
         modifier = Modifier
@@ -426,7 +517,7 @@ fun DbWaveform(
                             onDrag = { change, dragAmount ->
                                 change.consume()
                                 val dragMs =
-                                    (dragAmount.x / density.density * MS_PER_DP_SCALE).toLong()
+                                    (dragAmount.x / density.density * msPerDpScale).toLong()
                                 val newOffsetCandidate = startOffsetMs + dragOffsetMs + dragMs
 
                                 if (newOffsetCandidate >= 0) {
@@ -441,11 +532,28 @@ fun DbWaveform(
                     .pointerInput(Unit) {
                         detectTapGestures(onTap = { offset ->
                             val tappedMs =
-                                startOffsetMs + (offset.x / density.density * MS_PER_DP_SCALE).toLong()
+                                startOffsetMs + (offset.x / density.density * msPerDpScale).toLong()
                             onSeekClick(tappedMs)
                         })
                     }
-            ) {
+                    .drawWithContent {
+                                drawContent()
+                                if (handleStartPx > 0f) {
+                                    drawRect(
+                                        color = Color.Black.copy(alpha = 0.5f),
+                                        size = size.copy(width = handleStartPx)
+                                    )
+                                }
+                                // Oscurecer después del final
+                                if (handleEndPx < size.width) {
+                                    drawRect(
+                                        color = Color.Black.copy(alpha = 0.5f),
+                                        topLeft = Offset(handleEndPx, 0f),
+                                        size = size.copy(width = size.width - handleEndPx)
+                                    )
+                                }
+                            }
+                        ) {
                 if (waveform.isNotEmpty()) {
                     val centerY = size.height / 2
                     val stepX = size.width / waveform.size.toFloat()
@@ -465,6 +573,57 @@ fun DbWaveform(
                 }
             }
         }
+
+        val handleWidth = 20.dp
+        val handleWidthPx = with(density) { handleWidth.toPx() }
+
+//BARRAS
+        Box(
+            modifier = Modifier
+                .offset { IntOffset( (handleStartPx - handleWidthPx / 2).roundToInt(), 0) }
+                .width(handleWidth)
+                .fillMaxHeight()
+                .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f), RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp)) // Color diferente para selección
+                .draggable(
+                    orientation = Orientation.Horizontal,
+                    state = rememberDraggableState { delta ->
+                        val newPos = (handleStartPx + delta).coerceIn(0f, handleEndPx - minClipWidthPx)
+                        handleStartPx = newPos
+                    },
+                    onDragStopped = {
+                        val startMs = (handleStartPx / density.density * msPerDpScale).coerceAtLeast(0f).toLong()
+                        val endMs = (handleEndPx / density.density * msPerDpScale).coerceAtMost(maxDurationMs.toFloat()).toLong()
+                        onSelectionChanged(startMs, endMs)
+                    }
+                )
+        ) {
+            Icon(Icons.Filled.DragHandle, contentDescription = "Inicio selección", tint = Color.White, modifier = Modifier.align(Alignment.Center))
+        }
+
+        Box(
+            modifier = Modifier
+                .offset { IntOffset( (handleEndPx - handleWidthPx / 2).roundToInt(), 0) }
+                .width(handleWidth)
+                .fillMaxHeight()
+                .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f), RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp)) // Color diferente
+                .draggable(
+                    orientation = Orientation.Horizontal,
+                    state = rememberDraggableState { delta ->
+
+                        val newPos = (handleEndPx + delta).coerceIn(handleStartPx + minClipWidthPx, totalWidthPx)
+                        handleEndPx = newPos
+                    },
+                    onDragStopped = {
+
+                        val startMs = (handleStartPx / density.density * msPerDpScale).coerceAtLeast(0f).toLong()
+                        val endMs = (handleEndPx / density.density * msPerDpScale).coerceAtMost(maxDurationMs.toFloat()).toLong()
+                        onSelectionChanged(startMs, endMs)
+                    }
+                )
+        ) {
+            Icon(Icons.Filled.DragHandle, contentDescription = "Fin selección", tint = Color.White, modifier = Modifier.align(Alignment.Center))
+        }
+
     }
 }
 
@@ -491,16 +650,23 @@ private fun TrackPrev() {
             ),
             onClick = {},
             onDelete = {},
-            onTrim = {},
             onUndo = {},
             onMute = {},
+            onShowEffects = {},
             scrollState = rememberScrollState(),
             isBeingRecorded = true,
             timelineWidth = 500,
             modifier = Modifier,
             currentPlaybackMs = 1500L,
             onSeekClick = {},
-            onOffsetChange = { _, _ -> }
+            onOffsetChange = { _, _ -> },
+            onSelectionChanged = { _, _ -> },
+            onCopy = {},
+            onCut = {},
+            isUndoEffectAvailable = false,
+            onUndoEffect = {},
+            isSelectionActive = false,
+            msPerDpScale = 0F,
         )
     }
 }

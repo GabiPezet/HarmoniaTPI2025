@@ -39,6 +39,7 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.SliderState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -159,6 +160,8 @@ fun SongVersionsContent(
                         Icon(
                             painter = painterResource(R.drawable.ic_harmonyicon),
                             contentDescription = "Slider Thumb",
+                            modifier = Modifier.size(62.dp)
+
                         )
                     },
                     navigationIcon = {
@@ -169,6 +172,9 @@ fun SongVersionsContent(
                             )
                         }
                     },
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                    )
                 )
             },
         ) { paddingValues ->
@@ -186,13 +192,25 @@ fun SongVersionsContent(
                         Spacer(modifier = Modifier.height(16.dp))
                         SongHeader(song = originalSong)
                         Spacer(modifier = Modifier.height(16.dp))
+
+                        val isOriginalSongActive = uiState.playingSongId == originalSong.id
+                        val isOriginalSongPlaying =
+                            isOriginalSongActive && uiState.playbackState.isPlaying
+
+                        val originalCreatorUserPref =
+                            remember(originalSong.creator.id, uiState.allUsers) {
+                                uiState.allUsers.find { it.userID == originalSong.creator.id }
+                            }
                         PrincipalSongPlayer(
                             song = originalSong,
-                            isPlaying = uiState.playingSongId == originalSong.id && uiState.playbackState.isPlaying,
+                            isPlaying = isOriginalSongPlaying,
+                            isSongActive = isOriginalSongActive,
                             playbackState = uiState.playbackState,
                             onPlayClick = onPlayOriginal,
                             onOpenProjectClick = { onOpenOriginalProject(originalSong.projectId) },
-                            onSliderValueChange = onSliderChange
+                            onSliderValueChange = onSliderChange,
+                            // 2. Pasa la URL remota
+                            creatorAvatarUrl = originalCreatorUserPref?.userPhotoPathRemote
                         )
                         Spacer(modifier = Modifier.height(32.dp))
                         Text(
@@ -206,14 +224,23 @@ fun SongVersionsContent(
                     }
 
                     items(uiState.derivedVersions) { version ->
+                        val isThisSongActive = uiState.playingSongId == version.id
+
                         val isThisPlaying =
                             uiState.playingSongId == version.id && uiState.playbackState.isPlaying
+
+                        val derivedCreatorUserPref =
+                            remember(version.creator.id, uiState.allUsers) {
+                                uiState.allUsers.find { it.userID == version.creator.id }
+                            }
                         DerivedVersionItem(
                             version = version,
                             isPlaying = isThisPlaying,
+                            isSongActive = isThisSongActive,
                             playbackState = uiState.playbackState,
                             onPlayClick = { onPlayDerived(version.id) },
                             onSliderChange = onSliderChange,
+                            creatorAvatarUrl = derivedCreatorUserPref?.userPhotoPathRemote,
                             modifier = Modifier.padding(vertical = 4.dp)
                         )
                     }
@@ -266,20 +293,32 @@ fun SongHeader(song: Song, modifier: Modifier = Modifier) {
 
 /**
  * Composable para mostrar la información de una canción base [Song]
+ * y el botón de play/pause.
+ * @param song La canción a mostrar.
+ * @param isPlaying Indica si la canción está sonando, para manejar el ícono del botón.
+ * @param isSongActive indica si la canción está activa (sonando) para el estado del slider
+ * @param playbackState El estado actual de la reproducción.
+ * @param onPlayClick Lambda que se invoca al presionar el botón de play/pause.
+ * @param onOpenProjectClick Lambda que se invoca al presionar el botón "Abrir proyecto".
+ * @param onSliderValueChange Lambda que se invoca cuando se cambia el valor del slider.
+ * @param creatorAvatarUrl URL de la imagen del avatar del artista.
+ * @param modifier Modificador de Compose para personalizar la apariencia o comportamiento.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PrincipalSongPlayer(
     song: Song,
     isPlaying: Boolean,
+    isSongActive: Boolean,
     playbackState: PlaybackState,
     onPlayClick: () -> Unit,
     onOpenProjectClick: () -> Unit,
     onSliderValueChange: (Float) -> Unit,
+    creatorAvatarUrl: String?,
     modifier: Modifier = Modifier,
 ) {
     Card(
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(8.dp),
         modifier = modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         colors = CardDefaults.cardColors(
@@ -311,7 +350,7 @@ fun PrincipalSongPlayer(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 // Reemplazar con Coil o Glide para cargar imágenes desde URL y borrar background
                 AsyncImage(
-                    model = song.creator.avatarUrl,
+                    model = creatorAvatarUrl,
                     placeholder = painterResource(id = R.drawable.holojamperfildefaultblackmode),
                     error = painterResource(id = R.drawable.holojamperfildefaultblackmode),
                     contentDescription = "Imagen de artista: ${song.creator.name}",
@@ -351,13 +390,13 @@ fun PrincipalSongPlayer(
                 isPlaying = isPlaying,
                 modifier = Modifier
                     .size(48.dp),
-                background = MaterialTheme.colorScheme.secondary,
+                background = MaterialTheme.colorScheme.primary,
                 iconColor = MaterialTheme.colorScheme.onSecondary
             )
 
             val displayDurationMs =
-                if (isPlaying) playbackState.totalDurationMs else song.durationMillis
-            val displayPositionMs = if (isPlaying) playbackState.currentPositionMs else 0L
+                if (isSongActive) playbackState.totalDurationMs else song.durationMillis
+            val displayPositionMs = if (isSongActive) playbackState.currentPositionMs else 0L
             val currentProgress = if (displayDurationMs > 0) {
                 displayPositionMs.toFloat() / displayDurationMs.toFloat()
             } else 0f
@@ -526,12 +565,15 @@ private fun CustomTrack(
  */
 @Composable
 fun DerivedVersionItem(
+    creatorAvatarUrl: String?,
     version: DerivedVersion,
     isPlaying: Boolean,
+    isSongActive: Boolean,
     playbackState: PlaybackState,
     onPlayClick: () -> Unit,
     onSliderChange: (Float) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onLeftClick: () -> Unit = {}
 ) {
     Card(
         shape = RoundedCornerShape(12.dp),
@@ -548,7 +590,7 @@ fun DerivedVersionItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 AsyncImage(
-                    model = version.creator.avatarUrl,
+                    model = creatorAvatarUrl, // <-- USA EL PARÁMETRO
                     placeholder = painterResource(id = R.drawable.holojamperfildefaultblackmode),
                     contentDescription = "Avatar de artista: ${version.creator.name}",
                     modifier = Modifier
@@ -561,7 +603,7 @@ fun DerivedVersionItem(
                 Spacer(modifier = Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     TextButton(
-                        onClick = { TODO("ir a perfil del artista seleccionado") },
+                        onClick = onLeftClick,
                         colors = ButtonDefaults.textButtonColors(
                             contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -584,11 +626,11 @@ fun DerivedVersionItem(
                     iconColor = MaterialTheme.colorScheme.onTertiary
                 )
             }
-            AnimatedVisibility(visible = isPlaying) {
+            AnimatedVisibility(visible = isSongActive) {
                 val displayDurationMs =
-                    if (isPlaying) playbackState.totalDurationMs else version.durationMillis
+                    if (isSongActive) playbackState.totalDurationMs else version.durationMillis
                         ?: 0L
-                val displayPositionMs = if (isPlaying) playbackState.currentPositionMs else 0L
+                val displayPositionMs = if (isSongActive) playbackState.currentPositionMs else 0L
                 val currentProgress = if (displayDurationMs > 0) {
                     displayPositionMs.toFloat() / displayDurationMs.toFloat()
                 } else 0f
