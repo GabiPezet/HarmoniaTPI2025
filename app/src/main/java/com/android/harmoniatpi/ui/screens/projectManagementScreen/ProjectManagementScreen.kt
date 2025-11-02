@@ -6,6 +6,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -47,6 +48,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarColors
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -58,6 +60,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.SpanStyle
@@ -70,12 +73,15 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.android.harmoniatpi.domain.model.audio.AudioSourceType
 import com.android.harmoniatpi.ui.components.EffectsAudioDialog
+import com.android.harmoniatpi.ui.components.GlobalPlayhead
 import com.android.harmoniatpi.ui.components.ProyectControlButtonRow
 import com.android.harmoniatpi.ui.components.ShowConfirmationDialog
+import com.android.harmoniatpi.ui.components.TimelineHeader
 import com.android.harmoniatpi.ui.components.TrackItem
 import com.android.harmoniatpi.ui.components.TrimAudioDialog
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.viewmodel.ProjectManagementScreenViewModel
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -100,10 +106,26 @@ fun ProjectManagementScreen(
         }
     }
 
+    val density = LocalDensity.current
+    LaunchedEffect(state.currentPlaybackMs) {
+        if (state.currentPlaybackMs > 0 && sharedScrollState.maxValue > 0 && state.isPlaying) {
+            val playbackPx = with(density) { (state.currentPlaybackMs / state.msPerDpScale).dp.toPx() }
+            val screenWidthPx = with(density) { 300.dp.toPx() } // Ancho aprox. de la pantalla visible
+            val targetScrollPosition = (playbackPx - screenWidthPx / 3).coerceAtLeast(0f).roundToInt()
+
+            if (targetScrollPosition > sharedScrollState.value && (targetScrollPosition - sharedScrollState.value) > 10) {
+                sharedScrollState.animateScrollTo(targetScrollPosition)
+            }
+        }
+    }
+
+
     BackHandler {
         viewModel.updateCurrentProjectWithTracks()
         onBack()
     }
+
+
 
     if (showDeleteDialog) {
         ShowConfirmationDialog(
@@ -167,63 +189,90 @@ fun ProjectManagementScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .background(Color(0xFF858585)), //Pasar ESTE background al Theme Colors
-            verticalArrangement = Arrangement.Bottom,
+            //verticalArrangement = Arrangement.Bottom,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            if (state.tracks.isEmpty()) {
-                Box(
-                    modifier = Modifier.padding(padding)
-                ) {
-                    EmptyProjectMessage()
-                }
-            }
-            LazyColumn(
+
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 16.dp)
-                    .wrapContentHeight(),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .horizontalScroll(sharedScrollState) // Se sincroniza con el LazyColumn
+                    .background(MaterialTheme.colorScheme.surfaceContainer)
             ) {
-                items(state.tracks) { track ->
-                    TrackItem(
-                        track = track,
-                        onClick = { viewModel.selectTrack(track.id) },
-                        onDelete = { showDeleteDialog = true },
-                        onShowEffects = { trackForEffects = track },
-                        onUndo = {
-                            viewModel.undoTrim(track.id)
-                        },
-                        scrollState = sharedScrollState,
-                        timelineWidth = state.timelineWidth,
-                        isBeingRecorded = state.isRecording && track.selected,
-                        onMute = {
-                            if (track.isMuted) {
-                                viewModel.unMuteTrack()
-                            } else {
-                                viewModel.muteTrack()
+                TimelineHeader(
+                    timelineWidth = state.timelineWidth,
+                    msPerDpScale = state.msPerDpScale
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            ) {
+
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+
+                    if (state.tracks.isEmpty()) {
+                        item {
+                            Box(modifier = Modifier.padding(top = 64.dp)) {
+                                EmptyProjectMessage()
                             }
-                        },
-                        currentPlaybackMs = state.currentPlaybackMs,
-                        onSeekClick = { ms -> viewModel.seekAndPlay(ms) },
-                        onOffsetChange = { trackId, newOffset ->
-                            viewModel.updateTrackOffset(
-                                trackId,
-                                newOffset
-                            )
-                        },
-                        onSelectionChanged = { startMs, endMs ->
-                            viewModel.updateTrackSelection(track.id, startMs, endMs)
-                        },
-                        onCopy = { viewModel.copySelection() },
-                        onCut = { viewModel.cutSelection() },
-                        onUndoEffect = { viewModel.undoEffect(track.id) },
-                        isUndoEffectAvailable = track.isUndoEffectAvailable,
-                        isSelectionActive = track.selectionStartMs != null &&
-                                (track.selectionEndMs == null || track.selectionEndMs > track.selectionStartMs),
-                        msPerDpScale = state.msPerDpScale
-                    )
+                        }
+                    }
+
+                    items(state.tracks) { track ->
+                        TrackItem(
+                            track = track,
+                            onClick = { viewModel.selectTrack(track.id) },
+                            onDelete = { showDeleteDialog = true },
+                            onShowEffects = { trackForEffects = track },
+                            onUndo = {
+                                viewModel.undoTrim(track.id)
+                            },
+                            scrollState = sharedScrollState,
+                            timelineWidth = state.timelineWidth,
+                            isBeingRecorded = state.isRecording && track.selected,
+                            onMute = {
+                                if (track.isMuted) {
+                                    viewModel.unMuteTrack()
+                                } else {
+                                    viewModel.muteTrack()
+                                }
+                            },
+                            currentPlaybackMs = 0L,
+                            onSeekClick = { ms -> viewModel.seekAndPlay(ms) },
+                            onOffsetChange = { trackId, newOffset ->
+                                viewModel.updateTrackOffset(
+                                    trackId,
+                                    newOffset
+                                )
+                            },
+                            onSelectionChanged = { startMs, endMs ->
+                                viewModel.updateTrackSelection(track.id, startMs, endMs)
+                            },
+                            onCopy = { viewModel.copySelection() },
+                            onCut = { viewModel.cutSelection() },
+                            onUndoEffect = { viewModel.undoEffect(track.id) },
+                            isUndoEffectAvailable = track.isUndoEffectAvailable,
+                            isSelectionActive = track.selectionStartMs != null &&
+                                    (track.selectionEndMs == null || track.selectionEndMs > track.selectionStartMs),
+                            msPerDpScale = state.msPerDpScale
+                        )
+                    }
                 }
+
+                GlobalPlayhead(
+                    currentPlaybackMs = state.currentPlaybackMs,
+                    msPerDpScale = state.msPerDpScale,
+                    scrollState = sharedScrollState
+                )
+
             }
 
             IconButton(

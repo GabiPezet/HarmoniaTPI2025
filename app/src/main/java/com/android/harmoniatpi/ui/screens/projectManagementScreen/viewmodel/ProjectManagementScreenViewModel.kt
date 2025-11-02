@@ -521,6 +521,8 @@ class ProjectManagementScreenViewModel @Inject constructor(
             val isUndoTrimAvailable = File(trackUi.path + ".original_trim").exists()
             val isUndoEffectAvailable = File(trackUi.path + ".original_effect").exists()
 
+            setTrackPlaybackRangeUseCase(trackId, 0L, result.durationMs, result.durationMs)
+
             _state.update { currentState ->
                 val updatedTracks = currentState.tracks.map { track ->
                     if (track.id == trackId) {
