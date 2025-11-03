@@ -70,8 +70,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.android.harmoniatpi.domain.model.audio.AudioSourceType
+import com.android.harmoniatpi.ui.components.CircularProgressBar
 import com.android.harmoniatpi.ui.components.EffectsAudioDialog
 import com.android.harmoniatpi.ui.components.GlobalPlayhead
 import com.android.harmoniatpi.ui.components.ProyectControlButtonRow
@@ -139,6 +142,23 @@ fun ProjectManagementScreen(
             message = "Vas a perder los cambios si borras la pista",
             confirmText = "Borrar"
         )
+    }
+
+    if (state.importAudioLoading){
+        Dialog(
+            onDismissRequest = {},
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                CircularProgressBar(message = "Importando...", importProject = true)
+            }
+        }
     }
 
     Scaffold(

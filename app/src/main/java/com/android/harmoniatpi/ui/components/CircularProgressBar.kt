@@ -38,74 +38,150 @@ import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
-fun CircularProgressBar(message: String) {
-    val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.disk_loading))
-    BackHandler { }
-    val progress by animateLottieCompositionAsState(
-        composition = composition,
-        iterations = LottieConstants.IterateForever,
-        speed = 1.8f
-    )
-
+fun CircularProgressBar(message: String, importProject : Boolean = false) {
     var dotCount by remember { mutableIntStateOf(0) }
 
-    LaunchedEffect(Unit) {
-        while (true) {
-            dotCount = (dotCount + 1) % 4
-            delay(700L)
-        }
-    }
+    BackHandler { }
+    if (!importProject){
+        val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.disk_loading))
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.primary,
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-                    )
-                )
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(32.dp)
-        ) {
-            // Contenedor principal
-            Surface(
-                modifier = Modifier.size(300.dp),
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.background.copy(alpha = 0.8f),
-                border = BorderStroke(
-                    1.dp,
-                    Color.Black.copy(alpha = 0.1f)
-                )
-            ) {
-                Box(
-                    contentAlignment = Alignment.Center
-                ) {
-                    LottieAnimation(
-                        composition = composition,
-                        progress = { progress },
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
+        val progress by animateLottieCompositionAsState(
+            composition = composition,
+            iterations = LottieConstants.IterateForever,
+            speed = 1.8f
+        )
+
+
+
+        LaunchedEffect(Unit) {
+            while (true) {
+                dotCount = (dotCount + 1) % 4
+                delay(700L)
             }
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.primary,
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                        )
+                    )
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(32.dp)
+            ) {
+                // Contenedor principal
+                Surface(
+                    modifier = Modifier.size(300.dp),
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.background.copy(alpha = 0.8f),
+                    border = BorderStroke(
+                        1.dp,
+                        Color.Black.copy(alpha = 0.1f)
+                    )
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center
+                    ) {
+                        LottieAnimation(
+                            composition = composition,
+                            progress = { progress },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
 
 
-            Text(
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center,
-                fontSize = 24.sp,
-                text = message + ".".repeat(dotCount),
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onPrimary,
-                fontWeight = FontWeight.ExtraBold
-            )
+                Text(
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center,
+                    fontSize = 24.sp,
+                    text = message + ".".repeat(dotCount),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    fontWeight = FontWeight.ExtraBold
+                )
 
+            }
+        }
+    }else{
+        val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.importaudio))
+
+        val progress by animateLottieCompositionAsState(
+            composition = composition,
+            iterations = LottieConstants.IterateForever,
+            speed = 1.8f
+        )
+
+
+
+        LaunchedEffect(Unit) {
+            while (true) {
+                dotCount = (dotCount + 1) % 4
+                delay(700L)
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.primary,
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                        )
+                    )
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(32.dp)
+            ) {
+                // Contenedor principal
+                Surface(
+                    modifier = Modifier.size(300.dp),
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.background.copy(alpha = 0.8f),
+                    border = BorderStroke(
+                        1.dp,
+                        Color.Black.copy(alpha = 0.1f)
+                    )
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center
+                    ) {
+                        LottieAnimation(
+                            composition = composition,
+                            progress = { progress },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
+
+
+                Text(
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center,
+                    fontSize = 24.sp,
+                    text = message + ".".repeat(dotCount),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    fontWeight = FontWeight.ExtraBold
+                )
+
+            }
         }
     }
+
 }

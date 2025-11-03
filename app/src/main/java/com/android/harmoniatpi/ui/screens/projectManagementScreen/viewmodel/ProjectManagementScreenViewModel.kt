@@ -346,6 +346,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
     }
 
     fun importTrackFromFile(uri: Uri) {
+        _state.update { it.copy(importAudioLoading = true) }
         viewModelScope.launch {
             val tempFile = File(context.cacheDir, "temp_import_${System.currentTimeMillis()}.tmp")
 
@@ -363,11 +364,13 @@ class ProjectManagementScreenViewModel @Inject constructor(
                         Log.i(TAG, "Pista importada y convertida exitosamente desde $uri")
                         Toast.makeText(context, "Pista importada exitosamente", Toast.LENGTH_SHORT)
                             .show()
+                        _state.update { it.copy(importAudioLoading = false) }
                     }
                     .onFailure { e ->
                         Log.e(TAG, "Error importando pista desde $uri: ${e.message}", e)
                         Toast.makeText(context, "Error al importar la pista", Toast.LENGTH_SHORT)
                             .show()
+                        _state.update { it.copy(importAudioLoading = false) }
                     }
             } catch (e: Exception) {
                 Log.e(TAG, "Error resolviendo o copiando archivo de origen: ${e.message}", e)
