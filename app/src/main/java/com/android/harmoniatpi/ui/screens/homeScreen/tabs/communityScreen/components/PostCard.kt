@@ -79,7 +79,8 @@ fun PostCard(
     isMyPost: Boolean,
     isAlreadyCloned: Boolean,
     onCloneClicked: () -> Unit,
-    viewUserProfile: (String) -> Unit
+    viewUserProfile: (String) -> Unit,
+    isCloningThisPost: Boolean
 ) {
     val postAudio = post.urlCompleteAudio
     val context = LocalContext.current
@@ -293,22 +294,36 @@ fun PostCard(
 
                     // 2. Clonar
                     if (post.idProject.isNotBlank() && post.clonedOption == true) {
-                        val isCloneEnabled = !isAlreadyCloned && !isMyPost
-                        val (cloneIcon, cloneTint) = if (isAlreadyCloned) {
-                            Icons.Default.Check to MaterialTheme.colorScheme.primary
+
+                        // El botón está habilitado si NO está clonado, NO es mi post, y NO se está clonando
+                        val isCloneEnabled = !isAlreadyCloned && !isMyPost && !isCloningThisPost
+
+                        if (isCloningThisPost) {
+                            // Muestra un spinner con el mismo padding que PostActionItem
+                            Box(modifier = Modifier.padding(vertical = 4.dp, horizontal = 6.dp)) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            }
                         } else {
-                            Icons.Default.ContentCopy to defaultTint
+                            // Muestra el botón de clonar
+                            val (cloneIcon, cloneTint) = if (isAlreadyCloned) {
+                                Icons.Default.Check to MaterialTheme.colorScheme.primary
+                            } else {
+                                Icons.Default.ContentCopy to defaultTint
+                            }
+
+                            PostActionItem(
+                                icon = cloneIcon,
+                                totalCloned = post.totalShared,
+                                text = "", // PostActionItem usa 'totalCloned'
+                                onClick = onCloneClicked,
+                                enabled = isCloneEnabled
+                            )
                         }
 
-                        PostActionItem(
-                            icon = cloneIcon,
-                            totalCloned = post.totalShared,
-                            text = "",
-                            onClick = onCloneClicked,
-                            enabled = isCloneEnabled
-                        )
-
-                        Spacer(Modifier.width(24.dp)) // <-- Spacer fijo
+                        Spacer(Modifier.width(24.dp))// <-- Spacer fijo
                     }
 
                     // 3. Like

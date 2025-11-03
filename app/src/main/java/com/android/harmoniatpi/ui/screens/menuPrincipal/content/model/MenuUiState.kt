@@ -37,7 +37,8 @@ data class MenuUiState(
     val genres: String = "",
     val location : String = "",
     val rating : Float =  0.0f,
-    val listProjects : List<Project> = emptyList()
+    val listProjects : List<Project> = emptyList(),
+    val cloningPostId: String? = null,
 )
 
 @Singleton
