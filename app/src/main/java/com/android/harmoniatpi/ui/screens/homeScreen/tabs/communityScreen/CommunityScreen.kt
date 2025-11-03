@@ -109,6 +109,8 @@ fun CommunityScreen(
                         val isFriend = post.userID in friendsList
                         PostCard(
                             post = post,
+                            userName = uiState.userName,
+                            userLastName = uiState.userLastName,
                             onLikeClicked = { viewModel.updateLikes(post) },
                             onCommentClicked = {
                                 selectedPostIdForComments = post.id

@@ -122,6 +122,8 @@ fun MyPostsScreen(
                             // --- CAMBIO 6: Se llama al NUEVO PostCard ---
                             PostCard(
                                 post = post,
+                                userName = uiState.userName,
+                                userLastName = uiState.userLastName,
                                 onLikeClicked = {
                                     // El DrawerContentViewModel no tiene updateLikes
                                     // Si lo añades, pon la llamada aquí.

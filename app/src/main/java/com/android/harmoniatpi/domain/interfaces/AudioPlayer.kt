@@ -7,7 +7,7 @@ interface AudioPlayer {
     /**
      * Reproduce el audio desde el archivo especificado mediante [setFile].
      */
-    fun play(startMs: Long = 0L): Result<Unit>
+    fun play(startMs: Long = 0L, delayPlay: Long = 0L): Result<Unit>
 
 
     /**
@@ -15,7 +15,7 @@ interface AudioPlayer {
      * @param startMs Tiempo de inicio del segmento en milisegundos.
      * @param endMs Tiempo de fin del segmento en milisegundos.
      */
-    fun playSegment(startMs: Long, endMs: Long): Result<Unit>
+    fun playSegment(startMs: Long, endMs: Long, delayPlay: Long = 0L): Result<Unit>
 
 
     /**
