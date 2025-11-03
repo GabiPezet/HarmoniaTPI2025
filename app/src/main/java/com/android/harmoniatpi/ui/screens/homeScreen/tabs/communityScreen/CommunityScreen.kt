@@ -99,6 +99,8 @@ fun CommunityScreen(
 
                         PostCard(
                             post = post,
+                            userName = uiState.userName,
+                            userLastName = uiState.userLastName,
                             onLikeClicked = { viewModel.updateLikes(post) },
                             onCommentClicked = {
                                 selectedPostIdForComments = post.id // Guardar solo el ID
