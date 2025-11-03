@@ -30,6 +30,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Contacts
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Movie
@@ -68,7 +69,7 @@ import androidx.core.content.FileProvider
 import coil.compose.rememberAsyncImagePainter
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.MenuUiState
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.OptionsMenu
-import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.CompactSymmetricButtons
+import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.ContactProfileCard
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.MediaProjectList
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.ProfileNavButton
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.ProfileTab
@@ -295,27 +296,38 @@ fun UserDetailProfile(
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(24.dp))
-            CompactSymmetricButtons()
-            Spacer(modifier = Modifier.height(16.dp))
+            //Spacer(modifier = Modifier.height(24.dp))
+            //CompactSymmetricButtons()
+            //Spacer(modifier = Modifier.height(16.dp))
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.Center
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 ProfileNavButton(
                     icon = Icons.Default.School,
                     label = "Perfil laboral",
                     selected = selectedTab == ProfileTab.WORK,
-                    onClick = { selectedTab = ProfileTab.WORK })
-                Spacer(modifier = Modifier.width(24.dp))
+                    onClick = { selectedTab = ProfileTab.WORK },
+                    )
+                Spacer(modifier = Modifier.width(16.dp))
                 ProfileNavButton(
                     icon = Icons.Default.Movie,
-                    label = "Multimedia",
+                    label = "Proyectos",
                     selected = selectedTab == ProfileTab.MEDIA,
-                    onClick = { selectedTab = ProfileTab.MEDIA })
+                    onClick = { selectedTab = ProfileTab.MEDIA },
+
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                ProfileNavButton(
+                    icon = Icons.Default.Contacts,
+                    label = "Contacto",
+                    selected = selectedTab == ProfileTab.CONTACT,
+                    onClick = { selectedTab = ProfileTab.CONTACT},
+
+                )
             }
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -327,6 +339,7 @@ fun UserDetailProfile(
                 when (selectedTab) {
                     ProfileTab.WORK -> WorkProfileCard(uiState = uiState, viewModel = viewModel)
                     ProfileTab.MEDIA -> MediaProjectList(projects = uiState.projectsList)
+                    ProfileTab.CONTACT -> ContactProfileCard(uiState = uiState, viewModel = viewModel)
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))
@@ -417,3 +430,4 @@ fun UserDetailProfile(
         }
     }
 }
+
