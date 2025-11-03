@@ -1,10 +1,12 @@
 package com.android.harmoniatpi.ui.screens.projectManagementScreen
 
 import android.net.Uri
+import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -53,6 +55,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -81,8 +84,10 @@ import com.android.harmoniatpi.ui.components.TrackItem
 import com.android.harmoniatpi.ui.components.TrimAudioDialog
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.viewmodel.ProjectManagementScreenViewModel
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
+@RequiresApi(Build.VERSION_CODES.Q)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProjectManagementScreen(
@@ -96,6 +101,7 @@ fun ProjectManagementScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var trackForTrimming by remember { mutableStateOf<TrackUi?>(null) }
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var trackForEffects by remember { mutableStateOf<TrackUi?>(null) }
     val pickAudioLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -298,7 +304,11 @@ fun ProjectManagementScreen(
             Spacer(modifier = Modifier.weight(1f))
 
             ProyectControlButtonRow(
-                onSkipPrevious = { viewModel.stopPlaying() },
+                onSkipPrevious = { viewModel.stopPlaying()
+                    scope.launch {
+                        sharedScrollState.animateScrollTo(0)
+                    }
+                                 },
                 onPlay = { viewModel.play() },
                 onPause = { viewModel.pause() },
                 startRecording = {

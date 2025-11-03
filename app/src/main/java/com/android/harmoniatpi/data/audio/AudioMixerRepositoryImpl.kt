@@ -87,6 +87,24 @@ class AudioMixerRepositoryImpl @Inject constructor(
 
     override fun play(excludeTrackId: Long?) {
 
+        val isResuming = playerList.any { it.audioTrack.playState == AudioTrack.PLAYSTATE_PAUSED }
+
+        if (isResuming) {
+            Log.d(TAG, "Reanudando reproducción desde pausa...")
+            startPlaybackTracking()
+
+            playerList.forEach { player ->
+                if (player.audioTrack.playState == AudioTrack.PLAYSTATE_PAUSED) {
+                    try {
+                        player.audioTrack.play()
+                    } catch (e: IllegalStateException) {
+                        Log.e(TAG, "Error al reanudar audioTrack", e)
+                    }
+                }
+            }
+            return
+        }
+
         masterPlaybackJob?.cancel()
         val tracksToPlay =
             tracks.value.filter { it.hasAudio() && it.id != excludeTrackId && !it.isMuted() }
@@ -129,7 +147,7 @@ class AudioMixerRepositoryImpl @Inject constructor(
     }
 
     override fun pause() {
-        masterPlaybackJob?.cancel()
+        //masterPlaybackJob?.cancel()
         stopPlaybackTracking()
         tracks.value.forEach { it.pause() }
     }

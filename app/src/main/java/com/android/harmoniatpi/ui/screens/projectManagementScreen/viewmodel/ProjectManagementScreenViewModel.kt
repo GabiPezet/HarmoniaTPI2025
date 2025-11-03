@@ -3,8 +3,10 @@ package com.android.harmoniatpi.ui.screens.projectManagementScreen.viewmodel
 import android.content.Context
 import android.media.MediaRecorder
 import android.net.Uri
+import android.os.Build
 import android.util.Log
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.harmoniatpi.domain.cache.HoloJamCache
@@ -56,6 +58,7 @@ import javax.inject.Inject
 
 private const val MS_PER_DP_SCALE = 10f
 
+@RequiresApi(Build.VERSION_CODES.Q)
 @HiltViewModel
 class ProjectManagementScreenViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -102,6 +105,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
         loadProjectFromCache()
     }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
     private fun loadProjectFromCache() {
         val project = holoJamCache.currentProjectSelected
         _state.update { it.copy(currentProjectSelected = project) }
