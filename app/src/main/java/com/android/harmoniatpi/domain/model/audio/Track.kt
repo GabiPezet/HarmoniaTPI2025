@@ -34,7 +34,7 @@ class Track @AssistedInject constructor(
     /**
      * Reproduce la pista.
      */
-    fun play(internalStartMs: Long = 0L) {
+    fun play(internalStartMs: Long = 0L, delayPlay: Long = 0L) {
 
         val startTime = maxOf(internalStartMs, playbackStartMs)
 

@@ -116,6 +116,7 @@ fun TrackItem(
 
     val density = LocalDensity.current
 
+    /*
     LaunchedEffect(currentPlaybackMs) {
         if (currentPlaybackMs > 0 && scrollState.maxValue > 0) {
 
@@ -133,6 +134,8 @@ fun TrackItem(
             }
         }
     }
+
+     */
 
 
     Row(
@@ -241,7 +244,8 @@ fun TrackItem(
                     selectionStartMs = track.selectionStartMs,
                     selectionEndMs = track.selectionEndMs,
                     onSelectionChanged = { startMs, endMs -> onSelectionChanged(startMs, endMs) },
-                    msPerDpScale = msPerDpScale
+                    msPerDpScale = msPerDpScale,
+                    currentPlaybackMs = currentPlaybackMs
                 )
 
 
@@ -456,6 +460,7 @@ fun DbWaveform(
     selectionEndMs: Long?,
     onSelectionChanged: (startMs: Long?, endMs: Long?) -> Unit,
     msPerDpScale: Float,
+    currentPlaybackMs: Long,
     color: Color = MaterialTheme.colorScheme.onPrimaryContainer
 ) {
     val waveformColor = if (isMuted) color else MaterialTheme.colorScheme.primary
@@ -472,14 +477,14 @@ fun DbWaveform(
     val totalWidthPx = with(density) { (maxDurationMs / msPerDpScale).dp.toPx() }
     val startOffsetPx = with(density) { (startOffsetMs / msPerDpScale).dp.toPx() }
 
-    var handleStartPx by remember(selectionStartMs, density) {
+    var handleStartPx by remember(selectionStartMs, density, msPerDpScale) {
         mutableFloatStateOf(
-            selectionStartMs?.let { with(density) { (it / msPerDpScale).dp.toPx() } } ?: 0f
+            selectionStartMs?.let { (it / msPerDpScale) * density.density } ?: 0f
         )
     }
-    var handleEndPx by remember(selectionEndMs, maxDurationMs, density) {
+    var handleEndPx by remember(selectionEndMs, totalWidthPx, density, msPerDpScale) {
         mutableFloatStateOf(
-            selectionEndMs?.let { with(density) { (it / msPerDpScale).dp.toPx() } } ?: totalWidthPx
+            selectionEndMs?.let { (it / msPerDpScale) * density.density } ?: totalWidthPx
         )
     }
 
@@ -538,22 +543,23 @@ fun DbWaveform(
                     }
                     .drawWithContent {
                                 drawContent()
-                                if (handleStartPx > 0f) {
-                                    drawRect(
-                                        color = Color.Black.copy(alpha = 0.5f),
-                                        size = size.copy(width = handleStartPx)
-                                    )
-                                }
-                                // Oscurecer después del final
-                                if (handleEndPx < size.width) {
-                                    drawRect(
-                                        color = Color.Black.copy(alpha = 0.5f),
-                                        topLeft = Offset(handleEndPx, 0f),
-                                        size = size.copy(width = size.width - handleEndPx)
-                                    )
-                                }
-                            }
-                        ) {
+                        val validStartPx = handleStartPx.coerceIn(0f, handleEndPx)
+                        if (validStartPx > 0f) {
+                            drawRect(
+                                color = Color.Black.copy(alpha = 0.5f),
+                                size = size.copy(width = validStartPx)
+                            )
+                        }
+                        val validEndPx = handleEndPx.coerceIn(handleStartPx, size.width)
+                        if (validEndPx < size.width) {
+                            drawRect(
+                                color = Color.Black.copy(alpha = 0.5f),
+                                topLeft = Offset(validEndPx, 0f),
+                                size = size.copy(width = size.width - validEndPx)
+                            )
+                        }
+                    }
+            ) {
                 if (waveform.isNotEmpty()) {
                     val centerY = size.height / 2
                     val stepX = size.width / waveform.size.toFloat()

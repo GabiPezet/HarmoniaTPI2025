@@ -12,5 +12,6 @@ data class ProyectScreenUiState(
     val currentPlaybackMs: Long = 0L,
     val isClipboardFull: Boolean = false,
     val isRestoringTracks: Boolean = false,
-    val msPerDpScale: Float = 10f
+    val msPerDpScale: Float = 10f,
+    val importAudioLoading : Boolean = false
 )

@@ -65,6 +65,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import coil.compose.AsyncImage
 import com.android.harmoniatpi.domain.model.userPreferences.Post
 import com.android.harmoniatpi.ui.components.ShowConfirmationDialog
+import com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.util.sharePost
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -73,6 +74,8 @@ import java.util.Locale
 @Composable
 fun PostCard(
     post: Post,
+    userName: String,
+    userLastName: String,
     onLikeClicked: () -> Unit,
     onCommentClicked: () -> Unit,
     onDeleteClicked: () -> Unit,
@@ -276,76 +279,92 @@ fun PostCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 12.dp),
-                    horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     val defaultTint = MaterialTheme.colorScheme.onSurfaceVariant
 
-                    // 1. Comentarios
-                    PostActionItem(
-                        icon = Icons.AutoMirrored.Outlined.Comment,
-                        text = post.comments.size.toString(),
-                        onClick = onCommentClicked,
-                        enabled = true
-                    )
+                    Spacer(modifier = Modifier.weight(0.2f))
 
-                    Spacer(Modifier.width(24.dp)) // <-- Spacer fijo
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(0.6f)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
 
-                    // 2. Clonar
-                    if (post.idProject.isNotBlank() && post.clonedOption == true) {
-                        val isCloneEnabled = !isAlreadyCloned && !isMyPost
-                        val (cloneIcon, cloneTint) = if (isAlreadyCloned) {
-                            Icons.Default.Check to MaterialTheme.colorScheme.primary
-                        } else {
-                            Icons.Default.ContentCopy to defaultTint
+                            // 1. Comentarios
+                            PostActionItem(
+                                icon = Icons.AutoMirrored.Outlined.Comment,
+                                text = post.comments.size.toString(),
+                                onClick = onCommentClicked,
+                                enabled = true
+                            )
+
+
+                            // 2. Clonar
+                            if (post.idProject.isNotBlank() && post.clonedOption == true) {
+                                val isCloneEnabled = !isAlreadyCloned && !isMyPost
+                                val (cloneIcon, cloneTint) = if (isAlreadyCloned) {
+                                    Icons.Default.Check to MaterialTheme.colorScheme.primary
+                                } else {
+                                    Icons.Default.ContentCopy to defaultTint
+                                }
+
+                                PostActionItem(
+                                    icon = cloneIcon,
+                                    totalCloned = post.totalShared,
+                                    text = "",
+                                    onClick = onCloneClicked,
+                                    enabled = isCloneEnabled
+                                )
+
+                            }
+
+                            // 3. Like
+                            val (likeIcon, likeTint) = if (post.likes > 0) {
+                                Icons.Filled.Favorite to Color.Red
+                            } else {
+                                Icons.Outlined.Favorite to defaultTint
+                            }
+                            PostActionItem(
+                                icon = likeIcon,
+                                text = post.likes.toString(),
+                                totalCloned = post.likes,
+                                onClick = onLikeClicked,
+                                enabled = true
+                            )
+
+                            // 4. Icono de Share (placeholder)
+                            Icon(
+                                imageVector = Icons.Default.Share,
+                                contentDescription = "Compartir",
+                                tint = defaultTint,
+                                modifier = Modifier
+                                    .size(18.dp)
+                                    .clickable { sharePost(post, context , isMyPost,userName,userLastName) }
+                            )
+
                         }
 
-                        PostActionItem(
-                            icon = cloneIcon,
-                            totalCloned = post.totalShared,
-                            text = "",
-                            onClick = onCloneClicked,
-                            enabled = isCloneEnabled
-                        )
-
-                        Spacer(Modifier.width(24.dp)) // <-- Spacer fijo
                     }
-
-                    // 3. Like
-                    val (likeIcon, likeTint) = if (post.likes > 0) {
-                        Icons.Filled.Favorite to Color.Red
-                    } else {
-                        Icons.Outlined.Favorite to defaultTint
-                    }
-                    PostActionItem(
-                        icon = likeIcon,
-                        text = post.likes.toString(),
-                        onClick = onLikeClicked,
-                        enabled = true
-                    )
-
-                    Spacer(Modifier.width(24.dp)) // <-- Spacer fijo
-
-                    // 4. Icono de Share (placeholder)
-                    Icon(
-                        imageVector = Icons.Default.Share,
-                        contentDescription = "Compartir",
-                        tint = defaultTint,
-                        modifier = Modifier
-                            .size(18.dp)
-                            .clickable { /* Lógica para compartir */ }
-                    )
                 }
+
+
             }
         }
-
-        HorizontalDivider(
-            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
-            thickness = 1.dp,
-            modifier = Modifier.padding(top = 4.dp)
-        )
     }
+
+    HorizontalDivider(
+        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
+        thickness = 1.dp,
+        modifier = Modifier.padding(top = 4.dp)
+    )
 }
+
 
 @Composable
 fun AudioPlayerSection(

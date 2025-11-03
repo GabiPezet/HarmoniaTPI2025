@@ -76,7 +76,6 @@ class AudioMixerRepositoryImpl @Inject constructor(
     private val completedCount = AtomicInteger(0)
 
     private val currentPlaybackMs = MutableStateFlow(0L)
-    private var masterPlaybackJob: Job? = null
     private val playerList: List<PcmAudioPlayer>
         get() = tracks.value.map { it.player as PcmAudioPlayer }
 
@@ -86,8 +85,6 @@ class AudioMixerRepositoryImpl @Inject constructor(
 
 
     override fun play(excludeTrackId: Long?) {
-
-        masterPlaybackJob?.cancel()
         val tracksToPlay =
             tracks.value.filter { it.hasAudio() && it.id != excludeTrackId && !it.isMuted() }
 
@@ -102,40 +99,30 @@ class AudioMixerRepositoryImpl @Inject constructor(
         val globalStartMs = currentPlaybackMs.value
         completedCount.set(0)
         tracksCompleted.value = false
-        masterPlaybackJob = CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
-            startPlaybackTracking()
+        startPlaybackTracking()
 
-            tracksToPlay.forEach { track ->
-                launch {
-                    val delayMs = (track.startOffsetMs - globalStartMs).coerceAtLeast(0L)
-                    val internalPlayPos = (globalStartMs - track.startOffsetMs).coerceAtLeast(0L)
+        tracksToPlay.forEach { track ->
 
-                    if (delayMs > 0) {
-                        delay(delayMs)
-                    }
+            val delayMs = (track.startOffsetMs - globalStartMs).coerceAtLeast(0L)
+            val internalPlayPos = (globalStartMs - track.startOffsetMs).coerceAtLeast(0L)
 
-                    if (isActive) {
-                        track.setOnPlaybackCompletedCallback {
-                            val count = completedCount.incrementAndGet()
-                            if (count >= tracksToPlay.size) {
-                                stop()
-                            }
-                        }
-                        track.play(internalPlayPos)
-                    }
+            track.setOnPlaybackCompletedCallback {
+                val count = completedCount.incrementAndGet()
+                Log.i(TAG, "Track ${track.id} completed. Count: $count")
+                if (count == tracksToPlay.size) {
+                    stop()
                 }
             }
+            track.play(internalPlayPos, delayMs)
         }
     }
 
     override fun pause() {
-        masterPlaybackJob?.cancel()
         stopPlaybackTracking()
         tracks.value.forEach { it.pause() }
     }
 
     override fun stop() {
-        masterPlaybackJob?.cancel()
         stopPlaybackTracking()
         currentPlaybackMs.value = 0L
         tracks.value.forEach { it.stop() }
@@ -433,7 +420,7 @@ class AudioMixerRepositoryImpl @Inject constructor(
 
     override fun playPreview(filePath: String): Result<Unit> {
         stopPreviewInternal()
-        if (masterPlaybackJob?.isActive == true || tracks.value.any { (it.player as PcmAudioPlayer).audioTrack.playState == AudioTrack.PLAYSTATE_PLAYING }) {
+        if (tracks.value.any { (it.player as PcmAudioPlayer).audioTrack.playState == AudioTrack.PLAYSTATE_PLAYING }) {
             pause()
         }
 
