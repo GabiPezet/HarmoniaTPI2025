@@ -300,6 +300,7 @@ fun PostCard(
                             PostActionItem(
                                 icon = Icons.AutoMirrored.Outlined.Comment,
                                 text = post.comments.size.toString(),
+                                totalCloned = post.comments.size,
                                 onClick = onCommentClicked,
                                 enabled = true
                             )
