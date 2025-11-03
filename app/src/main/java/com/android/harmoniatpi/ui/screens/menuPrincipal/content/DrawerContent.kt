@@ -33,6 +33,7 @@ fun DrawerContent(
     onCloseDrawer: () -> Unit,
     onNavigateToNotifications: () -> Unit,
     onLogOutNavigateToLogin: () -> Unit,
+    onNavigateToFriends: () -> Unit,
 ) {
     val scrollState = rememberScrollState()
     val uiState by drawerViewModel.uiState.collectAsState()
@@ -70,7 +71,8 @@ fun DrawerContent(
             onNavigateToNotifications = { onNavigateToNotifications() },
             scrollState = scrollState,
             innerPadding = innerPadding,
-            showCloseSessionDialog = { showCloseSessionDialog = true }
+            showCloseSessionDialog = { showCloseSessionDialog = true },
+            onNavigateToFriends = onNavigateToFriends
         )
     }
 }
@@ -85,7 +87,8 @@ fun DrawerScreenContent(
     onNavigateToNotifications: () -> Unit,
     scrollState: ScrollState,
     innerPadding: PaddingValues,
-    showCloseSessionDialog: () -> Unit
+    showCloseSessionDialog: () -> Unit,
+    onNavigateToFriends: () -> Unit,
 ) {
     when (optionsMenu) {
         OptionsMenu.MAIN_CONTENT_SCREEN -> {
@@ -112,7 +115,8 @@ fun DrawerScreenContent(
             UserDetailProfile(
                 viewModel = drawerViewModel,
                 uiState = uiState,
-                innerPadding = innerPadding
+                innerPadding = innerPadding,
+                onNavigateToFriends = onNavigateToFriends
             )
         }
 

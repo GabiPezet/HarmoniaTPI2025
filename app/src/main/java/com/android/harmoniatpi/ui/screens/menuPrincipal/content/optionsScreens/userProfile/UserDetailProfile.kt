@@ -82,6 +82,7 @@ fun UserDetailProfile(
     viewModel: DrawerContentViewModel,
     uiState: MenuUiState,
     innerPadding: PaddingValues,
+    onNavigateToFriends: () -> Unit
 ) {
     val context = LocalContext.current
     var photoUri by rememberSaveable { mutableStateOf<Uri?>(null) }
@@ -296,7 +297,14 @@ fun UserDetailProfile(
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))
-            CompactSymmetricButtons()
+            CompactSymmetricButtons(
+                leftLabel = "Amigos",
+                rightLabel = "Compartir perfil",
+                onLeftClick = onNavigateToFriends, // <-- USA LA NAVEGACIÓN
+                onRightClick = {
+                    // TODO: Implementar lógica para compartir perfil
+                }
+            )
             Spacer(modifier = Modifier.height(16.dp))
 
             Row(

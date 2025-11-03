@@ -116,6 +116,9 @@ fun MyPostsScreen(
                     LazyColumn(modifier = Modifier.fillMaxSize()) { // <-- Arrangement eliminado
                         items(uiState.myPostsList) { post ->
                             val isCloningThisPost = uiState.cloningPostId == post.id
+                            val friendsList = uiState.currentUserData?.friendsList?.map { it.id } ?: emptyList()
+                            val isFriend = post.userID in friendsList
+
                             // --- CAMBIO 6: Se llama al NUEVO PostCard ---
                             PostCard(
                                 post = post,
@@ -130,7 +133,7 @@ fun MyPostsScreen(
                                 onCloneClicked = { /* No relevante */ },
                                 viewUserProfile = {},
                                 isCloningThisPost = isCloningThisPost,
-
+                                isFriend = isFriend
                             )
                         }
                     }

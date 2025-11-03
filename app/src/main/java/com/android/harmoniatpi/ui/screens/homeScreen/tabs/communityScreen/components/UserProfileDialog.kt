@@ -42,12 +42,17 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import com.android.harmoniatpi.domain.model.UserPreferences
+import androidx.compose.material3.CircularProgressIndicator
+import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.CompactSymmetricButtons
 
 @SuppressLint("DefaultLocale")
 @Composable
 fun UserProfileDialog(
     userPreferences: UserPreferences,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    currentUserData: UserPreferences?,
+    isSendingFollowRequest: Boolean,
+    onFollowClick: (UserPreferences) -> Unit
 ) {
     Dialog(
         onDismissRequest = onDismiss,
@@ -106,8 +111,38 @@ fun UserProfileDialog(
                     textAlign = TextAlign.Center
                 )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
+                // --- AÑADE EL BOTÓN DE SEGUIR ---
+                if (currentUserData != null && userPreferences.userID != currentUserData.userID) {
+
+                    // Asumiendo que 'friendsList' y 'friendRequestSent' existen
+                    // y que 'Friend' y 'FriendRequestSending' tienen un 'userID'
+                    val friendsList = currentUserData.friendsList.map { it.id }
+                    val requestsSent = currentUserData.friendRequestSent.map { it.toUserID }
+
+                    val isFriend = userPreferences.userID in friendsList
+                    val isRequestSent = userPreferences.userID in requestsSent
+
+                    val followButtonText = when {
+                        isFriend -> "Siguiendo"
+                        isRequestSent -> "Solicitud enviada"
+                        else -> "Seguir"
+                    }
+                    val isButtonEnabled = !isFriend && !isRequestSent && !isSendingFollowRequest
+
+                    CompactSymmetricButtons(
+                        leftLabel = followButtonText,
+                        rightLabel = "Compartir perfil",
+                        onLeftClick = { onFollowClick(userPreferences) },
+                        onRightClick = { /* TODO: Compartir */ },
+                        // Pasa el estado de carga al botón izquierdo (Seguir)
+                        isLeftLoading = isSendingFollowRequest,
+                        // Deshabilita si ya es amigo, ya envió solicitud, o está cargando
+                        isLeftEnabled = isButtonEnabled
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
                 // Información del perfil
                 Column(
                     modifier = Modifier.fillMaxWidth(),

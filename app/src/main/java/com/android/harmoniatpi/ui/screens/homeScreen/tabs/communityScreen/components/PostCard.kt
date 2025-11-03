@@ -80,7 +80,8 @@ fun PostCard(
     isAlreadyCloned: Boolean,
     onCloneClicked: () -> Unit,
     viewUserProfile: (String) -> Unit,
-    isCloningThisPost: Boolean
+    isCloningThisPost: Boolean,
+    isFriend: Boolean
 ) {
     val postAudio = post.urlCompleteAudio
     val context = LocalContext.current
@@ -294,9 +295,12 @@ fun PostCard(
 
                     // 2. Clonar
                     if (post.idProject.isNotBlank() && post.clonedOption == true) {
-
-                        // El botón está habilitado si NO está clonado, NO es mi post, y NO se está clonando
-                        val isCloneEnabled = !isAlreadyCloned && !isMyPost && !isCloningThisPost
+                        // Habilita el clon si:
+                        // 1. No está ya clonado
+                        // 2. No es mi propio post
+                        // 3. No se está clonando AHORA MISMO
+                        // 4. El autor del post ES MI AMIGO
+                        val isCloneEnabled = !isAlreadyCloned && !isMyPost && !isCloningThisPost && isFriend
 
                         if (isCloningThisPost) {
                             // Muestra un spinner con el mismo padding que PostActionItem

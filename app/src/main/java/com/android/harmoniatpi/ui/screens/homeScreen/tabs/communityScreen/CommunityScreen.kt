@@ -84,7 +84,10 @@ fun CommunityScreen(
         if (userProfile != null) {
             UserProfileDialog(
                 userPreferences = userProfile,
-                onDismiss = { viewModel.onDismissUserProfile() }
+                onDismiss = { viewModel.onDismissUserProfile() },
+                currentUserData = uiState.currentUserData,
+                isSendingFollowRequest = uiState.isSendingFollowRequest,
+                onFollowClick = { targetUser -> viewModel.sendFollowRequest(targetUser) }
             )
         }
     } else {
@@ -102,22 +105,21 @@ fun CommunityScreen(
                         }
                         val isAlreadyCloned = projectData != null
                         val isCloningThisPost = uiState.cloningPostId == post.id
+                        val friendsList = uiState.currentUserData?.friendsList?.map { it.id } ?: emptyList()
+                        val isFriend = post.userID in friendsList
                         PostCard(
                             post = post,
                             onLikeClicked = { viewModel.updateLikes(post) },
                             onCommentClicked = {
-                                selectedPostIdForComments = post.id // Guardar solo el ID
+                                selectedPostIdForComments = post.id
                             },
                             onDeleteClicked = { viewModel.deleteMyPost(post) },
                             isMyPost = post.userID == uiState.userID,
                             isAlreadyCloned = isAlreadyCloned,
                             isCloningThisPost = isCloningThisPost,
-                            onCloneClicked = {
-                                postToClone = post
-                            },
-                            viewUserProfile = { id ->
-                                viewModel.onClickUserProfile(id)
-                            }
+                            onCloneClicked = { postToClone = post },
+                            viewUserProfile = { id -> viewModel.onClickUserProfile(id) },
+                            isFriend = isFriend
                         )
                     }
                 }
@@ -152,8 +154,6 @@ fun CommunityScreen(
                     onConfirm = {
                         postToClone?.let {
                             viewModel.cloneProject(it)
-                            // --- QUITA ESTA LÍNEA ---
-                            // viewModel.updateCloned(it)
                         }
                         postToClone = null
                     },

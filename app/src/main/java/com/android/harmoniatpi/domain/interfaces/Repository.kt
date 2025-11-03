@@ -5,6 +5,7 @@ import com.android.harmoniatpi.data.local.model.ProjectFirebaseModel
 import com.android.harmoniatpi.domain.model.UserPreferences
 import com.android.harmoniatpi.domain.model.project.Project
 import com.android.harmoniatpi.domain.model.user.User
+import com.android.harmoniatpi.domain.model.userPreferences.FriendRequestReceived
 import com.android.harmoniatpi.domain.model.userPreferences.Post
 import com.google.firebase.auth.FirebaseUser
 import kotlinx.coroutines.flow.Flow
@@ -57,6 +58,23 @@ interface Repository {
     suspend fun updateMyPost(post: MyPostEntity)
 
     suspend fun deleteMyPostById(id: String)
+
+    suspend fun sendFriendRequest(
+        currentUser: UserPreferences,
+        targetUser: UserPreferences
+    ): Result<UserPreferences>
+
+    suspend fun acceptFriendRequest(
+        currentUser: UserPreferences,
+        request: FriendRequestReceived
+    ): Result<UserPreferences>
+
+    suspend fun declineFriendRequest(
+        currentUser: UserPreferences,
+        request: FriendRequestReceived
+    ): Result<UserPreferences>
+
+    fun observeCurrentUserFromFirestore(): Flow<UserPreferences?>
 
     //--------------------Proyectos------------------------TODO(PROYECTOS)
     fun getAllProjects ():Flow<List<Project>>
