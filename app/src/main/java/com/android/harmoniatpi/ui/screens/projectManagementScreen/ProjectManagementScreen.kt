@@ -53,6 +53,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -84,6 +85,7 @@ import com.android.harmoniatpi.ui.components.TrackItem
 import com.android.harmoniatpi.ui.components.TrimAudioDialog
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.viewmodel.ProjectManagementScreenViewModel
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -99,6 +101,7 @@ fun ProjectManagementScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var trackForTrimming by remember { mutableStateOf<TrackUi?>(null) }
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var trackForEffects by remember { mutableStateOf<TrackUi?>(null) }
     val pickAudioLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -318,7 +321,11 @@ fun ProjectManagementScreen(
             Spacer(modifier = Modifier.weight(1f))
 
             ProyectControlButtonRow(
-                onSkipPrevious = { viewModel.stopPlaying() },
+                onSkipPrevious = { viewModel.stopPlaying()
+                    scope.launch {
+                        sharedScrollState.animateScrollTo(0)
+                    }
+                                 },
                 onPlay = { viewModel.play() },
                 onPause = { viewModel.pause() },
                 startRecording = {
