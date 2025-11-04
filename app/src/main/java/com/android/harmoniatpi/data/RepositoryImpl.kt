@@ -381,8 +381,6 @@ class RepositoryImpl @Inject constructor(
             }.await() // Espera a que la transacción termine
 
             //  Actualización Adicional: Sincronizar Room ---
-            // Guarda los nuevos datos en la base de datos local (Room)
-            // para que la UI se actualice instantáneamente.
             if (updatedTargetUser != null) {
                 userPreferencesDao.insertUserPreferences(updatedTargetUser!!.toDataBase(jsonUtils))
             }
@@ -409,7 +407,7 @@ class RepositoryImpl @Inject constructor(
             firestore.runTransaction { transaction ->
                 val targetUserId = request.fromUserID
 
-                // --- 1. Obtener y actualizar Target User (el que envió la solicitud) ---
+                //Obtener y actualizar Target User (el que envió la solicitud) ---
                 val targetUserRef = firestore.collection("users").document(targetUserId)
                 val targetSnapshot = transaction.get(targetUserRef)
                 val targetFirebaseModel = targetSnapshot.toObject(UserFirebaseModel::class.java)
@@ -417,11 +415,11 @@ class RepositoryImpl @Inject constructor(
 
                 val targetDomainUser = targetFirebaseModel.toEntity().toDomain(jsonUtils)
 
-                // 1a. Eliminar de 'friendRequestSent'
+                //Eliminar de 'friendRequestSent'
                 val updatedTargetSent = targetDomainUser.friendRequestSent.filterNot {
                     it.toUserID == currentUser.userID
                 }
-                // 1b. Añadir a 'friendsList'
+                //Añadir a 'friendsList'
                 val newFriendForTarget = Friend(
                     id = currentUser.userID,
                     name = currentUser.userName,
@@ -439,14 +437,12 @@ class RepositoryImpl @Inject constructor(
                     friendsList = updatedTargetFriends
                 )
 
-                // --- 2. Obtener y actualizar Current User (el que acepta) ---
-                // (Usamos el objeto local 'currentUser' que ya tenemos)
 
-                // 2a. Eliminar de 'friendRequestReceived'
+                //Eliminar de 'friendRequestReceived'
                 val updatedCurrentReceived = currentUser.friendRequestReceived.filterNot {
                     it.fromUserID == targetUserId
                 }
-                // 2b. Añadir a 'friendsList'
+                //Añadir a 'friendsList'
                 val newFriendForCurrent = Friend(
                     id = targetDomainUser.userID,
                     name = targetDomainUser.userName,
@@ -464,7 +460,7 @@ class RepositoryImpl @Inject constructor(
                     friendsList = updatedCurrentFriends
                 )
 
-                // --- 3. Ejecutar la transacción ---
+                //Ejecutar la transacción ---
                 transaction.set(targetUserRef, finalTargetUser.toDataBase(jsonUtils).toFirebaseModel())
                 transaction.set(
                     firestore.collection("users").document(currentUser.userID),
@@ -473,7 +469,7 @@ class RepositoryImpl @Inject constructor(
 
             }.await()
 
-            // 4. Sincronizar Room
+            //Sincronizar Room
             if (updatedCurrentUser != null) {
                 userPreferencesDao.insertUserPreferences(updatedCurrentUser!!.toDataBase(jsonUtils))
                 Result.success(updatedCurrentUser!!)
@@ -497,7 +493,7 @@ class RepositoryImpl @Inject constructor(
             firestore.runTransaction { transaction ->
                 val targetUserId = request.fromUserID
 
-                // --- 1. Obtener y actualizar Target User (el que envió la solicitud) ---
+                // Obtener y actualizar Target User (el que envió la solicitud) ---
                 val targetUserRef = firestore.collection("users").document(targetUserId)
                 val targetSnapshot = transaction.get(targetUserRef)
                 val targetFirebaseModel = targetSnapshot.toObject(UserFirebaseModel::class.java)
@@ -505,20 +501,20 @@ class RepositoryImpl @Inject constructor(
 
                 val targetDomainUser = targetFirebaseModel.toEntity().toDomain(jsonUtils)
 
-                // 1a. Eliminar de 'friendRequestSent'
+                // Eliminar de 'friendRequestSent'
                 val updatedTargetSent = targetDomainUser.friendRequestSent.filterNot {
                     it.toUserID == currentUser.userID
                 }
                 val finalTargetUser = targetDomainUser.copy(friendRequestSent = updatedTargetSent)
 
-                // --- 2. Obtener y actualizar Current User (el que rechaza) ---
-                // 2a. Eliminar de 'friendRequestReceived'
+                //Obtener y actualizar Current User (el que rechaza) ---
+                //Eliminar de 'friendRequestReceived'
                 val updatedCurrentReceived = currentUser.friendRequestReceived.filterNot {
                     it.fromUserID == targetUserId
                 }
                 updatedCurrentUser = currentUser.copy(friendRequestReceived = updatedCurrentReceived)
 
-                // --- 3. Ejecutar la transacción ---
+                //Ejecutar la transacción ---
                 transaction.set(targetUserRef, finalTargetUser.toDataBase(jsonUtils).toFirebaseModel())
                 transaction.set(
                     firestore.collection("users").document(currentUser.userID),
@@ -527,7 +523,7 @@ class RepositoryImpl @Inject constructor(
 
             }.await()
 
-            // 4. Sincronizar Room
+            //Sincronizar Room
             if (updatedCurrentUser != null) {
                 userPreferencesDao.insertUserPreferences(updatedCurrentUser!!.toDataBase(jsonUtils))
                 Result.success(updatedCurrentUser!!)
@@ -571,7 +567,7 @@ class RepositoryImpl @Inject constructor(
                     trySend(null)
                 }
             } else {
-                trySend(null) // El documento no existe
+                trySend(null)
             }
         }
         awaitClose { listener.remove() }

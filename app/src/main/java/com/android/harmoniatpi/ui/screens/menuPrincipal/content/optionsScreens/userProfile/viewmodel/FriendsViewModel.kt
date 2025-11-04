@@ -5,11 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.harmoniatpi.domain.interfaces.Repository
 import com.android.harmoniatpi.domain.model.UserPreferences
-import com.android.harmoniatpi.domain.model.userPreferences.Friend
 import com.android.harmoniatpi.domain.model.userPreferences.FriendRequestReceived
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.FetchAndSyncUsersUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetAllUserFromDBUseCase
-// ✨ 1. AÑADE ESTA IMPORTACIÓN (la que usaba antes)
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.ObserveCurrentUserUseCase
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.SharedMenuUiState
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.model.FriendsUiState
@@ -26,10 +24,9 @@ import javax.inject.Inject
 @HiltViewModel
 class FriendsViewModel @Inject constructor(
     private val repository: Repository,
-    private val sharedMenuUiState: SharedMenuUiState, // <-- Se queda, pero no para 'currentUser'
+    private val sharedMenuUiState: SharedMenuUiState,
     private val fetchAndSyncUsersUseCase: FetchAndSyncUsersUseCase,
     private val getAllUsersUseCase: GetAllUserFromDBUseCase,
-    // ✨ 2. AÑADE DE NUEVO EL OBSERVADOR
     private val observeCurrentUserUseCase: ObserveCurrentUserUseCase
 ) : ViewModel() {
 
@@ -43,29 +40,25 @@ class FriendsViewModel @Inject constructor(
         observeData()
     }
 
-    // ✨ 3. REVIERTE LA FUNCIÓN 'observeData' A SU LÓGICA ORIGINAL
     private fun observeData() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
-            // Combina el Flow del usuario actual (de Firestore)
-            // con el Flow de TODOS los usuarios (de Room)
             combine(
-                observeCurrentUserUseCase(), // <-- DEBE LEER DE AQUÍ
+                observeCurrentUserUseCase(),
                 getAllUsersUseCase()
             ) { localCurrentUser, allUsersInRoom ->
 
                 this@FriendsViewModel.currentUser = localCurrentUser
 
                 if (localCurrentUser == null) {
-                    return@combine null // Aún no estamos listos
+                    return@combine null
                 }
 
                 val friends = localCurrentUser.friendsList
                 val requestsReceived = localCurrentUser.friendRequestReceived
                 val requestIds = requestsReceived.map { it.fromUserID }
 
-                // Busca perfiles de usuario que falten
                 val usersToFetch = requestIds.filter { reqId ->
                     allUsersInRoom.none { it.userID == reqId }
                 }
@@ -76,12 +69,12 @@ class FriendsViewModel @Inject constructor(
                     }
                 }
 
-                // Mapea los perfiles que SÍ tenemos
+
                 val requestUserProfiles = allUsersInRoom.filter { user ->
                     requestIds.contains(user.userID)
                 }
 
-                // Retorna los datos listos para la UI
+
                 Triple(friends, requestUserProfiles, requestsReceived)
 
             }.collect { data ->
@@ -118,9 +111,8 @@ class FriendsViewModel @Inject constructor(
 
             if (result.isSuccess) {
                 Log.d("FriendsViewModel", "Solicitud manejada con éxito.")
-                // ✨ 4. AHORA ACTUALIZAMOS EL SHARED STATE MANUALMENTE ✨
-                // Esto soluciona el bug original del estado obsoleto
-                val updatedUser = result.getOrNull() // Este es el 'updatedCurrentUser'
+
+                val updatedUser = result.getOrNull()
                 if (updatedUser != null) {
                     sharedMenuUiState.updateState {
                         it.copy(
@@ -135,5 +127,4 @@ class FriendsViewModel @Inject constructor(
         }
     }
 
-    // ✨ 5. ELIMINA LA FUNCIÓN 'toUserPreferences' (ya no se usa aquí)
 }
