@@ -28,13 +28,16 @@ fun ProfileNavButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val containerColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer
-    val contentColor = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer
-    val textColor = if (selected) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant
+    val containerColor =
+        if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer
+    val contentColor =
+        if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer
+    val textColor =
+        if (selected) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant
 
     Column(
         modifier = Modifier
-            .widthIn(min = 80.dp, max =120.dp)
+            .widthIn(min = 80.dp, max = 120.dp)
             .clickable(onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

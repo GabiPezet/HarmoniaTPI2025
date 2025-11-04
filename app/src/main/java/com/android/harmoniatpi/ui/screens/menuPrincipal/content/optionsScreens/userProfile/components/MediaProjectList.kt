@@ -63,13 +63,15 @@ fun MediaProjectList(projects: List<Project>) {
 fun ProjectCard(project: Project) {
     Card(
         modifier = Modifier
-            .fillMaxWidth().height( 100.dp)
+            .fillMaxWidth()
+            .height(100.dp)
             .padding(vertical = 16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         shape = RoundedCornerShape(12.dp)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 4.dp)
+            modifier = Modifier
+                .padding(horizontal = 4.dp)
                 .fillMaxSize(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween

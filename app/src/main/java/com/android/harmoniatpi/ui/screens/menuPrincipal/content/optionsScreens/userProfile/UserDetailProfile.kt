@@ -316,9 +316,13 @@ fun UserDetailProfile(
                     ProfileTabItem(Icons.Default.FamilyRestroom, "Amigos", ProfileTab.FRIENDS),
                     ProfileTabItem(Icons.Default.Movie, "Proyectos", ProfileTab.MEDIA),
                     ProfileTabItem(Icons.Default.School, "Mis Datos", ProfileTab.WORK),
-                    ProfileTabItem(Icons.Default.CatchingPokemon, "Mi Contacto", ProfileTab.CONTACT),
+                    ProfileTabItem(
+                        Icons.Default.CatchingPokemon,
+                        "Mi Contacto",
+                        ProfileTab.CONTACT
+                    ),
 
-                ).forEach { (icon, label, tab) ->
+                    ).forEach { (icon, label, tab) ->
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -347,6 +351,7 @@ fun UserDetailProfile(
                         contactData = contactData,
                         onUpdateContact = { updated -> viewModel.updateContactInfo(updated) }
                     )
+
                     ProfileTab.FRIENDS -> WorkProfileCard(uiState = uiState, viewModel = viewModel)
                     // TODO: Acá Facu tenés que sacar la WorkProfileCard, la agregué para que no explote
                 }
