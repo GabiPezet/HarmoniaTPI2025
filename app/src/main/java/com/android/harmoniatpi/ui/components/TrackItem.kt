@@ -536,11 +536,18 @@ fun DbWaveform(
                         )
                     }
                     //seek para elegir donde reproduzco
-                    .pointerInput(Unit) {
+                    .pointerInput(Unit, maxDurationMs, startOffsetMs, onSeekClick) {
                         detectTapGestures(onTap = { offset ->
-                            val tappedMs =
-                                startOffsetMs + (offset.x / density.density * msPerDpScale).toLong()
-                            onSeekClick(tappedMs)
+                            val totalCanvasWidthPx = size.width.toFloat()
+                            val tappedPx = offset.x
+
+                            if (totalCanvasWidthPx > 0f) {
+                                val tapPercentage = (tappedPx / totalCanvasWidthPx).coerceIn(0f, 1f)
+                                val msInWaveform = (tapPercentage * maxDurationMs).toLong()
+                                val tappedMs = startOffsetMs + msInWaveform
+
+                                onSeekClick(tappedMs)
+                            }
                         })
                     }
                     .drawWithContent {
