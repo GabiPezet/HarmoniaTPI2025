@@ -318,7 +318,7 @@ fun ProjectManagementScreen(
                     modifier = Modifier.fillMaxSize(),
                 )
             }
-            Spacer(modifier = Modifier.weight(1f))
+            //Spacer(modifier = Modifier.weight(1f))
 
             ProyectControlButtonRow(
                 onSkipPrevious = { viewModel.stopPlaying()

@@ -154,7 +154,10 @@ fun TrackItem(
             border = when {
                 isBeingRecorded -> BorderStroke(2.dp, animatedBorderColor)
                 track.selected -> BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
-                else ->BorderStroke(1.dp, MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f))
+                else -> BorderStroke(
+                    1.dp,
+                    MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
+                )
             },
             modifier = Modifier
                 .fillMaxHeight()
@@ -186,7 +189,8 @@ fun TrackItem(
                 ) {
                     IconButton(onClick = onMute) {
                         val muteOptionText = if (track.isMuted) "Activar" else "Silenciar"
-                        val muteOptionIcon = if (track.isMuted) R.drawable.mute_icon else R.drawable.unmute_icon
+                        val muteOptionIcon =
+                            if (track.isMuted) R.drawable.mute_icon else R.drawable.unmute_icon
                         Icon(
                             painter = painterResource(muteOptionIcon),
                             contentDescription = muteOptionText,
@@ -225,7 +229,9 @@ fun TrackItem(
         }
         Box(
             modifier = Modifier
-                .fillMaxSize()
+                //.fillMaxSize()
+                .fillMaxHeight()
+                .weight(1f)
                 .horizontalScroll(scrollState)
         ) {
 
@@ -235,43 +241,45 @@ fun TrackItem(
                     .fillMaxHeight()
             ) {
                 DbWaveform(
+                    modifier = Modifier.fillMaxSize(),
                     waveform = track.waveForm ?: emptyList(),
                     isMuted = track.isMuted,
                     maxDurationMs = track.durationMs,
                     startOffsetMs = track.startOffsetMs,
-                    onSeekClick = onSeekClick,
                     onOffsetChange = { newOffset -> onOffsetChange(track.id, newOffset) },
                     selectionStartMs = track.selectionStartMs,
                     selectionEndMs = track.selectionEndMs,
                     onSelectionChanged = { startMs, endMs -> onSelectionChanged(startMs, endMs) },
                     msPerDpScale = msPerDpScale,
-                    currentPlaybackMs = currentPlaybackMs
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
 
 
                 Canvas(
                     modifier = Modifier
                         .fillMaxSize()
+
+                        .pointerInput(Unit, msPerDpScale, onSeekClick, density) {
+                            detectTapGestures(onTap = { offset ->
+                                val tappedMs = (offset.x / density.density * msPerDpScale).toLong()
+                                onSeekClick(tappedMs)
+                            })
+                        }
+
                         .then(
                             when {
-                                isBeingRecorded -> Modifier.border(
-                                    width = 2.dp,
-                                    color = animatedBorderColor,
-                                    shape = RoundedCornerShape(8.dp)
+                                isBeingRecorded -> BorderStroke(2.dp, animatedBorderColor)
+                                track.selected -> BorderStroke(
+                                    2.dp,
+                                    MaterialTheme.colorScheme.primary
                                 )
 
-                                track.selected -> Modifier.border(
-                                    width = 2.dp,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    shape = RoundedCornerShape(8.dp)
-                                )
-
-                                else -> Modifier.border(
-                                    width = 1.dp,
-                                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f),
-                                    shape = RoundedCornerShape(8.dp)
+                                else -> BorderStroke(
+                                    1.dp,
+                                    MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
                                 )
                             }
+                                .let { Modifier.border(it, RoundedCornerShape(8.dp)) }
                         )
                 ) {
                     if (currentPlaybackMs > 0) {
@@ -450,17 +458,16 @@ private fun TrackOptionsMenu(
 
 @Composable
 fun DbWaveform(
+    modifier: Modifier = Modifier,
     waveform: List<Float>,
     isMuted: Boolean,
     maxDurationMs: Long,
     startOffsetMs: Long,
-    onSeekClick: (Long) -> Unit,
     onOffsetChange: (Long) -> Unit,
     selectionStartMs: Long?,
     selectionEndMs: Long?,
     onSelectionChanged: (startMs: Long?, endMs: Long?) -> Unit,
     msPerDpScale: Float,
-    currentPlaybackMs: Long,
     color: Color = MaterialTheme.colorScheme.onPrimaryContainer
 ) {
     val waveformColor = if (isMuted) color else MaterialTheme.colorScheme.primary
@@ -474,30 +481,23 @@ fun DbWaveform(
     var dragOffsetMs by remember { mutableLongStateOf(0L) }
     val visualOffsetDp = ((startOffsetMs + dragOffsetMs) / msPerDpScale).dp
 
-    val totalWidthPx = with(density) { (maxDurationMs / msPerDpScale).dp.toPx() }
-    val startOffsetPx = with(density) { (startOffsetMs / msPerDpScale).dp.toPx() }
+    val canvasWidthPx = with(density) { canvasWidthDp.toPx() }
 
     var handleStartPx by remember(selectionStartMs, density, msPerDpScale) {
         mutableFloatStateOf(
             selectionStartMs?.let { (it / msPerDpScale) * density.density } ?: 0f
         )
     }
-    var handleEndPx by remember(selectionEndMs, totalWidthPx, density, msPerDpScale) {
+    var handleEndPx by remember(selectionEndMs, canvasWidthPx, density, msPerDpScale) {
         mutableFloatStateOf(
-            selectionEndMs?.let { (it / msPerDpScale) * density.density } ?: totalWidthPx
+            selectionEndMs?.let { (it / msPerDpScale) * density.density } ?: canvasWidthPx
         )
     }
 
-    // Estado para arrastrar la pista (offset)
-    var dragOffsetPx by remember { mutableFloatStateOf(0f) }
-    val visualOffsetPx = (startOffsetPx + dragOffsetPx).coerceAtLeast(0f)
-
-    // Tamaño mínimo visual del clip recortado (ej. 10dp)
     val minClipWidthPx = with(density) { 10.dp.toPx() }
 
     Box(
-        modifier = Modifier
-            .fillMaxHeight()
+        modifier = modifier
             .padding(start = visualOffsetDp.coerceAtLeast(0.dp))
     ) {
         Surface(
@@ -511,7 +511,7 @@ fun DbWaveform(
                 modifier = Modifier
                     .fillMaxSize()
                     //muevo el waveform con hold y drag
-                    .pointerInput(startOffsetMs) {
+                    .pointerInput(startOffsetMs, canvasWidthPx, visualOffsetDp) {
                         detectDragGesturesAfterLongPress(
                             onDragStart = { dragOffsetMs = 0L },
                             onDragEnd = {
@@ -533,16 +533,8 @@ fun DbWaveform(
                             }
                         )
                     }
-                    //seek para elegir donde reproduzco
-                    .pointerInput(Unit) {
-                        detectTapGestures(onTap = { offset ->
-                            val tappedMs =
-                                startOffsetMs + (offset.x / density.density * msPerDpScale).toLong()
-                            onSeekClick(tappedMs)
-                        })
-                    }
                     .drawWithContent {
-                                drawContent()
+                        drawContent()
                         val validStartPx = handleStartPx.coerceIn(0f, handleEndPx)
                         if (validStartPx > 0f) {
                             drawRect(
@@ -583,51 +575,79 @@ fun DbWaveform(
         val handleWidth = 20.dp
         val handleWidthPx = with(density) { handleWidth.toPx() }
 
-//BARRAS
+        //BARRAS
         Box(
             modifier = Modifier
-                .offset { IntOffset( (handleStartPx - handleWidthPx / 2).roundToInt(), 0) }
+                .offset { IntOffset((handleStartPx - handleWidthPx / 2).roundToInt(), 0) }
                 .width(handleWidth)
                 .fillMaxHeight()
-                .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f), RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp)) // Color diferente para selección
+                .background(
+                    MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f),
+                    RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp)
+                ) // Color diferente para selección
                 .draggable(
                     orientation = Orientation.Horizontal,
                     state = rememberDraggableState { delta ->
-                        val newPos = (handleStartPx + delta).coerceIn(0f, handleEndPx - minClipWidthPx)
+                        val newPos =
+                            (handleStartPx + delta).coerceIn(0f, handleEndPx - minClipWidthPx)
                         handleStartPx = newPos
                     },
                     onDragStopped = {
-                        val startMs = (handleStartPx / density.density * msPerDpScale).coerceAtLeast(0f).toLong()
-                        val endMs = (handleEndPx / density.density * msPerDpScale).coerceAtMost(maxDurationMs.toFloat()).toLong()
+                        val startMs = (handleStartPx / density.density * msPerDpScale).coerceAtLeast(
+                            0f
+                        ).toLong()
+                        val endMs = (handleEndPx / density.density * msPerDpScale).coerceAtMost(
+                            maxDurationMs.toFloat()
+                        ).toLong()
                         onSelectionChanged(startMs, endMs)
                     }
                 )
         ) {
-            Icon(Icons.Filled.DragHandle, contentDescription = "Inicio selección", tint = Color.White, modifier = Modifier.align(Alignment.Center))
+            Icon(
+                Icons.Filled.DragHandle,
+                contentDescription = "Inicio selección",
+                tint = Color.White,
+                modifier = Modifier.align(Alignment.Center)
+            )
         }
 
         Box(
             modifier = Modifier
-                .offset { IntOffset( (handleEndPx - handleWidthPx / 2).roundToInt(), 0) }
+                .offset { IntOffset((handleEndPx - handleWidthPx / 2).roundToInt(), 0) }
                 .width(handleWidth)
                 .fillMaxHeight()
-                .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f), RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp)) // Color diferente
+                .background(
+                    MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f),
+                    RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp)
+                ) // Color diferente
                 .draggable(
                     orientation = Orientation.Horizontal,
                     state = rememberDraggableState { delta ->
 
-                        val newPos = (handleEndPx + delta).coerceIn(handleStartPx + minClipWidthPx, totalWidthPx)
+                        val newPos = (handleEndPx + delta).coerceIn(
+                            handleStartPx + minClipWidthPx,
+                            canvasWidthPx
+                        )
                         handleEndPx = newPos
                     },
                     onDragStopped = {
 
-                        val startMs = (handleStartPx / density.density * msPerDpScale).coerceAtLeast(0f).toLong()
-                        val endMs = (handleEndPx / density.density * msPerDpScale).coerceAtMost(maxDurationMs.toFloat()).toLong()
+                        val startMs = (handleStartPx / density.density * msPerDpScale).coerceAtLeast(
+                            0f
+                        ).toLong()
+                        val endMs = (handleEndPx / density.density * msPerDpScale).coerceAtMost(
+                            maxDurationMs.toFloat()
+                        ).toLong()
                         onSelectionChanged(startMs, endMs)
                     }
                 )
         ) {
-            Icon(Icons.Filled.DragHandle, contentDescription = "Fin selección", tint = Color.White, modifier = Modifier.align(Alignment.Center))
+            Icon(
+                Icons.Filled.DragHandle,
+                contentDescription = "Fin selección",
+                tint = Color.White,
+                modifier = Modifier.align(Alignment.Center)
+            )
         }
 
     }
