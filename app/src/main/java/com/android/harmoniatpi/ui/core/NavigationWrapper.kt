@@ -121,7 +121,7 @@ fun NavigationWrapper(
         }
 
         composable<FriendsScreenRoute> {
-            FriendsScreen(onNavigateBack = { navController.popBackStack() })
+            SongVersionsScreen(onNavigateBack = { navController.popBackStack() })
         }
     }
 }

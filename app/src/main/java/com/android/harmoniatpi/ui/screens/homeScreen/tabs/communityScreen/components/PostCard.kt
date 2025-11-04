@@ -309,7 +309,7 @@ fun PostCard(
 
 
                             // 2. Clonar
-                            if (post.idProject.isNotBlank() && post.clonedOption == true /*&& isFriend*/) {
+                            if (post.idProject.isNotBlank() && post.clonedOption == true && isFriend) {
                                 val isCloneEnabled = !isAlreadyCloned && !isMyPost && !isCloningThisPost
                                 if (isCloningThisPost) {
                                     Box(modifier = Modifier.padding(vertical = 4.dp, horizontal = 6.dp)) {

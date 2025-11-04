@@ -1,5 +1,6 @@
 package com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components
 
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -49,34 +50,22 @@ import coil.compose.AsyncImage
 import com.android.harmoniatpi.domain.model.UserPreferences
 import com.android.harmoniatpi.domain.model.userPreferences.Friend
 import com.android.harmoniatpi.domain.model.userPreferences.FriendRequestReceived
+import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.MenuUiState
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.viewmodel.FriendsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FriendsScreen(
-    onNavigateBack: () -> Unit,
+    uiState: MenuUiState,
     viewModel: FriendsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var selectedTab by remember { mutableStateOf(0) }
     val tabs = listOf("Seguidores", "Solicitudes")
 
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("Amigos") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Atrás")
-                    }
-                }
-            )
-        }
-    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
         ) {
             PrimaryTabRow(selectedTabIndex = selectedTab) {
                 tabs.forEachIndexed { index, title ->
@@ -129,7 +118,7 @@ fun FriendsScreen(
             }
         }
     }
-}
+
 
 @Composable
 fun FriendsList(
