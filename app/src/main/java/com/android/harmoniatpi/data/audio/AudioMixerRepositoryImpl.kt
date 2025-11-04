@@ -82,16 +82,18 @@ class AudioMixerRepositoryImpl @Inject constructor(
     private var previewPlayer: PcmAudioPlayer? = null
     private val _previewCompletedFlow = MutableSharedFlow<Unit>(replay = 0)
     private val bufferSize = 2048
+    private var playbackStartTimeNs: Long = 0L
+    private var initialPlaybackMs: Long = 0L
+
 
 
     override fun play(excludeTrackId: Long?) {
         val tracksToPlay =
             tracks.value.filter { it.hasAudio() && it.id != excludeTrackId && !it.isMuted() }
 
-        if (tracksToPlay.isEmpty()) {
-            if (tracks.value.any { it.hasAudio() }) {
-                startPlaybackTracking()
-            }
+        val allTracksWithAudio = tracks.value.filter { it.hasAudio() }
+        if (allTracksWithAudio.isEmpty()) {
+            Log.i(TAG, "No hay audio en el proyecto para reproducir.")
             tracksCompleted.value = true
             return
         }
@@ -99,10 +101,16 @@ class AudioMixerRepositoryImpl @Inject constructor(
         val globalStartMs = currentPlaybackMs.value
         completedCount.set(0)
         tracksCompleted.value = false
+        initialPlaybackMs = globalStartMs
+        playbackStartTimeNs = System.nanoTime()
         startPlaybackTracking()
 
-        tracksToPlay.forEach { track ->
+        if (tracksToPlay.isEmpty()) {
+            Log.i(TAG, "Reproduciendo silencio (playhead activo).")
+            return
+        }
 
+        tracksToPlay.forEach { track ->
             val delayMs = (track.startOffsetMs - globalStartMs).coerceAtLeast(0L)
             val internalPlayPos = (globalStartMs - track.startOffsetMs).coerceAtLeast(0L)
 
@@ -110,7 +118,7 @@ class AudioMixerRepositoryImpl @Inject constructor(
                 val count = completedCount.incrementAndGet()
                 Log.i(TAG, "Track ${track.id} completed. Count: $count")
                 if (count == tracksToPlay.size) {
-                    stop()
+                    Log.i(TAG, "Todas las pistas audibles terminaron.")
                 }
             }
             track.play(internalPlayPos, delayMs)
@@ -160,20 +168,32 @@ class AudioMixerRepositoryImpl @Inject constructor(
 
 
     private var playbackTrackingJob: Job? = null
+
     private fun startPlaybackTracking() {
         playbackTrackingJob?.cancel()
         playbackTrackingJob = CoroutineScope(Dispatchers.Default).launch {
-            while (isActive) {
-                val activePlayers =
-                    playerList.filter { it.audioTrack.playState == AudioTrack.PLAYSTATE_PLAYING }
-                if (activePlayers.isNotEmpty()) {
 
-                    val maxPos = activePlayers.maxOfOrNull { player ->
-                        val track = tracks.value.find { it.player == player }
-                        (track?.startOffsetMs ?: 0L) + player.getCurrentPositionMs()
-                    } ?: currentPlaybackMs.value
-                    currentPlaybackMs.value = maxPos
+            val maxDurationMs = tracks.value.maxOfOrNull {
+                it.startOffsetMs + (it.player as PcmAudioPlayer).getDurationMs()
+            } ?: 0L
+
+            Log.d(TAG, "Playback Tracker iniciado. Duración total detectada: $maxDurationMs ms")
+
+            while (isActive) {
+                val elapsedNs = System.nanoTime() - playbackStartTimeNs
+                val elapsedMs = elapsedNs / 1_000_000L
+
+                val newPositionMs = initialPlaybackMs + elapsedMs
+
+                if (maxDurationMs > 0 && newPositionMs >= maxDurationMs) {
+                    currentPlaybackMs.value = maxDurationMs
+                    tracksCompleted.value = true
+                    stopPlaybackTracking()
+                    Log.d(TAG, "Playback Tracker detenido: Fin de proyecto alcanzado.")
+                } else {
+                    currentPlaybackMs.value = newPositionMs
                 }
+
                 delay(50)
             }
         }
