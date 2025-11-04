@@ -13,9 +13,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.Whatsapp
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -36,133 +38,48 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.android.harmoniatpi.domain.model.userPreferences.ContactData
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.MenuUiState
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.viewmodel.DrawerContentViewModel
 
 @Composable
 fun ContactProfileCard(
-    uiState: MenuUiState,
-    viewModel: DrawerContentViewModel
+    contactData: ContactData,
+    onUpdateContact: (ContactData) -> Unit
 ) {
-    var isEditing by remember { mutableStateOf(false) }
-    var instrument by remember(uiState.instrument) { mutableStateOf(uiState.instrument) }
-    var genres by remember(uiState.genres) { mutableStateOf(uiState.genres) }
-    var location by remember(uiState.location) { mutableStateOf(uiState.location) }
-    var rating by remember(uiState.rating) { mutableFloatStateOf(uiState.rating) }
-
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState())
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    "Perfil Profesional",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                if (!isEditing) {
-                    IconButton(onClick = { isEditing = true }) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Editar perfil",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
+            Text(
+                "Información de contacto",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+            )
+
+            ContactField("WhatsApp", contactData.whatsapp, Icons.Default.Whatsapp) {
+                onUpdateContact(contactData.copy(whatsapp = it))
             }
-            Spacer(modifier = Modifier.height(12.dp))
-
-            if (isEditing) {
-                EditableProfileRow(
-                    label = "Tu Instrumento:",
-                    value = instrument,
-                    onValueChange = { instrument = it },
-                    leading = Icons.Default.Mic
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                EditableProfileRow(
-                    label = "Género Favorito:",
-                    value = genres,
-                    onValueChange = { genres = it },
-                    leading = Icons.Default.MusicNote
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                EditableProfileRow(
-                    label = "Ubicación:",
-                    value = location,
-                    onValueChange = { location = it },
-                    leading = Icons.Default.Place
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Column(horizontalAlignment = Alignment.Start, modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = "Tu valoración: ${"%.1f".format(rating)} / 5.0",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Slider(
-                        value = rating,
-                        onValueChange = { rating = it },
-                        valueRange = 0f..5f,
-                        steps = 9
-                    )
-                    RatingBar(rating = rating, modifier = Modifier.align(Alignment.CenterHorizontally))
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    OutlinedButton(onClick = {
-                        instrument = uiState.instrument
-                        genres = uiState.genres
-                        location = uiState.location
-                        rating = uiState.rating
-                        isEditing = false
-                    }) {
-                        Text("Cancelar")
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(onClick = {
-                        viewModel.updateWorkProfile(instrument, genres, location)
-                        viewModel.updateRating(rating)
-                        viewModel.updateUserPreferences()
-                        isEditing = false
-                    }) {
-                        Text("Guardar")
-                    }
-                }
-
-            } else {
-                // MODO VISUALIZACIÓN
-                ProfileRow(
-                    label = "Tu Instrumento:", value = uiState.instrument, leading = Icons.Default.Mic
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                ProfileRow(
-                    label = "Género Favorito:", value = uiState.genres, leading = Icons.Default.MusicNote
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                ProfileRow(
-                    label = "Ubicación:", value = uiState.location, leading = Icons.Default.Place
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                RatingBar(rating = uiState.rating, modifier = Modifier.fillMaxWidth())
+            ContactField("Instagram", contactData.instagram, Icons.Default.Whatsapp) {
+                onUpdateContact(contactData.copy(instagram = it))
+            }
+            ContactField("X (Twitter)", contactData.xAccount, Icons.Default.Whatsapp) {
+                onUpdateContact(contactData.copy(xAccount = it))
+            }
+            ContactField("TikTok", contactData.tiktok, Icons.Default.Whatsapp) {
+                onUpdateContact(contactData.copy(tiktok = it))
+            }
+            ContactField("Mail", contactData.contactMail, Icons.Default.Email) {
+                onUpdateContact(contactData.copy(contactMail = it))
             }
         }
     }
 }
+

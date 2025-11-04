@@ -1,11 +1,13 @@
 package com.android.harmoniatpi.ui.screens.menuPrincipal.content.viewmodel
 
 import android.util.Log
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.harmoniatpi.domain.model.UserPreferences
 import com.android.harmoniatpi.domain.model.userPreferences.AppTheme
 import com.android.harmoniatpi.domain.model.userPreferences.Comment
+import com.android.harmoniatpi.domain.model.userPreferences.ContactData
 import com.android.harmoniatpi.domain.model.userPreferences.Post
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.DeletePostFirebaseDataBaseUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.LogOutFirebaseUseCase
@@ -22,6 +24,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -46,6 +49,9 @@ class DrawerContentViewModel @Inject constructor(
     private val _userPhotoPath = MutableStateFlow(ProfileImageUser())
     val userPhotoPath = _userPhotoPath.asStateFlow()
 
+    private val _contactData = MutableStateFlow(ContactData())
+    val contactData: StateFlow<ContactData> = _contactData.asStateFlow()
+    //TODO: Hablar con Facu para ver si podemos persistir esta info en Firestore o en RTDatabase
 
     fun initUserPreferences() {
         viewModelScope.launch {
@@ -109,7 +115,6 @@ class DrawerContentViewModel @Inject constructor(
         sharedMenuUiState.updateState { it.copy(logOutSuccess = false) }
     }
 
-
     fun toggleTheme(theme: AppTheme) {
         sharedMenuUiState.updateState {
             it.copy(
@@ -117,7 +122,6 @@ class DrawerContentViewModel @Inject constructor(
             )
         }
     }
-
 
     fun updateUserPreferences() {
 
@@ -233,6 +237,11 @@ class DrawerContentViewModel @Inject constructor(
         viewModelScope.launch {
             deletePostFirebaseDataBaseUseCase(postID)
         }
+    }
+
+    fun updateContactInfo(newData: ContactData) {
+        _contactData.value = newData
+        // TODO: Hablar con Facu para ver si podemos persistir esta info en Firestore o en RTDatabase
     }
 
 }

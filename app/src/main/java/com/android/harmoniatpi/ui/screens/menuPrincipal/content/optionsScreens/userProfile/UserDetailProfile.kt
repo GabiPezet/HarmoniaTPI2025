@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -30,9 +31,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.CatchingPokemon
 import androidx.compose.material.icons.filled.Contacts
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.FamilyRestroom
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PhotoLibrary
@@ -73,6 +76,7 @@ import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.u
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.MediaProjectList
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.ProfileNavButton
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.ProfileTab
+import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.ProfileTabItem
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.WorkProfileCard
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.viewmodel.DrawerContentViewModel
 import java.io.File
@@ -91,6 +95,7 @@ fun UserDetailProfile(
     var selectedTab by remember { mutableStateOf(ProfileTab.WORK) }
     var isEditing by remember { mutableStateOf(false) }
     var name by remember(uiState.userName) { mutableStateOf(uiState.userName) }
+    val contactData by viewModel.contactData.collectAsState()
 
     val takePictureLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
@@ -304,30 +309,29 @@ fun UserDetailProfile(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                ProfileNavButton(
-                    icon = Icons.Default.School,
-                    label = "Perfil laboral",
-                    selected = selectedTab == ProfileTab.WORK,
-                    onClick = { selectedTab = ProfileTab.WORK },
-                    )
-                Spacer(modifier = Modifier.width(16.dp))
-                ProfileNavButton(
-                    icon = Icons.Default.Movie,
-                    label = "Proyectos",
-                    selected = selectedTab == ProfileTab.MEDIA,
-                    onClick = { selectedTab = ProfileTab.MEDIA },
+                listOf(
+                    ProfileTabItem(Icons.Default.FamilyRestroom, "Amigos", ProfileTab.FRIENDS),
+                    ProfileTabItem(Icons.Default.Movie, "Proyectos", ProfileTab.MEDIA),
+                    ProfileTabItem(Icons.Default.School, "Mis Datos", ProfileTab.WORK),
+                    ProfileTabItem(Icons.Default.CatchingPokemon, "Mi Contacto", ProfileTab.CONTACT),
 
-                )
-                Spacer(modifier = Modifier.width(16.dp))
-                ProfileNavButton(
-                    icon = Icons.Default.Contacts,
-                    label = "Contacto",
-                    selected = selectedTab == ProfileTab.CONTACT,
-                    onClick = { selectedTab = ProfileTab.CONTACT},
-
-                )
+                ).forEach { (icon, label, tab) ->
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .wrapContentWidth(Alignment.CenterHorizontally)
+                    ) {
+                        ProfileNavButton(
+                            icon = icon,
+                            label = label,
+                            selected = selectedTab == tab,
+                            onClick = { selectedTab = tab }
+                        )
+                    }
+                }
             }
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -339,7 +343,12 @@ fun UserDetailProfile(
                 when (selectedTab) {
                     ProfileTab.WORK -> WorkProfileCard(uiState = uiState, viewModel = viewModel)
                     ProfileTab.MEDIA -> MediaProjectList(projects = uiState.projectsList)
-                    ProfileTab.CONTACT -> ContactProfileCard(uiState = uiState, viewModel = viewModel)
+                    ProfileTab.CONTACT -> ContactProfileCard(
+                        contactData = contactData,
+                        onUpdateContact = { updated -> viewModel.updateContactInfo(updated) }
+                    )
+                    ProfileTab.FRIENDS -> WorkProfileCard(uiState = uiState, viewModel = viewModel)
+                    // TODO: Acá Facu tenés que sacar la WorkProfileCard, la agregué para que no explote
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))
