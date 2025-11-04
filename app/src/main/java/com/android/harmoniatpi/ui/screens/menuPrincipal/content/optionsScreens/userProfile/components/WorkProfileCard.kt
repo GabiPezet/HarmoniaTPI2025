@@ -119,7 +119,10 @@ fun WorkProfileCard(
                         valueRange = 0f..5f,
                         steps = 9
                     )
-                    RatingBar(rating = rating, modifier = Modifier.align(Alignment.CenterHorizontally))
+                    RatingBar(
+                        rating = rating,
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    )
                 }
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -150,11 +153,15 @@ fun WorkProfileCard(
             } else {
                 // MODO VISUALIZACIÓN
                 ProfileRow(
-                    label = "Tu Instrumento:", value = uiState.instrument, leading = Icons.Default.Mic
+                    label = "Tu Instrumento:",
+                    value = uiState.instrument,
+                    leading = Icons.Default.Mic
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 ProfileRow(
-                    label = "Género Favorito:", value = uiState.genres, leading = Icons.Default.MusicNote
+                    label = "Género Favorito:",
+                    value = uiState.genres,
+                    leading = Icons.Default.MusicNote
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 ProfileRow(
