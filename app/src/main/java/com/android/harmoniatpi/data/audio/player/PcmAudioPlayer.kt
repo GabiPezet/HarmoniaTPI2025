@@ -295,6 +295,17 @@ class PcmAudioPlayer @Inject constructor() : AudioPlayer {
 
     fun getCurrentPositionMs(): Long = currentPosMs.get()
 
+    fun getDurationMs(): Long {
+        val currentFile = file ?: return 0L
+        if (!currentFile.exists() || currentFile.length() == 0L) {
+            return 0L
+        }
+        val totalBytes = currentFile.length()
+        val totalSamples = totalBytes / bytesPerSample
+        return totalSamples * 1000L / sampleRate
+    }
+
+
     companion object {
         private const val TAG = "PcmAudioPlayer"
     }
