@@ -194,7 +194,7 @@ class AudioMixerRepositoryImpl @Inject constructor(
                     currentPlaybackMs.value = newPositionMs
                 }
 
-                delay(50) 
+                delay(50)
             }
         }
     }

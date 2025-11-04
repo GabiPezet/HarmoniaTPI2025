@@ -225,7 +225,9 @@ fun TrackItem(
         }
         Box(
             modifier = Modifier
-                .fillMaxSize()
+                //.fillMaxSize()
+                .fillMaxHeight()
+                .weight(1f)
                 .horizontalScroll(scrollState)
         ) {
 
