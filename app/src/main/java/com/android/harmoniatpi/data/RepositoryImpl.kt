@@ -14,6 +14,9 @@ import com.android.harmoniatpi.di.util.JsonUtils
 import com.android.harmoniatpi.domain.interfaces.Repository
 import com.android.harmoniatpi.domain.model.UserPreferences
 import com.android.harmoniatpi.domain.model.project.Project
+import com.android.harmoniatpi.domain.model.userPreferences.Friend
+import com.android.harmoniatpi.domain.model.userPreferences.FriendRequestReceived
+import com.android.harmoniatpi.domain.model.userPreferences.FriendRequestSending
 import com.android.harmoniatpi.domain.model.userPreferences.Post
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -308,7 +311,267 @@ class RepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun sendFriendRequest(
+        currentUser: UserPreferences,
+        targetUser: UserPreferences
+    ): Result<UserPreferences> = withContext(Dispatchers.IO) {
+        try {
+            var updatedCurrentUser: UserPreferences? = null
+            var updatedTargetUser: UserPreferences? = null
 
+            // Usamos una transacción de Firestore para los 5 pasos
+            firestore.runTransaction { transaction ->
+                val requestId = System.currentTimeMillis().toInt()
+
+                // Obtener 'targetUser' de Firestore
+                val targetUserRef = firestore.collection("users").document(targetUser.userID)
+                val targetSnapshot = transaction.get(targetUserRef)
+                val targetFirebaseModel = targetSnapshot.toObject(UserFirebaseModel::class.java)
+                    ?: throw IllegalStateException("Usuario objetivo no encontrado en Firestore.")
+
+                // Convertir a modelo de dominio para modificar las listas
+                val targetDomainUser = targetFirebaseModel.toEntity().toDomain(jsonUtils)
+
+                //Añadir 'currentUser' a 'targetUser.friendRequestReceived'
+                val newRequestReceived = FriendRequestReceived(
+                    idRequest = requestId,
+                    fromUserID = currentUser.userID,
+                    status = false
+                )
+
+                // Añade la solicitud solo si no existe ya
+                val updatedTargetRequests = if (targetDomainUser.friendRequestReceived.any { it.fromUserID == currentUser.userID }) {
+                    targetDomainUser.friendRequestReceived
+                } else {
+                    targetDomainUser.friendRequestReceived + newRequestReceived
+                }
+
+                updatedTargetUser = targetDomainUser.copy(friendRequestReceived = updatedTargetRequests)
+
+                // Obtener 'currentUser' de Firestore
+                val currentUserRef = firestore.collection("users").document(currentUser.userID)
+                val currentSnapshot = transaction.get(currentUserRef)
+                val currentFirebaseModel = currentSnapshot.toObject(UserFirebaseModel::class.java)
+                    ?: throw IllegalStateException("Usuario actual no encontrado en Firestore.")
+
+                val currentDomainUser = currentFirebaseModel.toEntity().toDomain(jsonUtils)
+
+                //Añadir 'targetUser' a 'currentUser.friendRequestSent'
+                val newRequestSent = FriendRequestSending(
+                    idRequest = requestId,
+                    toUserID = targetUser.userID,
+                    status = false
+                )
+
+                // Añade la solicitud solo si no existe ya
+                val updatedCurrentRequests = if (currentDomainUser.friendRequestSent.any { it.toUserID == targetUser.userID }) {
+                    currentDomainUser.friendRequestSent
+                } else {
+                    currentDomainUser.friendRequestSent + newRequestSent
+                }
+
+                updatedCurrentUser = currentDomainUser.copy(friendRequestSent = updatedCurrentRequests)
+
+                //Subir 'targetUser' y 'currentUser' actualizados ---
+                transaction.set(targetUserRef, updatedTargetUser!!.toDataBase(jsonUtils).toFirebaseModel())
+                transaction.set(currentUserRef, updatedCurrentUser!!.toDataBase(jsonUtils).toFirebaseModel())
+
+                // Requerido por la lambda de la transacción
+                null
+            }.await() // Espera a que la transacción termine
+
+            //  Actualización Adicional: Sincronizar Room ---
+            if (updatedTargetUser != null) {
+                userPreferencesDao.insertUserPreferences(updatedTargetUser!!.toDataBase(jsonUtils))
+            }
+            if (updatedCurrentUser != null) {
+                userPreferencesDao.insertUserPreferences(updatedCurrentUser!!.toDataBase(jsonUtils))
+                Result.success(updatedCurrentUser!!) // Devuelve el usuario actual actualizado
+            } else {
+                Result.failure(Exception("La transacción falló y 'updatedCurrentUser' es nulo."))
+            }
+
+        } catch (e: Exception) {
+            Log.e("RepositoryImpl", "Error en sendFriendRequest", e)
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun acceptFriendRequest(
+        currentUser: UserPreferences,
+        request: FriendRequestReceived
+    ): Result<UserPreferences> = withContext(Dispatchers.IO) {
+        try {
+            var updatedCurrentUser: UserPreferences? = null
+
+            firestore.runTransaction { transaction ->
+                val targetUserId = request.fromUserID
+
+                //Obtener y actualizar Target User (el que envió la solicitud) ---
+                val targetUserRef = firestore.collection("users").document(targetUserId)
+                val targetSnapshot = transaction.get(targetUserRef)
+                val targetFirebaseModel = targetSnapshot.toObject(UserFirebaseModel::class.java)
+                    ?: throw IllegalStateException("Usuario objetivo no encontrado.")
+
+                val targetDomainUser = targetFirebaseModel.toEntity().toDomain(jsonUtils)
+
+                //Eliminar de 'friendRequestSent'
+                val updatedTargetSent = targetDomainUser.friendRequestSent.filterNot {
+                    it.toUserID == currentUser.userID
+                }
+                //Añadir a 'friendsList'
+                val newFriendForTarget = Friend(
+                    id = currentUser.userID,
+                    name = currentUser.userName,
+                    lastName = currentUser.userLastName,
+                    urlPhoto = currentUser.userPhotoPathRemote
+                )
+                val updatedTargetFriends = if (targetDomainUser.friendsList.any { it.id == currentUser.userID }) {
+                    targetDomainUser.friendsList
+                } else {
+                    targetDomainUser.friendsList + newFriendForTarget
+                }
+
+                val finalTargetUser = targetDomainUser.copy(
+                    friendRequestSent = updatedTargetSent,
+                    friendsList = updatedTargetFriends
+                )
+
+
+                //Eliminar de 'friendRequestReceived'
+                val updatedCurrentReceived = currentUser.friendRequestReceived.filterNot {
+                    it.fromUserID == targetUserId
+                }
+                //Añadir a 'friendsList'
+                val newFriendForCurrent = Friend(
+                    id = targetDomainUser.userID,
+                    name = targetDomainUser.userName,
+                    lastName = targetDomainUser.userLastName,
+                    urlPhoto = targetDomainUser.userPhotoPathRemote
+                )
+                val updatedCurrentFriends = if (currentUser.friendsList.any { it.id == targetUserId }) {
+                    currentUser.friendsList
+                } else {
+                    currentUser.friendsList + newFriendForCurrent
+                }
+
+                updatedCurrentUser = currentUser.copy(
+                    friendRequestReceived = updatedCurrentReceived,
+                    friendsList = updatedCurrentFriends
+                )
+
+                //Ejecutar la transacción ---
+                transaction.set(targetUserRef, finalTargetUser.toDataBase(jsonUtils).toFirebaseModel())
+                transaction.set(
+                    firestore.collection("users").document(currentUser.userID),
+                    updatedCurrentUser!!.toDataBase(jsonUtils).toFirebaseModel()
+                )
+
+            }.await()
+
+            //Sincronizar Room
+            if (updatedCurrentUser != null) {
+                userPreferencesDao.insertUserPreferences(updatedCurrentUser!!.toDataBase(jsonUtils))
+                Result.success(updatedCurrentUser!!)
+            } else {
+                Result.failure(Exception("Error en la transacción al aceptar solicitud."))
+            }
+
+        } catch (e: Exception) {
+            Log.e("RepositoryImpl", "Error en acceptFriendRequest", e)
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun declineFriendRequest(
+        currentUser: UserPreferences,
+        request: FriendRequestReceived
+    ): Result<UserPreferences> = withContext(Dispatchers.IO) {
+        try {
+            var updatedCurrentUser: UserPreferences? = null
+
+            firestore.runTransaction { transaction ->
+                val targetUserId = request.fromUserID
+
+                // Obtener y actualizar Target User (el que envió la solicitud) ---
+                val targetUserRef = firestore.collection("users").document(targetUserId)
+                val targetSnapshot = transaction.get(targetUserRef)
+                val targetFirebaseModel = targetSnapshot.toObject(UserFirebaseModel::class.java)
+                    ?: throw IllegalStateException("Usuario objetivo no encontrado.")
+
+                val targetDomainUser = targetFirebaseModel.toEntity().toDomain(jsonUtils)
+
+                // Eliminar de 'friendRequestSent'
+                val updatedTargetSent = targetDomainUser.friendRequestSent.filterNot {
+                    it.toUserID == currentUser.userID
+                }
+                val finalTargetUser = targetDomainUser.copy(friendRequestSent = updatedTargetSent)
+
+                //Obtener y actualizar Current User (el que rechaza) ---
+                //Eliminar de 'friendRequestReceived'
+                val updatedCurrentReceived = currentUser.friendRequestReceived.filterNot {
+                    it.fromUserID == targetUserId
+                }
+                updatedCurrentUser = currentUser.copy(friendRequestReceived = updatedCurrentReceived)
+
+                //Ejecutar la transacción ---
+                transaction.set(targetUserRef, finalTargetUser.toDataBase(jsonUtils).toFirebaseModel())
+                transaction.set(
+                    firestore.collection("users").document(currentUser.userID),
+                    updatedCurrentUser!!.toDataBase(jsonUtils).toFirebaseModel()
+                )
+
+            }.await()
+
+            //Sincronizar Room
+            if (updatedCurrentUser != null) {
+                userPreferencesDao.insertUserPreferences(updatedCurrentUser!!.toDataBase(jsonUtils))
+                Result.success(updatedCurrentUser!!)
+            } else {
+                Result.failure(Exception("Error en la transacción al rechazar solicitud."))
+            }
+
+        } catch (e: Exception) {
+            Log.e("RepositoryImpl", "Error en declineFriendRequest", e)
+            Result.failure(e)
+        }
+    }
+
+    override fun observeCurrentUserFromFirestore(): Flow<UserPreferences?> = callbackFlow {
+        val userId = firebaseAuth.currentUser?.uid
+        if (userId == null) {
+            trySend(null)
+            close()
+            return@callbackFlow
+        }
+
+        val userRef = firestore.collection("users").document(userId)
+
+        val listener = userRef.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                Log.w("RepositoryImpl", "Error escuchando 'currentUser'", error)
+                close(error)
+                return@addSnapshotListener
+            }
+
+            if (snapshot != null && snapshot.exists()) {
+                val firebaseModel = snapshot.toObject(UserFirebaseModel::class.java)
+                if (firebaseModel != null) {
+                    val entity = firebaseModel.toEntity()
+
+                    launch(Dispatchers.IO) {
+                        userPreferencesDao.insertUserPreferences(entity)
+                    }
+                    trySend(entity.toDomain(jsonUtils))
+                } else {
+                    trySend(null)
+                }
+            } else {
+                trySend(null)
+            }
+        }
+        awaitClose { listener.remove() }
+    }
 //--------------------Proyectos------------------------TODO(PROYECTOS)
 
 

@@ -1,5 +1,6 @@
 package com.android.harmoniatpi.ui.screens.menuPrincipal.content.model
 
+import com.android.harmoniatpi.domain.model.UserPreferences
 import com.android.harmoniatpi.domain.model.project.Project
 import com.android.harmoniatpi.domain.model.userPreferences.AppTheme
 import com.android.harmoniatpi.domain.model.userPreferences.Friend
@@ -37,7 +38,10 @@ data class MenuUiState(
     val genres: String = "",
     val location : String = "",
     val rating : Float =  0.0f,
-    val listProjects : List<Project> = emptyList()
+    val listProjects : List<Project> = emptyList(),
+    val cloningPostId: String? = null,
+    val currentUserData: UserPreferences? = null,
+    val isSendingFollowRequest: Boolean = false
 )
 
 @Singleton

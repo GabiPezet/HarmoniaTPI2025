@@ -73,6 +73,7 @@ import coil.compose.rememberAsyncImagePainter
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.MenuUiState
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.OptionsMenu
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.ContactProfileCard
+import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.FriendsScreen
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.MediaProjectList
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.ProfileNavButton
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.ProfileTab
@@ -87,6 +88,7 @@ fun UserDetailProfile(
     viewModel: DrawerContentViewModel,
     uiState: MenuUiState,
     innerPadding: PaddingValues,
+    onNavigateToFriends: () -> Unit
 ) {
     val context = LocalContext.current
     var photoUri by rememberSaveable { mutableStateOf<Uri?>(null) }
@@ -352,8 +354,7 @@ fun UserDetailProfile(
                         onUpdateContact = { updated -> viewModel.updateContactInfo(updated) }
                     )
 
-                    ProfileTab.FRIENDS -> WorkProfileCard(uiState = uiState, viewModel = viewModel)
-                    // TODO: Acá Facu tenés que sacar la WorkProfileCard, la agregué para que no explote
+                    ProfileTab.FRIENDS -> FriendsScreen(uiState = uiState)
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))

@@ -82,7 +82,9 @@ fun PostCard(
     isMyPost: Boolean,
     isAlreadyCloned: Boolean,
     onCloneClicked: () -> Unit,
-    viewUserProfile: (String) -> Unit
+    viewUserProfile: (String) -> Unit,
+    isCloningThisPost: Boolean,
+    isFriend: Boolean
 ) {
     val postAudio = post.urlCompleteAudio
     val context = LocalContext.current
@@ -307,9 +309,18 @@ fun PostCard(
 
 
                             // 2. Clonar
-                            if (post.idProject.isNotBlank() && post.clonedOption == true) {
-                                val isCloneEnabled = !isAlreadyCloned && !isMyPost
-                                val (cloneIcon, cloneTint) = if (isAlreadyCloned) {
+                            if (post.idProject.isNotBlank() && post.clonedOption == true && isFriend) {
+                                val isCloneEnabled = !isAlreadyCloned && !isMyPost && !isCloningThisPost
+                                if (isCloningThisPost) {
+                                    Box(modifier = Modifier.padding(vertical = 4.dp, horizontal = 6.dp)) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(18.dp),
+                                            strokeWidth = 2.dp
+                                        )
+                                    }
+                                } else {
+                                // Muestra el botón de clonar
+                                val (cloneIcon) = if (isAlreadyCloned) {
                                     Icons.Default.Check to MaterialTheme.colorScheme.primary
                                 } else {
                                     Icons.Default.ContentCopy to defaultTint
@@ -322,8 +333,9 @@ fun PostCard(
                                     onClick = onCloneClicked,
                                     enabled = isCloneEnabled
                                 )
-
                             }
+
+                        }
 
                             // 3. Like
                             val (likeIcon, likeTint) = if (post.likes > 0) {

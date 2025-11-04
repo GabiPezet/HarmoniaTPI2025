@@ -3,6 +3,7 @@ package com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -31,6 +33,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.android.harmoniatpi.domain.model.userPreferences.Post
+import com.android.harmoniatpi.ui.components.ShowConfirmationDialog
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.components.CommentsBottomSheetContent
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.components.CreatePostDialog
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.components.PostCard
@@ -59,6 +63,7 @@ fun CommunityScreen(
     // 1. Obtenemos el contexto actual
     val context = LocalContext.current
 
+    var postToClone by remember { mutableStateOf<Post?>(null) }
     // 2. Escuchamos el flow de eventos del ViewModel
     LaunchedEffect(key1 = true) {
         viewModel.toastEvents.collect { message ->
@@ -79,7 +84,10 @@ fun CommunityScreen(
         if (userProfile != null) {
             UserProfileDialog(
                 userPreferences = userProfile,
-                onDismiss = { viewModel.onDismissUserProfile() }
+                onDismiss = { viewModel.onDismissUserProfile() },
+                currentUserData = uiState.currentUserData,
+                isSendingFollowRequest = uiState.isSendingFollowRequest,
+                onFollowClick = { targetUser -> viewModel.sendFollowRequest(targetUser) }
             )
         }
     } else {
@@ -96,25 +104,24 @@ fun CommunityScreen(
                             it.originalProjectId == post.idProject && it.ownerId == uiState.userID
                         }
                         val isAlreadyCloned = projectData != null
-
+                        val isCloningThisPost = uiState.cloningPostId == post.id
+                        val friendsList = uiState.currentUserData?.friendsList?.map { it.id } ?: emptyList()
+                        val isFriend = post.userID in friendsList
                         PostCard(
                             post = post,
                             userName = uiState.userName,
                             userLastName = uiState.userLastName,
                             onLikeClicked = { viewModel.updateLikes(post) },
                             onCommentClicked = {
-                                selectedPostIdForComments = post.id // Guardar solo el ID
+                                selectedPostIdForComments = post.id
                             },
                             onDeleteClicked = { viewModel.deleteMyPost(post) },
                             isMyPost = post.userID == uiState.userID,
                             isAlreadyCloned = isAlreadyCloned,
-                            onCloneClicked = {
-                                viewModel.cloneProject(post)
-                                viewModel.updateCloned(post)
-                            },
-                            viewUserProfile = { id ->
-                                viewModel.onClickUserProfile(id)
-                            }
+                            isCloningThisPost = isCloningThisPost,
+                            onCloneClicked = { postToClone = post },
+                            viewUserProfile = { id -> viewModel.onClickUserProfile(id) },
+                            isFriend = isFriend
                         )
                     }
                 }
@@ -141,9 +148,26 @@ fun CommunityScreen(
                     }
                 )
             }
-        }
 
+            if (postToClone != null) {
+                ShowConfirmationDialog(
+                    show = true,
+                    onDismiss = { postToClone = null },
+                    onConfirm = {
+                        postToClone?.let {
+                            viewModel.cloneProject(it)
+                        }
+                        postToClone = null
+                    },
+                    title = "Clonar Proyecto",
+                    message = "¿Estás seguro de que quieres clonar este proyecto a tu pestaña de 'Colaboraciones'?",
+                    confirmText = "Clonar"
+                )
+            }
+        }
     }
+
+
 
 
     // ModalBottomSheet
@@ -161,6 +185,7 @@ fun CommunityScreen(
         }
     }
 }
+
 
 
 

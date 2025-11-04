@@ -26,13 +26,15 @@ import com.android.harmoniatpi.ui.screens.registerScreen.RegisterScreen
 import com.android.harmoniatpi.ui.screens.songVersionsScreen.SongVersionsScreen
 import kotlinx.coroutines.launch
 import com.android.harmoniatpi.domain.model.project.Project
+import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.FriendsScreenRoute
+import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.FriendsScreen
 
 @Composable
 fun NavigationWrapper(
     innerPadding: PaddingValues,
     drawerViewModel: DrawerContentViewModel,
     startHarmoniaServices: () -> Unit,
-    stopHarmoniaServices: () -> Unit
+    stopHarmoniaServices: () -> Unit,
 ) {
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
@@ -73,7 +75,8 @@ fun NavigationWrapper(
                                     inclusive = true
                                 }
                             }
-                        }
+                        },
+                        onNavigateToFriends = { navController.navigate(FriendsScreenRoute) }
                     )
 
                 }, screenContent = {
@@ -114,6 +117,10 @@ fun NavigationWrapper(
         }
 
         composable<SongVersionsScreenRoute> {
+            SongVersionsScreen(onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable<FriendsScreenRoute> {
             SongVersionsScreen(onNavigateBack = { navController.popBackStack() })
         }
     }

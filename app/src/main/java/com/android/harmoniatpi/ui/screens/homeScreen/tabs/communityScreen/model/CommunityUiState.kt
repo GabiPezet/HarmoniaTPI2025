@@ -14,5 +14,8 @@ data class CommunityUiState(
     val posts: List<Post> = emptyList(),
     val localProjects: List<Project> = emptyList(),
     val userSelected : UserPreferences? = null,
-    val showUserProfile : Boolean = false
+    val showUserProfile : Boolean = false,
+    val cloningPostId: String? = null,
+    val currentUserData: UserPreferences? = null,
+    val isSendingFollowRequest: Boolean = false
 )
