@@ -363,7 +363,7 @@ fun PrincipalSongPlayer(
                         .border(BorderStroke(2.dp, MaterialTheme.colorScheme.outline), CircleShape),
                     contentScale = ContentScale.Crop
                 )
-                TextButton(
+                /*TextButton(
                     onClick = { if (song.projectId != null) onOpenProjectClick() },
                     colors = ButtonDefaults.textButtonColors(
                         contentColor = MaterialTheme.colorScheme.onTertiaryContainer
@@ -375,7 +375,7 @@ fun PrincipalSongPlayer(
                         fontWeight = FontWeight.SemiBold,
                         textDecoration = TextDecoration.Underline
                     )
-                }
+                }*/
             }
         }
         Row(
