@@ -61,8 +61,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
@@ -70,6 +72,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import coil.compose.rememberAsyncImagePainter
+import com.android.harmoniatpi.R
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.MenuUiState
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.OptionsMenu
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.ContactProfileCard
@@ -315,23 +318,23 @@ fun UserDetailProfile(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 listOf(
-                    ProfileTabItem(Icons.Default.FamilyRestroom, "Amigos", ProfileTab.FRIENDS),
-                    ProfileTabItem(Icons.Default.Movie, "Proyectos", ProfileTab.MEDIA),
-                    ProfileTabItem(Icons.Default.School, "Mis Datos", ProfileTab.WORK),
+                    ProfileTabItem(painterResource(R.drawable.ic_community2_profile), "Amigos", ProfileTab.FRIENDS),
+                    ProfileTabItem(painterResource(R.drawable.ic_projects_profile), "Proyectos", ProfileTab.MEDIA),
+                    ProfileTabItem(painterResource(R.drawable.ic_work_profile), "Mis Datos", ProfileTab.WORK),
                     ProfileTabItem(
-                        Icons.Default.CatchingPokemon,
+                        painterResource(R.drawable.ic_contact2_profile),
                         "Mi Contacto",
                         ProfileTab.CONTACT
                     ),
 
-                    ).forEach { (icon, label, tab) ->
+                    ).forEach { (painter, label, tab) ->
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .wrapContentWidth(Alignment.CenterHorizontally)
                     ) {
                         ProfileNavButton(
-                            icon = icon,
+                            painter = painter,
                             label = label,
                             selected = selectedTab == tab,
                             onClick = { selectedTab = tab }
