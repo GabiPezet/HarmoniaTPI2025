@@ -141,161 +141,259 @@ fun TrackItem(
     Row(
         modifier = modifier
             .clip(RoundedCornerShape(0.dp))
-            //.background(color = MaterialTheme.colorScheme.background)
-            .background(Color(0xFF858585)) //Pasar ESTE Background al Theme Colors
+            .background(Color(0xFF858585))
             .fillMaxWidth()
             .height(130.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Surface(
-            shape = RoundedCornerShape(0.dp),
-            color = if (track.isMuted) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surfaceContainer,
-            border = when {
-                isBeingRecorded -> BorderStroke(2.dp, animatedBorderColor)
-                track.selected -> BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
-                else -> BorderStroke(
-                    1.dp,
-                    MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
-                )
-            },
-            modifier = Modifier
-                .fillMaxHeight()
-                .width(100.dp)
-                .clickable(onClick = onClick)
-        ) {
-            Column(
+        if (isBeingRecorded) {
+            Surface(
+                shape = RoundedCornerShape(0.dp),
+                color = if (track.isMuted) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surfaceContainer,
+                border = when {
+                    isBeingRecorded -> BorderStroke(2.dp, animatedBorderColor)
+                    track.selected -> BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+                    else -> BorderStroke(
+                        1.dp,
+                        MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
+                    )
+                },
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(6.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 4.dp),
-                    text = track.title,
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.titleSmall,
-                    maxLines = 2
-                )
-
-                Spacer(Modifier.weight(1f))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = onMute) {
-                        val muteOptionText = if (track.isMuted) "Activar" else "Silenciar"
-                        val muteOptionIcon =
-                            if (track.isMuted) R.drawable.mute_icon else R.drawable.unmute_icon
-                        Icon(
-                            painter = painterResource(muteOptionIcon),
-                            contentDescription = muteOptionText,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    IconButton(onClick = {
-                        onClick()
-                        showOptions = true
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.MoreVert,
-                            contentDescription = "Mostrar opciones de la pista",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                TrackOptionsMenu(
-                    visible = showOptions,
-                    onDismiss = { showOptions = false },
-                    onDelete = onDelete,
-                    onMute = onMute,
-                    onUndo = onUndo,
-                    onShowEffects = onShowEffects,
-                    isUndoAvailable = track.isUndoAvailable,
-                    isMuted = track.isMuted,
-                    onCopy = onCopy,
-                    onCut = onCut,
-                    onUndoEffect = onUndoEffect,
-                    isUndoEffectAvailable = isUndoEffectAvailable,
-                    isSelectionActive = isSelectionActive
-                )
-            }
-        }
-        Box(
-            modifier = Modifier
-                //.fillMaxSize()
-                .fillMaxHeight()
-                .weight(1f)
-                .horizontalScroll(scrollState)
-        ) {
-
-            Box(
-                modifier = Modifier
-                    .width(timelineWidth.dp)
                     .fillMaxHeight()
+                    .width(100.dp)
+                    .clickable(onClick = onClick)
             ) {
-                DbWaveform(
-                    modifier = Modifier.fillMaxSize(),
-                    waveform = track.waveForm ?: emptyList(),
-                    isMuted = track.isMuted,
-                    maxDurationMs = track.durationMs,
-                    startOffsetMs = track.startOffsetMs,
-                    onOffsetChange = { newOffset -> onOffsetChange(track.id, newOffset) },
-                    selectionStartMs = track.selectionStartMs,
-                    selectionEndMs = track.selectionEndMs,
-                    onSelectionChanged = { startMs, endMs -> onSelectionChanged(startMs, endMs) },
-                    msPerDpScale = msPerDpScale,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-
-
-                Canvas(
+                Column(
                     modifier = Modifier
                         .fillMaxSize()
+                        .padding(6.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp),
+                        text = track.title,
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.titleSmall,
+                        maxLines = 2
+                    )
 
-                        .pointerInput(Unit, msPerDpScale, onSeekClick, density) {
-                            detectTapGestures(onTap = { offset ->
-                                val tappedMs = (offset.x / density.density * msPerDpScale).toLong()
-                                onSeekClick(tappedMs)
-                            })
+                    Spacer(Modifier.weight(1f))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = onMute) {
+                            val muteOptionText = if (track.isMuted) "Activar" else "Silenciar"
+                            val muteOptionIcon =
+                                if (track.isMuted) R.drawable.mute_icon else R.drawable.unmute_icon
+                            Icon(
+                                painter = painterResource(muteOptionIcon),
+                                contentDescription = muteOptionText,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
 
-                        .then(
-                            when {
-                                isBeingRecorded -> BorderStroke(2.dp, animatedBorderColor)
-                                track.selected -> BorderStroke(
-                                    2.dp,
-                                    MaterialTheme.colorScheme.primary
-                                )
-
-                                else -> BorderStroke(
-                                    1.dp,
-                                    MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
-                                )
-                            }
-                                .let { Modifier.border(it, RoundedCornerShape(8.dp)) }
-                        )
-                ) {
-                    if (currentPlaybackMs > 0) {
-                        val xPos = (currentPlaybackMs / msPerDpScale) * density.density
-                        if (xPos in 0f..size.width) {
-                            drawLine(
-                                color = Color.Red,
-                                start = Offset(xPos, 0f),
-                                end = Offset(xPos, size.height),
-                                strokeWidth = 2.dp.toPx(),
-                                cap = StrokeCap.Round
+                        IconButton(onClick = {
+                            onClick()
+                            showOptions = true
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "Mostrar opciones de la pista",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
+
+                    TrackOptionsMenu(
+                        visible = showOptions,
+                        onDismiss = { showOptions = false },
+                        onDelete = onDelete,
+                        onMute = onMute,
+                        onUndo = onUndo,
+                        onShowEffects = onShowEffects,
+                        isUndoAvailable = track.isUndoAvailable,
+                        isMuted = track.isMuted,
+                        onCopy = onCopy,
+                        onCut = onCut,
+                        onUndoEffect = onUndoEffect,
+                        isUndoEffectAvailable = isUndoEffectAvailable,
+                        isSelectionActive = isSelectionActive
+                    )
                 }
             }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .border(width = 2.dp, color = animatedBorderColor)
+                    .weight(1f)
+            ) {
+                FakeRecordingWaveformBackground(
+                    modifier = Modifier.matchParentSize()
+                )
+            }
+        } else {
+            Surface(
+                shape = RoundedCornerShape(0.dp),
+                color = if (track.isMuted) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surfaceContainer,
+                border = when {
+                    isBeingRecorded -> BorderStroke(2.dp, animatedBorderColor)
+                    track.selected -> BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+                    else -> BorderStroke(
+                        1.dp,
+                        MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
+                    )
+                },
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(100.dp)
+                    .clickable(onClick = onClick)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(6.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp),
+                        text = track.title,
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.titleSmall,
+                        maxLines = 2
+                    )
+
+                    Spacer(Modifier.weight(1f))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = onMute) {
+                            val muteOptionText = if (track.isMuted) "Activar" else "Silenciar"
+                            val muteOptionIcon =
+                                if (track.isMuted) R.drawable.mute_icon else R.drawable.unmute_icon
+                            Icon(
+                                painter = painterResource(muteOptionIcon),
+                                contentDescription = muteOptionText,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        IconButton(onClick = {
+                            onClick()
+                            showOptions = true
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "Mostrar opciones de la pista",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    TrackOptionsMenu(
+                        visible = showOptions,
+                        onDismiss = { showOptions = false },
+                        onDelete = onDelete,
+                        onMute = onMute,
+                        onUndo = onUndo,
+                        onShowEffects = onShowEffects,
+                        isUndoAvailable = track.isUndoAvailable,
+                        isMuted = track.isMuted,
+                        onCopy = onCopy,
+                        onCut = onCut,
+                        onUndoEffect = onUndoEffect,
+                        isUndoEffectAvailable = isUndoEffectAvailable,
+                        isSelectionActive = isSelectionActive
+                    )
+                }
+            }
+            Box(
+                modifier = Modifier
+                    //.fillMaxSize()
+                    .fillMaxHeight()
+                    .weight(1f)
+                    .horizontalScroll(scrollState)
+            ) {
+
+                Box(
+                    modifier = Modifier
+                        .width(timelineWidth.dp)
+                        .fillMaxHeight()
+                ) {
+                    DbWaveform(
+                        modifier = Modifier.fillMaxSize(),
+                        waveform = track.waveForm ?: emptyList(),
+                        isMuted = track.isMuted,
+                        maxDurationMs = track.durationMs,
+                        startOffsetMs = track.startOffsetMs,
+                        onOffsetChange = { newOffset -> onOffsetChange(track.id, newOffset) },
+                        selectionStartMs = track.selectionStartMs,
+                        selectionEndMs = track.selectionEndMs,
+                        onSelectionChanged = { startMs, endMs ->
+                            onSelectionChanged(
+                                startMs,
+                                endMs
+                            )
+                        },
+                        msPerDpScale = msPerDpScale,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+
+
+                    Canvas(
+                        modifier = Modifier
+                            .fillMaxSize()
+
+                            .pointerInput(Unit, msPerDpScale, onSeekClick, density) {
+                                detectTapGestures(onTap = { offset ->
+                                    val tappedMs =
+                                        (offset.x / density.density * msPerDpScale).toLong()
+                                    onSeekClick(tappedMs)
+                                })
+                            }
+
+                            .then(
+                                when {
+                                    isBeingRecorded -> BorderStroke(2.dp, animatedBorderColor)
+                                    track.selected -> BorderStroke(
+                                        2.dp,
+                                        MaterialTheme.colorScheme.primary
+                                    )
+
+                                    else -> BorderStroke(
+                                        1.dp,
+                                        MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
+                                    )
+                                }
+                                    .let { Modifier.border(it, RoundedCornerShape(8.dp)) }
+                            )
+                    ) {
+                        if (currentPlaybackMs > 0) {
+                            val xPos = (currentPlaybackMs / msPerDpScale) * density.density
+                            if (xPos in 0f..size.width) {
+                                drawLine(
+                                    color = Color.Red,
+                                    start = Offset(xPos, 0f),
+                                    end = Offset(xPos, size.height),
+                                    strokeWidth = 2.dp.toPx(),
+                                    cap = StrokeCap.Round
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
         }
     }
 }
@@ -593,9 +691,10 @@ fun DbWaveform(
                         handleStartPx = newPos
                     },
                     onDragStopped = {
-                        val startMs = (handleStartPx / density.density * msPerDpScale).coerceAtLeast(
-                            0f
-                        ).toLong()
+                        val startMs =
+                            (handleStartPx / density.density * msPerDpScale).coerceAtLeast(
+                                0f
+                            ).toLong()
                         val endMs = (handleEndPx / density.density * msPerDpScale).coerceAtMost(
                             maxDurationMs.toFloat()
                         ).toLong()
@@ -632,9 +731,10 @@ fun DbWaveform(
                     },
                     onDragStopped = {
 
-                        val startMs = (handleStartPx / density.density * msPerDpScale).coerceAtLeast(
-                            0f
-                        ).toLong()
+                        val startMs =
+                            (handleStartPx / density.density * msPerDpScale).coerceAtLeast(
+                                0f
+                            ).toLong()
                         val endMs = (handleEndPx / density.density * msPerDpScale).coerceAtMost(
                             maxDurationMs.toFloat()
                         ).toLong()
