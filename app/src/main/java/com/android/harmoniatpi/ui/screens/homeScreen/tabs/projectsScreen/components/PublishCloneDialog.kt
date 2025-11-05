@@ -1,138 +1,104 @@
 package com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components
 
-import android.widget.Toast
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Create
-import androidx.compose.material.icons.filled.Description
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.android.harmoniatpi.domain.model.project.Project
-import com.android.harmoniatpi.ui.components.HoloTextField
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.viewmodel.ProjectViewModel
 import kotlinx.coroutines.launch
 
+
 @Composable
 fun PublishCloneDialog(
-    project: Project, // El clon que queremos publicar
+    project: Project,
     viewModel: ProjectViewModel,
     onDismiss: () -> Unit
 ) {
-    val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
+    val sharedUiState by viewModel.sharedMenuUiState.uiState.collectAsState()
     val scope = rememberCoroutineScope()
 
-    // Estados para los campos del *nuevo Post*
-    var postTitle by remember { mutableStateOf(project.title) } // Título por defecto
-    var postMessage by remember { mutableStateOf("") } // Mensaje personal
+    var postTitle by remember { mutableStateOf(project.title) }
+    var personalMessage by remember { mutableStateOf("") }
+    var postHashtags by remember { mutableStateOf(project.hashtags.joinToString(", ")) }
+    var postImageUrl by remember(project) { mutableStateOf(project.imageUrl) }
+    var attributionMessage by remember { mutableStateOf("Cargando atribución...") }
     var isPublishing by remember { mutableStateOf(false) }
 
-    // Para @mencionar al usuario original
-    var originalUserName by remember { mutableStateOf("...") }
-
-    // Buscamos los datos del proyecto original para la mención
+    // --- Lógica Específica del Clon: Obtener atribución ---
     LaunchedEffect(key1 = project) {
         scope.launch {
-            try {
-                // 1. Buscamos el proyecto original
-                val originalProject = viewModel.getProjectByIdUseCase(project.originalProjectId!!)
-                // 2. Buscamos al dueño original
-                val originalUser = viewModel.buscarporID(originalProject.ownerId)
-                originalUserName = originalUser?.userName ?: "usuario original"
-
-                // 3. Pre-llenamos el mensaje
-                postMessage = "¡Miren mi versión de '${originalProject.title}' de @${originalUserName}!"
-
+            attributionMessage = try {
+                val originalProject = viewModel.getProjectByIdFromFirestoreUseCase(project.originalProjectId!!)
+                val originalUser = viewModel.getUserOnFirebaseByIDUseCase(originalProject?.ownerId ?: "original")
+                "¡Miren mi versión de '${originalProject?.title}' de @${originalUser?.userName ?: "usuario"}!"
             } catch (e: Exception) {
-                postMessage = "¡Miren mi versión de este proyecto!"
+                "¡Miren mi versión de este proyecto!"
             }
         }
     }
 
-    AlertDialog(
+    BasePublishDialog(
+        dialogTitle = "Publicar Versión",
+        isPublishing = isPublishing,
+        isPublishButtonEnabled = postTitle.isNotBlank(),
         onDismissRequest = onDismiss,
-        confirmButton = {},
-        text = {
-            Column(
-                modifier = Modifier
-                    .verticalScroll(rememberScrollState())
-                    .padding(8.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text(
-                    "Publicar Versión",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
-                // Título del Post
-                HoloTextField(
-                    value = postTitle,
-                    onValueChange = { postTitle = it },
-                    label = "Título del Post",
-                    leadingIcon = Icons.Default.Create,
-                    placeholder = "Escribe un titulo para el post",
-                    isError = postTitle.isBlank(),
-                )
-
-                // Mensaje personal (Descripción del Post)
-                HoloTextField(
-                    value = postMessage,
-                    onValueChange = { postMessage = it },
-                    label = "Mensaje personal",
-                    placeholder = "Menciona al creador original...",
-                    leadingIcon = Icons.Default.Description,
-                    isError = postTitle.isBlank(),
-                )
-
-                Row (
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    OutlinedButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Text(text = "Cancelar")
-                    }
-
-                    Button(
-                        onClick = {
-                            keyboardController?.hide()
-                            isPublishing = true
-
-                            // Llamamos a la nueva función en el ViewModel
-                            viewModel.publishClonedProject(
-                                projectToPublish = project,
-                                postTitle = postTitle,
-                                postDescription = postMessage,
-                                onComplete = {
-                                    isPublishing = false
-                                    onDismiss()
-                                }
-                            )
-                        },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(16.dp),
-                        enabled = postTitle.isNotBlank() && !isPublishing
-                    ) {
-                        if (isPublishing) {
-                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                        } else {
-                            Text("Publicar")
-                        }
-                    }
+        onPublishClick = {
+            keyboardController?.hide()
+            isPublishing = true
+            val finalDescription = "$attributionMessage\n${personalMessage.trim()}"
+            viewModel.publishClonedProject(
+                projectToPublish = project,
+                postTitle = postTitle,
+                postDescription = finalDescription,
+                postHashtags = postHashtags,
+                postImageUrl = postImageUrl,
+                onComplete = {
+                    isPublishing = false
+                    onDismiss()
                 }
-            }
-        },
-        shape = RoundedCornerShape(24.dp),
-    )
+            )
+        }
+    ) {
+        // --- Contenido Específico para el Diálogo de Clon ---
+        PostEditor(
+            ownerName = sharedUiState.userName,
+            postImageUrl = postImageUrl,
+            postHashtags = postHashtags,
+            onImageUrlChange = { postImageUrl = it },
+            onHashtagsChange = { postHashtags = it }
+        ) {
+            // Contenido específico que va dentro del editor: Título, Atribución y Mensaje
+            PostEditorTextField(
+                value = postTitle,
+                onValueChange = { postTitle = it },
+                placeholder = "Título del Post",
+                textStyle = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                singleLine = true
+            )
+            Text(
+                text = attributionMessage,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+            )
+            PostEditorTextField(
+                value = personalMessage,
+                onValueChange = { personalMessage = it },
+                placeholder = "Añade un comentario (ej. '¡Le agregué un bajo!')",
+                textStyle = MaterialTheme.typography.bodyMedium
+            )
+        }
+    }
 }

@@ -156,7 +156,7 @@ class SongVersionsViewModel @Inject constructor(
             audioUrl = project.urlCompleteAudio ?: "", // URL del audio publicado (mix)
             durationMillis = project.duration,
             projectId = project.id, // ID para "Abrir proyecto"
-            imageUrl = null, // Project no tiene esta info, la UI mostrará un placeholder
+            imageUrl = project.imageUrl, // Project no tiene esta info, la UI mostrará un placeholder
             versionType = versionType // Mapeo simple del tipo
         )
     }
