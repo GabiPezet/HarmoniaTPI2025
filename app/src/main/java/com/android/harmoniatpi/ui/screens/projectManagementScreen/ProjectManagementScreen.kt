@@ -96,6 +96,7 @@ fun ProjectManagementScreen(
 ) {
     val sheetState = rememberModalBottomSheetState()
     var showSheet by remember { mutableStateOf(false) }
+    var mostrarFuturo by remember { mutableStateOf(false) }
     val state by viewModel.state.collectAsState()
     val sharedScrollState = rememberScrollState()
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -107,6 +108,7 @@ fun ProjectManagementScreen(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
+            mostrarFuturo = false
             showSheet = false
             viewModel.importTrackFromFile(it)
         }
@@ -285,7 +287,8 @@ fun ProjectManagementScreen(
                             isUndoEffectAvailable = track.isUndoEffectAvailable,
                             isSelectionActive = track.selectionStartMs != null &&
                                     (track.selectionEndMs == null || track.selectionEndMs > track.selectionStartMs),
-                            msPerDpScale = state.msPerDpScale
+                            msPerDpScale = state.msPerDpScale,
+                            mostrarFuturo = {mostrarFuturo = true}
                         )
                     }
                 }
@@ -341,6 +344,30 @@ fun ProjectManagementScreen(
                 isPlaying = state.isPlaying,
                 modifier = Modifier,
             )
+
+            if (mostrarFuturo)
+            ModalBottomSheet(
+                onDismissRequest = { mostrarFuturo = false },
+                sheetState = sheetState,
+                containerColor = Color(0xFF121212), // Fondo oscuro del MBS
+                tonalElevation = 8.dp
+            ) {
+                Column( modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally){
+
+
+                    Text(
+                        text = "Funcion en desarrollo",
+                        style = MaterialTheme.typography.titleLarge.copy(color = Color.White),
+                        modifier = Modifier.padding(bottom = 8.dp),
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+            }
 
             if (showSheet) {
                 ModalBottomSheet(

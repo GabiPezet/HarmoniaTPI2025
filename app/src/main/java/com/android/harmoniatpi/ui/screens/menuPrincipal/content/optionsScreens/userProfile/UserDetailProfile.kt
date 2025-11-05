@@ -318,7 +318,7 @@ fun UserDetailProfile(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 listOf(
-                    ProfileTabItem(painterResource(R.drawable.ic_community2_profile), "Amigos", ProfileTab.FRIENDS),
+                    ProfileTabItem(painterResource(R.drawable.ic_community2_profile), "Seguidores", ProfileTab.FRIENDS),
                     ProfileTabItem(painterResource(R.drawable.ic_projects_profile), "Proyectos", ProfileTab.MEDIA),
                     ProfileTabItem(painterResource(R.drawable.ic_work_profile), "Mis Datos", ProfileTab.WORK),
                     ProfileTabItem(

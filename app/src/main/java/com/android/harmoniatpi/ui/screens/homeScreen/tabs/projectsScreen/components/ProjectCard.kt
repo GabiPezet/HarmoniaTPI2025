@@ -194,8 +194,18 @@ fun ProjectCard(
 
                 // 3. Duración (Real)
 
+                val calculatedDuration = remember(project.urlAudioTracks) {
+                    // La duración total es el punto final (offset + duración)
+                    // de la pista que termine más tarde.
+                    project.urlAudioTracks.maxOfOrNull { track ->
+                        val trackDuration = (track.trimEndMs.takeIf { it != -1L } ?: track.durationMs) - track.trimStartMs
+                        track.startOffsetMs + trackDuration
+                    } ?: project.duration // Si no hay pistas, usa la (probablemente 0)
+                }
+
+                // 2. Usamos la duración calculada
                 Text(
-                    text = formatDuration(project.duration),
+                    text = formatDuration(calculatedDuration),
                     style = MaterialTheme.typography.bodyMedium,
                 )
 
