@@ -53,6 +53,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -263,11 +264,13 @@ fun SongHeader(song: Song, modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier.fillMaxWidth()
     ) {
+        val placeholderColor = MaterialTheme.colorScheme.surfaceVariant
+
         AsyncImage(
             model = song.imageUrl,
             contentDescription = "Carátula de la canción ${song.title}",
-            placeholder = painterResource(id = R.drawable.holojamdefaultsonglightmode),
-            error = painterResource(id = R.drawable.holojamdefaultsonglightmode),
+            placeholder = ColorPainter(placeholderColor),
+            error = painterResource(id = R.drawable.portada_proyecto_error),
             modifier = Modifier
                 .size(80.dp)
                 .clip(shape = RoundedCornerShape(12.dp)),
