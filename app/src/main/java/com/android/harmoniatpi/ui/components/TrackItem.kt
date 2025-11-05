@@ -100,7 +100,8 @@ fun TrackItem(
     isSelectionActive: Boolean,
     modifier: Modifier = Modifier,
     timelineWidth: Int,
-    msPerDpScale: Float
+    msPerDpScale: Float,
+    mostrarFuturo: () -> Unit,
 ) {
     var showOptions by remember { mutableStateOf(false) }
 
@@ -201,7 +202,9 @@ fun TrackItem(
                     onCut = onCut,
                     onUndoEffect = onUndoEffect,
                     isUndoEffectAvailable = isUndoEffectAvailable,
-                    isSelectionActive = isSelectionActive
+                    isSelectionActive = isSelectionActive,
+                    mostrarFuturo = mostrarFuturo
+
                 )
             }
         }
@@ -273,6 +276,7 @@ fun TrackItem(
 
 @Composable
 private fun TrackOptionsMenu(
+    mostrarFuturo: () -> Unit,
     visible: Boolean,
     onDismiss: () -> Unit,
     onDelete: () -> Unit,
@@ -291,44 +295,6 @@ private fun TrackOptionsMenu(
     DropdownMenu(
         expanded = visible, onDismissRequest = onDismiss, modifier = modifier
     ) {
-
-        DropdownMenuItem(
-            text = {
-                Text(text = "Volumen")
-            },
-            leadingIcon = {
-                Icon(
-                    painter = painterResource(R.drawable.mix_icon),
-                    contentDescription = "Volumen"
-                )
-            },
-            onClick = {}
-        )
-        DropdownMenuItem(
-            text = {
-                Text(text = "Paneo")
-            },
-            leadingIcon = {
-                Icon(
-                    painter = painterResource(R.drawable.pan_icon),
-                    contentDescription = "Paneo"
-                )
-            },
-            onClick = {}
-        )
-        DropdownMenuItem(
-            text = {
-                Text(text = "Editar")
-            },
-            leadingIcon = {
-                Icon(
-                    painter = painterResource(R.drawable.edit_icon),
-                    contentDescription = "Editar"
-                )
-            },
-            onClick = {}
-        )
-
 
         DropdownMenuItem(
             text = { Text(text = "Copiar") },
@@ -392,6 +358,45 @@ private fun TrackOptionsMenu(
                 onDismiss()
                 onDelete()
             }
+        )
+
+
+        DropdownMenuItem(
+            text = {
+                Text(text = "Volumen")
+            },
+            leadingIcon = {
+                Icon(
+                    painter = painterResource(R.drawable.mix_icon),
+                    contentDescription = "Volumen"
+                )
+            },
+            onClick = {mostrarFuturo()}
+        )
+        DropdownMenuItem(
+            text = {
+                Text(text = "Paneo")
+            },
+            leadingIcon = {
+                Icon(
+                    painter = painterResource(R.drawable.pan_icon),
+                    contentDescription = "Paneo"
+                )
+            },
+            onClick = {mostrarFuturo()}
+        )
+
+        DropdownMenuItem(
+            text = {
+                Text(text = "Editar")
+            },
+            leadingIcon = {
+                Icon(
+                    painter = painterResource(R.drawable.edit_icon),
+                    contentDescription = "Editar"
+                )
+            },
+            onClick = {mostrarFuturo()}
         )
 
         if (isUndoAvailable) {
@@ -692,6 +697,7 @@ private fun TrackPrev() {
             onUndoEffect = {},
             isSelectionActive = false,
             msPerDpScale = 0F,
+            mostrarFuturo = {}
         )
     }
 }
