@@ -11,6 +11,7 @@ data class Project(
     val lastName: String,
     val title: String,
     val description: String,
+    val imageUrl: String? = null,
     val duration: Long,
     val createdAt: String,
     val status: Boolean,
@@ -40,6 +41,7 @@ data class Project(
         urlCompleteAudio = urlCompleteAudio,
         urlAudioTracks = jsonUtils.encodeToJson(urlAudioTracks),
         hashtags = jsonUtils.encodeToJson(hashtags),
+        imageUrl = imageUrl,
         forkedByUserIds = jsonUtils.encodeToJson(forkedByUserIds),
         originalProjectId = originalProjectId,
         isPublished = isPublished
