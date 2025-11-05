@@ -346,8 +346,7 @@ fun TrackItem(
                             )
                         },
                         msPerDpScale = msPerDpScale,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        onSeekClick = { onSeekClick(it) }
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
 
 
@@ -781,7 +780,6 @@ fun DbWaveform(
 
     }
 }
-
 @Preview
 @Composable
 private fun TrackPrev() {
