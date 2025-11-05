@@ -31,6 +31,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Undo
@@ -116,33 +117,10 @@ fun TrackItem(
 
     val density = LocalDensity.current
 
-    /*
-    LaunchedEffect(currentPlaybackMs) {
-        if (currentPlaybackMs > 0 && scrollState.maxValue > 0) {
-
-            val playbackDp = (currentPlaybackMs / msPerDpScale).dp
-            val playbackPx = with(density) { playbackDp.toPx() }
-
-            //desplazamiento de track en reproduccion
-            val screenWidthPx = with(density) { 300.dp.toPx() }
-            val targetScrollPosition =
-                (playbackPx - screenWidthPx / 3).coerceAtLeast(0f).roundToInt()
-
-            if (targetScrollPosition != scrollState.value) {
-                // Anima scroll
-                scrollState.animateScrollTo(targetScrollPosition)
-            }
-        }
-    }
-
-     */
-
-
     Row(
         modifier = modifier
             .clip(RoundedCornerShape(0.dp))
-            //.background(color = MaterialTheme.colorScheme.background)
-            .background(Color(0xFF858585)) //Pasar ESTE Background al Theme Colors
+            .background(Color(0xFF858585))
             .fillMaxWidth()
             .height(130.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -229,7 +207,6 @@ fun TrackItem(
         }
         Box(
             modifier = Modifier
-                //.fillMaxSize()
                 .fillMaxHeight()
                 .weight(1f)
                 .horizontalScroll(scrollState)
@@ -251,20 +228,14 @@ fun TrackItem(
                     selectionEndMs = track.selectionEndMs,
                     onSelectionChanged = { startMs, endMs -> onSelectionChanged(startMs, endMs) },
                     msPerDpScale = msPerDpScale,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    onSeekClick = onSeekClick
                 )
 
 
                 Canvas(
                     modifier = Modifier
                         .fillMaxSize()
-
-                        .pointerInput(Unit, msPerDpScale, onSeekClick, density) {
-                            detectTapGestures(onTap = { offset ->
-                                val tappedMs = (offset.x / density.density * msPerDpScale).toLong()
-                                onSeekClick(tappedMs)
-                            })
-                        }
 
                         .then(
                             when {
@@ -386,7 +357,7 @@ private fun TrackOptionsMenu(
                 onDismiss()
                 onCut()
             },
-            enabled = isSelectionActive // Solo se activa si hay algo seleccionado
+            enabled = isSelectionActive
         )
 
 
@@ -468,7 +439,8 @@ fun DbWaveform(
     selectionEndMs: Long?,
     onSelectionChanged: (startMs: Long?, endMs: Long?) -> Unit,
     msPerDpScale: Float,
-    color: Color = MaterialTheme.colorScheme.onPrimaryContainer
+    color: Color = MaterialTheme.colorScheme.onPrimaryContainer,
+    onSeekClick: (Long) -> Unit
 ) {
     val waveformColor = if (isMuted) color else MaterialTheme.colorScheme.primary
     val backgroundColor =
@@ -496,6 +468,10 @@ fun DbWaveform(
 
     val minClipWidthPx = with(density) { 10.dp.toPx() }
 
+
+    val handleWidth = 20.dp
+    val handleWidthPx = with(density) { handleWidth.toPx() }
+
     Box(
         modifier = modifier
             .padding(start = visualOffsetDp.coerceAtLeast(0.dp))
@@ -507,75 +483,98 @@ fun DbWaveform(
             shape = RoundedCornerShape(8.dp),
             color = backgroundColor
         ) {
-            Canvas(
-                modifier = Modifier
-                    .fillMaxSize()
-                    //muevo el waveform con hold y drag
-                    .pointerInput(startOffsetMs, canvasWidthPx, visualOffsetDp) {
-                        detectDragGesturesAfterLongPress(
-                            onDragStart = { dragOffsetMs = 0L },
-                            onDragEnd = {
-                                val finalOffsetMs = (startOffsetMs + dragOffsetMs).coerceAtLeast(0L)
-                                onOffsetChange(finalOffsetMs)
-                                dragOffsetMs = 0L
-                            },
-                            onDrag = { change, dragAmount ->
-                                change.consume()
-                                val dragMs =
-                                    (dragAmount.x / density.density * msPerDpScale).toLong()
+
+            Box(modifier = Modifier.fillMaxSize()) {
+
+                Canvas(
+                    modifier = Modifier
+                        .fillMaxSize()
+
+                        .pointerInput(Unit, msPerDpScale, onSeekClick, density) {
+                            detectTapGestures(onTap = { offset ->
+                                val tappedMs = (offset.x / density.density * msPerDpScale).toLong()
+                                onSeekClick(tappedMs)
+                            })
+                        }
+
+                        .drawWithContent {
+                            drawContent()
+                            val validStartPx = handleStartPx.coerceIn(0f, handleEndPx)
+                            if (validStartPx > 0f) {
+                                drawRect(
+                                    color = Color.Black.copy(alpha = 0.5f),
+                                    size = size.copy(width = validStartPx)
+                                )
+                            }
+                            val validEndPx = handleEndPx.coerceIn(handleStartPx, size.width)
+                            if (validEndPx < size.width) {
+                                drawRect(
+                                    color = Color.Black.copy(alpha = 0.5f),
+                                    topLeft = Offset(validEndPx, 0f),
+                                    size = size.copy(width = size.width - validEndPx)
+                                )
+                            }
+                        }
+                ) {
+                    if (waveform.isNotEmpty()) {
+                        val centerY = size.height / 2
+                        val stepX = size.width / waveform.size.toFloat()
+                        val path = Path().apply {
+                            moveTo(0f, centerY)
+                            waveform.forEachIndexed { index, value ->
+                                val x = index * stepX
+                                val y = centerY - (value * centerY)
+                                lineTo(x, y)
+                            }
+                        }
+                        drawPath(
+                            path,
+                            color = waveformColor,
+                            style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
+                        )
+                    }
+                }
+
+
+                Icon(
+                    imageVector = Icons.Default.DragHandle,
+                    contentDescription = "Mover pista",
+                    tint = Color.White.copy(alpha = 0.7f),
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.4f))
+                        .draggable(
+                            orientation = Orientation.Horizontal,
+                            state = rememberDraggableState { delta ->
+
+                                val dragMs = (delta / density.density * msPerDpScale).toLong()
                                 val newOffsetCandidate = startOffsetMs + dragOffsetMs + dragMs
+
 
                                 if (newOffsetCandidate >= 0) {
                                     dragOffsetMs += dragMs
                                 } else {
+
                                     dragOffsetMs = -startOffsetMs
                                 }
+                            },
+                            onDragStarted = {
+                                dragOffsetMs = 0L
+                            },
+                            onDragStopped = {
+
+                                val finalOffsetMs = (startOffsetMs + dragOffsetMs).coerceAtLeast(0L)
+                                onOffsetChange(finalOffsetMs)
+                                dragOffsetMs = 0L
                             }
                         )
-                    }
-                    .drawWithContent {
-                        drawContent()
-                        val validStartPx = handleStartPx.coerceIn(0f, handleEndPx)
-                        if (validStartPx > 0f) {
-                            drawRect(
-                                color = Color.Black.copy(alpha = 0.5f),
-                                size = size.copy(width = validStartPx)
-                            )
-                        }
-                        val validEndPx = handleEndPx.coerceIn(handleStartPx, size.width)
-                        if (validEndPx < size.width) {
-                            drawRect(
-                                color = Color.Black.copy(alpha = 0.5f),
-                                topLeft = Offset(validEndPx, 0f),
-                                size = size.copy(width = size.width - validEndPx)
-                            )
-                        }
-                    }
-            ) {
-                if (waveform.isNotEmpty()) {
-                    val centerY = size.height / 2
-                    val stepX = size.width / waveform.size.toFloat()
-                    val path = Path().apply {
-                        moveTo(0f, centerY)
-                        waveform.forEachIndexed { index, value ->
-                            val x = index * stepX
-                            val y = centerY - (value * centerY)
-                            lineTo(x, y)
-                        }
-                    }
-                    drawPath(
-                        path,
-                        color = waveformColor,
-                        style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
-                    )
-                }
+                        .padding(8.dp)
+                )
             }
         }
 
-        val handleWidth = 20.dp
-        val handleWidthPx = with(density) { handleWidth.toPx() }
 
-        //BARRAS
         Box(
             modifier = Modifier
                 .offset { IntOffset((handleStartPx - handleWidthPx / 2).roundToInt(), 0) }
@@ -584,7 +583,7 @@ fun DbWaveform(
                 .background(
                     MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f),
                     RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp)
-                ) // Color diferente para selección
+                )
                 .draggable(
                     orientation = Orientation.Horizontal,
                     state = rememberDraggableState { delta ->
@@ -611,6 +610,7 @@ fun DbWaveform(
             )
         }
 
+
         Box(
             modifier = Modifier
                 .offset { IntOffset((handleEndPx - handleWidthPx / 2).roundToInt(), 0) }
@@ -619,7 +619,7 @@ fun DbWaveform(
                 .background(
                     MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f),
                     RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp)
-                ) // Color diferente
+                )
                 .draggable(
                     orientation = Orientation.Horizontal,
                     state = rememberDraggableState { delta ->
@@ -652,7 +652,6 @@ fun DbWaveform(
 
     }
 }
-
 @Preview
 @Composable
 private fun TrackPrev() {
