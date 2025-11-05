@@ -303,7 +303,7 @@ fun ProjectManagementScreen(
                     showSheet = true
                 },
                 modifier = Modifier
-                    .padding(top = 16.dp, start = 32.dp)
+                    .padding(top = 16.dp, end = 32.dp)
                     .size(50.dp)
                     .align(Alignment.End),
 
