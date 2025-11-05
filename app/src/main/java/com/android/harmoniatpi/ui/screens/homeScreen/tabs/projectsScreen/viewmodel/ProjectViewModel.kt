@@ -24,6 +24,8 @@ import com.android.harmoniatpi.domain.usecases.firebaseUseCases.DeleteProjectFro
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.FetchAndSyncUsersUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetAllUserFromDBUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetFirestoreProjectsByUserUseCase
+import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetProjectByIdFromFirestoreUseCase
+import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetUserOnFirebaseByIDUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.InsertNewPostFirebaseDataBaseUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.UploadAudioToStorageUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.UpsertProjectInFirestoreUseCase
@@ -80,6 +82,8 @@ class ProjectViewModel @Inject constructor(
     private val getAllUsersUseCase: GetAllUserFromDBUseCase,
     private val fetchAndSyncUsersUseCase: FetchAndSyncUsersUseCase,
     private val jsonUtils: JsonUtils,
+    internal val getProjectByIdFromFirestoreUseCase: GetProjectByIdFromFirestoreUseCase,
+    internal val getUserOnFirebaseByIDUseCase: GetUserOnFirebaseByIDUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProjectUiState())

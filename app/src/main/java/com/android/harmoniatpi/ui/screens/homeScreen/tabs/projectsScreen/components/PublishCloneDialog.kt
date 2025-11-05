@@ -41,9 +41,9 @@ fun PublishCloneDialog(
     LaunchedEffect(key1 = project) {
         scope.launch {
             attributionMessage = try {
-                val originalProject = viewModel.getProjectByIdUseCase(project.originalProjectId!!)
-                val originalUser = viewModel.buscarporID(originalProject.ownerId)
-                "¡Miren mi versión de '${originalProject.title}' de @${originalUser?.userName ?: "usuario"}!"
+                val originalProject = viewModel.getProjectByIdFromFirestoreUseCase(project.originalProjectId!!)
+                val originalUser = viewModel.getUserOnFirebaseByIDUseCase(originalProject?.ownerId ?: "original")
+                "¡Miren mi versión de '${originalProject?.title}' de @${originalUser?.userName ?: "usuario"}!"
             } catch (e: Exception) {
                 "¡Miren mi versión de este proyecto!"
             }
