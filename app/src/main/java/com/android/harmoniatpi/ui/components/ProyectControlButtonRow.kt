@@ -64,8 +64,8 @@ fun ProyectControlButtonRow(
             CircleIconButton(
                 onClick = onSkipPrevious,
                 iconColor = Color(0xFFEEEEEE),
-                backgroundColor = Color(0xFF2C2C2C),
-                icon = Icons.Default.SkipPrevious
+                backgroundColor = Color(0xFFB8B1B1),
+                pngRes = R.drawable.skip_previous_base
             )
 
             // ⏺ Record / Stop
@@ -92,9 +92,12 @@ fun ProyectControlButtonRow(
                 pngRes = if (isPlaying) R.drawable.pause_button_base else R.drawable.play_button_base,
                 iconColor = Color.Black,
                 backgroundColor = if (isPlaying)
-                    Color(0xFF00E676)
+                   // Color(0xFF9E9E9E)
+                    Color(0xFF036239)
                 else
-                    Color(0xFF9E9E9E)
+                    Color(0xFF36B37E)
+                    // Color(0xFF00E676) Verde original
+
             )
         }
     }

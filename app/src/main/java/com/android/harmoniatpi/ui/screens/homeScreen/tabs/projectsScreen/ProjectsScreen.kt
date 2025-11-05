@@ -1,18 +1,17 @@
 package com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -22,8 +21,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.android.harmoniatpi.R
 import com.android.harmoniatpi.domain.model.project.Project
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.BottomMiniPlayer
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.CreateProjectDialog
@@ -59,7 +62,8 @@ fun ProjectsScreen(
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
-                bottom = bottomPadding + 80.dp) // 80.dp aprox para FAB + margen
+                bottom = bottomPadding + 80.dp
+            ) // 80.dp aprox para FAB + margen
         ) {
             item {
                 Spacer(modifier = Modifier.height(5.dp))
@@ -140,7 +144,12 @@ fun ProjectsScreen(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Nuevo Proyecto")
+                Image(
+                    painter = painterResource(id = R.drawable.ic_new_project_add), // nuevo png de add project
+                    contentDescription = "Nuevo Proyecto",
+                    modifier = Modifier.size(28.dp),
+                    colorFilter = ColorFilter.tint(Color.White) // verificar si dejamos el add en blanco
+                )
             }
         }
 

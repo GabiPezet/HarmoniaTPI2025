@@ -35,9 +35,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.android.harmoniatpi.R
 import com.android.harmoniatpi.domain.model.userPreferences.ContactData
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.MenuUiState
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.viewmodel.DrawerContentViewModel
@@ -50,33 +52,43 @@ fun ContactProfileCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 8.dp, vertical = 8.dp),
         shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
                 "Información de contacto",
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
             )
 
-            ContactField("WhatsApp", contactData.whatsapp, Icons.Default.Whatsapp) {
+            ContactField(label = "WhatsApp",
+                value = contactData.whatsapp,
+                iconPainter = painterResource(R.drawable.ic_whatsapp_circle_logo)) {
                 onUpdateContact(contactData.copy(whatsapp = it))
             }
-            ContactField("Instagram", contactData.instagram, Icons.Default.Whatsapp) {
+            ContactField(label = "Instagram",
+                value = contactData.instagram,
+                iconPainter = painterResource(R.drawable.ic_instagram_circle_logo)) {
                 onUpdateContact(contactData.copy(instagram = it))
             }
-            ContactField("X (Twitter)", contactData.xAccount, Icons.Default.Whatsapp) {
-                onUpdateContact(contactData.copy(xAccount = it))
+            ContactField(    label = "Facebook",
+                value = contactData.facebook,
+                iconPainter = painterResource(R.drawable.ic_facebook_circle_logo)) {
+                onUpdateContact(contactData.copy(facebook = it))
             }
-            ContactField("TikTok", contactData.tiktok, Icons.Default.Whatsapp) {
+            ContactField(label = "TikTok",
+                value = contactData.tiktok,
+                iconPainter = painterResource(R.drawable.ic_tiktok_logo)) {
                 onUpdateContact(contactData.copy(tiktok = it))
             }
-            ContactField("Mail", contactData.contactMail, Icons.Default.Email) {
+            ContactField(    label = "Email",
+                value = contactData.contactMail,
+                iconPainter = painterResource(R.drawable.ic_google_circle_logo)) {
                 onUpdateContact(contactData.copy(contactMail = it))
             }
         }
