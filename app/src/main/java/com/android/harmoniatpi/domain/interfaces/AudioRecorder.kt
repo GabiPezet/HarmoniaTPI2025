@@ -1,5 +1,7 @@
 package com.android.harmoniatpi.domain.interfaces
 
+import kotlinx.coroutines.flow.SharedFlow
+
 /**
  * Interfaz para operaciones de grabación de audio.
  */
@@ -19,4 +21,6 @@ interface AudioRecorder {
      * Para la grabación de audio.
      */
     fun stopRecording(): Result<Unit>
+
+    fun getLiveWaveform(): SharedFlow<List<Float>>
 }

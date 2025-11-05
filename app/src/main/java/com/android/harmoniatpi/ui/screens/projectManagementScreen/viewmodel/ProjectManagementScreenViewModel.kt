@@ -30,6 +30,7 @@ import com.android.harmoniatpi.domain.usecases.audioUseCases.DownloadFileUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.GenerateWaveformUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.GetCurrentPlaybackPositionUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.GetIfAllTracksWherePlayedUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.GetLiveWaveformUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.GetTracksUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.LoadProjectTrackUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.MuteTrackUseCase
@@ -101,6 +102,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
     private val applyHighPassFilterUseCase: ApplyHighPassFilterUseCase,
     private val applyFlangerEffectUseCase: ApplyFlangerEffectUseCase,
     private val tunerEngine: TunerEngine,
+    private val getLiveWaveformUseCase: GetLiveWaveformUseCase,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ProyectScreenUiState())
     private var selectedTrack: TrackUi? = null
@@ -116,12 +118,14 @@ class ProjectManagementScreenViewModel @Inject constructor(
     val tunerNote = tunerEngine.tunerNoteFlow
     private val _showTunerDialog = MutableStateFlow(false)
     val showTunerDialog = _showTunerDialog.asStateFlow()
+    private val accumulatedWaveform = mutableListOf<Float>()
 
     init {
         startPlaybackObserver()
         fetchTracks()
         checkIfTracksWherePlayed()
         loadProjectFromCache()
+        fetchLiveWaveform()
     }
 
     private fun loadProjectFromCache() {
@@ -927,6 +931,27 @@ class ProjectManagementScreenViewModel @Inject constructor(
             currentState.copy(tracks = updatedTracks)
         }
         updateCurrentProjectWithTracks()
+    }
+
+    private fun fetchLiveWaveform() {
+        viewModelScope.launch {
+            getLiveWaveformUseCase().collect { waveform ->
+                accumulatedWaveform.addAll(waveform)
+                Log.i("fetchLiveWaveform()", "Recibiendo waveform: ${accumulatedWaveform.size}")
+                _state.update { currentState ->
+                    currentState.copy(
+                        tracks = currentState.tracks.map { track ->
+                            if (track.id == selectedTrack?.id) {
+                                Log.i("fetchLiveWaveform()", "Actualizando track: ${track.id}")
+                                track.copy(waveForm = accumulatedWaveform.toList())
+                            } else {
+                                track
+                            }
+                        }
+                    )
+                }
+            }
+        }
     }
 
     private companion object {

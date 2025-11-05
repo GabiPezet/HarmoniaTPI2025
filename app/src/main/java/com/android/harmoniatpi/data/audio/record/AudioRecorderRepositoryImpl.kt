@@ -4,6 +4,8 @@ import android.Manifest
 import androidx.annotation.RequiresPermission
 import com.android.harmoniatpi.domain.interfaces.AudioRecorder
 import com.android.harmoniatpi.domain.interfaces.AudioRecorderRepository
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
 
 /**
@@ -18,4 +20,6 @@ class AudioRecorderRepositoryImpl @Inject constructor(private val recorder: Audi
     }
 
     override fun stopRecording() = recorder.stopRecording()
+
+    override fun getLiveWaveform(): SharedFlow<List<Float>> = recorder.getLiveWaveform()
 }
