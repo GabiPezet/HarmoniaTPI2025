@@ -65,7 +65,7 @@ fun ProfileNavButton(
                     painter = painter,
                     contentDescription = label,
                     modifier = Modifier
-                        .size(48.dp)
+                        .size(46.dp)
                         .clip(RoundedCornerShape(8.dp)),
                     colorFilter = null
                     //colorFilter = if (selected) null else ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant)
