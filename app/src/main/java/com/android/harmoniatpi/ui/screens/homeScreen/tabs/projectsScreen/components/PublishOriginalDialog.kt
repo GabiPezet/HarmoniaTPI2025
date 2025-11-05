@@ -1,20 +1,17 @@
 package com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Create
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontWeight
 import com.android.harmoniatpi.domain.model.project.Project
-import com.android.harmoniatpi.ui.components.HoloTextField
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.viewmodel.ProjectViewModel
+
 
 @Composable
 fun PublishOriginalDialog(
@@ -23,76 +20,57 @@ fun PublishOriginalDialog(
     onDismiss: () -> Unit
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
-    val uiState by viewModel.uiState.collectAsState()
+    val sharedUiState by viewModel.sharedMenuUiState.uiState.collectAsState()
 
-    // Estado solo para el título del Post
     var postTitle by remember { mutableStateOf(project.title) }
-    val isTitleValid = postTitle.isNotBlank()
+    var postDescription by remember { mutableStateOf(project.description) }
+    var postHashtags by remember { mutableStateOf(project.hashtags.joinToString(", ")) }
+    var postImageUrl by remember(project) { mutableStateOf(project.imageUrl) }
+    var isPublishing by remember { mutableStateOf(false) }
 
-    AlertDialog(
+    BasePublishDialog(
+        dialogTitle = "Publicar Proyecto",
+        isPublishing = isPublishing,
+        isPublishButtonEnabled = postTitle.isNotBlank(),
         onDismissRequest = onDismiss,
-        confirmButton = {},
-        text = {
-            Column(
-                modifier = Modifier
-                    .verticalScroll(rememberScrollState())
-                    .padding(8.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text(
-                    "Publicar Proyecto",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
-
-                // Título del Post
-                HoloTextField(
-                    value = postTitle,
-                    onValueChange = { postTitle = it },
-                    label = "Título del Post",
-                    placeholder = "Elige un título para tu publicación",
-                    leadingIcon = Icons.Default.Create,
-                    isError = !isTitleValid && postTitle.isNotBlank(),
-                    supportingText = if (!isTitleValid) "El título no puede estar vacío" else null
-                )
-
-                Row (
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    OutlinedButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Text(text = "Cancelar")
-                    }
-
-                    Button(
-                        onClick = {
-                            keyboardController?.hide()
-                            // Llama a la nueva función 'publishProject'
-                            viewModel.publishProject(
-                                project = project,
-                                postTitle = postTitle,
-                                onComplete = {
-                                    onDismiss() // Cierra el diálogo al completar
-                                }
-                            )
-                        },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(16.dp),
-                        enabled = isTitleValid && !uiState.isPublishing
-                    ) {
-                        if (uiState.isPublishing) {
-                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                        } else {
-                            Text("Publicar")
-                        }
-                    }
+        onPublishClick = {
+            keyboardController?.hide()
+            isPublishing = true
+            viewModel.publishProject(
+                project = project,
+                postTitle = postTitle,
+                postDescription = postDescription,
+                postHashtags = postHashtags,
+                postImageUrl = postImageUrl,
+                onComplete = {
+                    isPublishing = false
+                    onDismiss()
                 }
-            }
-        },
-        shape = RoundedCornerShape(24.dp),
-    )
+            )
+        }
+    ) {
+        // --- Contenido Específico para el Diálogo Original ---
+        PostEditor(
+            ownerName = sharedUiState.userName,
+            postImageUrl = postImageUrl,
+            postHashtags = postHashtags,
+            onImageUrlChange = { postImageUrl = it },
+            onHashtagsChange = { postHashtags = it }
+        ) {
+            // Contenido específico que va dentro del editor: Título y Descripción
+            PostEditorTextField(
+                value = postTitle,
+                onValueChange = { postTitle = it },
+                placeholder = "Título del Post",
+                textStyle = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                singleLine = true
+            )
+            PostEditorTextField(
+                value = postDescription,
+                onValueChange = { postDescription = it },
+                placeholder = "Describe tu publicación...",
+                textStyle = MaterialTheme.typography.bodyMedium
+            )
+        }
+    }
 }

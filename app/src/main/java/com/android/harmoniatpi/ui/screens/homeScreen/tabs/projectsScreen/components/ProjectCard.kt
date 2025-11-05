@@ -1,6 +1,5 @@
 package com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Flag
@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Publish
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
@@ -41,10 +42,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import coil.compose.rememberAsyncImagePainter
+import coil.compose.AsyncImage
+import com.android.harmoniatpi.R
 import com.android.harmoniatpi.domain.model.UserPreferences
 import com.android.harmoniatpi.domain.model.project.Project
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.model.ProjectTab
@@ -62,7 +66,7 @@ fun ProjectCard(
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
     onPublishClick: () -> Unit,
-    onNavigateToVersions: (project:Project)-> Unit,
+    onNavigateToVersions: (project: Project) -> Unit,
 ) {
     var showMenu by remember { mutableStateOf(false) }
     val isMyProject = project.ownerId == currentUserId
@@ -96,11 +100,12 @@ fun ProjectCard(
                         .clickable { onTogglePlayPause() }, // El clic en la imagen/botón controla play/pause
                     contentAlignment = Alignment.Center
                 ) {
-                    Image(
-                        painter = rememberAsyncImagePainter(
-                            // TODO: Usar una imagen real del proyecto cuando lo tengamos
-                            model = "https://picsum.photos/seed/${project.id}/200/200"
-                        ),
+                    val placeholderColor = MaterialTheme.colorScheme.surfaceVariant
+
+                    AsyncImage(
+                        model = project.imageUrl,
+                        placeholder = ColorPainter(placeholderColor),
+                        error = painterResource(id = R.drawable.portada_proyecto_error),
                         contentDescription = project.title,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
@@ -118,6 +123,7 @@ fun ProjectCard(
                                 strokeWidth = 2.dp
                             )
                         }
+
                         isCurrentlyPlaying -> {
                             Icon(
                                 imageVector = Icons.Default.Pause,
@@ -126,6 +132,7 @@ fun ProjectCard(
                                 tint = MaterialTheme.colorScheme.onPrimary // Color blanco sobre overlay
                             )
                         }
+
                         else -> {
                             Icon(
                                 imageVector = Icons.Default.PlayArrow,
@@ -144,12 +151,32 @@ fun ProjectCard(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.Center
                 ) {
-                    Text(
-                        text = project.title,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = project.title,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                        if (project.isPublished) {
+                            Spacer(Modifier.width(8.dp))
+                            Icon(
+                                imageVector = Icons.Default.Public,
+                                contentDescription = "Proyecto publicado",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        } else {
+                            Spacer(Modifier.width(8.dp))
+                            Icon(
+                                imageVector = Icons.Default.CloudOff,
+                                contentDescription = "Proyecto no publicado (privado)",
+                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), // Un color más sutil
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
                     Spacer(Modifier.height(2.dp))
                     Text(
                         text = "${project.name} ${project.lastName}",
