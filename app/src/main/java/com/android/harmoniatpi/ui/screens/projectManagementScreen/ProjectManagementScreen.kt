@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.ZoomIn
 import androidx.compose.material.icons.filled.ZoomOut
 import androidx.compose.material3.Card
@@ -83,6 +84,7 @@ import com.android.harmoniatpi.ui.components.ShowConfirmationDialog
 import com.android.harmoniatpi.ui.components.TimelineHeader
 import com.android.harmoniatpi.ui.components.TrackItem
 import com.android.harmoniatpi.ui.components.TrimAudioDialog
+import com.android.harmoniatpi.ui.components.TunerDialog
 import com.android.harmoniatpi.ui.components.VolumeSliderDialog
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.viewmodel.ProjectManagementScreenViewModel
@@ -106,6 +108,10 @@ fun ProjectManagementScreen(
     val scope = rememberCoroutineScope()
     var trackForEffects by remember { mutableStateOf<TrackUi?>(null) }
     val trackForVolume by viewModel.trackForVolume.collectAsState()
+    val showTuner by viewModel.showTunerDialog.collectAsState()
+    val tunerNote by viewModel.tunerNote.collectAsState()
+
+
     val pickAudioLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -191,6 +197,9 @@ fun ProjectManagementScreen(
                 },
 
                 actions = {
+                    IconButton(onClick = { viewModel.onShowTuner() }) {
+                        Icon(Icons.Default.Tune, "Afinador")
+                    }
                     IconButton(onClick = { viewModel.zoomOut() }) {
                         Icon(Icons.Default.ZoomOut, "Zoom Out")
                     }
@@ -480,6 +489,14 @@ fun ProjectManagementScreen(
         )
     }
 
+    if (showTuner) {
+        TunerDialog(
+            note = tunerNote,
+            onDismiss = { viewModel.onDismissTuner() },
+            onStart = { viewModel.startTuner() },
+            onStop = { viewModel.stopTuner() }
+        )
+    }
 }
 
 @Composable
