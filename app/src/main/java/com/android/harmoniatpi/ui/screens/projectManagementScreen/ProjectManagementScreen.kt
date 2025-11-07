@@ -83,6 +83,7 @@ import com.android.harmoniatpi.ui.components.ShowConfirmationDialog
 import com.android.harmoniatpi.ui.components.TimelineHeader
 import com.android.harmoniatpi.ui.components.TrackItem
 import com.android.harmoniatpi.ui.components.TrimAudioDialog
+import com.android.harmoniatpi.ui.components.VolumeSliderDialog
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.viewmodel.ProjectManagementScreenViewModel
 import kotlinx.coroutines.launch
@@ -104,6 +105,7 @@ fun ProjectManagementScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var trackForEffects by remember { mutableStateOf<TrackUi?>(null) }
+    val trackForVolume by viewModel.trackForVolume.collectAsState()
     val pickAudioLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -288,6 +290,7 @@ fun ProjectManagementScreen(
                             isSelectionActive = track.selectionStartMs != null &&
                                     (track.selectionEndMs == null || track.selectionEndMs > track.selectionStartMs),
                             msPerDpScale = state.msPerDpScale,
+                            onShowVolumeSlider = { viewModel.onShowVolumeSlider(track) },
                             mostrarFuturo = {mostrarFuturo = true}
                         )
                     }
@@ -466,6 +469,17 @@ fun ProjectManagementScreen(
             }
         )
     }
+
+    trackForVolume?.let { track ->
+        VolumeSliderDialog(
+            track = track,
+            onDismiss = { viewModel.onDismissVolumeSlider() },
+            onConfirm = { newVolume ->
+                viewModel.setTrackVolume(newVolume)
+            }
+        )
+    }
+
 }
 
 @Composable

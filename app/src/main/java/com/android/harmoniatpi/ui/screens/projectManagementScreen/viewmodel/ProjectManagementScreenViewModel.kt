@@ -93,7 +93,8 @@ class ProjectManagementScreenViewModel @Inject constructor(
     private var selectedTrack: TrackUi? = null
     val state = _state.asStateFlow()
     private val originalVolumes = mutableMapOf<Long, Float>()
-
+    private val _trackForVolume = MutableStateFlow<TrackUi?>(null)
+    val trackForVolume = _trackForVolume.asStateFlow()
 
     init {
         startPlaybackObserver()
@@ -592,10 +593,19 @@ class ProjectManagementScreenViewModel @Inject constructor(
         }
     }
 
+    fun onShowVolumeSlider(track: TrackUi) {
+        _trackForVolume.value = track
+    }
+
+    fun onDismissVolumeSlider() {
+        _trackForVolume.value = null
+    }
+
     fun setTrackVolume(volume: Float) {
         selectedTrack?.let {
-            setTrackVolumeUseCase(it.id, volume)
-            updateTrackVolume(it.id, volume)
+            val clampedVolume = volume.coerceIn(0f, 1.5f)
+            setTrackVolumeUseCase(it.id, clampedVolume)
+            updateTrackVolume(it.id, clampedVolume)
         }
     }
 

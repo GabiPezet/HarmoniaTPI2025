@@ -87,6 +87,7 @@ fun TrackItem(
     onUndo: () -> Unit,
     onMute: () -> Unit,
     onShowEffects: () -> Unit,
+    onShowVolumeSlider: () -> Unit,
     scrollState: ScrollState,
     isBeingRecorded: Boolean,
     currentPlaybackMs: Long,
@@ -203,6 +204,7 @@ fun TrackItem(
                     onUndoEffect = onUndoEffect,
                     isUndoEffectAvailable = isUndoEffectAvailable,
                     isSelectionActive = isSelectionActive,
+                    onShowVolumeSlider = onShowVolumeSlider,
                     mostrarFuturo = mostrarFuturo
 
                 )
@@ -285,6 +287,7 @@ private fun TrackOptionsMenu(
     onShowEffects: () -> Unit,
     isUndoAvailable: Boolean,
     isMuted: Boolean,
+    onShowVolumeSlider: () -> Unit,
     onCopy: () -> Unit,
     onCut: () -> Unit,
     onUndoEffect: () -> Unit,
@@ -362,17 +365,19 @@ private fun TrackOptionsMenu(
 
 
         DropdownMenuItem(
-            text = {
-                Text(text = "Volumen")
-            },
+            text = { Text(text = "Volumen") },
             leadingIcon = {
                 Icon(
                     painter = painterResource(R.drawable.mix_icon),
                     contentDescription = "Volumen"
                 )
             },
-            onClick = {mostrarFuturo()}
+            onClick = {
+                onDismiss()
+                onShowVolumeSlider()
+            }
         )
+
         DropdownMenuItem(
             text = {
                 Text(text = "Paneo")
@@ -697,6 +702,7 @@ private fun TrackPrev() {
             onUndoEffect = {},
             isSelectionActive = false,
             msPerDpScale = 0F,
+            onShowVolumeSlider = {},
             mostrarFuturo = {}
         )
     }
