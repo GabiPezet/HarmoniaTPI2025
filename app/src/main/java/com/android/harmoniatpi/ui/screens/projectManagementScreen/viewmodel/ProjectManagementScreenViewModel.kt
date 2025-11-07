@@ -21,6 +21,8 @@ import com.android.harmoniatpi.domain.usecases.audioUseCases.AddTrackFromFileUse
 import com.android.harmoniatpi.domain.usecases.audioUseCases.AddTrackFromSegmentUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.AddTrackUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.ApplyDelayEffectUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.ApplyFlangerEffectUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.ApplyHighPassFilterUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.ConvertMp3ToPcmUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.CutAudioSegmentUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.DeleteTrackUseCase
@@ -95,6 +97,8 @@ class ProjectManagementScreenViewModel @Inject constructor(
     private val undoEffectUseCase: UndoEffectUseCase,
     private val downloadFileUseCase: DownloadFileUseCase,
     private val convertMp3ToPcmUseCase: ConvertMp3ToPcmUseCase,
+    private val applyHighPassFilterUseCase: ApplyHighPassFilterUseCase,
+    private val applyFlangerEffectUseCase: ApplyFlangerEffectUseCase,
     private val tunerEngine: TunerEngine,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ProyectScreenUiState())
@@ -772,6 +776,36 @@ class ProjectManagementScreenViewModel @Inject constructor(
                 .onFailure { e ->
                     Log.e(TAG, "Error aplicando delay", e)
                     Toast.makeText(context, "Error al aplicar efecto", Toast.LENGTH_SHORT).show()
+                }
+        }
+    }
+
+    fun applyHighPassFilter(trackId: Long, frequency: Float) {
+        viewModelScope.launch {
+            applyHighPassFilterUseCase(trackId, frequency)
+                .onSuccess {
+                    Log.i(TAG, "Filtro HPF aplicado a $trackId")
+                    Toast.makeText(context, "Filtro aplicado", Toast.LENGTH_SHORT).show()
+                    updateTrackUiAfterModification(trackId)
+                }
+                .onFailure { e ->
+                    Log.e(TAG, "Error aplicando HPF", e)
+                    Toast.makeText(context, "Error al aplicar filtro", Toast.LENGTH_SHORT).show()
+                }
+        }
+    }
+
+    fun applyFlangerEffect(trackId: Long, rate: Float, wet: Float) {
+        viewModelScope.launch {
+            applyFlangerEffectUseCase(trackId, rate, wet)
+                .onSuccess {
+                    Log.i(TAG, "Efecto Flanger aplicado a $trackId")
+                    Toast.makeText(context, "Flanger aplicado", Toast.LENGTH_SHORT).show()
+                    updateTrackUiAfterModification(trackId)
+                }
+                .onFailure { e ->
+                    Log.e(TAG, "Error aplicando Flanger", e)
+                    Toast.makeText(context, "Error al aplicar flanger", Toast.LENGTH_SHORT).show()
                 }
         }
     }

@@ -475,9 +475,18 @@ fun ProjectManagementScreen(
             onApplyDelay = { id, delay, decay ->
                 viewModel.applyDelayEffect(id, delay, decay)
                 trackForEffects = null
+            },
+            onApplyHighPass = { id, freq ->
+                viewModel.applyHighPassFilter(id, freq)
+                trackForEffects = null
+            },
+            onApplyFlanger = { id, rate, wet ->
+                viewModel.applyFlangerEffect(id, rate, wet)
+                trackForEffects = null
             }
         )
     }
+
 
     trackForVolume?.let { track ->
         VolumeSliderDialog(

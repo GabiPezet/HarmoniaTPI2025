@@ -28,8 +28,6 @@ fun TunerDialog(
     onStart: () -> Unit,
     onStop: () -> Unit
 ) {
-    // Inicia el afinador cuando el diálogo aparece
-    // y lo detiene cuando desaparece.
     DisposableEffect(Unit) {
         onStart()
         onDispose {
