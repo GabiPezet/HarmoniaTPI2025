@@ -13,7 +13,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
@@ -48,7 +47,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
@@ -74,6 +72,7 @@ import androidx.compose.ui.unit.dp
 import com.android.harmoniatpi.R
 import com.android.harmoniatpi.domain.model.audio.AudioSourceType
 import com.android.harmoniatpi.ui.core.theme.HarmoniaTPITheme
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.BottomSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import kotlin.math.roundToInt
 import kotlin.math.sin
@@ -101,8 +100,8 @@ fun TrackItem(
     modifier: Modifier = Modifier,
     timelineWidth: Int,
     msPerDpScale: Float,
-    mostrarFuturo: () -> Unit,
-) {
+    onShowBottomSheet: (BottomSheetContent) -> Unit,
+    ) {
     var showOptions by remember { mutableStateOf(false) }
 
     val infiniteTransition = rememberInfiniteTransition(label = "")
@@ -203,8 +202,8 @@ fun TrackItem(
                     onUndoEffect = onUndoEffect,
                     isUndoEffectAvailable = isUndoEffectAvailable,
                     isSelectionActive = isSelectionActive,
-                    mostrarFuturo = mostrarFuturo
-
+                    track = track,
+                    onShowBottomSheet = onShowBottomSheet,
                 )
             }
         }
@@ -276,7 +275,6 @@ fun TrackItem(
 
 @Composable
 private fun TrackOptionsMenu(
-    mostrarFuturo: () -> Unit,
     visible: Boolean,
     onDismiss: () -> Unit,
     onDelete: () -> Unit,
@@ -290,11 +288,58 @@ private fun TrackOptionsMenu(
     onUndoEffect: () -> Unit,
     isUndoEffectAvailable: Boolean,
     isSelectionActive: Boolean,
-    modifier: Modifier = Modifier
+    track: TrackUi,
+    onShowBottomSheet: (BottomSheetContent) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     DropdownMenu(
         expanded = visible, onDismissRequest = onDismiss, modifier = modifier
     ) {
+        DropdownMenuItem(
+            text = {
+                Text(text = "Renombrar")
+            },
+            leadingIcon = {
+                Icon(
+                    painter = painterResource(R.drawable.edit_icon),
+                    contentDescription = "Renombrar"
+                )
+            },
+            onClick = {onShowBottomSheet(BottomSheetContent.RenameTrack(track))}
+        )
+
+        DropdownMenuItem(
+            text = {
+                Text(text = "Volumen")
+            },
+            leadingIcon = {
+                Icon(
+                    painter = painterResource(R.drawable.mix_icon),
+                    contentDescription = "Volumen"
+                )
+            },
+            onClick = {
+                //En futuro llamar a -> onShowBottomSheet(BottomSheetContent.EditVolume(track))
+                onShowBottomSheet(BottomSheetContent.InDevelopment)
+                onDismiss()
+            }
+        )
+
+        DropdownMenuItem(
+            text = {
+                Text(text = "Paneo")
+            },
+            leadingIcon = {
+                Icon(
+                    painter = painterResource(R.drawable.pan_icon),
+                    contentDescription = "Paneo"
+                )
+            },
+            onClick = {
+                onShowBottomSheet(BottomSheetContent.InDevelopment)
+                onDismiss()
+            }
+        )
 
         DropdownMenuItem(
             text = { Text(text = "Copiar") },
@@ -326,8 +371,6 @@ private fun TrackOptionsMenu(
             enabled = isSelectionActive
         )
 
-
-
         DropdownMenuItem(
             text = { Text(text = "Efectos") },
             leadingIcon = {
@@ -341,8 +384,6 @@ private fun TrackOptionsMenu(
                 onShowEffects()
             }
         )
-
-
 
         DropdownMenuItem(
             text = {
@@ -361,43 +402,6 @@ private fun TrackOptionsMenu(
         )
 
 
-        DropdownMenuItem(
-            text = {
-                Text(text = "Volumen")
-            },
-            leadingIcon = {
-                Icon(
-                    painter = painterResource(R.drawable.mix_icon),
-                    contentDescription = "Volumen"
-                )
-            },
-            onClick = {mostrarFuturo()}
-        )
-        DropdownMenuItem(
-            text = {
-                Text(text = "Paneo")
-            },
-            leadingIcon = {
-                Icon(
-                    painter = painterResource(R.drawable.pan_icon),
-                    contentDescription = "Paneo"
-                )
-            },
-            onClick = {mostrarFuturo()}
-        )
-
-        DropdownMenuItem(
-            text = {
-                Text(text = "Editar")
-            },
-            leadingIcon = {
-                Icon(
-                    painter = painterResource(R.drawable.edit_icon),
-                    contentDescription = "Editar"
-                )
-            },
-            onClick = {mostrarFuturo()}
-        )
 
         if (isUndoAvailable) {
             DropdownMenuItem(
@@ -597,9 +601,10 @@ fun DbWaveform(
                         handleStartPx = newPos
                     },
                     onDragStopped = {
-                        val startMs = (handleStartPx / density.density * msPerDpScale).coerceAtLeast(
-                            0f
-                        ).toLong()
+                        val startMs =
+                            (handleStartPx / density.density * msPerDpScale).coerceAtLeast(
+                                0f
+                            ).toLong()
                         val endMs = (handleEndPx / density.density * msPerDpScale).coerceAtMost(
                             maxDurationMs.toFloat()
                         ).toLong()
@@ -637,9 +642,10 @@ fun DbWaveform(
                     },
                     onDragStopped = {
 
-                        val startMs = (handleStartPx / density.density * msPerDpScale).coerceAtLeast(
-                            0f
-                        ).toLong()
+                        val startMs =
+                            (handleStartPx / density.density * msPerDpScale).coerceAtLeast(
+                                0f
+                            ).toLong()
                         val endMs = (handleEndPx / density.density * msPerDpScale).coerceAtMost(
                             maxDurationMs.toFloat()
                         ).toLong()
@@ -697,7 +703,7 @@ private fun TrackPrev() {
             onUndoEffect = {},
             isSelectionActive = false,
             msPerDpScale = 0F,
-            mostrarFuturo = {}
+            onShowBottomSheet = {}
         )
     }
 }
