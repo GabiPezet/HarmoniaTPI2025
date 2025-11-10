@@ -68,13 +68,13 @@ import com.android.harmoniatpi.ui.components.ShowConfirmationDialog
 import com.android.harmoniatpi.ui.components.TimelineHeader
 import com.android.harmoniatpi.ui.components.TrackItem
 import com.android.harmoniatpi.ui.components.TrimAudioDialog
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.BottomSheetContent
+import com.android.harmoniatpi.ui.components.TunerDialog
+import com.android.harmoniatpi.ui.components.VolumeSliderDialog
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.AddTrackSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.EmptyProjectMessage
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.InDevelopmentSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.RenameTrackSheetContent
-import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.BottomSheetContent
-import com.android.harmoniatpi.ui.components.TunerDialog
-import com.android.harmoniatpi.ui.components.VolumeSliderDialog
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.viewmodel.ProjectManagementScreenViewModel
 import kotlinx.coroutines.launch
@@ -204,7 +204,7 @@ fun ProjectManagementScreen(
                 }
 
                 is BottomSheetContent.RenameTrack -> {
-                    RenameTrackSheetContent(
+                    RenameTrackSheetContent (
                         track = activeSheet.track,
                         onRename = { trackId, newName ->
                             viewModel.renameTrack(trackId, newName)

@@ -206,7 +206,6 @@ fun TrackItem(
                     track = track,
                     onShowBottomSheet = onShowBottomSheet,
                     onShowVolumeSlider = onShowVolumeSlider,
-                    mostrarFuturo = mostrarFuturo
 
                 )
             }
@@ -708,9 +707,7 @@ private fun TrackPrev() {
             isSelectionActive = false,
             msPerDpScale = 0F,
             onShowBottomSheet = {},
-            onShowVolumeSlider = {}
             onShowVolumeSlider = {},
-            mostrarFuturo = {}
         )
     }
 }
