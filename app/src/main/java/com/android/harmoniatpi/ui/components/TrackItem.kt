@@ -86,6 +86,7 @@ fun TrackItem(
     onUndo: () -> Unit,
     onMute: () -> Unit,
     onShowEffects: () -> Unit,
+    onShowVolumeSlider: () -> Unit,
     scrollState: ScrollState,
     isBeingRecorded: Boolean,
     currentPlaybackMs: Long,
@@ -204,6 +205,8 @@ fun TrackItem(
                     isSelectionActive = isSelectionActive,
                     track = track,
                     onShowBottomSheet = onShowBottomSheet,
+                    onShowVolumeSlider = onShowVolumeSlider,
+
                 )
             }
         }
@@ -283,6 +286,7 @@ private fun TrackOptionsMenu(
     onShowEffects: () -> Unit,
     isUndoAvailable: Boolean,
     isMuted: Boolean,
+    onShowVolumeSlider: () -> Unit,
     onCopy: () -> Unit,
     onCut: () -> Unit,
     onUndoEffect: () -> Unit,
@@ -319,9 +323,8 @@ private fun TrackOptionsMenu(
                 )
             },
             onClick = {
-                //En futuro llamar a -> onShowBottomSheet(BottomSheetContent.EditVolume(track))
-                onShowBottomSheet(BottomSheetContent.InDevelopment)
                 onDismiss()
+                onShowVolumeSlider()
             }
         )
 
@@ -703,7 +706,8 @@ private fun TrackPrev() {
             onUndoEffect = {},
             isSelectionActive = false,
             msPerDpScale = 0F,
-            onShowBottomSheet = {}
+            onShowBottomSheet = {},
+            onShowVolumeSlider = {},
         )
     }
 }

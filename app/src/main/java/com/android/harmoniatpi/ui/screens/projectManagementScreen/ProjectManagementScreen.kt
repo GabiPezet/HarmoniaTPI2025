@@ -21,6 +21,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ContentPaste
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.ZoomIn
 import androidx.compose.material.icons.filled.ZoomOut
 import androidx.compose.material3.Card
@@ -63,11 +68,13 @@ import com.android.harmoniatpi.ui.components.ShowConfirmationDialog
 import com.android.harmoniatpi.ui.components.TimelineHeader
 import com.android.harmoniatpi.ui.components.TrackItem
 import com.android.harmoniatpi.ui.components.TrimAudioDialog
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.BottomSheetContent
+import com.android.harmoniatpi.ui.components.TunerDialog
+import com.android.harmoniatpi.ui.components.VolumeSliderDialog
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.AddTrackSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.EmptyProjectMessage
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.InDevelopmentSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.RenameTrackSheetContent
-import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.BottomSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.viewmodel.ProjectManagementScreenViewModel
 import kotlinx.coroutines.launch
@@ -86,6 +93,11 @@ fun ProjectManagementScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var trackForEffects by remember { mutableStateOf<TrackUi?>(null) }
+    val trackForVolume by viewModel.trackForVolume.collectAsState()
+    val showTuner by viewModel.showTunerDialog.collectAsState()
+    val tunerNote by viewModel.tunerNote.collectAsState()
+
+
     val pickAudioLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -192,7 +204,7 @@ fun ProjectManagementScreen(
                 }
 
                 is BottomSheetContent.RenameTrack -> {
-                    RenameTrackSheetContent(
+                    RenameTrackSheetContent (
                         track = activeSheet.track,
                         onRename = { trackId, newName ->
                             viewModel.renameTrack(trackId, newName)
@@ -240,6 +252,9 @@ fun ProjectManagementScreen(
                 },
 
                 actions = {
+                    IconButton(onClick = { viewModel.onShowTuner() }) {
+                        Icon(Icons.Default.Tune, "Afinador")
+                    }
                     IconButton(onClick = { viewModel.zoomOut() }) {
                         Icon(Icons.Default.ZoomOut, "Zoom Out")
                     }
@@ -339,6 +354,7 @@ fun ProjectManagementScreen(
                             isSelectionActive = track.selectionStartMs != null &&
                                     (track.selectionEndMs == null || track.selectionEndMs > track.selectionStartMs),
                             msPerDpScale = state.msPerDpScale,
+                            onShowVolumeSlider = { viewModel.onShowVolumeSlider(track) },
                             onShowBottomSheet = viewModel::showBottomSheet
                         )
                     }
@@ -425,7 +441,35 @@ fun ProjectManagementScreen(
             onApplyDelay = { id, delay, decay ->
                 viewModel.applyDelayEffect(id, delay, decay)
                 trackForEffects = null
+            },
+            onApplyHighPass = { id, freq ->
+                viewModel.applyHighPassFilter(id, freq)
+                trackForEffects = null
+            },
+            onApplyFlanger = { id, rate, wet ->
+                viewModel.applyFlangerEffect(id, rate, wet)
+                trackForEffects = null
             }
+        )
+    }
+
+
+    trackForVolume?.let { track ->
+        VolumeSliderDialog(
+            track = track,
+            onDismiss = { viewModel.onDismissVolumeSlider() },
+            onConfirm = { newVolume ->
+                viewModel.setTrackVolume(newVolume)
+            }
+        )
+    }
+
+    if (showTuner) {
+        TunerDialog(
+            note = tunerNote,
+            onDismiss = { viewModel.onDismissTuner() },
+            onStart = { viewModel.startTuner() },
+            onStop = { viewModel.stopTuner() }
         )
     }
 }

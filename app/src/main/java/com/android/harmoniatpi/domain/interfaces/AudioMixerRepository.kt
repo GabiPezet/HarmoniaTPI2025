@@ -123,6 +123,10 @@ interface AudioMixerRepository {
 
     suspend fun applyDelayEffect(trackId: Long, delayTimeInSeconds: Float, decay: Float): Result<Unit>
 
+    suspend fun applyHighPassFilter(trackId: Long, frequency: Float): Result<Unit>
+
+    suspend fun applyFlangerEffect(trackId: Long, rate: Float, wet: Float): Result<Unit>
+
     fun undoEffect(id: Long): Result<Unit>
 
 }

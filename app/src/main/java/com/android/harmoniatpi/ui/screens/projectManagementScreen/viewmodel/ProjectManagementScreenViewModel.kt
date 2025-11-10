@@ -3,10 +3,16 @@ package com.android.harmoniatpi.ui.screens.projectManagementScreen.viewmodel
 import android.content.Context
 import android.media.MediaRecorder
 import android.net.Uri
+import android.os.Build
 import android.util.Log
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import be.tarsos.dsp.AudioDispatcher
+import be.tarsos.dsp.pitch.PitchDetectionHandler
+import be.tarsos.dsp.pitch.PitchProcessor
+import com.android.harmoniatpi.data.audio.util.TunerEngine
 import com.android.harmoniatpi.domain.cache.HoloJamCache
 import com.android.harmoniatpi.domain.model.audio.AudioSourceType
 import com.android.harmoniatpi.domain.model.audio.WaveformResult
@@ -15,6 +21,8 @@ import com.android.harmoniatpi.domain.usecases.audioUseCases.AddTrackFromFileUse
 import com.android.harmoniatpi.domain.usecases.audioUseCases.AddTrackFromSegmentUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.AddTrackUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.ApplyDelayEffectUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.ApplyFlangerEffectUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.ApplyHighPassFilterUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.ConvertMp3ToPcmUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.CutAudioSegmentUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.DeleteTrackUseCase
@@ -54,6 +62,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import javax.inject.Inject
+import kotlin.math.roundToInt
 
 private const val MS_PER_DP_SCALE = 10f
 
@@ -88,13 +97,25 @@ class ProjectManagementScreenViewModel @Inject constructor(
     private val setTrackPlaybackRangeUseCase: SetTrackPlaybackRangeUseCase,
     private val undoEffectUseCase: UndoEffectUseCase,
     private val downloadFileUseCase: DownloadFileUseCase,
-    private val convertMp3ToPcmUseCase: ConvertMp3ToPcmUseCase
+    private val convertMp3ToPcmUseCase: ConvertMp3ToPcmUseCase,
+    private val applyHighPassFilterUseCase: ApplyHighPassFilterUseCase,
+    private val applyFlangerEffectUseCase: ApplyFlangerEffectUseCase,
+    private val tunerEngine: TunerEngine,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ProyectScreenUiState())
     private var selectedTrack: TrackUi? = null
     val state = _state.asStateFlow()
     private val originalVolumes = mutableMapOf<Long, Float>()
+    private val _trackForVolume = MutableStateFlow<TrackUi?>(null)
+    val trackForVolume = _trackForVolume.asStateFlow()
+    // atributos para tuner
+    private var audioDispatcher: AudioDispatcher? = null
+    private var tunerThread: Thread? = null
+    private val _tunerNote = MutableStateFlow("")
 
+    val tunerNote = tunerEngine.tunerNoteFlow
+    private val _showTunerDialog = MutableStateFlow(false)
+    val showTunerDialog = _showTunerDialog.asStateFlow()
 
     init {
         startPlaybackObserver()
@@ -593,10 +614,19 @@ class ProjectManagementScreenViewModel @Inject constructor(
         }
     }
 
+    fun onShowVolumeSlider(track: TrackUi) {
+        _trackForVolume.value = track
+    }
+
+    fun onDismissVolumeSlider() {
+        _trackForVolume.value = null
+    }
+
     fun setTrackVolume(volume: Float) {
         selectedTrack?.let {
-            setTrackVolumeUseCase(it.id, volume)
-            updateTrackVolume(it.id, volume)
+            val clampedVolume = volume.coerceIn(0f, 1.5f)
+            setTrackVolumeUseCase(it.id, clampedVolume)
+            updateTrackVolume(it.id, clampedVolume)
         }
     }
 
@@ -751,6 +781,36 @@ class ProjectManagementScreenViewModel @Inject constructor(
         }
     }
 
+    fun applyHighPassFilter(trackId: Long, frequency: Float) {
+        viewModelScope.launch {
+            applyHighPassFilterUseCase(trackId, frequency)
+                .onSuccess {
+                    Log.i(TAG, "Filtro HPF aplicado a $trackId")
+                    Toast.makeText(context, "Filtro aplicado", Toast.LENGTH_SHORT).show()
+                    updateTrackUiAfterModification(trackId)
+                }
+                .onFailure { e ->
+                    Log.e(TAG, "Error aplicando HPF", e)
+                    Toast.makeText(context, "Error al aplicar filtro", Toast.LENGTH_SHORT).show()
+                }
+        }
+    }
+
+    fun applyFlangerEffect(trackId: Long, rate: Float, wet: Float) {
+        viewModelScope.launch {
+            applyFlangerEffectUseCase(trackId, rate, wet)
+                .onSuccess {
+                    Log.i(TAG, "Efecto Flanger aplicado a $trackId")
+                    Toast.makeText(context, "Flanger aplicado", Toast.LENGTH_SHORT).show()
+                    updateTrackUiAfterModification(trackId)
+                }
+                .onFailure { e ->
+                    Log.e(TAG, "Error aplicando Flanger", e)
+                    Toast.makeText(context, "Error al aplicar flanger", Toast.LENGTH_SHORT).show()
+                }
+        }
+    }
+
     fun undoEffect(trackId: Long) {
         viewModelScope.launch {
             undoEffectUseCase(trackId)
@@ -783,13 +843,6 @@ class ProjectManagementScreenViewModel @Inject constructor(
             }
     }
 
-    override fun onCleared() {
-        super.onCleared()
-        // Limpia todas las pistas del AudioMixerRepository
-        loadProjectTrackUseCase.clearAllTracks()
-        Log.d("PManagementViewModel", "ViewModel destruido, limpiando pistas del mixer.")
-    }
-
 
     fun zoomIn() {
         val currentScale = _state.value.msPerDpScale
@@ -815,6 +868,32 @@ class ProjectManagementScreenViewModel @Inject constructor(
                 timelineWidth = newTimelineWidth
             )
         }
+    }
+
+    fun onShowTuner() {
+        _showTunerDialog.value = true
+    }
+
+    fun onDismissTuner() {
+        _showTunerDialog.value = false
+    }
+
+    // Simplemente delegamos al Engine
+    fun startTuner() {
+        tunerEngine.start()
+    }
+
+    fun stopTuner() {
+        tunerEngine.stop()
+    }
+
+
+
+    override fun onCleared() {
+        super.onCleared()
+        tunerEngine.stop()
+        loadProjectTrackUseCase.clearAllTracks()
+        Log.d("PManagementViewModel", "ViewModel destruido, limpiando pistas del mixer.")
     }
 
 

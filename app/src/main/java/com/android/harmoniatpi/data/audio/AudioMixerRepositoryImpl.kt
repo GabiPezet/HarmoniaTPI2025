@@ -10,6 +10,8 @@ import be.tarsos.dsp.AudioDispatcher
 import be.tarsos.dsp.AudioEvent
 import be.tarsos.dsp.AudioProcessor
 import be.tarsos.dsp.effects.DelayEffect
+import be.tarsos.dsp.effects.FlangerEffect
+import be.tarsos.dsp.filters.HighPass
 import be.tarsos.dsp.io.TarsosDSPAudioFloatConverter
 import be.tarsos.dsp.io.TarsosDSPAudioFormat
 import be.tarsos.dsp.io.jvm.AudioDispatcherFactory
@@ -752,6 +754,135 @@ class AudioMixerRepositoryImpl @Inject constructor(
                 }
             }
 
+            Unit
+        }
+    }
+
+    override suspend fun applyHighPassFilter(trackId: Long, frequency: Float): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val track = tracks.value.find { it.id == trackId }
+                ?: throw IllegalStateException("Track no encontrado con id: $trackId")
+
+            val originalFile = File(track.path)
+            if (!originalFile.exists()) throw IllegalStateException("Archivo de pista no encontrado: ${track.path}")
+            val backupFile = File(track.path + ".original_effect")
+            if (backupFile.exists()) backupFile.delete()
+            val trimBackupFile = File(track.path + ".original_trim")
+            if (trimBackupFile.exists()) trimBackupFile.delete()
+            originalFile.renameTo(backupFile)
+
+            val tempFile = File(track.path + ".tmp")
+            var fileInputStream: FileInputStream? = null
+            var fileOutputStream: FileOutputStream? = null
+
+            try {
+                fileInputStream = FileInputStream(backupFile)
+                fileOutputStream = FileOutputStream(tempFile)
+
+                val highPassFilter = HighPass(
+                    frequency,
+                    TARSOS_FORMAT.sampleRate
+                )
+
+                val converter = TarsosDSPAudioFloatConverter.getConverter(TARSOS_FORMAT)
+                val byteBuffer = ByteArray(2048)
+                val floatBuffer = FloatArray(1024)
+                val audioEvent = AudioEvent(TARSOS_FORMAT)
+                audioEvent.setFloatBuffer(floatBuffer)
+
+                var bytesRead = fileInputStream.read(byteBuffer, 0, byteBuffer.size)
+                while (bytesRead != -1) {
+                    audioEvent.setBytesProcessing(bytesRead)
+                    converter.toFloatArray(byteBuffer, floatBuffer)
+                    highPassFilter.process(audioEvent)
+
+                    converter.toByteArray(floatBuffer, byteBuffer)
+                    fileOutputStream.write(byteBuffer, 0, bytesRead)
+                    bytesRead = fileInputStream.read(byteBuffer, 0, byteBuffer.size)
+                }
+
+                highPassFilter.processingFinished()
+
+                tempFile.renameTo(originalFile)
+
+            } finally {
+                fileInputStream?.close()
+                fileOutputStream?.close()
+                if (tempFile.exists()) tempFile.delete()
+            }
+            Unit
+        }
+    }
+
+    override suspend fun applyFlangerEffect(trackId: Long, rate: Float, wet: Float): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val track = tracks.value.find { it.id == trackId }
+                ?: throw IllegalStateException("Track no encontrado con id: $trackId")
+
+            val originalFile = File(track.path)
+            if (!originalFile.exists()) throw IllegalStateException("Archivo de pista no encontrado: ${track.path}")
+            val backupFile = File(track.path + ".original_effect")
+            if (backupFile.exists()) backupFile.delete()
+            val trimBackupFile = File(track.path + ".original_trim")
+            if (trimBackupFile.exists()) trimBackupFile.delete()
+            originalFile.renameTo(backupFile)
+
+            val tempFile = File(track.path + ".tmp")
+            var fileInputStream: FileInputStream? = null
+            var fileOutputStream: FileOutputStream? = null
+
+            try {
+                fileInputStream = FileInputStream(backupFile)
+                fileOutputStream = FileOutputStream(tempFile)
+
+                val flanger = FlangerEffect(
+                    0.005,
+                    wet.toDouble(),
+                    TARSOS_FORMAT.sampleRate.toDouble(),
+                    0.5,
+                )
+
+                val converter = TarsosDSPAudioFloatConverter.getConverter(TARSOS_FORMAT)
+                val byteBuffer = ByteArray(2048)
+                val floatBuffer = FloatArray(1024)
+                val audioEvent = AudioEvent(TARSOS_FORMAT)
+                audioEvent.setFloatBuffer(floatBuffer)
+
+                var bytesRead = fileInputStream.read(byteBuffer, 0, byteBuffer.size)
+                while (bytesRead != -1) {
+                    audioEvent.setBytesProcessing(bytesRead)
+                    converter.toFloatArray(byteBuffer, floatBuffer)
+                    flanger.process(audioEvent)
+
+                    converter.toByteArray(floatBuffer, byteBuffer)
+                    fileOutputStream.write(byteBuffer, 0, bytesRead)
+                    bytesRead = fileInputStream.read(byteBuffer, 0, byteBuffer.size)
+                }
+
+                Arrays.fill(floatBuffer, 0.0f)
+                audioEvent.setBytesProcessing(byteBuffer.size)
+                flanger.process(audioEvent)
+
+                var rms = AudioEvent.calculateRMS(floatBuffer)
+                var tailLoops = 0
+                val maxTailLoops = (0.005 * 2 * TARSOS_FORMAT.sampleRate) / 1024
+
+                while (rms > 0.0001 && tailLoops < maxTailLoops) {
+                    converter.toByteArray(floatBuffer, byteBuffer)
+                    fileOutputStream.write(byteBuffer, 0, byteBuffer.size)
+                    Arrays.fill(floatBuffer, 0.0f)
+                    flanger.process(audioEvent)
+                    rms = AudioEvent.calculateRMS(floatBuffer)
+                    tailLoops++
+                }
+                flanger.processingFinished()
+                tempFile.renameTo(originalFile)
+
+            } finally {
+                fileInputStream?.close()
+                fileOutputStream?.close()
+                if (tempFile.exists()) tempFile.delete()
+            }
             Unit
         }
     }
