@@ -10,21 +10,14 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.InlineTextContent
-import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -58,20 +51,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.Placeholder
-import androidx.compose.ui.text.PlaceholderVerticalAlign
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -84,6 +68,11 @@ import com.android.harmoniatpi.ui.components.ShowConfirmationDialog
 import com.android.harmoniatpi.ui.components.TimelineHeader
 import com.android.harmoniatpi.ui.components.TrackItem
 import com.android.harmoniatpi.ui.components.TrimAudioDialog
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.AddTrackSheetContent
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.EmptyProjectMessage
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.InDevelopmentSheetContent
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.RenameTrackSheetContent
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.BottomSheetContent
 import com.android.harmoniatpi.ui.components.TunerDialog
 import com.android.harmoniatpi.ui.components.VolumeSliderDialog
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
@@ -97,9 +86,6 @@ fun ProjectManagementScreen(
     viewModel: ProjectManagementScreenViewModel = hiltViewModel(),
     onBack: () -> Unit
 ) {
-    val sheetState = rememberModalBottomSheetState()
-    var showSheet by remember { mutableStateOf(false) }
-    var mostrarFuturo by remember { mutableStateOf(false) }
     val state by viewModel.state.collectAsState()
     val sharedScrollState = rememberScrollState()
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -116,8 +102,6 @@ fun ProjectManagementScreen(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
-            mostrarFuturo = false
-            showSheet = false
             viewModel.importTrackFromFile(it)
         }
     }
@@ -125,9 +109,12 @@ fun ProjectManagementScreen(
     val density = LocalDensity.current
     LaunchedEffect(state.currentPlaybackMs) {
         if (state.currentPlaybackMs > 0 && sharedScrollState.maxValue > 0 && state.isPlaying) {
-            val playbackPx = with(density) { (state.currentPlaybackMs / state.msPerDpScale).dp.toPx() }
-            val screenWidthPx = with(density) { 300.dp.toPx() } // Ancho aprox. de la pantalla visible
-            val targetScrollPosition = (playbackPx - screenWidthPx / 3).coerceAtLeast(0f).roundToInt()
+            val playbackPx =
+                with(density) { (state.currentPlaybackMs / state.msPerDpScale).dp.toPx() }
+            val screenWidthPx =
+                with(density) { 300.dp.toPx() } // Ancho aprox. de la pantalla visible
+            val targetScrollPosition =
+                (playbackPx - screenWidthPx / 3).coerceAtLeast(0f).roundToInt()
 
             if (targetScrollPosition > sharedScrollState.value && (targetScrollPosition - sharedScrollState.value) > 10) {
                 sharedScrollState.animateScrollTo(targetScrollPosition)
@@ -135,13 +122,10 @@ fun ProjectManagementScreen(
         }
     }
 
-
     BackHandler {
         viewModel.updateCurrentProjectWithTracks()
         onBack()
     }
-
-
 
     if (showDeleteDialog) {
         ShowConfirmationDialog(
@@ -157,7 +141,7 @@ fun ProjectManagementScreen(
         )
     }
 
-    if (state.importAudioLoading){
+    if (state.importAudioLoading) {
         Dialog(
             onDismissRequest = {},
             properties = DialogProperties(usePlatformDefaultWidth = false)
@@ -173,6 +157,77 @@ fun ProjectManagementScreen(
             }
         }
     }
+
+    //  NUEVO BOTTOMSHEET
+    val activeSheet = state.activeSheetContent
+    if (activeSheet != null) {
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+        ModalBottomSheet(
+            onDismissRequest = { viewModel.hideBottomSheet() },
+            sheetState = sheetState
+        ) {
+            when (activeSheet) {
+                is BottomSheetContent.AddTrackMenu -> {
+
+                    AddTrackSheetContent(
+                        onImportFromFile = {
+                            viewModel.hideBottomSheet()
+                            pickAudioLauncher.launch("audio/*")
+                        },
+                        onRecordVoice = {
+                            viewModel.hideBottomSheet()
+                            viewModel.addNewTrack(AudioSourceType.VOICE)
+                        },
+                        onRecordInstrument = {
+                            viewModel.hideBottomSheet()
+                            viewModel.addNewTrack(AudioSourceType.INSTRUMENT)
+                        },
+                        onPasteTrack = {
+                            viewModel.hideBottomSheet()
+                            viewModel.pasteFromClipboard()
+                        },
+                        isClipboardFull = state.isClipboardFull
+                    )
+                }
+
+                is BottomSheetContent.EditVolume -> {
+                    /*// Nuevo Composable para el volumen
+                    VolumeSheetContent(
+                        track = activeSheet.track,
+                        onVolumeChange = { trackId, newVolume ->
+                            viewModel.setTrackVolume(trackId, newVolume)
+                        }
+                    )*/
+                    InDevelopmentSheetContent()
+
+                }
+
+                is BottomSheetContent.RenameTrack -> {
+                    RenameTrackSheetContent(
+                        track = activeSheet.track,
+                        onRename = { trackId, newName ->
+                            viewModel.renameTrack(trackId, newName)
+                            viewModel.hideBottomSheet()
+                        },
+                        onDismiss = {
+                            viewModel.hideBottomSheet()
+                        }
+                    )
+                }
+
+                is BottomSheetContent.InDevelopment -> {
+                    // Composable para "En desarrollo"
+                    InDevelopmentSheetContent()
+                }
+
+                is BottomSheetContent.TrackEffects -> {
+                    // ... el contenido para los efectos
+                }
+            }
+        }
+    }
+    // ----> FIN  BOTTOMSHEET <----
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -300,7 +355,7 @@ fun ProjectManagementScreen(
                                     (track.selectionEndMs == null || track.selectionEndMs > track.selectionStartMs),
                             msPerDpScale = state.msPerDpScale,
                             onShowVolumeSlider = { viewModel.onShowVolumeSlider(track) },
-                            mostrarFuturo = {mostrarFuturo = true}
+                            onShowBottomSheet = viewModel::showBottomSheet
                         )
                     }
                 }
@@ -315,7 +370,7 @@ fun ProjectManagementScreen(
 
             IconButton(
                 onClick = {
-                    showSheet = true
+                    viewModel.showBottomSheet(BottomSheetContent.AddTrackMenu)
                 },
                 modifier = Modifier
                     .padding(top = 16.dp, end = 32.dp)
@@ -336,11 +391,12 @@ fun ProjectManagementScreen(
             //Spacer(modifier = Modifier.weight(1f))
 
             ProyectControlButtonRow(
-                onSkipPrevious = { viewModel.stopPlaying()
+                onSkipPrevious = {
+                    viewModel.stopPlaying()
                     scope.launch {
                         sharedScrollState.animateScrollTo(0)
                     }
-                                 },
+                },
                 onPlay = { viewModel.play() },
                 onPause = { viewModel.pause() },
                 startRecording = {
@@ -357,97 +413,7 @@ fun ProjectManagementScreen(
                 modifier = Modifier,
             )
 
-            if (mostrarFuturo)
-            ModalBottomSheet(
-                onDismissRequest = { mostrarFuturo = false },
-                sheetState = sheetState,
-                containerColor = Color(0xFF121212), // Fondo oscuro del MBS
-                tonalElevation = 8.dp
-            ) {
-                Column( modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally){
 
-
-                    Text(
-                        text = "Funcion en desarrollo",
-                        style = MaterialTheme.typography.titleLarge.copy(color = Color.White),
-                        modifier = Modifier.padding(bottom = 8.dp),
-                        textAlign = TextAlign.Center
-                    )
-                }
-
-            }
-
-            if (showSheet) {
-                ModalBottomSheet(
-                    onDismissRequest = { showSheet = false },
-                    sheetState = sheetState,
-                    containerColor = Color(0xFF121212), // Fondo oscuro del MBS
-                    tonalElevation = 8.dp
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Text(
-                            text = "Añadir pista",
-                            style = MaterialTheme.typography.titleLarge.copy(color = Color.White),
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-
-                        // Primera Fila - Pista de Voz y Pista de instrumento
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            OptionCard(
-                                title = "Grabar Voz\n(Cancelación\n de eco)",
-                                icon = Icons.Default.Mic,
-                                onClick = {
-                                    showSheet = false
-                                    viewModel.addNewTrack(AudioSourceType.VOICE)
-                                },
-                                modifier = Modifier.weight(1f)
-                            )
-                            OptionCard(
-                                title = "Grabar Instrumento\n(Hi-Fi)",
-                                icon = Icons.Default.MusicNote,
-                                onClick = {
-                                    showSheet = false
-                                    viewModel.addNewTrack(AudioSourceType.INSTRUMENT)
-                                },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-
-                        // Segunda fila - Importar desde un archivo
-                        OptionCard(
-                            title = "Importar desde archivo",
-                            icon = Icons.Default.Folder,
-                            onClick = { pickAudioLauncher.launch("audio/*") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        if (state.isClipboardFull) {
-                            OptionCard(
-                                title = "Pegar Pista",
-                                icon = Icons.Default.ContentPaste,
-                                onClick = {
-                                    showSheet = false
-                                    viewModel.pasteFromClipboard()
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-
-                    }
-                }
-            }
         }
     }
 
@@ -508,124 +474,5 @@ fun ProjectManagementScreen(
     }
 }
 
-@Composable
-fun EmptyProjectMessage(modifier: Modifier = Modifier) {
-    // Usamos un mapa para definir el contenido del ícono en línea
-    val inlineContentMap = mapOf(
-        "add_icon" to InlineTextContent(
-            Placeholder(
-                width = 24.sp,
-                height = 24.sp,
-                placeholderVerticalAlign = PlaceholderVerticalAlign.TextCenter
-            )
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Agregar",
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(16.dp)
-                )
-            }
-        }
-    )
 
-    // Creamos el texto anotado
-    val annotatedText = buildAnnotatedString {
-        append("Presione ")
-        // Adjuntamos el ícono en línea usando su ID
-        appendInlineContent("add_icon", "[icono agregar]")
-        append(" para agregar una nueva pista para ")
-        withStyle(
-            style = SpanStyle(
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold
-            )
-        ) {
-            append("grabar, insertar un archivo")
-        }
-        append(" o buscar en la biblioteca de sonidos.")
-    }
 
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 32.dp),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Box(
-            modifier = Modifier.padding(24.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = annotatedText,
-                inlineContent = inlineContentMap,
-                textAlign = TextAlign.Center,
-                fontSize = 18.sp,
-                lineHeight = 28.sp
-            )
-        }
-    }
-}
-
-// Composable para cada opción de la BottomSheet
-@Composable
-fun OptionCard(
-    title: String,
-    icon: ImageVector,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        onClick = onClick,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF1E1E1E)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-        modifier = modifier
-            .height(100.dp)
-            .clip(RoundedCornerShape(16.dp))
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            contentAlignment = Alignment.CenterStart
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
-                ),
-                modifier = Modifier.align(Alignment.CenterStart)
-            )
-            Spacer(modifier = Modifier.padding(240.dp))
-            // Icono circular flotante
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .size(36.dp)
-                    .background(Color(0xFFFF8117), CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = Color.Black,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
-    }
-}

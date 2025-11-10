@@ -47,6 +47,7 @@ import com.android.harmoniatpi.domain.usecases.audioUseCases.UnMuteTrackUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.UndoEffectUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.UndoTrimUseCase
 import com.android.harmoniatpi.domain.usecases.roomUseCases.UpdateOrInsertProjectInDBUseCase
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.BottomSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.ProyectScreenUiState
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -895,6 +896,38 @@ class ProjectManagementScreenViewModel @Inject constructor(
         Log.d("PManagementViewModel", "ViewModel destruido, limpiando pistas del mixer.")
     }
 
+
+    /**
+     * Muestra un tipo específico de BottomSheet.
+     * @param content El contenido a mostrar (ej. AddTrackMenu, EditVolume, etc.)
+     */
+    fun showBottomSheet(content: BottomSheetContent) {
+        _state.update { it.copy(activeSheetContent = content) }
+    }
+
+    /**
+     * Oculta el BottomSheet actualmente activo.
+     */
+    fun hideBottomSheet() {
+        _state.update { it.copy(activeSheetContent = null) }
+    }
+
+    /**
+     * Renombra una pista.y actualiza el proyecto en la DB para persistencia inmediata.
+     */
+    fun renameTrack(trackId: Long, newName: String) {
+        _state.update { currentState ->
+            val updatedTracks = currentState.tracks.map { track ->
+                if (track.id == trackId) {
+                    track.copy(title = newName)
+                } else {
+                    track
+                }
+            }
+            currentState.copy(tracks = updatedTracks)
+        }
+        updateCurrentProjectWithTracks()
+    }
 
     private companion object {
         const val TAG = "AudioTestsViewModel"
