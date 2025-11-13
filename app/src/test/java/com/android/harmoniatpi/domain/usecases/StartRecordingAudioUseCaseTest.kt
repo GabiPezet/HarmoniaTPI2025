@@ -23,19 +23,19 @@ class StartRecordingAudioUseCaseTest {
     @Test
     fun `when use case is executed, it should call startRecording on the repository`() = runTest {
         val fileName = "test_audio"
-        coEvery { audioRecorderRepository.startRecording(fileName) } returns Result.success(Unit)
+        coEvery { audioRecorderRepository.startRecording(fileName, 1) } returns Result.success(Unit)
 
-        startRecordingAudioUseCase(fileName)
+        startRecordingAudioUseCase(fileName, 1)
 
-        coVerify(exactly = 1) { audioRecorderRepository.startRecording(fileName) }
+        coVerify(exactly = 1) { audioRecorderRepository.startRecording(fileName, 1) }
     }
 
     @Test
     fun `when repository returns success, it should return success`() = runTest {
         val fileName = "test_audio"
-        coEvery { audioRecorderRepository.startRecording(fileName) } returns Result.success(Unit)
+        coEvery { audioRecorderRepository.startRecording(fileName, 1) } returns Result.success(Unit)
 
-        val result = startRecordingAudioUseCase(fileName)
+        val result = startRecordingAudioUseCase(fileName, 1)
 
         assert(result.isSuccess)
     }
@@ -44,9 +44,9 @@ class StartRecordingAudioUseCaseTest {
     fun `when repository returns failure, it should return failure`() = runTest {
         val fileName = "test_audio"
         val exception = RuntimeException("Recording failed")
-        coEvery { audioRecorderRepository.startRecording(fileName) } returns Result.failure(exception)
+        coEvery { audioRecorderRepository.startRecording(fileName, 1) } returns Result.failure(exception)
 
-        val result = startRecordingAudioUseCase(fileName)
+        val result = startRecordingAudioUseCase(fileName, 1)
 
         assert(result.isFailure)
         assert(result.exceptionOrNull() == exception)

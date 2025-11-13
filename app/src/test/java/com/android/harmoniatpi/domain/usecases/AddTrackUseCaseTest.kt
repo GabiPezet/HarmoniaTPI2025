@@ -1,6 +1,7 @@
 package com.android.harmoniatpi.domain.usecases
 
 import com.android.harmoniatpi.domain.interfaces.AudioMixerRepository
+import com.android.harmoniatpi.domain.model.audio.AudioSourceType
 import com.android.harmoniatpi.domain.usecases.audioUseCases.AddTrackUseCase
 import io.mockk.mockk
 import io.mockk.verify
@@ -20,7 +21,7 @@ class AddTrackUseCaseTest {
 
     @Test
     fun `invoke calls createTrack on repository`() {
-        addTrackUseCase()
-        verify(exactly = 1) { audioMixerRepository.createTrack() }
+        addTrackUseCase(AudioSourceType.VOICE)
+        verify(exactly = 1) { audioMixerRepository.createTrack(AudioSourceType.VOICE) }
     }
 }

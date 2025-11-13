@@ -2,6 +2,7 @@ package com.android.harmoniatpi.domain.usecases
 
 import com.android.harmoniatpi.domain.interfaces.AudioMixerRepository
 import com.android.harmoniatpi.domain.interfaces.AudioPlayer
+import com.android.harmoniatpi.domain.model.audio.AudioSourceType
 import com.android.harmoniatpi.domain.model.audio.Track
 import com.android.harmoniatpi.domain.usecases.audioUseCases.GetTracksUseCase
 import io.mockk.coEvery
@@ -28,7 +29,7 @@ class GetTracksUseCaseTest {
 
     @Test
     fun `invoke returns flow of tracks from repository`() = runBlocking {
-        val fakeTracks = listOf(Track("folderPath", audioPlayer))
+        val fakeTracks = listOf(Track("folderPath", "existing",1, AudioSourceType.VOICE, audioPlayer))
         val stateFlow = MutableStateFlow(fakeTracks)
         coEvery { audioMixerRepository.getTracks() } returns stateFlow
 
