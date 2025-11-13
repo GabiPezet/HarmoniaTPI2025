@@ -3,6 +3,8 @@ package com.android.harmoniatpi.domain.interfaces
 import com.android.harmoniatpi.data.database.entities.MyPostEntity
 import com.android.harmoniatpi.data.local.model.ProjectFirebaseModel
 import com.android.harmoniatpi.domain.model.UserPreferences
+import com.android.harmoniatpi.domain.model.payment.PaymentPreference
+import com.android.harmoniatpi.domain.model.payment.PaymentResult
 import com.android.harmoniatpi.domain.model.project.Project
 import com.android.harmoniatpi.domain.model.user.User
 import com.android.harmoniatpi.domain.model.userPreferences.FriendRequestReceived
@@ -96,6 +98,9 @@ interface Repository {
     suspend fun deleteProjectFromFirestore(projectId: String): Result<Unit>
 
     suspend fun upsertProjectInFirestore(projectModel: ProjectFirebaseModel): Result<Unit>
-    //--------------------ProyectosFin------------------------
+
+    suspend fun createPaymentPreference(amount: Double, description: String): PaymentPreference
+
+    suspend fun sendPayment(preferenceId: String): PaymentResult
 
 }

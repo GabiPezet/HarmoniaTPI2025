@@ -10,9 +10,12 @@ import com.android.harmoniatpi.data.database.entities.UserPreferencesEntity
 import com.android.harmoniatpi.data.local.model.PostFirebaseModel
 import com.android.harmoniatpi.data.local.model.ProjectFirebaseModel
 import com.android.harmoniatpi.data.local.model.UserFirebaseModel
+import com.android.harmoniatpi.data.remote.MockMercadoPagoApi
 import com.android.harmoniatpi.di.util.JsonUtils
 import com.android.harmoniatpi.domain.interfaces.Repository
 import com.android.harmoniatpi.domain.model.UserPreferences
+import com.android.harmoniatpi.domain.model.payment.PaymentPreference
+import com.android.harmoniatpi.domain.model.payment.PaymentResult
 import com.android.harmoniatpi.domain.model.project.Project
 import com.android.harmoniatpi.domain.model.userPreferences.Friend
 import com.android.harmoniatpi.domain.model.userPreferences.FriendRequestReceived
@@ -49,6 +52,7 @@ class RepositoryImpl @Inject constructor(
     private val myPostDao: MyPostDao,
     private val database: FirebaseDatabase,
     private val storage: FirebaseStorage,
+    private val api: MockMercadoPagoApi
 ) : Repository {
 
     override fun getFirebaseCurrentUser(): FirebaseUser? = firebaseAuth.currentUser
@@ -340,13 +344,15 @@ class RepositoryImpl @Inject constructor(
                 )
 
                 // Añade la solicitud solo si no existe ya
-                val updatedTargetRequests = if (targetDomainUser.friendRequestReceived.any { it.fromUserID == currentUser.userID }) {
-                    targetDomainUser.friendRequestReceived
-                } else {
-                    targetDomainUser.friendRequestReceived + newRequestReceived
-                }
+                val updatedTargetRequests =
+                    if (targetDomainUser.friendRequestReceived.any { it.fromUserID == currentUser.userID }) {
+                        targetDomainUser.friendRequestReceived
+                    } else {
+                        targetDomainUser.friendRequestReceived + newRequestReceived
+                    }
 
-                updatedTargetUser = targetDomainUser.copy(friendRequestReceived = updatedTargetRequests)
+                updatedTargetUser =
+                    targetDomainUser.copy(friendRequestReceived = updatedTargetRequests)
 
                 // Obtener 'currentUser' de Firestore
                 val currentUserRef = firestore.collection("users").document(currentUser.userID)
@@ -364,17 +370,25 @@ class RepositoryImpl @Inject constructor(
                 )
 
                 // Añade la solicitud solo si no existe ya
-                val updatedCurrentRequests = if (currentDomainUser.friendRequestSent.any { it.toUserID == targetUser.userID }) {
-                    currentDomainUser.friendRequestSent
-                } else {
-                    currentDomainUser.friendRequestSent + newRequestSent
-                }
+                val updatedCurrentRequests =
+                    if (currentDomainUser.friendRequestSent.any { it.toUserID == targetUser.userID }) {
+                        currentDomainUser.friendRequestSent
+                    } else {
+                        currentDomainUser.friendRequestSent + newRequestSent
+                    }
 
-                updatedCurrentUser = currentDomainUser.copy(friendRequestSent = updatedCurrentRequests)
+                updatedCurrentUser =
+                    currentDomainUser.copy(friendRequestSent = updatedCurrentRequests)
 
                 //Subir 'targetUser' y 'currentUser' actualizados ---
-                transaction.set(targetUserRef, updatedTargetUser!!.toDataBase(jsonUtils).toFirebaseModel())
-                transaction.set(currentUserRef, updatedCurrentUser!!.toDataBase(jsonUtils).toFirebaseModel())
+                transaction.set(
+                    targetUserRef,
+                    updatedTargetUser!!.toDataBase(jsonUtils).toFirebaseModel()
+                )
+                transaction.set(
+                    currentUserRef,
+                    updatedCurrentUser!!.toDataBase(jsonUtils).toFirebaseModel()
+                )
 
                 // Requerido por la lambda de la transacción
                 null
@@ -426,11 +440,12 @@ class RepositoryImpl @Inject constructor(
                     lastName = currentUser.userLastName,
                     urlPhoto = currentUser.userPhotoPathRemote
                 )
-                val updatedTargetFriends = if (targetDomainUser.friendsList.any { it.id == currentUser.userID }) {
-                    targetDomainUser.friendsList
-                } else {
-                    targetDomainUser.friendsList + newFriendForTarget
-                }
+                val updatedTargetFriends =
+                    if (targetDomainUser.friendsList.any { it.id == currentUser.userID }) {
+                        targetDomainUser.friendsList
+                    } else {
+                        targetDomainUser.friendsList + newFriendForTarget
+                    }
 
                 val finalTargetUser = targetDomainUser.copy(
                     friendRequestSent = updatedTargetSent,
@@ -449,11 +464,12 @@ class RepositoryImpl @Inject constructor(
                     lastName = targetDomainUser.userLastName,
                     urlPhoto = targetDomainUser.userPhotoPathRemote
                 )
-                val updatedCurrentFriends = if (currentUser.friendsList.any { it.id == targetUserId }) {
-                    currentUser.friendsList
-                } else {
-                    currentUser.friendsList + newFriendForCurrent
-                }
+                val updatedCurrentFriends =
+                    if (currentUser.friendsList.any { it.id == targetUserId }) {
+                        currentUser.friendsList
+                    } else {
+                        currentUser.friendsList + newFriendForCurrent
+                    }
 
                 updatedCurrentUser = currentUser.copy(
                     friendRequestReceived = updatedCurrentReceived,
@@ -461,7 +477,10 @@ class RepositoryImpl @Inject constructor(
                 )
 
                 //Ejecutar la transacción ---
-                transaction.set(targetUserRef, finalTargetUser.toDataBase(jsonUtils).toFirebaseModel())
+                transaction.set(
+                    targetUserRef,
+                    finalTargetUser.toDataBase(jsonUtils).toFirebaseModel()
+                )
                 transaction.set(
                     firestore.collection("users").document(currentUser.userID),
                     updatedCurrentUser!!.toDataBase(jsonUtils).toFirebaseModel()
@@ -512,10 +531,14 @@ class RepositoryImpl @Inject constructor(
                 val updatedCurrentReceived = currentUser.friendRequestReceived.filterNot {
                     it.fromUserID == targetUserId
                 }
-                updatedCurrentUser = currentUser.copy(friendRequestReceived = updatedCurrentReceived)
+                updatedCurrentUser =
+                    currentUser.copy(friendRequestReceived = updatedCurrentReceived)
 
                 //Ejecutar la transacción ---
-                transaction.set(targetUserRef, finalTargetUser.toDataBase(jsonUtils).toFirebaseModel())
+                transaction.set(
+                    targetUserRef,
+                    finalTargetUser.toDataBase(jsonUtils).toFirebaseModel()
+                )
                 transaction.set(
                     firestore.collection("users").document(currentUser.userID),
                     updatedCurrentUser!!.toDataBase(jsonUtils).toFirebaseModel()
@@ -607,6 +630,14 @@ class RepositoryImpl @Inject constructor(
                 Result.failure(e)
             }
         }
+
+    override suspend fun createPaymentPreference(
+        amount: Double,
+        description: String
+    ): PaymentPreference = api.createPreference(amount, description)
+
+    override suspend fun sendPayment(preferenceId: String): PaymentResult =
+        api.processPayment(preferenceId)
 
 
     override suspend fun getFirestoreProjectsByUser(userId: String): Flow<List<ProjectFirebaseModel>> =

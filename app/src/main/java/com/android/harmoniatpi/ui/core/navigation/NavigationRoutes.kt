@@ -25,6 +25,10 @@ sealed class NavigationRoutes() {
     @Serializable
     data object FriendsScreenRoute : NavigationRoutes()
 
+    @Serializable
+    data object PaymentMarketScreenRoute : NavigationRoutes()
+
+
 }
 
 // BottomNav
