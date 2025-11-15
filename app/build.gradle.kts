@@ -143,4 +143,5 @@ dependencies {
     //TARSOS
     implementation ("be.tarsos.dsp:core:2.5")
     implementation ("be.tarsos.dsp:jvm:2.5")
+    implementation("androidx.browser:browser:1.7.0")
 }

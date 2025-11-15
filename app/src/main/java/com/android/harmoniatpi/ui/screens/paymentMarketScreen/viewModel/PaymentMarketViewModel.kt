@@ -2,6 +2,7 @@ package com.android.harmoniatpi.ui.screens.paymentMarketScreen.viewModel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.harmoniatpi.domain.model.payment.PaymentResult
 import com.android.harmoniatpi.domain.usecases.paymentUseCases.CreatePaymentPreferenceUseCase
 import com.android.harmoniatpi.domain.usecases.paymentUseCases.SendPaymentUseCase
 import com.android.harmoniatpi.ui.screens.paymentMarketScreen.model.PaymentUiState
@@ -32,6 +33,14 @@ class PaymentMarketViewModel @Inject constructor(
                 _uiState.update { it.copy(loading = false, errorMessage = e.message) }
             }
         }
+    }
+
+    fun onPaymentApproved() {
+        val current = _uiState.value
+        _uiState.value = current.copy(
+            paymentResult = PaymentResult.APPROVED,
+            errorMessage = null
+        )
     }
 
     fun sendPayment() {

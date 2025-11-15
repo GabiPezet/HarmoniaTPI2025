@@ -64,7 +64,14 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="HarmoniaTPI" android:host="payment" android:path="/approved"/>
+            </intent-filter>
         </activity>
+
 
         <provider
             android:name="androidx.core.content.FileProvider"

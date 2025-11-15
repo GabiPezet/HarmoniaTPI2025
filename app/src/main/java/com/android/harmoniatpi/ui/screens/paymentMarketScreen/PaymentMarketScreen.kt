@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.android.harmoniatpi.domain.model.payment.PaymentResult
+import com.android.harmoniatpi.ui.screens.paymentMarketScreen.components.MercadoPagoButton
 import com.android.harmoniatpi.ui.screens.paymentMarketScreen.viewModel.PaymentMarketViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -31,7 +32,6 @@ fun PaymentMarketScreen(
     onNavigateBack: () -> Unit,
     viewModel: PaymentMarketViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
         topBar = {
@@ -45,53 +45,28 @@ fun PaymentMarketScreen(
             )
         }
     ) { padding ->
+
         Column(
             Modifier
                 .padding(padding)
                 .padding(16.dp)
                 .fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.Center
         ) {
 
-            if (uiState.loading) {
-                CircularProgressIndicator()
-            }
+            Text(
+                text = "HoloJam Premium — $100 ARS",
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(bottom = 20.dp)
+            )
 
-            Button(
-                onClick = { viewModel.createPreference(1200.0, "HoloJam Premium") },
-                enabled = !uiState.loading && uiState.preference == null
-            ) {
-                Text("Generar Preference")
-            }
-
-            uiState.preference?.let { pref ->
-                Text("Preference ID: ${pref.preferenceId}")
-                Text("Monto: $${pref.amount}")
-                Text("Descripción: ${pref.description}")
-
-                Button(
-                    onClick = { viewModel.sendPayment() },
-                    enabled = !uiState.loading
-                ) {
-                    Text("Simular Pago")
+            //BOTÓN REAL DE MERCADO PAGO
+            MercadoPagoButton(
+                onPaymentApproved = {
+                    viewModel.onPaymentApproved()
                 }
-            }
+            )
 
-            uiState.paymentResult?.let { result ->
-                Text(
-                    text = "Resultado del pago: $result",
-                    fontWeight = FontWeight.Bold,
-                    color = when (result) {
-                        PaymentResult.APPROVED -> MaterialTheme.colorScheme.primary
-                        PaymentResult.REJECTED -> MaterialTheme.colorScheme.tertiary
-                        PaymentResult.PENDING -> MaterialTheme.colorScheme.onError
-                    }
-                )
-            }
-
-            uiState.errorMessage?.let {
-                Text(text = "Error: $it", color = MaterialTheme.colorScheme.onError)
-            }
         }
     }
 }
