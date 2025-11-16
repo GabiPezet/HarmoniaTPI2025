@@ -1,5 +1,7 @@
 package com.android.harmoniatpi.ui.screens.homeScreen
 
+import android.Manifest
+import android.os.Build
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -46,6 +48,7 @@ import com.android.harmoniatpi.ui.core.navigation.bottomNavigationBar.BottomBarI
 import com.android.harmoniatpi.ui.core.navigation.bottomNavigationBar.NavigationBottomWrapper
 import com.android.harmoniatpi.ui.screens.homeScreen.viewmodel.HomeScreenViewModel
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.viewmodel.DrawerContentViewModel
+import com.android.harmoniatpi.ui.utils.PermissionRequester
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,6 +85,14 @@ fun HomeScreen(
     if (uiState.isLoading) {
         CircularProgressBar("Cargando")
     } else {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            PermissionRequester(
+                permission = Manifest.permission.POST_NOTIFICATIONS,
+                rationaleRes = R.string.post_notifications_rationale,
+                permanentlyDeniedRes = R.string.post_notifications_denied_msg,
+                showPermanentlyDeclinedDialog = false
+            )
+        }
         Scaffold(
             topBar = {
                 CenterAlignedTopAppBar(
