@@ -1,7 +1,6 @@
 package com.android.harmoniatpi.ui.screens.projectManagementScreen
 
 import android.net.Uri
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -10,6 +9,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -21,10 +21,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ContentPaste
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.ZoomIn
 import androidx.compose.material.icons.filled.ZoomOut
@@ -37,6 +33,8 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarColors
@@ -63,18 +61,20 @@ import com.android.harmoniatpi.domain.model.audio.AudioSourceType
 import com.android.harmoniatpi.ui.components.CircularProgressBar
 import com.android.harmoniatpi.ui.components.EffectsAudioDialog
 import com.android.harmoniatpi.ui.components.GlobalPlayhead
-import com.android.harmoniatpi.ui.components.ProyectControlButtonRow
 import com.android.harmoniatpi.ui.components.ShowConfirmationDialog
-import com.android.harmoniatpi.ui.components.TimelineHeader
-import com.android.harmoniatpi.ui.components.TrackItem
 import com.android.harmoniatpi.ui.components.TrimAudioDialog
-import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.BottomSheetContent
 import com.android.harmoniatpi.ui.components.TunerDialog
 import com.android.harmoniatpi.ui.components.VolumeSliderDialog
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.AddTrackSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.EmptyProjectMessage
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.InDevelopmentSheetContent
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.MetronomeSheetContent
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.ProyectControlButtonRow
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.RenameTrackSheetContent
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.TimeDisplayPanel
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.TimelineHeader
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.TrackItem
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.BottomSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.viewmodel.ProjectManagementScreenViewModel
 import kotlinx.coroutines.launch
@@ -97,7 +97,6 @@ fun ProjectManagementScreen(
     val showTuner by viewModel.showTunerDialog.collectAsState()
     val tunerNote by viewModel.tunerNote.collectAsState()
 
-
     val pickAudioLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -107,6 +106,7 @@ fun ProjectManagementScreen(
     }
 
     val density = LocalDensity.current
+
     LaunchedEffect(state.currentPlaybackMs) {
         if (state.currentPlaybackMs > 0 && sharedScrollState.maxValue > 0 && state.isPlaying) {
             val playbackPx =
@@ -124,6 +124,8 @@ fun ProjectManagementScreen(
 
     BackHandler {
         viewModel.updateCurrentProjectWithTracks()
+        viewModel.stopRecording()
+        viewModel.stopPlaying()
         onBack()
     }
 
@@ -224,11 +226,43 @@ fun ProjectManagementScreen(
                 is BottomSheetContent.TrackEffects -> {
                     // ... el contenido para los efectos
                 }
+
+                is BottomSheetContent.MetronomeSettings -> {
+                    MetronomeSheetContent(
+                        currentBpm = state.bpm,
+                        isMetronomeEnabled = state.isMetronomeEnabled,
+                        currentVolume = state.metronomeVolume,
+                        onBpmChange = viewModel::setBpm,
+                        onMetronomeEnabledChange = viewModel::setMetronomeEnabled,
+                        onVolumeChange = viewModel::setMetronomeVolume,
+                        onDismiss = viewModel::hideBottomSheet
+                    )
+                }
             }
         }
     }
     // ----> FIN  BOTTOMSHEET <----
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    var snackbarMessage by remember { mutableStateOf<String?>(null) }
+
+    //Muestra el snackbar para los botones ProjectControlButtonRow cuando el mensaje cambie.
+    LaunchedEffect(snackbarMessage) {
+        snackbarMessage?.let {
+            scope.launch {
+                snackbarHostState.showSnackbar(it)
+                snackbarMessage = null
+            }
+        }
+    }
+    // Este escuchará los mensajes que vienen del VIEWMODEL
+    LaunchedEffect(Unit) {
+        viewModel.uiMessages.collect { message ->
+            scope.launch {
+                snackbarHostState.showSnackbar(message)
+            }
+        }
+    }
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = { //Impl de top bar
@@ -243,10 +277,13 @@ fun ProjectManagementScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = {
-                        viewModel.updateCurrentProjectWithTracks()
-                        onBack()
-                    }) {
+                    IconButton(
+                        onClick = {
+                            viewModel.updateCurrentProjectWithTracks()
+                            onBack()
+                        },
+                        enabled = !state.isRecording
+                    ) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 },
@@ -272,6 +309,72 @@ fun ProjectManagementScreen(
                 )
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        bottomBar = {
+            Column( modifier = Modifier.background(Color(0xFF858585))) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    TimeDisplayPanel(
+                        currentMillis = state.currentPlaybackMs,
+                        totalMillis = state.totalProjectMs,
+                        onMetronomeClick = {
+                            viewModel.showMetronomeSheet()
+                        },
+                        isBeingRecorded = state.isRecording,
+                        isPlaying = state.isPlaying,
+                        bpm = state.bpm,
+                        isMetronomeEnabled = state.isMetronomeEnabled,
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (!state.isRecording) {
+                        IconButton(
+                            onClick = {
+                                viewModel.showBottomSheet(BottomSheetContent.AddTrackMenu)
+                            },
+                            modifier = Modifier
+                                .size(50.dp),
+                            colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Añadir Pista",
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        }
+                    }
+                }
+
+                ProyectControlButtonRow(
+                    onSkipPrevious = {
+                        viewModel.stopPlaying()
+                        scope.launch {
+                            sharedScrollState.animateScrollTo(0)
+                        }
+                    },
+                    onPlay = { viewModel.play() },
+                    onPause = { viewModel.pause() },
+                    startRecording = {
+                        snackbarMessage = "Para una mejor experiencia, usa auriculares."
+                        viewModel.startRecording()
+                    },
+                    stopRecording = { viewModel.stopRecording() },
+                    isRecording = state.isRecording,
+                    isPlaying = state.isPlaying,
+                    onError = { message ->
+                        snackbarMessage = message
+                    },
+                    modifier = Modifier // Ya no necesita modifier, el componente se autogestiona
+                )
+            }
+        }
         //containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
 
@@ -347,8 +450,12 @@ fun ProjectManagementScreen(
                             onSelectionChanged = { startMs, endMs ->
                                 viewModel.updateTrackSelection(track.id, startMs, endMs)
                             },
-                            onCopy = { viewModel.copySelection() },
-                            onCut = { viewModel.cutSelection() },
+                            onCopy = {
+                                scope.launch { viewModel.copySelection() }
+                            },
+                            onCut = {
+                                scope.launch { viewModel.cutSelection() }
+                            },
                             onUndoEffect = { viewModel.undoEffect(track.id) },
                             isUndoEffectAvailable = track.isUndoEffectAvailable,
                             isSelectionActive = track.selectionStartMs != null &&
@@ -367,6 +474,7 @@ fun ProjectManagementScreen(
                 )
 
             }
+/*
 
             IconButton(
                 onClick = {
@@ -412,6 +520,8 @@ fun ProjectManagementScreen(
                 isPlaying = state.isPlaying,
                 modifier = Modifier,
             )
+*/
+            
 
 
         }

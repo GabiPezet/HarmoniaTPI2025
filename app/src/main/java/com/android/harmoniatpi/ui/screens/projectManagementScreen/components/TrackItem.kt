@@ -1,4 +1,4 @@
-package com.android.harmoniatpi.ui.components
+package com.android.harmoniatpi.ui.screens.projectManagementScreen.components
 
 import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.LinearEasing
@@ -72,7 +72,6 @@ import androidx.compose.ui.unit.dp
 import com.android.harmoniatpi.R
 import com.android.harmoniatpi.domain.model.audio.AudioSourceType
 import com.android.harmoniatpi.ui.core.theme.HarmoniaTPITheme
-import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.FakeRecordingWaveformBackground
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.BottomSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import kotlin.math.roundToInt

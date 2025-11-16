@@ -14,5 +14,9 @@ data class ProyectScreenUiState(
     val isRestoringTracks: Boolean = false,
     val msPerDpScale: Float = 10f,
     val importAudioLoading : Boolean = false,
-    val activeSheetContent: BottomSheetContent? = null
+    val activeSheetContent: BottomSheetContent? = null,
+    val totalProjectMs: Long = 0L,
+    val bpm: Int = 120,
+    val isMetronomeEnabled: Boolean = false,
+    val metronomeVolume: Float = 1.0f,
 )
