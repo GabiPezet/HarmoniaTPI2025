@@ -1,5 +1,6 @@
 package com.android.harmoniatpi.ui.screens.projectManagementScreen
 
+import android.Manifest
 import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -64,6 +65,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.android.harmoniatpi.R
 import com.android.harmoniatpi.domain.model.audio.AudioSourceType
 import com.android.harmoniatpi.ui.components.CircularProgressBar
 import com.android.harmoniatpi.ui.components.EffectsAudioDialog
@@ -85,6 +87,7 @@ import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.Tra
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.BottomSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.viewmodel.ProjectManagementScreenViewModel
+import com.android.harmoniatpi.ui.utils.PermissionRequester
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -103,6 +106,8 @@ fun ProjectManagementScreen(
     val trackForVolume by viewModel.trackForVolume.collectAsState()
     val showTuner by viewModel.showTunerDialog.collectAsState()
     val tunerNote by viewModel.tunerNote.collectAsState()
+    var requestRecordVoiceAudioPermission by remember { mutableStateOf(false) }
+    var requestRecordInstrumentAudioPermission by remember { mutableStateOf(false) }
 
     val pickAudioLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -185,12 +190,12 @@ fun ProjectManagementScreen(
                             pickAudioLauncher.launch("audio/*")
                         },
                         onRecordVoice = {
+                            requestRecordVoiceAudioPermission = true
                             viewModel.hideBottomSheet()
-                            viewModel.addNewTrack(AudioSourceType.VOICE)
                         },
                         onRecordInstrument = {
+                            requestRecordInstrumentAudioPermission = true
                             viewModel.hideBottomSheet()
-                            viewModel.addNewTrack(AudioSourceType.INSTRUMENT)
                         },
                         onPasteTrack = {
                             viewModel.hideBottomSheet()
@@ -577,7 +582,7 @@ fun ProjectManagementScreen(
                 modifier = Modifier,
             )
 */
-            
+
 
 
         }
@@ -638,6 +643,31 @@ fun ProjectManagementScreen(
             onDismiss = { viewModel.onDismissTuner() },
             onStart = { viewModel.startTuner() },
             onStop = { viewModel.stopTuner() }
+        )
+    }
+
+    if (requestRecordVoiceAudioPermission) {
+        PermissionRequester(
+            permission = Manifest.permission.RECORD_AUDIO,
+            rationaleRes = R.string.record_audio_rationale,
+            permanentlyDeniedRes = R.string.record_audio_denied_msg,
+            onGranted = {
+                viewModel.addNewTrack(AudioSourceType.VOICE)
+                requestRecordVoiceAudioPermission = false
+            },
+            onDialogDismiss = { requestRecordVoiceAudioPermission = false }
+        )
+    }
+    if (requestRecordInstrumentAudioPermission) {
+        PermissionRequester(
+            permission = Manifest.permission.RECORD_AUDIO,
+            rationaleRes = R.string.record_audio_rationale,
+            permanentlyDeniedRes = R.string.record_audio_denied_msg,
+            onGranted = {
+                viewModel.addNewTrack(AudioSourceType.INSTRUMENT)
+                requestRecordInstrumentAudioPermission = false
+            },
+            onDialogDismiss = { requestRecordInstrumentAudioPermission = false }
         )
     }
 }
