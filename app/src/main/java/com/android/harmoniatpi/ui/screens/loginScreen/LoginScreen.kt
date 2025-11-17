@@ -83,7 +83,7 @@ fun LoginScreen(
     val uiState by viewModel.uiState.collectAsState()
     val username = rememberSaveable { mutableStateOf("") }
     val password = rememberSaveable { mutableStateOf("") }
-    val permissions = buildList {
+    /*val permissions = buildList {
         add(permission.RECORD_AUDIO)
         add(permission.CAMERA)
         add(permission.ACCESS_FINE_LOCATION)
@@ -124,7 +124,7 @@ fun LoginScreen(
         if (!context.hasPermissions(permissions)) {
             permissionLauncher.launch(permissions.toTypedArray())
         }
-    }
+    }*/
 
     LaunchedEffect(uiState.loginSuccess) {
         if (uiState.loginSuccess) {

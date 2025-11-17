@@ -1,5 +1,6 @@
 package com.android.harmoniatpi.ui.screens.projectManagementScreen
 
+import android.Manifest
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
@@ -21,10 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ContentPaste
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.ZoomIn
 import androidx.compose.material.icons.filled.ZoomOut
@@ -59,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.android.harmoniatpi.R
 import com.android.harmoniatpi.domain.model.audio.AudioSourceType
 import com.android.harmoniatpi.ui.components.CircularProgressBar
 import com.android.harmoniatpi.ui.components.EffectsAudioDialog
@@ -68,15 +66,16 @@ import com.android.harmoniatpi.ui.components.ShowConfirmationDialog
 import com.android.harmoniatpi.ui.components.TimelineHeader
 import com.android.harmoniatpi.ui.components.TrackItem
 import com.android.harmoniatpi.ui.components.TrimAudioDialog
-import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.BottomSheetContent
 import com.android.harmoniatpi.ui.components.TunerDialog
 import com.android.harmoniatpi.ui.components.VolumeSliderDialog
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.AddTrackSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.EmptyProjectMessage
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.InDevelopmentSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.RenameTrackSheetContent
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.BottomSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.viewmodel.ProjectManagementScreenViewModel
+import com.android.harmoniatpi.ui.utils.PermissionRequester
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -96,7 +95,8 @@ fun ProjectManagementScreen(
     val trackForVolume by viewModel.trackForVolume.collectAsState()
     val showTuner by viewModel.showTunerDialog.collectAsState()
     val tunerNote by viewModel.tunerNote.collectAsState()
-
+    var requestRecordVoiceAudioPermission by remember { mutableStateOf(false) }
+    var requestRecordInstrumentAudioPermission by remember { mutableStateOf(false) }
 
     val pickAudioLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -176,12 +176,12 @@ fun ProjectManagementScreen(
                             pickAudioLauncher.launch("audio/*")
                         },
                         onRecordVoice = {
+                            requestRecordVoiceAudioPermission = true
                             viewModel.hideBottomSheet()
-                            viewModel.addNewTrack(AudioSourceType.VOICE)
                         },
                         onRecordInstrument = {
+                            requestRecordInstrumentAudioPermission = true
                             viewModel.hideBottomSheet()
-                            viewModel.addNewTrack(AudioSourceType.INSTRUMENT)
                         },
                         onPasteTrack = {
                             viewModel.hideBottomSheet()
@@ -470,6 +470,31 @@ fun ProjectManagementScreen(
             onDismiss = { viewModel.onDismissTuner() },
             onStart = { viewModel.startTuner() },
             onStop = { viewModel.stopTuner() }
+        )
+    }
+
+    if (requestRecordVoiceAudioPermission) {
+        PermissionRequester(
+            permission = Manifest.permission.RECORD_AUDIO,
+            rationaleRes = R.string.record_audio_rationale,
+            permanentlyDeniedRes = R.string.record_audio_denied_msg,
+            onGranted = {
+                viewModel.addNewTrack(AudioSourceType.VOICE)
+                requestRecordVoiceAudioPermission = false
+            },
+            onDialogDismiss = { requestRecordVoiceAudioPermission = false }
+        )
+    }
+    if (requestRecordInstrumentAudioPermission) {
+        PermissionRequester(
+            permission = Manifest.permission.RECORD_AUDIO,
+            rationaleRes = R.string.record_audio_rationale,
+            permanentlyDeniedRes = R.string.record_audio_denied_msg,
+            onGranted = {
+                viewModel.addNewTrack(AudioSourceType.INSTRUMENT)
+                requestRecordInstrumentAudioPermission = false
+            },
+            onDialogDismiss = { requestRecordInstrumentAudioPermission = false }
         )
     }
 }
