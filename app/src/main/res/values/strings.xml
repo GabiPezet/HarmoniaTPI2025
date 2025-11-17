@@ -48,11 +48,11 @@
 
     <!--PermissionRationales-->
     <string name="post_notifications_rationale">Para recibir notificaciones de tus proyectos en la comunidad, necesitas habilitar los permisos de notificaciones.</string>
-    <string name="post_notifications_denied_msg">Necesitas activar el permiso de notificaciones desde la configuración de la aplicación</string>
+    <string name="post_notifications_denied_msg">Para recibir notificaciones de tus proyectos en la comunidad, necesitas activar el permiso de notificaciones desde la configuración de la aplicación.</string>
     <string name="record_audio_rationale">Para grabar audio, necesitas habilitar los permisos de grabación.</string>
-    <string name="record_audio_denied_msg">Necesitas activar el permiso de grabación desde la configuración de la aplicación</string>
+    <string name="record_audio_denied_msg">Necesitas activar el permiso de grabación desde la configuración de la aplicación.</string>
     <string name="camera_rationale">Para tomar fotos, necesitas habilitar los permisos de cámara.</string>
-    <string name="camera_denied_msg">Necesitas activar el permiso de cámara desde la configuración de la aplicación"</string>
+    <string name="camera_denied_msg">Necesitas activar el permiso de cámara desde la configuración de la aplicación."</string>
 
 
 </resources>
