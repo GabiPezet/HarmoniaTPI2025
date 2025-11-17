@@ -1,5 +1,6 @@
 package com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile
 
+import android.Manifest
 import android.content.Context
 import android.net.Uri
 import androidx.activity.compose.BackHandler
@@ -31,15 +32,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.CatchingPokemon
-import androidx.compose.material.icons.filled.Contacts
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.FamilyRestroom
-import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PhotoLibrary
-import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -61,7 +57,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -83,6 +78,7 @@ import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.u
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.ProfileTabItem
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.WorkProfileCard
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.viewmodel.DrawerContentViewModel
+import com.android.harmoniatpi.ui.utils.PermissionRequester
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -100,6 +96,7 @@ fun UserDetailProfile(
     var selectedTab by remember { mutableStateOf(ProfileTab.WORK) }
     var isEditing by remember { mutableStateOf(false) }
     var name by remember(uiState.userName) { mutableStateOf(uiState.userName) }
+    var requestCameraPermission by remember { mutableStateOf(false) }
     val contactData by viewModel.contactData.collectAsState()
 
     val takePictureLauncher = rememberLauncherForActivityResult(
@@ -378,9 +375,7 @@ fun UserDetailProfile(
 
                 Button(
                     onClick = {
-                        val uri = createImageUri(context)
-                        photoUri = uri
-                        takePictureLauncher.launch(uri)
+                        requestCameraPermission = true
                         showSheet = false
                     },
                     modifier = Modifier
@@ -446,6 +441,21 @@ fun UserDetailProfile(
                 Spacer(modifier = Modifier.height(16.dp))
             }
         }
+    }
+
+    if (requestCameraPermission) {
+        PermissionRequester(
+            permission = Manifest.permission.CAMERA,
+            rationaleRes = R.string.camera_rationale,
+            permanentlyDeniedRes = R.string.camera_denied_msg,
+            onGranted = {
+                val uri = createImageUri(context)
+                photoUri = uri
+                takePictureLauncher.launch(uri)
+                requestCameraPermission = false
+            },
+            onDialogDismiss = { requestCameraPermission = false }
+        )
     }
 }
 

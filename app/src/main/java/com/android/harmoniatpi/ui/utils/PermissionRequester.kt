@@ -71,7 +71,6 @@ fun PermissionRequester(
                 TextButton(onClick = {
                     showRationale = false
                     requestPermission()
-                    onDialogDismiss()
                 }) {
                     Text("Aceptar")
                 }
