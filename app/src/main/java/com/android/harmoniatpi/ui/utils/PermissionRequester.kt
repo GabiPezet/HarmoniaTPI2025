@@ -25,7 +25,8 @@ fun PermissionRequester(
     @StringRes permanentlyDeniedRes: Int,
     showPermanentlyDeclinedDialog: Boolean = true,
     onGranted: () -> Unit = {},
-    onDenied: () -> Unit = {}
+    onDenied: () -> Unit = {},
+    onDialogDismiss: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val activity = context as Activity
@@ -62,7 +63,7 @@ fun PermissionRequester(
         AlertDialog(
             onDismissRequest = {
                 showRationale = false
-                onDenied()
+                onDialogDismiss()
             },
             title = { Text("Permiso necesario") },
             text = { Text(stringResource(id = rationaleRes)) },
@@ -70,6 +71,7 @@ fun PermissionRequester(
                 TextButton(onClick = {
                     showRationale = false
                     requestPermission()
+                    onDialogDismiss()
                 }) {
                     Text("Aceptar")
                 }
@@ -77,7 +79,7 @@ fun PermissionRequester(
             dismissButton = {
                 TextButton(onClick = {
                     showRationale = false
-                    onDenied()
+                    onDialogDismiss()
                 }) {
                     Text("Cancelar")
                 }
@@ -87,13 +89,17 @@ fun PermissionRequester(
 
     if (showPermanentlyDenied && showPermanentlyDeclinedDialog) {
         AlertDialog(
-            onDismissRequest = { showPermanentlyDenied = false },
+            onDismissRequest = {
+                showPermanentlyDenied = false
+                onDialogDismiss()
+            },
             title = { Text("Permiso bloqueado") },
             text = { Text(stringResource(id = permanentlyDeniedRes)) },
             confirmButton = {
                 TextButton(onClick = {
                     showPermanentlyDenied = false
                     openAppSettings(context)
+                    onDialogDismiss()
                 }) {
                     Text("Abrir configuración")
                 }
@@ -101,6 +107,7 @@ fun PermissionRequester(
             dismissButton = {
                 TextButton(onClick = {
                     showPermanentlyDenied = false
+                    onDialogDismiss()
                 }) {
                     Text("Cancelar")
                 }
