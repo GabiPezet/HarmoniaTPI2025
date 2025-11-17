@@ -1005,15 +1005,35 @@ class ProjectManagementScreenViewModel @Inject constructor(
         metronomeEngine.setVolume(clampedVolume)
     }
 
+
     /**
      * Esta es la nueva función PÚBLICA que la UI llamará.
-     * Decide si iniciar la precuenta o no.
-     * Si ya está grabando, no hace nada.
+     * Intenta iniciar el proceso de grabación, comenzando con una precuenta.
+     *
+     * Realiza las siguientes validaciones antes de proceder:
+     * 1.  **Validación de Pistas:** Comprueba si la lista `state.value.tracks` está vacía.
+     * - Si está vacía, emite un mensaje de error al usuario (vía `_uiMessages`)
+     * - También activa una animación en el FAB (`fabPulseTrigger`) como feedback visual.
+     * 2.  **Validación de Doble Clic (Debounce):** Comprueba si la grabación ya está
+     * activa (`state.value.isRecording`) o si la corutina de precuenta
+     * (`precountJob`) ya está en ejecución.
+     * - Si es así, termina la ejecución para evitar múltiples grabaciones simultáneas.
+     * Si todas las validaciones son exitosas, lanza una nueva corutina en el [viewModelScope]
+     * para ejecutar [precountAndRecord] y almacena la referencia del [Job] en `precountJob`.
      */
     fun startRecording() {
-        // Evita doble-click
+        if (state.value.tracks.isEmpty()) {
+            viewModelScope.launch {
+                _uiMessages.emit("Primero tenés que agregar una pista")
+            }
+            // Dispara la animación del fab incrementando el trigger
+            _state.update { it.copy(fabPulseTrigger = it.fabPulseTrigger + 1) }
+            return
+        }
+        //Comprobación de doble-click
         if (state.value.isRecording || precountJob != null) return
 
+        //Inicia precuenta
         Log.d(TAG, "Iniciando pre-cuenta.")
         // Lanza la corutina y guarda la referencia en precountJob
         precountJob = viewModelScope.launch {

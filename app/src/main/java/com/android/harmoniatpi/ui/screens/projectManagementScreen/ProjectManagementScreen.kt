@@ -4,6 +4,13 @@ import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -50,6 +57,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -159,7 +167,7 @@ fun ProjectManagementScreen(
         }
     }
 
-    //  NUEVO BOTTOMSHEET
+    //  ----INICIO BOTTOMSHEET ----
     val activeSheet = state.activeSheetContent
     if (activeSheet != null) {
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -242,6 +250,8 @@ fun ProjectManagementScreen(
     }
     // ----> FIN  BOTTOMSHEET <----
 
+    // ----> INICIO SNACKBAR <----
+
     val snackbarHostState = remember { SnackbarHostState() }
     var snackbarMessage by remember { mutableStateOf<String?>(null) }
 
@@ -262,6 +272,49 @@ fun ProjectManagementScreen(
             }
         }
     }
+    // ----> FIN SNACKBAR <----
+
+    // --- INICIO DE LA LÓGICA DE ANIMACIÓN DEL FAB ---
+    // Animación de "ERROR" (Pulso brusco)
+    val errorPulseScale = remember { Animatable(1f) }
+    LaunchedEffect(state.fabPulseTrigger) {
+        if (state.fabPulseTrigger > 0) {
+            scope.launch {
+                errorPulseScale.animateTo(
+                    targetValue = 1.3f,
+                    animationSpec = tween(150, easing = LinearOutSlowInEasing)
+                )
+                errorPulseScale.animateTo(
+                    targetValue = 1f,
+                    animationSpec = tween(200)
+                )
+            }
+        }
+    }
+
+    //Animación "CTA" (Pulso continuo)
+    val infiniteTransition = rememberInfiniteTransition(label = "FAB Empty Pulse")
+
+    val ctaPulseScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.15f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = LinearOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "fabCtaScale"
+    )
+    val baseScale = if (state.tracks.isEmpty()) {
+        ctaPulseScale
+    } else {
+        1f
+    }
+
+    val finalFabScale = baseScale * errorPulseScale.value
+
+    // --- Fin DE LA LÓGICA DE ANIMACIÓN DEL FAB ---
+
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = { //Impl de top bar
@@ -336,7 +389,11 @@ fun ProjectManagementScreen(
                                 viewModel.showBottomSheet(BottomSheetContent.AddTrackMenu)
                             },
                             modifier = Modifier
-                                .size(50.dp),
+                                .size(50.dp)
+                                .graphicsLayer {
+                                scaleX = finalFabScale
+                                scaleY = finalFabScale
+                            },
                             colors = IconButtonDefaults.iconButtonColors(
                                 containerColor = MaterialTheme.colorScheme.primary,
                                 contentColor = MaterialTheme.colorScheme.onPrimary

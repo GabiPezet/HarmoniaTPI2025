@@ -20,4 +20,5 @@ data class ProyectScreenUiState(
     val isMetronomeEnabled: Boolean = false,
     val metronomeVolume: Float = 1.0f,
     val precountMessage: String? = null,
+    val fabPulseTrigger: Int = 0
 )
