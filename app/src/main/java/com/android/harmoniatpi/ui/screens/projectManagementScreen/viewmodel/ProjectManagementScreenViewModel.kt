@@ -656,12 +656,28 @@ class ProjectManagementScreenViewModel @Inject constructor(
         _trackForVolume.value = null
     }
 
-    fun setTrackVolume(volume: Float) {
-        selectedTrack?.let {
-            val clampedVolume = volume.coerceIn(0f, 1.5f)
-            setTrackVolumeUseCase(it.id, clampedVolume)
-            updateTrackVolume(it.id, clampedVolume)
+    fun setTrackVolume(trackId: Long, newVolume: Float) {
+        // 1. Clamp the value para asegurar que esté en el rango permitido (0f a 1.5f).
+        val clampedVolume = newVolume.coerceIn(0f, 1.5f)
+
+        // 2. Llama al Caso de Uso para que el motor de audio aplique el cambio de volumen.
+        //    Esta es la línea que faltaba y la más importante.
+        setTrackVolumeUseCase(trackId, clampedVolume)
+
+        // 3. Actualiza el estado de la UI para que refleje el cambio visualmente.
+        _state.update { currentState ->
+            val updatedTracks = currentState.tracks.map { track ->
+                if (track.id == trackId) {
+                    track.copy(volume = clampedVolume) // Actualiza el volumen en la lista de la UI
+                } else {
+                    track
+                }
+            }
+            currentState.copy(tracks = updatedTracks)
         }
+
+        // 4. (Opcional pero recomendado) Guarda el estado general del proyecto.
+        updateCurrentProjectWithTracks()
     }
 
     fun updateTrackOffset(trackId: Long, offsetMs: Long) {

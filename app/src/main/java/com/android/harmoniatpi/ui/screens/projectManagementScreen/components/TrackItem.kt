@@ -86,7 +86,6 @@ fun TrackItem(
     onUndo: () -> Unit,
     onMute: () -> Unit,
     onShowEffects: () -> Unit,
-    onShowVolumeSlider: () -> Unit,
     scrollState: ScrollState,
     isBeingRecorded: Boolean,
     currentPlaybackMs: Long,
@@ -132,7 +131,7 @@ fun TrackItem(
                 shape = RoundedCornerShape(0.dp),
                 color = if (track.isMuted) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surfaceContainer,
                 border = when {
-                    isBeingRecorded -> BorderStroke(2.dp, animatedBorderColor)
+                    true -> BorderStroke(2.dp, animatedBorderColor)
                     track.selected -> BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
                     else -> BorderStroke(
                         1.dp,
@@ -206,7 +205,6 @@ fun TrackItem(
                         isSelectionActive = isSelectionActive,
                         track = track,
                         onShowBottomSheet = onShowBottomSheet,
-                        onShowVolumeSlider = onShowVolumeSlider,
 
                         )
                 }
@@ -300,8 +298,6 @@ fun TrackItem(
                         isSelectionActive = isSelectionActive,
                         track = track,
                         onShowBottomSheet = onShowBottomSheet,
-                        onShowVolumeSlider = onShowVolumeSlider,
-
                         )
                 }
             }
@@ -344,7 +340,7 @@ fun TrackItem(
 
                             .then(
                                 when {
-                                    isBeingRecorded -> BorderStroke(2.dp, animatedBorderColor)
+                                    false -> BorderStroke(2.dp, animatedBorderColor)
                                     track.selected -> BorderStroke(
                                         2.dp,
                                         MaterialTheme.colorScheme.primary
@@ -388,7 +384,6 @@ private fun TrackOptionsMenu(
     onShowEffects: () -> Unit,
     isUndoAvailable: Boolean,
     isMuted: Boolean,
-    onShowVolumeSlider: () -> Unit,
     onCopy: () -> Unit,
     onCut: () -> Unit,
     onUndoEffect: () -> Unit,
@@ -411,7 +406,9 @@ private fun TrackOptionsMenu(
                     contentDescription = "Renombrar"
                 )
             },
-            onClick = { onShowBottomSheet(BottomSheetContent.RenameTrack(track)) }
+            onClick = {
+                onDismiss()
+                onShowBottomSheet(BottomSheetContent.RenameTrack(track)) }
         )
 
         DropdownMenuItem(
@@ -426,8 +423,7 @@ private fun TrackOptionsMenu(
             },
             onClick = {
                 onDismiss()
-                onShowVolumeSlider()
-            }
+                onShowBottomSheet(BottomSheetContent.EditVolume(track)) }
         )
 
         DropdownMenuItem(
@@ -810,7 +806,6 @@ private fun TrackPrev() {
             isSelectionActive = false,
             msPerDpScale = 0F,
             onShowBottomSheet = {},
-            onShowVolumeSlider = {},
         )
     }
 }

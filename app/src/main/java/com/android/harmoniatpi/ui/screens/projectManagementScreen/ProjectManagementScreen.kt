@@ -73,7 +73,6 @@ import com.android.harmoniatpi.ui.components.GlobalPlayhead
 import com.android.harmoniatpi.ui.components.ShowConfirmationDialog
 import com.android.harmoniatpi.ui.components.TrimAudioDialog
 import com.android.harmoniatpi.ui.components.TunerDialog
-import com.android.harmoniatpi.ui.components.VolumeSliderDialog
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.AddTrackSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.EmptyProjectMessage
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.InDevelopmentSheetContent
@@ -84,6 +83,7 @@ import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.Ren
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.TimeDisplayPanel
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.TimelineHeader
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.TrackItem
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.VolumeSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.BottomSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.viewmodel.ProjectManagementScreenViewModel
@@ -103,7 +103,6 @@ fun ProjectManagementScreen(
     var trackForTrimming by remember { mutableStateOf<TrackUi?>(null) }
     val scope = rememberCoroutineScope()
     var trackForEffects by remember { mutableStateOf<TrackUi?>(null) }
-    val trackForVolume by viewModel.trackForVolume.collectAsState()
     val showTuner by viewModel.showTunerDialog.collectAsState()
     val tunerNote by viewModel.tunerNote.collectAsState()
     var requestRecordVoiceAudioPermission by remember { mutableStateOf(false) }
@@ -206,15 +205,16 @@ fun ProjectManagementScreen(
                 }
 
                 is BottomSheetContent.EditVolume -> {
-                    /*// Nuevo Composable para el volumen
                     VolumeSheetContent(
                         track = activeSheet.track,
                         onVolumeChange = { trackId, newVolume ->
                             viewModel.setTrackVolume(trackId, newVolume)
+                        },
+                        onDismiss = {
+                            viewModel.hideBottomSheet()
                         }
-                    )*/
-                    InDevelopmentSheetContent()
 
+                    )
                 }
 
                 is BottomSheetContent.RenameTrack -> {
@@ -396,9 +396,9 @@ fun ProjectManagementScreen(
                             modifier = Modifier
                                 .size(50.dp)
                                 .graphicsLayer {
-                                scaleX = finalFabScale
-                                scaleY = finalFabScale
-                            },
+                                    scaleX = finalFabScale
+                                    scaleY = finalFabScale
+                                },
                             colors = IconButtonDefaults.iconButtonColors(
                                 containerColor = MaterialTheme.colorScheme.primary,
                                 contentColor = MaterialTheme.colorScheme.onPrimary
@@ -522,7 +522,6 @@ fun ProjectManagementScreen(
                             isSelectionActive = track.selectionStartMs != null &&
                                     (track.selectionEndMs == null || track.selectionEndMs > track.selectionStartMs),
                             msPerDpScale = state.msPerDpScale,
-                            onShowVolumeSlider = { viewModel.onShowVolumeSlider(track) },
                             onShowBottomSheet = viewModel::showBottomSheet
                         )
                     }
@@ -535,56 +534,6 @@ fun ProjectManagementScreen(
                 )
 
             }
-/*
-
-            IconButton(
-                onClick = {
-                    viewModel.showBottomSheet(BottomSheetContent.AddTrackMenu)
-                },
-                modifier = Modifier
-                    .padding(top = 16.dp, end = 32.dp)
-                    .size(50.dp)
-                    .align(Alignment.End),
-
-                colors = IconButtonDefaults.iconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
-            //Spacer(modifier = Modifier.weight(1f))
-
-            ProyectControlButtonRow(
-                onSkipPrevious = {
-                    viewModel.stopPlaying()
-                    scope.launch {
-                        sharedScrollState.animateScrollTo(0)
-                    }
-                },
-                onPlay = { viewModel.play() },
-                onPause = { viewModel.pause() },
-                startRecording = {
-                    Toast.makeText(
-                        context,
-                        "Para una mejor calidad, usa auriculares.",
-                        Toast.LENGTH_LONG
-                    ).show()
-                    viewModel.startRecording()
-                },
-                stopRecording = { viewModel.stopRecording() },
-                isRecording = state.isRecording,
-                isPlaying = state.isPlaying,
-                modifier = Modifier,
-            )
-*/
-
-
-
         }
     }
     if (state.precountMessage != null) {
@@ -622,17 +571,6 @@ fun ProjectManagementScreen(
             onApplyFlanger = { id, rate, wet ->
                 viewModel.applyFlangerEffect(id, rate, wet)
                 trackForEffects = null
-            }
-        )
-    }
-
-
-    trackForVolume?.let { track ->
-        VolumeSliderDialog(
-            track = track,
-            onDismiss = { viewModel.onDismissVolumeSlider() },
-            onConfirm = { newVolume ->
-                viewModel.setTrackVolume(newVolume)
             }
         )
     }
