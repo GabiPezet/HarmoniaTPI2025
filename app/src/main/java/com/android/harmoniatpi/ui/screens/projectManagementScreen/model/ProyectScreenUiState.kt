@@ -19,4 +19,5 @@ data class ProyectScreenUiState(
     val bpm: Int = 120,
     val isMetronomeEnabled: Boolean = false,
     val metronomeVolume: Float = 1.0f,
+    val precountMessage: String? = null,
 )

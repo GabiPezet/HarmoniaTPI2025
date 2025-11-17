@@ -49,7 +49,9 @@ import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -117,6 +119,8 @@ class ProjectManagementScreenViewModel @Inject constructor(
 
     private val _uiMessages = MutableSharedFlow<String>()
     val uiMessages = _uiMessages.asSharedFlow()
+
+    private var precountJob: Job? = null
 
     init {
         startPlaybackObserver()
@@ -252,7 +256,10 @@ class ProjectManagementScreenViewModel @Inject constructor(
         }
     }
 
-    fun startRecording() {
+    /**
+     * Inicia la grabación de audio.
+     */
+   private fun executeRecording() {
         metronomeEngine.start()
         selectedTrack = state.value.tracks.find { it.selected }
         selectedTrack?.let { trackToRecord ->
@@ -287,6 +294,18 @@ class ProjectManagementScreenViewModel @Inject constructor(
     }
 
     fun stopRecording() {
+        // 1. SI EL USUARIO APRETA STOP DURANTE LA PRECUENTA
+        if (precountJob != null) {
+            precountJob?.cancel() // Cancela la corutina de precuenta
+            precountJob = null
+            _state.update { it.copy(precountMessage = null) }
+            Log.d(TAG, "Pre-cuenta cancelada por el usuario")
+            return
+        }
+
+        // 2. LÓGICA NORMAL (si ya estaba grabando)
+        if (!state.value.isRecording) return // Evita dobles clics si ya se paró
+
         metronomeEngine.stop()
         stopRecordingAudio()
             .onSuccess {
@@ -986,6 +1005,54 @@ class ProjectManagementScreenViewModel @Inject constructor(
         metronomeEngine.setVolume(clampedVolume)
     }
 
+    /**
+     * Esta es la nueva función PÚBLICA que la UI llamará.
+     * Decide si iniciar la precuenta o no.
+     * Si ya está grabando, no hace nada.
+     */
+    fun startRecording() {
+        // Evita doble-click
+        if (state.value.isRecording || precountJob != null) return
+
+        Log.d(TAG, "Iniciando pre-cuenta.")
+        // Lanza la corutina y guarda la referencia en precountJob
+        precountJob = viewModelScope.launch {
+            precountAndRecord()
+        }
+    }
+
+    /**
+     * Lógica de la cuenta regresiva.
+     * Muestra la UI siempre, pero solo reproduce sonido si está habilitado.
+     */
+    private suspend fun precountAndRecord() {
+        val bpm = state.value.bpm
+        val beatDurationMs = (60_000L / bpm)
+        val playSound = state.value.isMetronomeEnabled
+
+        try {
+            _state.update { it.copy(precountMessage = "Preparate...") }
+            delay(beatDurationMs.coerceAtLeast(500L))
+
+            for (i in 4 downTo 1) {
+                _state.update { it.copy(precountMessage = "$i") }
+                if (playSound) { // <-- Lógica condicional de sonido
+                    metronomeEngine.playTick()
+                }
+                delay(beatDurationMs)
+            }
+
+            _state.update { it.copy(precountMessage = null) }
+            executeRecording()
+
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            Log.d(TAG, "Pre-cuenta cancelada")
+            _state.update { it.copy(precountMessage = null) }
+            // No llames a executeRecording()
+        } finally {
+            precountJob = null // Limpia el job
+        }
+    }
     private companion object {
         const val TAG = "AudioTestsViewModel"
     }

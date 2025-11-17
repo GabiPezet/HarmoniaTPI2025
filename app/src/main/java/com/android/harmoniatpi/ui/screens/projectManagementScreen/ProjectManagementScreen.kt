@@ -50,7 +50,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -69,6 +68,7 @@ import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.Add
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.EmptyProjectMessage
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.InDevelopmentSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.MetronomeSheetContent
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.PrecountOverlay
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.ProyectControlButtonRow
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.RenameTrackSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.TimeDisplayPanel
@@ -90,7 +90,6 @@ fun ProjectManagementScreen(
     val sharedScrollState = rememberScrollState()
     var showDeleteDialog by remember { mutableStateOf(false) }
     var trackForTrimming by remember { mutableStateOf<TrackUi?>(null) }
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var trackForEffects by remember { mutableStateOf<TrackUi?>(null) }
     val trackForVolume by viewModel.trackForVolume.collectAsState()
@@ -526,7 +525,9 @@ fun ProjectManagementScreen(
 
         }
     }
-
+    if (state.precountMessage != null) {
+        PrecountOverlay(message = state.precountMessage!!)
+    }
     trackForTrimming?.let { trackToTrim ->
         TrimAudioDialog(
             track = trackToTrim,

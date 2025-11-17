@@ -67,6 +67,18 @@ class MetronomeEngine @Inject constructor(
         stopExecutor()
     }
 
+    /**
+     * Reproduce el sonido del tick UNA VEZ, si el sonido está cargado y habilitado.
+     * Útil para la pre-cuenta.
+     */
+    fun playTick() {
+        if (isSoundEnabled && isSoundLoaded) {
+            val vol = currentVolume
+            soundPool.play(soundId, vol, vol, 0, 0, 1f)
+            Log.d("MetronomeEngine", "Pre-count tick sonó a volumen $vol")
+        }
+    }
+
     fun setBpm(newBpm: Int) {
         bpm = newBpm
         if (isPlaying) {
@@ -94,21 +106,18 @@ class MetronomeEngine @Inject constructor(
         stop()
     }
 
-    // --- Funciones Privadas ---
-
+    /**
+     * Inicia el executor que reproduce el tick del metrónomo.
+     */
     private fun startExecutor() {
         if (executor != null) return
         val delayMs = 60_000L / bpm
 
         executor = Executors.newSingleThreadScheduledExecutor()
-        executor?.scheduleAtFixedRate(
+        executor?.scheduleWithFixedDelay(
             {
-                // Tarea que se ejecuta en cada beat
                 if (isSoundEnabled && isSoundLoaded) {
-                    // --- AQUÍ ESTABA EL ERROR ---
-                    // Ahora leemos la variable 'currentVolume' (que es @Volatile)
-                    // CADA VEZ que el beat suena, en lugar de un valor cacheado.
-                    val vol = currentVolume // Lee el valor más reciente
+                    val vol = currentVolume
                     soundPool.play(soundId, vol, vol, 0, 0, 1f)
                 }
             },
