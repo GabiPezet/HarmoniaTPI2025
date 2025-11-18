@@ -68,12 +68,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.android.harmoniatpi.R
 import com.android.harmoniatpi.domain.model.audio.AudioSourceType
 import com.android.harmoniatpi.ui.components.CircularProgressBar
+import com.android.harmoniatpi.ui.components.EffectsAudioDialog
 import com.android.harmoniatpi.ui.components.GlobalPlayhead
 import com.android.harmoniatpi.ui.components.ShowConfirmationDialog
 import com.android.harmoniatpi.ui.components.TrimAudioDialog
 import com.android.harmoniatpi.ui.components.TunerDialog
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.AddTrackSheetContent
-import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.EffectsSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.EmptyProjectMessage
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.InDevelopmentSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.MetronomeSheetContent
@@ -235,24 +235,9 @@ fun ProjectManagementScreen(
                     InDevelopmentSheetContent()
                 }
 
-                    is BottomSheetContent.TrackEffects -> {
-                        EffectsSheetContent(
-                            track = activeSheet.track,
-                            onApplyDelay = { id, delayTimeSec, decay ->
-                                viewModel.applyDelayEffect(id, delayTimeSec, decay)
-                                viewModel.hideBottomSheet()
-                            },
-                            onApplyHighPass = { id, frequency ->
-                                viewModel.applyHighPassFilter(trackId = id, frequency = frequency)
-                                viewModel.hideBottomSheet()
-                            },
-                            onApplyFlanger = { id, rate, wet ->
-                                viewModel.applyFlangerEffect(id, rate, wet)
-                                viewModel.hideBottomSheet()
-                            },
-                            onDismiss = viewModel::hideBottomSheet
-                        )
-                    }
+                is BottomSheetContent.TrackEffects -> {
+                    // ... el contenido para los efectos
+                }
 
                 is BottomSheetContent.MetronomeSettings -> {
                     MetronomeSheetContent(
@@ -451,7 +436,7 @@ fun ProjectManagementScreen(
                 )
             }
         }
-
+        //containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
 
         Column(
@@ -459,6 +444,7 @@ fun ProjectManagementScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .background(Color(0xFF858585)), //Pasar ESTE background al Theme Colors
+            //verticalArrangement = Arrangement.Bottom,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
@@ -567,6 +553,24 @@ fun ProjectManagementScreen(
             },
             onStopPreview = { id ->
                 viewModel.stopPreviewTrim(id)
+            }
+        )
+    }
+    trackForEffects?.let { trackToEffect ->
+        EffectsAudioDialog(
+            track = trackToEffect,
+            onDismiss = { trackForEffects = null },
+            onApplyDelay = { id, delay, decay ->
+                viewModel.applyDelayEffect(id, delay, decay)
+                trackForEffects = null
+            },
+            onApplyHighPass = { id, freq ->
+                viewModel.applyHighPassFilter(id, freq)
+                trackForEffects = null
+            },
+            onApplyFlanger = { id, rate, wet ->
+                viewModel.applyFlangerEffect(id, rate, wet)
+                trackForEffects = null
             }
         )
     }
