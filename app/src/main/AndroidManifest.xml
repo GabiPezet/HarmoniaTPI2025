@@ -42,14 +42,18 @@
             android:theme="@style/Theme.HarmoniaTPI">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
 
-                <data
-                    android:scheme="harmoniatpi"
-                    android:host="subscription_return" />
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="https"
+                    android:host="www.harmoniatpi.com"
+                    android:pathPrefix="/subscription_return" />
 
             </intent-filter>
+
         </activity>
 
         <provider

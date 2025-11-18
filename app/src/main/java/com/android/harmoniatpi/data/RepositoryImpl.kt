@@ -640,15 +640,16 @@ class RepositoryImpl @Inject constructor(
     ): PaymentPreference {
 
         val accessToken = com.android.harmoniatpi.BuildConfig.MP_ACCESS_TOKEN
-        val userEmail = "test_user_8824888300725762385@testuser.com"
+        val currentUser = firebaseAuth.currentUser
+        val userEmail = currentUser?.email ?: throw Exception("Usuario no tiene email vinculado")
+        val myDeepLink = "https://www.harmoniatpi.com/subscription_return"
 
         val request = SubscriptionRequest(
             reason = description,
             payerEmail = userEmail,
             autoRecurring = AutoRecurring(transactionAmount = amount),
-            backUrl = "https://www.google.com"
+            backUrl = myDeepLink
         )
-
         return try {
             val response = mercadoPagoApi.createSubscription(accessToken, request)
             Log.d("MercadoPagos", "LINK DE PAGO GENERADO: ${response.initPoint}")

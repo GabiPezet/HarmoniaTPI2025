@@ -141,7 +141,7 @@ fun NavigationWrapper(
         composable<NavigationRoutes.PaymentResultScreenRoute>(
             deepLinks = listOf(
                 navDeepLink {
-                    uriPattern = "harmoniatpi://subscription_return?status={status}&payment_id={payment_id}"
+                    uriPattern = "https://www.harmoniatpi.com/subscription_return?status={status}&payment_id={payment_id}"
                 }
             )
         ) { backStackEntry ->
