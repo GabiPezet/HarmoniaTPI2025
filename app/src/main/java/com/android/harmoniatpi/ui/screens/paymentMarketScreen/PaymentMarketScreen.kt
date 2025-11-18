@@ -112,7 +112,7 @@ fun PaymentMarketScreen(
                     NoSuscritoView(
                         isLoading = uiState.loading,
                         preferenceId = uiState.preference?.preferenceId,
-                        onGenerate = { viewModel.createPreference(5000.0, "HoloJam Premium") },
+                        onGenerate = { viewModel.createPreference(100.0, "HoloJam Premium") }, //modificarlo luego
                         onPay = { prefId ->
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(prefId))
                             context.startActivity(intent)
@@ -151,7 +151,7 @@ fun NoSuscritoView(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "$1000 / mes",
+            text = "$100 / mes",
             style = MaterialTheme.typography.displaySmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary
