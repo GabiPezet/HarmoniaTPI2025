@@ -7,6 +7,7 @@ data class PaymentUiState(
     val loading: Boolean = false,
     val preference: PaymentPreference? = null,
     val paymentResult: PaymentResult? = null,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val subscriptionId: String? = null
 )
 

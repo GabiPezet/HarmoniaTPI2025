@@ -14,6 +14,7 @@ import com.android.harmoniatpi.data.remote.MercadoPagoApi
 import com.android.harmoniatpi.data.remote.MockMercadoPagoApi
 import com.android.harmoniatpi.data.remote.model.AutoRecurring
 import com.android.harmoniatpi.data.remote.model.SubscriptionRequest
+import com.android.harmoniatpi.data.remote.model.SubscriptionStatusUpdateRequest
 import com.android.harmoniatpi.di.util.JsonUtils
 import com.android.harmoniatpi.domain.interfaces.Repository
 import com.android.harmoniatpi.domain.model.UserPreferences
@@ -642,7 +643,7 @@ class RepositoryImpl @Inject constructor(
         val accessToken = com.android.harmoniatpi.BuildConfig.MP_ACCESS_TOKEN
         val currentUser = firebaseAuth.currentUser
         val userEmail = currentUser?.email ?: throw Exception("Usuario no tiene email vinculado")
-        val myDeepLink = "https://www.harmoniatpi.com/subscription_return"
+        val myDeepLink = "https://holo-jam-landing-tpi.vercel.app/"
 
         val request = SubscriptionRequest(
             reason = description,
@@ -674,6 +675,25 @@ class RepositoryImpl @Inject constructor(
         return PaymentResult.PENDING
     }
 
+    override suspend fun cancelSubscription(preapprovalId: String): Result<Unit> {
+        // Usamos el mismo token de producción que ya tienes configurado
+        val accessToken = com.android.harmoniatpi.BuildConfig.MP_ACCESS_TOKEN
+
+        return try {
+            val request = SubscriptionStatusUpdateRequest(status = "cancelled")
+            mercadoPagoApi.cancelSubscription("Bearer $accessToken", preapprovalId, request)
+
+            /**
+             * Importantísimo: acá es donde debemos decirle a firebase que el current user ya no es premium
+             * atte: juan
+             * */
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e("MercadoPago", "Error cancelando suscripción: ${e.message}")
+            Result.failure(e)
+        }
+    }
 
 
     override suspend fun getFirestoreProjectsByUser(userId: String): Flow<List<ProjectFirebaseModel>> =

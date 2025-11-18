@@ -21,3 +21,7 @@ data class SubscriptionResponse(
     @SerializedName("init_point") val initPoint: String,
     @SerializedName("payer_id") val payerId: Long?
 )
+
+data class SubscriptionStatusUpdateRequest(
+    val status: String = "cancelled"
+)
