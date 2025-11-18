@@ -44,6 +44,11 @@
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
+
+                <data
+                    android:scheme="harmoniatpi"
+                    android:host="subscription_return" />
+
             </intent-filter>
         </activity>
 

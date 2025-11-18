@@ -8,6 +8,7 @@ pluginManagement {
             }
         }
         mavenCentral()
+        maven(uri("https://artifacts.mercadolibre.com/repository/android-releases"))
         gradlePluginPortal()
     }
 }
@@ -16,12 +17,13 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        maven("https://oss.sonatype.org/content/repositories/snapshots/")
+        maven(url = uri("https://artifacts.mercadolibre.com/repository/android-releases"))
         maven( "https://jitpack.io")
         maven{
             name = "TarsosDSP repository"
             url = uri("https://mvn.0110.be/releases")
         }
+    maven(url = uri("https://artifacts.mercadolibre.com/repository/android-releases"))
     }
 }
 

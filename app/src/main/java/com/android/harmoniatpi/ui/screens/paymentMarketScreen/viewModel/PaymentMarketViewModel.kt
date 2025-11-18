@@ -1,5 +1,8 @@
 package com.android.harmoniatpi.ui.screens.paymentMarketScreen.viewModel
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.harmoniatpi.domain.usecases.paymentUseCases.CreatePaymentPreferenceUseCase
@@ -31,6 +34,14 @@ class PaymentMarketViewModel @Inject constructor(
             } catch (e: Exception) {
                 _uiState.update { it.copy(loading = false, errorMessage = e.message) }
             }
+        }
+    }
+
+    fun openSubscriptionLink(context: Context) {
+        val url = _uiState.value.preference?.preferenceId
+        if (!url.isNullOrBlank()) {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+            context.startActivity(intent)
         }
     }
 

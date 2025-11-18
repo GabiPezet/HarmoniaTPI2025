@@ -10,7 +10,10 @@ import com.android.harmoniatpi.data.database.entities.UserPreferencesEntity
 import com.android.harmoniatpi.data.local.model.PostFirebaseModel
 import com.android.harmoniatpi.data.local.model.ProjectFirebaseModel
 import com.android.harmoniatpi.data.local.model.UserFirebaseModel
+import com.android.harmoniatpi.data.remote.MercadoPagoApi
 import com.android.harmoniatpi.data.remote.MockMercadoPagoApi
+import com.android.harmoniatpi.data.remote.model.AutoRecurring
+import com.android.harmoniatpi.data.remote.model.SubscriptionRequest
 import com.android.harmoniatpi.di.util.JsonUtils
 import com.android.harmoniatpi.domain.interfaces.Repository
 import com.android.harmoniatpi.domain.model.UserPreferences
@@ -52,7 +55,7 @@ class RepositoryImpl @Inject constructor(
     private val myPostDao: MyPostDao,
     private val database: FirebaseDatabase,
     private val storage: FirebaseStorage,
-    private val api: MockMercadoPagoApi
+    private val mercadoPagoApi: MercadoPagoApi
 ) : Repository {
 
     override fun getFirebaseCurrentUser(): FirebaseUser? = firebaseAuth.currentUser
@@ -634,10 +637,42 @@ class RepositoryImpl @Inject constructor(
     override suspend fun createPaymentPreference(
         amount: Double,
         description: String
-    ): PaymentPreference = api.createPreference(amount, description)
+    ): PaymentPreference {
 
-    override suspend fun sendPayment(preferenceId: String): PaymentResult =
-        api.processPayment(preferenceId)
+        val accessToken = com.android.harmoniatpi.BuildConfig.MP_ACCESS_TOKEN
+        val userEmail = "test_user_8824888300725762385@testuser.com"
+
+        val request = SubscriptionRequest(
+            reason = description,
+            payerEmail = userEmail,
+            autoRecurring = AutoRecurring(transactionAmount = amount),
+            backUrl = "https://www.google.com"
+        )
+
+        return try {
+            val response = mercadoPagoApi.createSubscription(accessToken, request)
+            Log.d("MercadoPagos", "LINK DE PAGO GENERADO: ${response.initPoint}")
+            PaymentPreference(
+                preferenceId = response.initPoint,
+                amount = amount,
+                description = description
+            )
+
+        } catch (e: retrofit2.HttpException) {
+            val errorBody = e.response()?.errorBody()?.string()
+            Log.e("MercadoPagoError", "⚠️ Error ${e.code()}: $errorBody")
+            throw e
+        } catch (e: Exception) {
+            Log.e("MercadoPago", "Error genérico", e)
+            throw e
+        }
+    }
+
+    override suspend fun sendPayment(preferenceId: String): PaymentResult {
+
+        return PaymentResult.PENDING
+    }
+
 
 
     override suspend fun getFirestoreProjectsByUser(userId: String): Flow<List<ProjectFirebaseModel>> =

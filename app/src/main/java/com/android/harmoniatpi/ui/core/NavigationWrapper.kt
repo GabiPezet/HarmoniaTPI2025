@@ -8,8 +8,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navDeepLink
 import com.android.harmoniatpi.domain.model.project.Project
 import com.android.harmoniatpi.ui.components.AnimationHorizontalEffect
+import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes
 import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.FriendsScreenRoute
 import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.HomeScreenRoute
 import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.LoginScreenRoute
@@ -25,6 +27,7 @@ import com.android.harmoniatpi.ui.screens.menuPrincipal.content.DrawerContent
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.viewmodel.DrawerContentViewModel
 import com.android.harmoniatpi.ui.screens.notificationScreen.NotificationsScreen
 import com.android.harmoniatpi.ui.screens.paymentMarketScreen.PaymentMarketScreen
+import com.android.harmoniatpi.ui.screens.paymentResultScreen.PaymentResultScreen
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.ProjectManagementScreen
 import com.android.harmoniatpi.ui.screens.registerScreen.RegisterScreen
 import com.android.harmoniatpi.ui.screens.songVersionsScreen.SongVersionsScreen
@@ -132,6 +135,28 @@ fun NavigationWrapper(
 
         composable<PaymentMarketScreenRoute> {
             PaymentMarketScreen(onNavigateBack = { navController.popBackStack() })
+        }
+
+
+        composable<NavigationRoutes.PaymentResultScreenRoute>(
+            deepLinks = listOf(
+                navDeepLink {
+                    uriPattern = "harmoniatpi://subscription_return?status={status}&payment_id={payment_id}"
+                }
+            )
+        ) { backStackEntry ->
+            val status = backStackEntry.arguments?.getString("status") ?: "unknown"
+            val paymentId = backStackEntry.arguments?.getString("payment_id")
+
+            PaymentResultScreen(
+                status = status,
+                paymentId = paymentId,
+                onContinue = {
+                    navController.navigate(NavigationRoutes.HomeScreenRoute) {
+                        popUpTo(NavigationRoutes.HomeScreenRoute) { inclusive = true }
+                    }
+                }
+            )
         }
     }
 }

@@ -1,5 +1,7 @@
 package com.android.harmoniatpi.ui.screens.paymentMarketScreen
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -32,6 +35,7 @@ fun PaymentMarketScreen(
     viewModel: PaymentMarketViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {
@@ -58,22 +62,25 @@ fun PaymentMarketScreen(
             }
 
             Button(
-                onClick = { viewModel.createPreference(1200.0, "HoloJam Premium") },
+                onClick = { viewModel.createPreference(100.0, "HoloJam Premium") },
                 enabled = !uiState.loading && uiState.preference == null
             ) {
                 Text("Generar Preference")
             }
 
             uiState.preference?.let { pref ->
-                Text("Preference ID: ${pref.preferenceId}")
-                Text("Monto: $${pref.amount}")
-                Text("Descripción: ${pref.description}")
+                Text("Plan: ${pref.description}")
+                Text("Monto mensual: $${pref.amount}")
 
                 Button(
-                    onClick = { viewModel.sendPayment() },
+                    onClick = {
+                        // Necesitas pasar el contexto al VM o manejar el intent aquí
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(pref.preferenceId))
+                        context.startActivity(intent)
+                    },
                     enabled = !uiState.loading
                 ) {
-                    Text("Simular Pago")
+                    Text("Suscribirse con MercadoPago")
                 }
             }
 
