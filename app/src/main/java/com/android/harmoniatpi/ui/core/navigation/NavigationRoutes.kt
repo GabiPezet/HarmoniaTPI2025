@@ -28,6 +28,8 @@ sealed class NavigationRoutes() {
     @Serializable
     data object PaymentMarketScreenRoute : NavigationRoutes()
 
+    @Serializable
+    data object PaymentResultScreenRoute : NavigationRoutes()
 
 }
 
