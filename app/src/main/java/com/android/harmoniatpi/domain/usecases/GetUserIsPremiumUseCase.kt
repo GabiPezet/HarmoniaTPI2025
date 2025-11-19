@@ -1,18 +1,26 @@
 package com.android.harmoniatpi.domain.usecases
 
 import com.android.harmoniatpi.domain.interfaces.Repository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 class GetUserIsPremiumUseCase @Inject constructor(
     private val repository: Repository
 ) {
     /**
-     * Devuelve el estado Premium del usuario actual.
-     * Si no hay usuario o el estado no está disponible, se asume 'false' (Free).
+     * Devuelve un Flow que emite el estado Premium del usuario en tiempo real.
      */
-    suspend operator fun invoke(): Boolean {
-        // La función getUserPreferences() en Repository ya maneja la lógica de obtener
-        // los datos del usuario (sincronizando de Firestore a Room si es necesario).
+    operator fun invoke(): Flow<Boolean> {
+        // Usa la función de observación en tiempo real del repositorio (Repository.kt)
+        return repository.observeCurrentUserFromFirestore().map { userPreferences ->
+            // Mapea el UserPreferences? a Boolean (false si es nulo o no premium)
+            userPreferences?.isPremium ?: false
+        }
+    }
+
+    // Mantener la suspend fun para lecturas únicas, si es necesaria.
+    suspend fun oneTimeRead(): Boolean {
         return repository.getUserPreferences()?.isPremium ?: false
     }
 }

@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.harmoniatpi.domain.interfaces.Repository
 import com.android.harmoniatpi.domain.model.UserPreferences
 import com.android.harmoniatpi.domain.model.userPreferences.AppTheme
 import com.android.harmoniatpi.domain.model.userPreferences.Comment
@@ -26,6 +27,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -41,7 +43,8 @@ class DrawerContentViewModel @Inject constructor(
     private val getMyPostFromDataBaseUseCase: GetMyPostFromDataBaseUseCase,
     private val updatePostFirebaseDataBaseUseCase: UpdatePostFirebaseDataBaseUseCase,
     private val deletePostFirebaseDataBaseUseCase: DeletePostFirebaseDataBaseUseCase,
-    private val getAllProjectsFromDBUseCase: GetAllProjectsFromDBUseCase
+    private val getAllProjectsFromDBUseCase: GetAllProjectsFromDBUseCase,
+    private val repository: Repository,
 ) : ViewModel() {
 
     val uiState = sharedMenuUiState.uiState
@@ -55,42 +58,48 @@ class DrawerContentViewModel @Inject constructor(
 
     fun initUserPreferences() {
         viewModelScope.launch {
-            val currentUser: UserPreferences? = getUserPreferencesUseCase()
-            if (currentUser != null) {
-                _userPhotoPath.update {
-                    it.copy(
-                        path = currentUser.userPhotoPath,
-                        version = it.version + 1
-                    )
+            repository.observeCurrentUserFromFirestore().collectLatest { currentUser ->
+                if (currentUser != null) {
+                    Log.d("KlyxDevs", "DrawerViewModel: Recibido update de usuario. Premium: ${currentUser.isPremium}")
+                    _userPhotoPath.update {
+                        it.copy(
+                            path = currentUser.userPhotoPath,
+                            version = it.version + 1
+                        )
+                    }
+                    sharedMenuUiState.updateState {
+                        it.copy(
+                            userEmail = currentUser.userEmail,
+                            userName = currentUser.userName,
+                            userLastName = currentUser.userLastName,
+                            userPhotoPath = currentUser.userPhotoPath,
+                            userPhotoPathRemote = currentUser.userPhotoPathRemote,
+                            userID = currentUser.userID,
+                            appTheme = currentUser.appTheme,
+                            notificationsList = currentUser.notificationList,
+                            newNotification = currentUser.newNotification,
+                            instrument = currentUser.instrument,
+                            genres = currentUser.genres,
+                            location = currentUser.location,
+                            rating = currentUser.rating,
+                            friendsList = currentUser.friendsList,
+                            projectsList = currentUser.projectsList,
+                            myPostsList = currentUser.myPostsList,
+                            friendRequestReceived = currentUser.friendRequestReceived,
+                            friendRequestSent = currentUser.friendRequestSent,
+
+                            // ⚠️ ESTO ES LA CLAVE: Ahora MenuUiState se enterará de que es Premium
+                            isPremium = currentUser.isPremium
+                        )
+                    }
                 }
-                sharedMenuUiState.updateState {
-                    it.copy(
-                        userEmail = currentUser.userEmail,
-                        userName = currentUser.userName,
-                        userLastName = currentUser.userLastName,
-                        userPhotoPath = currentUser.userPhotoPath,
-                        userPhotoPathRemote = currentUser.userPhotoPathRemote,
-                        userID = currentUser.userID,
-                        appTheme = currentUser.appTheme,
-                        notificationsList = currentUser.notificationList,
-                        newNotification = currentUser.newNotification,
-                        instrument = currentUser.instrument,
-                        genres = currentUser.genres,
-                        location = currentUser.location,
-                        rating = currentUser.rating,
-                        friendsList = currentUser.friendsList,
-                        projectsList = currentUser.projectsList,
-                        myPostsList = currentUser.myPostsList,
-                        friendRequestReceived = currentUser.friendRequestReceived,
-                        friendRequestSent = currentUser.friendRequestSent
-                    )
-                }
-                delay(2000L)
-                initMyPostCollect()
             }
         }
+        viewModelScope.launch {
+            delay(2000L) // Mantén el delay si es necesario para la carga inicial
+            initMyPostCollect()
+        }
     }
-
     private fun initMyPostCollect() {
         viewModelScope.launch {
             getMyPostFromDataBaseUseCase().collect { posts ->
@@ -143,7 +152,8 @@ class DrawerContentViewModel @Inject constructor(
             projectsList = uiState.value.projectsList,
             myPostsList = uiState.value.myPostsList,
             friendRequestReceived = uiState.value.friendRequestReceived,
-            friendRequestSent = uiState.value.friendRequestSent
+            friendRequestSent = uiState.value.friendRequestSent,
+            isPremium = uiState.value.isPremium
         )
         viewModelScope.launch(Dispatchers.IO) {
             setUserPreferencesUseCase(preferences)

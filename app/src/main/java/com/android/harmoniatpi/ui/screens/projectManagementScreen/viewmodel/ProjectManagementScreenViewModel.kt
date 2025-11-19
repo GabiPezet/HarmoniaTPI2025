@@ -4,7 +4,7 @@ import android.content.Context
 import android.media.MediaMetadataRetriever
 import android.media.MediaRecorder
 import android.net.Uri
-import android.os.Build
+import kotlinx.coroutines.flow.collectLatest
 import android.util.Log
 import android.widget.Toast
 import androidx.annotation.RequiresApi
@@ -15,6 +15,7 @@ import be.tarsos.dsp.pitch.PitchDetectionHandler
 import be.tarsos.dsp.pitch.PitchProcessor
 import com.android.harmoniatpi.data.audio.util.TunerEngine
 import com.android.harmoniatpi.domain.cache.HoloJamCache
+import com.android.harmoniatpi.domain.interfaces.Repository
 import com.android.harmoniatpi.domain.model.audio.AudioSourceType
 import com.android.harmoniatpi.domain.model.audio.WaveformResult
 import com.android.harmoniatpi.domain.model.project.AudioTrack
@@ -48,6 +49,7 @@ import com.android.harmoniatpi.domain.usecases.audioUseCases.TrimAudioTrackUseCa
 import com.android.harmoniatpi.domain.usecases.audioUseCases.UnMuteTrackUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.UndoEffectUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.UndoTrimUseCase
+import com.android.harmoniatpi.domain.usecases.paymentUseCases.TogglePremiumStatusUseCase
 import com.android.harmoniatpi.domain.usecases.roomUseCases.UpdateOrInsertProjectInDBUseCase
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.BottomSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.ProyectScreenUiState
@@ -104,6 +106,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
     private val applyFlangerEffectUseCase: ApplyFlangerEffectUseCase,
     private val tunerEngine: TunerEngine,
     private val getUserIsPremiumUseCase: GetUserIsPremiumUseCase,
+    private val togglePremiumStatusUseCase: TogglePremiumStatusUseCase
 ) : ViewModel() {
     private val _state = MutableStateFlow(ProyectScreenUiState())
     private var selectedTrack: TrackUi? = null
@@ -121,11 +124,18 @@ class ProjectManagementScreenViewModel @Inject constructor(
     val showTunerDialog = _showTunerDialog.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            // Ahora la función invoke() devuelve el Flow<Boolean>
+            getUserIsPremiumUseCase().collectLatest { isPremium ->
+                _state.update {
+                    it.copy(isPremium = isPremium) // Esto se actualiza CADA VEZ que cambia en Firestore/DB
+                }
+            }
+        }
         startPlaybackObserver()
         fetchTracks()
         checkIfTracksWherePlayed()
         loadProjectFromCache()
-        loadUserPremiumStatus()
     }
 
     private fun loadProjectFromCache() {
@@ -980,13 +990,6 @@ class ProjectManagementScreenViewModel @Inject constructor(
 
     private var audioClipboard: AudioClipboard? = null
 
-    // Función para cargar el estado Premium
-    private fun loadUserPremiumStatus() {
-        viewModelScope.launch {
-            val isPremium = getUserIsPremiumUseCase()
-            _state.update { it.copy(isPremium = isPremium) }
-        }
-    }
     private fun getMediaDuration(uri: Uri): Long {
         // 'context' es la instancia inyectada en el ViewModel
         val retriever = MediaMetadataRetriever()
@@ -1010,6 +1013,29 @@ class ProjectManagementScreenViewModel @Inject constructor(
         } finally {
             // 4. MUY IMPORTANTE: Liberar los recursos del retriever.
             retriever.release()
+        }
+    }
+
+    fun togglePremiumStatusForTesting() {
+        viewModelScope.launch {
+            val isCurrentlyPremium = state.value.isPremium
+
+            // 1. Llamada a la base de datos
+            togglePremiumStatusUseCase(isCurrentlyPremium)
+                .onSuccess { updatedUser ->
+                    val statusText = if (updatedUser.isPremium) "PRO" else "FREE"
+
+                    // 2. ✨ ACTUALIZACIÓN OPTIMISTA (Inmediata) DE LA UI
+                    _state.update {
+                        it.copy(isPremium = updatedUser.isPremium)
+                    }
+
+                    Toast.makeText(context, "Modo de prueba: $statusText activado", Toast.LENGTH_SHORT).show()
+                }
+                .onFailure { e ->
+                    Log.e(TAG, "Error al cambiar el estado Premium de prueba", e)
+                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                }
         }
     }
 }

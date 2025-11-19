@@ -10,10 +10,13 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -28,6 +31,7 @@ import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.ZoomIn
 import androidx.compose.material.icons.filled.ZoomOut
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -38,6 +42,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarColors
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -51,11 +56,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -236,13 +244,31 @@ fun ProjectManagementScreen(
         topBar = { //Impl de top bar
             TopAppBar(
                 title = {
-                    Text(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(end = 16.dp),
-                        text = state.currentProjectSelected!!.title,
-                        textAlign = TextAlign.Center
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = state.currentProjectSelected!!.title,
+                            style = MaterialTheme.typography.titleLarge,
+                            textAlign = TextAlign.End,
+
+                        )
+
+                        Spacer(Modifier.width(8.dp))
+
+                        val statusText = if (state.isPremium) "PRO" else "FREE"
+
+                        Text(
+                            text = statusText,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
                 },
                 navigationIcon = {
                     IconButton(onClick = {
@@ -254,6 +280,19 @@ fun ProjectManagementScreen(
                 },
 
                 actions = {
+                    TextButton(
+                        onClick = { viewModel.togglePremiumStatusForTesting() },
+                    ) {
+                        val nextStatusText = if (state.isPremium) "Switch to FREE" else "Switch to PRO"
+                        val nextStatusColor = if (state.isPremium) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+
+                        Text(
+                            text = nextStatusText,
+                            color = nextStatusColor,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp // Un poco más pequeño para ser discreto
+                        )
+                    }
                     IconButton(onClick = { viewModel.onShowTuner() }) {
                         Icon(Icons.Default.Tune, "Afinador")
                     }
