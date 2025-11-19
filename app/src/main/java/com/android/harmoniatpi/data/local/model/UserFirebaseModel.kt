@@ -21,7 +21,8 @@ data class UserFirebaseModel(
     val instrument: String = "",
     val genres: String = "",
     val location: String = "",
-    val rating: Float = 0.0f
+    val rating: Float = 0.0f,
+    val isPremium : Boolean = false
 ) {
     fun toEntity(): UserPreferencesEntity = UserPreferencesEntity(
         userID = userID,
@@ -41,6 +42,7 @@ data class UserFirebaseModel(
         instrument = instrument,
         genres = genres,
         location = location,
-        rating = rating
+        rating = rating,
+        isPremium = isPremium
     )
 }

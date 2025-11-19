@@ -177,17 +177,19 @@ fun ProjectManagementScreen(
                         },
                         onRecordVoice = {
                             viewModel.hideBottomSheet()
-                            viewModel.addNewTrack(AudioSourceType.VOICE)
+                            viewModel.addNewTrack(AudioSourceType.VOICE) // SIN isPremium
                         },
                         onRecordInstrument = {
                             viewModel.hideBottomSheet()
-                            viewModel.addNewTrack(AudioSourceType.INSTRUMENT)
+                            viewModel.addNewTrack(AudioSourceType.INSTRUMENT) // SIN isPremium
                         },
                         onPasteTrack = {
                             viewModel.hideBottomSheet()
                             viewModel.pasteFromClipboard()
                         },
-                        isClipboardFull = state.isClipboardFull
+                        isClipboardFull = state.isClipboardFull,
+                        isPremium = state.isPremium, // USANDO EL UI STATE
+                        currentTrackCount = state.tracks.size // USANDO EL UI STATE
                     )
                 }
 

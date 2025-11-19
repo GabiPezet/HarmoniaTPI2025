@@ -14,5 +14,6 @@ data class ProyectScreenUiState(
     val isRestoringTracks: Boolean = false,
     val msPerDpScale: Float = 10f,
     val importAudioLoading : Boolean = false,
-    val activeSheetContent: BottomSheetContent? = null
+    val activeSheetContent: BottomSheetContent? = null,
+    val isPremium: Boolean = false
 )

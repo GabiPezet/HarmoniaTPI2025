@@ -55,6 +55,46 @@ class RepositoryImpl @Inject constructor(
     private val api: MockMercadoPagoApi
 ) : Repository {
 
+    override suspend fun updatePremiumStatus(statusString: String): Result<UserPreferences> =
+        withContext(Dispatchers.IO) {
+            val successKeyword = "aprobado" //o lo que devuelve mp.
+
+            if (statusString.equals(successKeyword, ignoreCase = true)) {
+                try {
+                    // 1. Obtener el usuario actual
+                    val currentUser = getUserPreferences() // Esto ya sincroniza Firestore a Local
+
+                    if (currentUser == null) {
+                        return@withContext Result.failure(Exception("Usuario no autenticado o no encontrado."))
+                    }
+
+                    // 2. Verificar si ya es premium para evitar operaciones innecesarias
+                    if (currentUser.isPremium) {
+                        Log.d("RepositoryImpl", "El usuario ${currentUser.userID} ya es Premium.")
+                        return@withContext Result.success(currentUser)
+                    }
+
+                    // 3. Crear el nuevo objeto UserPreferences con isPremium = true
+                    val updatedUser = currentUser.copy(isPremium = true)
+
+                    // 4. Actualizar en Room y Firestore (reutilizando la lógica existente)
+                    updateUserPreferences(updatedUser)
+
+                    Log.i("RepositoryImpl", "Usuario ${currentUser.userID} actualizado a Premium.")
+                    Result.success(updatedUser)
+
+                } catch (e: Exception) {
+                    Log.e("RepositoryImpl", "Error al actualizar estado Premium.", e)
+                    Result.failure(e)
+                }
+            } else {
+                Log.d("RepositoryImpl", "Estado recibido no es 'aprovado'. No se actualiza el estado Premium.")
+                // Opcional: Podrías devolver el usuario actual sin cambios o un error específico.
+                // Aquí devolvemos una falla para indicar que la acción no se completó.
+                Result.failure(Exception("Estado de pago no reconocido como '$successKeyword'."))
+            }
+        }
+
     override fun getFirebaseCurrentUser(): FirebaseUser? = firebaseAuth.currentUser
 
     override suspend fun getUserById(userId: String): UserPreferences? {

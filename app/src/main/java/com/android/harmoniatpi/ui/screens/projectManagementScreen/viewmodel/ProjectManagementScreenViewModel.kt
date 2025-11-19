@@ -1,6 +1,7 @@
 package com.android.harmoniatpi.ui.screens.projectManagementScreen.viewmodel
 
 import android.content.Context
+import android.media.MediaMetadataRetriever
 import android.media.MediaRecorder
 import android.net.Uri
 import android.os.Build
@@ -17,6 +18,7 @@ import com.android.harmoniatpi.domain.cache.HoloJamCache
 import com.android.harmoniatpi.domain.model.audio.AudioSourceType
 import com.android.harmoniatpi.domain.model.audio.WaveformResult
 import com.android.harmoniatpi.domain.model.project.AudioTrack
+import com.android.harmoniatpi.domain.usecases.GetUserIsPremiumUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.AddTrackFromFileUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.AddTrackFromSegmentUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.AddTrackUseCase
@@ -101,6 +103,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
     private val applyHighPassFilterUseCase: ApplyHighPassFilterUseCase,
     private val applyFlangerEffectUseCase: ApplyFlangerEffectUseCase,
     private val tunerEngine: TunerEngine,
+    private val getUserIsPremiumUseCase: GetUserIsPremiumUseCase,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ProyectScreenUiState())
     private var selectedTrack: TrackUi? = null
@@ -122,6 +125,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
         fetchTracks()
         checkIfTracksWherePlayed()
         loadProjectFromCache()
+        loadUserPremiumStatus()
     }
 
     private fun loadProjectFromCache() {
@@ -351,6 +355,11 @@ class ProjectManagementScreenViewModel @Inject constructor(
     }
 
     fun addNewTrack(sourceType: AudioSourceType) {
+        val isPremium = state.value.isPremium // Obtener de UiState
+        if (!isPremium && state.value.tracks.size >= 3) {
+            Toast.makeText(context, "El límite para usuarios Free es de 3 pistas.", Toast.LENGTH_LONG).show()
+            return
+        }
         addTrack(sourceType)
     }
 
@@ -368,10 +377,28 @@ class ProjectManagementScreenViewModel @Inject constructor(
     }
 
     fun importTrackFromFile(uri: Uri) {
+        val isPremium = state.value.isPremium
+        if (!isPremium && state.value.tracks.size >= 3) {
+            Toast.makeText(context, "El límite para usuarios Free es de 3 pistas.", Toast.LENGTH_LONG).show()
+            return
+        }
         _state.update { it.copy(importAudioLoading = true) }
         viewModelScope.launch {
             val tempFile = File(context.cacheDir, "temp_import_${System.currentTimeMillis()}.tmp")
-
+            try {
+                // *** ATENCIÓN: Debes implementar 'getMediaDuration' para obtener la duración real del archivo ***
+                val durationMs = getMediaDuration(uri)
+                if (!isPremium && durationMs > 300000L) { // 5 minutos = 300,000 ms
+                    Toast.makeText(context, "La duración máxima para usuarios Free es de 5 minutos.", Toast.LENGTH_LONG).show()
+                    _state.update { it.copy(importAudioLoading = false) }
+                    return@launch
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "No se pudo obtener la duración del archivo importado.", e)
+                Toast.makeText(context, "Error al validar la duración del archivo.", Toast.LENGTH_SHORT).show()
+                _state.update { it.copy(importAudioLoading = false) }
+                return@launch
+            }
             try {
                 withContext(Dispatchers.IO) {
                     context.contentResolver.openInputStream(uri)?.use { inputStream ->
@@ -782,6 +809,11 @@ class ProjectManagementScreenViewModel @Inject constructor(
     }
 
     fun applyHighPassFilter(trackId: Long, frequency: Float) {
+        val isPremium = state.value.isPremium // Obtener de UiState
+        if (!isPremium) {
+            Toast.makeText(context, "El Filtro de Paso Alto es un efecto Premium.", Toast.LENGTH_LONG).show()
+            return
+        }
         viewModelScope.launch {
             applyHighPassFilterUseCase(trackId, frequency)
                 .onSuccess {
@@ -797,6 +829,11 @@ class ProjectManagementScreenViewModel @Inject constructor(
     }
 
     fun applyFlangerEffect(trackId: Long, rate: Float, wet: Float) {
+        val isPremium = state.value.isPremium // Obtener de UiState
+        if (!isPremium) {
+            Toast.makeText(context, "El efecto Flanger es una función Premium.", Toast.LENGTH_LONG).show()
+            return
+        }
         viewModelScope.launch {
             applyFlangerEffectUseCase(trackId, rate, wet)
                 .onSuccess {
@@ -943,4 +980,36 @@ class ProjectManagementScreenViewModel @Inject constructor(
 
     private var audioClipboard: AudioClipboard? = null
 
+    // Función para cargar el estado Premium
+    private fun loadUserPremiumStatus() {
+        viewModelScope.launch {
+            val isPremium = getUserIsPremiumUseCase()
+            _state.update { it.copy(isPremium = isPremium) }
+        }
+    }
+    private fun getMediaDuration(uri: Uri): Long {
+        // 'context' es la instancia inyectada en el ViewModel
+        val retriever = MediaMetadataRetriever()
+
+        return try {
+            // 1. Establecer el origen de datos usando el Content URI
+            retriever.setDataSource(context, uri)
+
+            // 2. Extraer la duración (viene como String en milisegundos)
+            val durationString = retriever.extractMetadata(
+                MediaMetadataRetriever.METADATA_KEY_DURATION
+            )
+
+            // 3. Convertir el String a Long. Si es nulo o falla, devuelve 0L.
+            durationString?.toLongOrNull() ?: 0L
+
+        } catch (e: Exception) {
+            // Capturar y loguear cualquier excepción (Ej. SecurityException, IllegalArgumentException)
+            Log.e(TAG, "Error al obtener duración para URI: $uri", e)
+            0L
+        } finally {
+            // 4. MUY IMPORTANTE: Liberar los recursos del retriever.
+            retriever.release()
+        }
+    }
 }

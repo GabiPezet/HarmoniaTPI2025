@@ -51,6 +51,8 @@ data class UserPreferencesEntity(
     val friendRequestReceived: String = "",
     @ColumnInfo
     val friendRequestSent: String = "",
+    @ColumnInfo
+    val isPremium : Boolean = false
 
     ) {
     fun toDomain(jsonUtils: JsonUtils) = UserPreferences(
@@ -96,7 +98,8 @@ data class UserPreferencesEntity(
             jsonUtils.decodeJsonToListObject<FriendRequestSending>(friendRequestSent)
         } else {
             emptyList()
-        }
+        },
+        isPremium = isPremium
     )
 
     fun toFirebaseModel() = UserFirebaseModel(
@@ -117,7 +120,8 @@ data class UserPreferencesEntity(
         instrument = this.instrument,
         genres = this.genres,
         location = this.location,
-        rating = this.rating
+        rating = this.rating,
+        isPremium = isPremium
     )
 
 }

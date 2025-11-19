@@ -30,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -38,8 +39,16 @@ fun AddTrackSheetContent(
     onRecordVoice: () -> Unit,
     onRecordInstrument: () -> Unit,
     onPasteTrack: () -> Unit,
-    isClipboardFull: Boolean
+    isClipboardFull: Boolean,
+    isPremium: Boolean,
+    currentTrackCount: Int
 ) {
+
+    // Lógica de restricción de 3 pistas
+    val maxTrackReached = !isPremium && currentTrackCount >= 3
+    val trackLimitMessage = "Límite de 3 pistas alcanzado para Free"
+    val showWarning = maxTrackReached
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -51,6 +60,16 @@ fun AddTrackSheetContent(
             style = MaterialTheme.typography.titleLarge,
             modifier = Modifier.padding(bottom = 8.dp)
         )
+        if (showWarning) {
+            Text(
+                text = trackLimitMessage,
+                style = MaterialTheme.typography.titleSmall.copy(
+                    color = MaterialTheme.colorScheme.error,
+                    fontWeight = FontWeight.Bold
+                ),
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+        }
 
         // Fila 1: Grabar Voz e Instrumento
         Row(
@@ -61,13 +80,15 @@ fun AddTrackSheetContent(
                 title = "Grabar Voz\n(Cancelación\n de eco)",
                 icon = Icons.Default.Mic,
                 onClick = onRecordVoice,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                enabled = !maxTrackReached, // Aplicación de la restricción
             )
             OptionCard(
                 title = "Grabar Instrumento\n(Hi-Fi)",
                 icon = Icons.Default.MusicNote,
                 onClick = onRecordInstrument,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                enabled = !maxTrackReached, // Aplicación de la restricción
             )
         }
 
@@ -76,7 +97,9 @@ fun AddTrackSheetContent(
             title = "Importar desde archivo",
             icon = Icons.Default.Folder,
             onClick = onImportFromFile,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !maxTrackReached, // Aplicación de la restricción
+            // Nota: La restricción de 5 min se aplica en el ViewModel
         )
 
         // Fila 3: Pegar (Condicional)
@@ -97,14 +120,15 @@ fun OptionCard(
     title: String,
     icon: ImageVector,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
 ) {
+    val containerColor = if (enabled) Color(0xFF1E1E1E) else Color(0xFF454545)
+    val contentColor = if (enabled) Color.White else Color.Gray
     Card(
-        onClick = onClick,
+        onClick = { if (enabled) onClick() },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF1E1E1E)
-        ),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
         modifier = modifier
             .height(100.dp)
@@ -119,7 +143,7 @@ fun OptionCard(
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge.copy(
-                    color = Color.White,
+                    color = contentColor,
                     fontWeight = FontWeight.Bold
                 ),
                 modifier = Modifier.align(Alignment.CenterStart)
