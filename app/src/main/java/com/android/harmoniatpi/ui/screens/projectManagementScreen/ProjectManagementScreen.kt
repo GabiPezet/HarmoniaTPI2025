@@ -118,6 +118,9 @@ fun ProjectManagementScreen(
 
     val density = LocalDensity.current
 
+    val isPreviewPlaying by viewModel.isPreviewPlaying.collectAsState()
+    val isUserPremium by viewModel.isUserPremium.collectAsState()
+
     LaunchedEffect(state.currentPlaybackMs) {
         if (state.currentPlaybackMs > 0 && sharedScrollState.maxValue > 0 && state.isPlaying) {
             val playbackPx =
@@ -235,24 +238,38 @@ fun ProjectManagementScreen(
                     InDevelopmentSheetContent()
                 }
 
-                    is BottomSheetContent.TrackEffects -> {
-                        EffectsSheetContent(
-                            track = activeSheet.track,
-                            onApplyDelay = { id, delayTimeSec, decay ->
-                                viewModel.applyDelayEffect(id, delayTimeSec, decay)
-                                viewModel.hideBottomSheet()
-                            },
-                            onApplyHighPass = { id, frequency ->
-                                viewModel.applyHighPassFilter(trackId = id, frequency = frequency)
-                                viewModel.hideBottomSheet()
-                            },
-                            onApplyFlanger = { id, rate, wet ->
-                                viewModel.applyFlangerEffect(id, rate, wet)
-                                viewModel.hideBottomSheet()
-                            },
-                            onDismiss = viewModel::hideBottomSheet
-                        )
-                    }
+                is BottomSheetContent.TrackEffects -> {
+                    EffectsSheetContent(
+                        track = activeSheet.track,
+                        isPremium = isUserPremium,
+                        isPreviewing = isPreviewPlaying,
+                        onPreviewToggle = { config ->
+                            viewModel.toggleEffectPreview(activeSheet.track.id, config)
+                        },
+                        onParamChange = { config ->
+                            viewModel.updatePreviewParams(activeSheet.track.id, config)
+                        },
+                        onApplyDelay = { id, delay, decay ->
+                            viewModel.stopEffectPreview() // Detener preview al aplicar
+                            viewModel.applyDelayEffect(id, delay, decay)
+                            viewModel.hideBottomSheet()
+                        },
+                        onApplyHighPass = { id, freq ->
+                            viewModel.stopEffectPreview()
+                            viewModel.applyHighPassFilter(id, freq)
+                            viewModel.hideBottomSheet()
+                        },
+                        onApplyFlanger = { id, rate, wet ->
+                            viewModel.stopEffectPreview()
+                            viewModel.applyFlangerEffect(id, rate, wet)
+                            viewModel.hideBottomSheet()
+                        },
+                        onDismiss = {
+                            viewModel.stopEffectPreview() // Detener al cancelar
+                            viewModel.hideBottomSheet()
+                        }
+                    )
+                }
 
                 is BottomSheetContent.MetronomeSettings -> {
                     MetronomeSheetContent(

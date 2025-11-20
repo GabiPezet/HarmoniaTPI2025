@@ -10,6 +10,7 @@ import be.tarsos.dsp.AudioDispatcher
 import com.android.harmoniatpi.data.audio.util.TunerEngine
 import com.android.harmoniatpi.domain.cache.HoloJamCache
 import com.android.harmoniatpi.domain.model.audio.AudioSourceType
+import com.android.harmoniatpi.domain.model.audio.EffectConfig
 import com.android.harmoniatpi.domain.model.audio.WaveformResult
 import com.android.harmoniatpi.domain.model.metronome.MetronomeEngine
 import com.android.harmoniatpi.domain.model.project.AudioTrack
@@ -31,6 +32,7 @@ import com.android.harmoniatpi.domain.usecases.audioUseCases.LoadProjectTrackUse
 import com.android.harmoniatpi.domain.usecases.audioUseCases.MuteTrackUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.PauseAudioUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.PlayAudioUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.PreviewEffectUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.SeekToUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.SetTrackOffsetUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.SetTrackPlaybackRangeUseCase
@@ -101,6 +103,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
     private val applyFlangerEffectUseCase: ApplyFlangerEffectUseCase,
     private val tunerEngine: TunerEngine,
     private val metronomeEngine: MetronomeEngine,
+    private val previewEffectUseCase: PreviewEffectUseCase
 ) : ViewModel() {
     private val _state = MutableStateFlow(ProyectScreenUiState())
     private var selectedTrack: TrackUi? = null
@@ -121,6 +124,13 @@ class ProjectManagementScreenViewModel @Inject constructor(
     val uiMessages = _uiMessages.asSharedFlow()
 
     private var precountJob: Job? = null
+
+    private val _isPreviewPlaying = MutableStateFlow(false)
+    val isPreviewPlaying = _isPreviewPlaying.asStateFlow()
+
+    // Simulación de usuario Premium (Todo: modificar segun la logica que usemos para habilitar usuarios premium)
+    private val _isUserPremium = MutableStateFlow(true)
+    val isUserPremium = _isUserPremium.asStateFlow()
 
     init {
         startPlaybackObserver()
@@ -938,17 +948,6 @@ class ProjectManagementScreenViewModel @Inject constructor(
         tunerEngine.stop()
     }
 
-
-
-    override fun onCleared() {
-        super.onCleared()
-        tunerEngine.stop()
-        metronomeEngine.release()
-        loadProjectTrackUseCase.clearAllTracks()
-        Log.d("PManagementViewModel", "ViewModel destruido, limpiando pistas del mixer.")
-    }
-
-
     /**
      * Muestra un tipo específico de BottomSheet.
      * @param content El contenido a mostrar (ej. AddTrackMenu, EditVolume, etc.)
@@ -1072,7 +1071,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
 
             for (i in 4 downTo 1) {
                 _state.update { it.copy(precountMessage = "$i") }
-                if (playSound) { // <-- Lógica condicional de sonido
+                if (playSound) {
                     metronomeEngine.playTick()
                 }
                 delay(beatDurationMs)
@@ -1084,15 +1083,57 @@ class ProjectManagementScreenViewModel @Inject constructor(
         } catch (e: kotlinx.coroutines.CancellationException) {
             Log.d(TAG, "Pre-cuenta cancelada")
             _state.update { it.copy(precountMessage = null) }
-            // No llames a executeRecording()
         } finally {
             precountJob = null // Limpia el job
         }
     }
+
+    /**
+     * Muestra o oculta el preview del efecto.
+     */
+    fun toggleEffectPreview(trackId: Long, config: EffectConfig) {
+        if (_isPreviewPlaying.value) {
+            stopEffectPreview()
+        } else {
+            // Detener reproducción normal si existe
+            stopPlaying()
+
+            // Iniciar preview del efecto
+            previewEffectUseCase.start(trackId, config)
+            _isPreviewPlaying.value = true
+        }
+    }
+
+    /**
+     * Detener la reproducción del efecto preview.
+     */
+    fun stopEffectPreview() {
+        previewEffectUseCase.stop()
+        _isPreviewPlaying.value = false
+    }
+
+    /**
+     * Cuando cambiamos sliders en tiempo real, reiniciamos el preview si está sonando
+     */
+    fun updatePreviewParams(trackId: Long, config: EffectConfig) {
+        if (_isPreviewPlaying.value) {
+            previewEffectUseCase.stop()
+            previewEffectUseCase.start(trackId, config)
+        }
+    }
+
     private companion object {
         const val TAG = "AudioTestsViewModel"
     }
 
+    override fun onCleared() {
+        super.onCleared()
+        tunerEngine.stop()
+        metronomeEngine.release()
+        loadProjectTrackUseCase.clearAllTracks()
+        Log.d("PManagementViewModel", "ViewModel destruido, limpiando pistas del mixer.")
+        stopEffectPreview()
+    }
 
     private data class AudioClipboard(
         val sourceFilePath: String,
