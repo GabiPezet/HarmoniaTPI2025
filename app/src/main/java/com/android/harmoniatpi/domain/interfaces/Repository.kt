@@ -103,4 +103,6 @@ interface Repository {
 
     suspend fun sendPayment(preferenceId: String): PaymentResult
 
+    suspend fun cancelSubscription(preapprovalId: String): Result<Unit>
+
 }

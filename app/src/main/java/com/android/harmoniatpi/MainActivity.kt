@@ -4,7 +4,9 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.Scaffold
@@ -23,6 +25,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val intent = Intent(this, HamoniaServices::class.java)
         createSyncNotificationChannel(this)
+        handleDeepLink(intent)
         setContent {
             val drawerViewModel: DrawerContentViewModel = hiltViewModel()
             val appConfigState by drawerViewModel.uiState.collectAsState()
@@ -59,4 +62,21 @@ class MainActivity : ComponentActivity() {
         val manager = context.getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(channel)
     }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleDeepLink(intent)
+    }
+
+    private fun handleDeepLink(intent: Intent?) {
+        val data: Uri? = intent?.data
+        if (data != null && data.scheme == "harmoniatpi" && data.host == "subscription_return") {
+            val status = data.getQueryParameter("status")
+            val id = data.getQueryParameter("preapproval_id")
+
+            Log.d("DeepLink", "Retorno de MP: Status=$status, ID=$id")
+        }
+    }
+
+
 }
