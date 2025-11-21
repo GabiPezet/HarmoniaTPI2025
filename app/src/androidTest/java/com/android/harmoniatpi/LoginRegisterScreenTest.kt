@@ -19,8 +19,6 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class LoginRegisterScreenTest {
 
-    val timeMaxToLogin = 15000L
-
     @get:Rule(order = 0)
     val hiltRule = HiltAndroidRule(this)
 
