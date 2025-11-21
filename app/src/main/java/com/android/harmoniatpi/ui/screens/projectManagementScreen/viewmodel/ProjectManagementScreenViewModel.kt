@@ -129,7 +129,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
     val isPreviewPlaying = _isPreviewPlaying.asStateFlow()
 
     // Simulación de usuario Premium (Todo: modificar segun la logica que usemos para habilitar usuarios premium)
-    private val _isUserPremium = MutableStateFlow(true)
+    private val _isUserPremium = MutableStateFlow(false)
     val isUserPremium = _isUserPremium.asStateFlow()
 
     init {

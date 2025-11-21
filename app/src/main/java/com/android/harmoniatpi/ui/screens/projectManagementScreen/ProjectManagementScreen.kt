@@ -72,6 +72,7 @@ import com.android.harmoniatpi.ui.components.GlobalPlayhead
 import com.android.harmoniatpi.ui.components.ShowConfirmationDialog
 import com.android.harmoniatpi.ui.components.TrimAudioDialog
 import com.android.harmoniatpi.ui.components.TunerDialog
+import com.android.harmoniatpi.ui.components.UpsellDialog
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.AddTrackSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.EffectsSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.EmptyProjectMessage
@@ -120,6 +121,9 @@ fun ProjectManagementScreen(
 
     val isPreviewPlaying by viewModel.isPreviewPlaying.collectAsState()
     val isUserPremium by viewModel.isUserPremium.collectAsState()
+
+    // Estado local para controlar el diálogo de venta
+    var showUpsellDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.currentPlaybackMs) {
         if (state.currentPlaybackMs > 0 && sharedScrollState.maxValue > 0 && state.isPlaying) {
@@ -174,6 +178,16 @@ fun ProjectManagementScreen(
         }
     }
 
+    if (showUpsellDialog) {
+        UpsellDialog(
+            onDismiss = { showUpsellDialog = false },
+            onConfirmPurchase = {
+                showUpsellDialog = false
+                // TODO: Aquí llamar al metodo para subcribirse
+                // viewModel.launchBillingFlow(activity)
+            }
+        )
+    }
     //  ----INICIO BOTTOMSHEET ----
     val activeSheet = state.activeSheetContent
     if (activeSheet != null) {
@@ -243,6 +257,7 @@ fun ProjectManagementScreen(
                         track = activeSheet.track,
                         isPremium = isUserPremium,
                         isPreviewing = isPreviewPlaying,
+                        onShowUpsell = { showUpsellDialog = true },
                         onPreviewToggle = { config ->
                             viewModel.toggleEffectPreview(activeSheet.track.id, config)
                         },
@@ -267,7 +282,7 @@ fun ProjectManagementScreen(
                         onDismiss = {
                             viewModel.stopEffectPreview() // Detener al cancelar
                             viewModel.hideBottomSheet()
-                        }
+                        },
                     )
                 }
 

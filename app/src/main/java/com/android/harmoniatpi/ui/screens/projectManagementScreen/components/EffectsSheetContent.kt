@@ -8,13 +8,10 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -36,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.android.harmoniatpi.domain.model.audio.EffectConfig
+import com.android.harmoniatpi.ui.components.PremiumAwareButton
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import java.text.DecimalFormat
 
@@ -54,14 +52,16 @@ import java.text.DecimalFormat
  * @param onApplyHighPass Acción final para aplicar Filtro y cerrar el sheet.
  * @param onApplyFlanger Acción final para aplicar Flanger y cerrar el sheet.
  * @param onDismiss Acción para cancelar y cerrar el sheet.
+ * @param onShowUpsell Callback para mostrar el diálogo de compra (Premium).
  */
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EffectsSheetContent(
     track: TrackUi,
-    isPremium: Boolean,
     isPreviewing: Boolean,
+    isPremium: Boolean,
+    onShowUpsell: () -> Unit,
     onPreviewToggle: (EffectConfig) -> Unit,
     onParamChange: (EffectConfig) -> Unit,
     onApplyDelay: (id: Long, delayTimeSec: Float, decay: Float) -> Unit,
@@ -90,18 +90,19 @@ fun EffectsSheetContent(
         }
     }
 
-    // Efecto para notificar cambios en sliders si se está previsualizando
+    // Observador de cambios en tiempo real:
+    // Si el usuario mueve un slider mientras el preview está activo, actualizamos el motor de audio.
     LaunchedEffect(delayTimeMs, delayDecay, hpfFrequency, flangerRate, flangerWet) {
         if (isPreviewing) {
             onParamChange(getCurrentConfig())
         }
     }
 
-    // Cuando cambiamos de tab, paramos el preview por seguridad
+    // Seguridad: Si cambiamos de efecto (Tab), detenemos el preview para evitar
+    // que suene un Delay con los parámetros de un Flanger.
     LaunchedEffect(selectedTabIndex) {
         if (isPreviewing) {
-            // Podrías optar por parar el preview al cambiar de tab
-            onPreviewToggle(getCurrentConfig()) // Esto actuará como stop si ya está sonando y no manejas logica extra, o mejor llamar a un stop explícito en el parent.
+            onPreviewToggle(getCurrentConfig()) // Actúa como toggle off
         }
     }
     Column(
@@ -111,118 +112,195 @@ fun EffectsSheetContent(
             .padding(vertical = 16.dp, horizontal = 20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        //Header
         Text(
             "Efectos: ${track.title}",
             style = MaterialTheme.typography.titleLarge
         )
-
-            PrimaryTabRow(selectedTabIndex = selectedTabIndex) {
-                tabs.forEachIndexed { index, title ->
-                    Tab(
-                        selected = selectedTabIndex == index,
-                        onClick = { selectedTabIndex = index },
-                        text = { Text(title) }
-                    )
-                }
+        // Selector de Efecto
+        PrimaryTabRow(selectedTabIndex = selectedTabIndex) {
+            tabs.forEachIndexed { index, title ->
+                Tab(
+                    selected = selectedTabIndex == index,
+                    onClick = { selectedTabIndex = index },
+                    text = { Text(title) }
+                )
             }
-            Spacer(Modifier.height(12.dp))
-
-            // Contenido de la pestaña seleccionada
+        }
+        // Panel de Control (Modularizado)
+        Column(modifier = Modifier.weight(1f, fill = false)) {
             when (selectedTabIndex) {
-                0 -> // Delay
-                    Column {
-                        Text("Tiempo (ms): ${delayTimeMs.toInt()}")
-                        Slider(
-                            value = delayTimeMs,
-                            onValueChange = { delayTimeMs = it },
-                            valueRange = 100f..2000f
-                        )
-                        Spacer(Modifier.height(16.dp))
-                        Text("Decay (Eco): ${decimalFormat.format(delayDecay)}")
-                        Slider(
-                            value = delayDecay,
-                            onValueChange = { delayDecay = it },
-                            valueRange = 0.1f..0.9f
-                        )
-                    }
-                1 -> // High-pass Filter
-                    Column {
-                        Text("Filtro Pasa-Altos (HPF): ${hpfFrequency.toInt()} Hz")
-                        Text("Corta las frecuencias graves por debajo de este valor.", style = MaterialTheme.typography.bodySmall)
-                        Slider(
-                            value = hpfFrequency,
-                            onValueChange = { hpfFrequency = it },
-                            valueRange = 20f..1000f
-                        )
-                    }
-                2 -> // Flanger
-                    Column {
-                        Text("Rate (Velocidad): ${decimalFormat.format(flangerRate)} Hz")
-                        Slider(
-                            value = flangerRate,
-                            onValueChange = { flangerRate = it },
-                            valueRange = 0.01f..1.0f
-                        )
-                        Spacer(Modifier.height(16.dp))
-                        Text("Wet (Efecto): ${decimalFormat.format(flangerWet * 100)}%")
-                        Slider(
-                            value = flangerWet,
-                            onValueChange = { flangerWet = it },
-                            valueRange = 0.1f..1.0f
-                        )
-                    }
-            }
-        Spacer(modifier = Modifier.weight(1f))
+                0 -> DelayControlPanel(
+                    timeMs = delayTimeMs,
+                    decay = delayDecay,
+                    onTimeChange = { delayTimeMs = it },
+                    onDecayChange = { delayDecay = it }
+                )
 
-        // Botón de Aplicar
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                1 -> FilterControlPanel(
+                    frequency = hpfFrequency,
+                    onFrequencyChange = { hpfFrequency = it }
+                )
+
+                2 -> FlangerControlPanel(
+                    rate = flangerRate,
+                    wet = flangerWet,
+                    onRateChange = { flangerRate = it },
+                    onWetChange = { flangerWet = it }
+                )
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        // Barra de Acciones Inferior
+        EffectsActionButtons(
+            isPremium = isPremium,
+            onShowUpsell = onShowUpsell,
+            isPreviewing = isPreviewing,
+            onPreviewClick = { onPreviewToggle(getCurrentConfig()) },
+            onCancelClick = onDismiss,
+            onApplyClick = {
+                // Despacha la acción correspondiente al Tab activo
+                when (selectedTabIndex) {
+                    0 -> onApplyDelay(track.id, delayTimeMs / 1000f, delayDecay)
+                    1 -> onApplyHighPass(track.id, hpfFrequency)
+                    2 -> onApplyFlanger(track.id, flangerRate, flangerWet)
+                }
+            }
+        )
+    }
+}
+
+// --- Sub-componentes de UI para mejor legibilidad y mantenimiento ---
+
+@Composable
+private fun DelayControlPanel(
+    timeMs: Float,
+    decay: Float,
+    onTimeChange: (Float) -> Unit,
+    onDecayChange: (Float) -> Unit
+) {
+    val decimalFormat = remember { DecimalFormat("0.##") }
+
+    Column {
+        Text("Tiempo: ${timeMs.toInt()} ms", style = MaterialTheme.typography.bodyMedium)
+        Slider(
+            value = timeMs,
+            onValueChange = onTimeChange,
+            valueRange = 100f..2000f
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "Decay (Repeticiones): ${decimalFormat.format(decay)}",
+            style = MaterialTheme.typography.bodyMedium
+        )
+        Slider(
+            value = decay,
+            onValueChange = onDecayChange,
+            valueRange = 0.1f..0.9f
+        )
+    }
+}
+
+@Composable
+private fun FilterControlPanel(
+    frequency: Float,
+    onFrequencyChange: (Float) -> Unit
+) {
+    Column {
+        Text(
+            "Frecuencia de corte: ${frequency.toInt()} Hz",
+            style = MaterialTheme.typography.bodyMedium
+        )
+        Text(
+            "Elimina frecuencias graves por debajo de este valor.",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(Modifier.height(8.dp))
+        Slider(
+            value = frequency,
+            onValueChange = onFrequencyChange,
+            valueRange = 20f..1000f
+        )
+    }
+}
+
+@Composable
+private fun FlangerControlPanel(
+    rate: Float,
+    wet: Float,
+    onRateChange: (Float) -> Unit,
+    onWetChange: (Float) -> Unit
+) {
+    val decimalFormat = remember { DecimalFormat("0.##") }
+
+    Column {
+        Text(
+            "Rate (Velocidad): ${decimalFormat.format(rate)} Hz",
+            style = MaterialTheme.typography.bodyMedium
+        )
+        Slider(
+            value = rate,
+            onValueChange = onRateChange,
+            valueRange = 0.01f..1.0f
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "Intensidad (Wet): ${decimalFormat.format(wet * 100)}%",
+            style = MaterialTheme.typography.bodyMedium
+        )
+        Slider(
+            value = wet,
+            onValueChange = onWetChange,
+            valueRange = 0.1f..1.0f
+        )
+    }
+}
+
+@Composable
+private fun EffectsActionButtons(
+    isPremium: Boolean,
+    isPreviewing: Boolean,
+    onPreviewClick: () -> Unit,
+    onCancelClick: () -> Unit,
+    onApplyClick: () -> Unit,
+    onShowUpsell: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Botón de PREVIEW (Izquierda)
+        OutlinedButton(
+            onClick = onPreviewClick,
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = if (isPreviewing) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+            )
         ) {
-            // Botón de PREVIEW
-            OutlinedButton(
-                onClick = { onPreviewToggle(getCurrentConfig()) },
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = if(isPreviewing) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                )
-            ) {
-                Icon(
-                    imageVector = if (isPreviewing) Icons.Default.Stop else Icons.Default.PlayArrow,
-                    contentDescription = null
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(if (isPreviewing) "Detener" else "Preescuchar")
-            }
+            Icon(
+                imageVector = if (isPreviewing) Icons.Default.Stop else Icons.Default.PlayArrow,
+                contentDescription = if (isPreviewing) "Detener preview" else "Iniciar preview"
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(if (isPreviewing) "Detener" else "Preescuchar")
+        }
 
-            Row {
-                TextButton(onClick = onDismiss) {
-                    Text("Cancelar")
-                }
-                Spacer(Modifier.width(8.dp))
-
-                // Botón APLICAR (Premium)
-                Button(
-                    onClick = {
-                        when (selectedTabIndex) {
-                            0 -> onApplyDelay(track.id, delayTimeMs / 1000f, delayDecay)
-                            1 -> onApplyHighPass(track.id, hpfFrequency)
-                            2 -> onApplyFlanger(track.id, flangerRate, flangerWet)
-                        }
-                    },
-                    enabled = isPremium // Solo habilitado si es Premium
-                ) {
-                    if (!isPremium) {
-                        Icon(
-                            Icons.Default.Lock,
-                            contentDescription = "Premium",
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(Modifier.width(4.dp))
-                    }
-                    Text("Aplicar")
-                }
+        // Botones de Acción (Derecha)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            TextButton(onClick = onCancelClick) {
+                Text("Cancelar")
             }
+            Spacer(Modifier.width(8.dp))
+
+            PremiumAwareButton(
+                text = "Aplicar",
+                isPremium = isPremium,
+                onClick = onApplyClick,
+                onShowUpsell = onShowUpsell
+            )
         }
     }
 }
