@@ -76,48 +76,6 @@ fun LoginScreen(
     val uiState by viewModel.uiState.collectAsState()
     val username = rememberSaveable { mutableStateOf("") }
     val password = rememberSaveable { mutableStateOf("") }
-    /*val permissions = buildList {
-        add(permission.RECORD_AUDIO)
-        add(permission.CAMERA)
-        add(permission.ACCESS_FINE_LOCATION)
-        add(permission.CALL_PHONE)
-        add(permission.READ_PHONE_STATE)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            add(permission.POST_NOTIFICATIONS)
-            add(permission.READ_MEDIA_IMAGES)
-            add(permission.READ_MEDIA_VIDEO)
-            add(permission.READ_MEDIA_AUDIO)
-        } else if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
-            add(permission.READ_EXTERNAL_STORAGE)
-            add(permission.WRITE_EXTERNAL_STORAGE)
-        } else {
-            add(permission.READ_EXTERNAL_STORAGE)
-        }
-    }
-
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissionsResult ->
-        val allGranted = permissionsResult.values.all { it }
-        if (!allGranted) {
-            val showSettings = permissionsResult.any { (perm, granted) ->
-                !granted && !ActivityCompat.shouldShowRequestPermissionRationale(
-                    context.findActivity(),
-                    perm
-                )
-            }
-            if (showSettings) {
-                showPermissionsDeniedMessage(context)
-            }
-        }
-    }
-
-
-    LaunchedEffect(Unit) {
-        if (!context.hasPermissions(permissions)) {
-            permissionLauncher.launch(permissions.toTypedArray())
-        }
-    }*/
 
     LaunchedEffect(uiState.loginSuccess) {
         if (uiState.loginSuccess) {
@@ -127,7 +85,7 @@ fun LoginScreen(
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize().testTag("LOGIN_SCREEN")) {
         if (uiState.previewScreen) {
             PreviewScreen(goToLogin = { viewModel.navigateToLogin() })
         } else if (uiState.showNoInternetScreen) {
