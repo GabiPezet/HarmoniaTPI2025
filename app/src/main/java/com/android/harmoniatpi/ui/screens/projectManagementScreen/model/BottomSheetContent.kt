@@ -21,4 +21,9 @@ sealed class BottomSheetContent {
      * Para el diálogo de "En desarrollo"
      */
     object InDevelopment : BottomSheetContent()
+
+    /**
+     * Para las configuraciones del metrónomo (BPM, encendido/apagado)
+     */
+    object MetronomeSettings : BottomSheetContent()
 }

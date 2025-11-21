@@ -12,157 +12,60 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
-data class ColorFamily(
-    val color: Color,
-    val onColor: Color,
-    val container: Color,
-    val onContainer: Color
-)
 
 data class ExtendedColorScheme(
-    val holoColorPrimario: ColorFamily,
-    val holoColorSecundario1: ColorFamily,
-    val holoColorSecundario2: ColorFamily,
-    val holoColorSecundario3: ColorFamily,
-    val holoAcento: ColorFamily,
-    val holoInfo1: ColorFamily,
-    val holoInfo2: ColorFamily,
-    val holoInfo3: ColorFamily,
-    val holoSuccess: ColorFamily,
-    val holoSuccessVariant: ColorFamily
+    val colorMarcaPrimario: Color,
+    val onColorMarcaPrimario: Color,
+    val colorMarcaSecundario: Color,
+    val onColorMarcaSecundario: Color,
+    val colorMarcaSecundario02: Color,
+    val onColorMarcaSecundario02: Color,
+    val colorMarcaSecundario03: Color,
+    val onColorMarcaSecundario03: Color,
+    val infoColor: Color,
+    val onInfoColor: Color,
+    val successColor: Color,
+    val onSuccessColor: Color,
+    val surfaceDaw: Color,
 )
 
-private val lightExtendedScheme = ExtendedColorScheme(
-    holoColorPrimario = ColorFamily(
-        color = holoColorPrimarioLight,
-        onColor = onHoloColorPrimarioLight,
-        container = holoColorPrimarioContainerLight,
-        onContainer = onHoloColorPrimarioContainerLight
-    ),
-    holoColorSecundario1 = ColorFamily(
-        color = holoColorSecundario1Light,
-        onColor = onHoloColorSecundario1Light,
-        container = holoColorSecundario1ContainerLight,
-        onContainer = onHoloColorSecundario1ContainerLight
-    ),
-    holoColorSecundario2 = ColorFamily(
-        color = holoColorSecundario2Light,
-        onColor = onHoloColorSecundario2Light,
-        container = holoColorSecundario2ContainerLight,
-        onContainer = onHoloColorSecundario2ContainerLight
-    ),
-    holoColorSecundario3 = ColorFamily(
-        color = holoColorSecundario3Light,
-        onColor = onHoloColorSecundario3Light,
-        container = holoColorSecundario3ContainerLight,
-        onContainer = onHoloColorSecundario3ContainerLight
-    ),
-    holoAcento = ColorFamily(
-        color = holoAcentoLight,
-        onColor = onHoloAcentoLight,
-        container = holoAcentoContainerLight,
-        onContainer = onHoloAcentoContainerLight
-    ),
-    holoInfo1 = ColorFamily(
-        color = holoInfo1Light,
-        onColor = onHoloInfo1Light,
-        container = holoInfo1ContainerLight,
-        onContainer = onHoloInfo1ContainerLight
-    ),
-    holoInfo2 = ColorFamily(
-        color = holoInfo2Light,
-        onColor = onHoloInfo2Light,
-        container = holoInfo2ContainerLight,
-        onContainer = onHoloInfo2ContainerLight
-    ),
-    holoInfo3 = ColorFamily(
-        color = holoInfo3Light,
-        onColor = onHoloInfo3Light,
-        container = holoInfo3ContainerLight,
-        onContainer = onHoloInfo3ContainerLight
-    ),
-    holoSuccess = ColorFamily(
-        color = holoSuccessLight,
-        onColor = onHoloSuccessLight,
-        container = holoSuccessContainerLight,
-        onContainer = onHoloSuccessContainerLight
-    ),
-    holoSuccessVariant = ColorFamily(
-        color = holoSuccessVariantLight,
-        onColor = onHoloSuccessVariantLight,
-        container = holoSuccessVariantContainerLight,
-        onContainer = onHoloSuccessVariantContainerLight
-    )
+val LightExtendedScheme = ExtendedColorScheme(
+    colorMarcaPrimario = colorMarcaPrimarioLight,
+    onColorMarcaPrimario = onColorMarcaPrimarioLight,
+    colorMarcaSecundario = colorMarcaSecundarioLight,
+    onColorMarcaSecundario = onColorMarcaSecundarioLight,
+    colorMarcaSecundario02 = colorMarcaSecundario_02Light,
+    onColorMarcaSecundario02 = onColorMarcaSecundario_02Light,
+    colorMarcaSecundario03 = colorMarcaSecundario_03Light,
+    onColorMarcaSecundario03 = onColorMarcaSecundario_03Light,
+    infoColor = infoColorLight,
+    onInfoColor = onInfoColorLight,
+    successColor = successColorLight,
+    onSuccessColor = onSuccessColorLight,
+    surfaceDaw = surfaceDawColorLight,
 )
 
-private val darkExtendedScheme = ExtendedColorScheme(
-    holoColorPrimario = ColorFamily(
-        color = holoColorPrimarioDark,
-        onColor = onHoloColorPrimarioDark,
-        container = holoColorPrimarioContainerDark,
-        onContainer = onHoloColorPrimarioContainerDark
-    ),
-    holoColorSecundario1 = ColorFamily(
-        color = holoColorSecundario1Dark,
-        onColor = onHoloColorSecundario1Dark,
-        container = holoColorSecundario1ContainerDark,
-        onContainer = onHoloColorSecundario1ContainerDark
-    ),
-    holoColorSecundario2 = ColorFamily(
-        color = holoColorSecundario2Dark,
-        onColor = onHoloColorSecundario2Dark,
-        container = holoColorSecundario2ContainerDark,
-        onContainer = onHoloColorSecundario2ContainerDark
-    ),
-    holoColorSecundario3 = ColorFamily(
-        color = holoColorSecundario3Dark,
-        onColor = onHoloColorSecundario3Dark,
-        container = holoColorSecundario3ContainerDark,
-        onContainer = onHoloColorSecundario3ContainerDark
-    ),
-    holoAcento = ColorFamily(
-        color = holoAcentoDark,
-        onColor = onHoloAcentoDark,
-        container = holoAcentoContainerDark,
-        onContainer = onHoloAcentoContainerDark
-    ),
-    holoInfo1 = ColorFamily(
-        color = holoInfo1Dark,
-        onColor = onHoloInfo1Dark,
-        container = holoInfo1ContainerLight, // OJO: Usaste Light aquí, asumo que era un typo
-        onContainer = onHoloInfo1ContainerLight // OJO: Usaste Light aquí, asumo que era un typo
-    ),
-    holoInfo2 = ColorFamily(
-        color = holoInfo2Dark,
-        onColor = onHoloInfo2Dark,
-        container = holoInfo2ContainerDark,
-        onContainer = onHoloInfo2ContainerDark
-    ),
-    holoInfo3 = ColorFamily(
-        color = holoInfo3Dark,
-        onColor = onHoloInfo3Dark,
-        container = holoInfo3ContainerDark,
-        onContainer = onHoloInfo3ContainerDark
-    ),
-    holoSuccess = ColorFamily(
-        color = holoSuccessDark,
-        onColor = onHoloSuccessDark,
-        container = holoSuccessContainerDark,
-        onContainer = onHoloSuccessContainerDark
-    ),
-    holoSuccessVariant = ColorFamily(
-        color = holoSuccessVariantDark,
-        onColor = onHoloSuccessVariantDark,
-        container = holoSuccessVariantContainerDark,
-        onContainer = onHoloSuccessVariantContainerDark
-    )
+val DarkExtendedScheme = ExtendedColorScheme(
+    colorMarcaPrimario = colorMarcaPrimarioDark,
+    onColorMarcaPrimario = onColorMarcaPrimarioDark,
+    colorMarcaSecundario = colorMarcaSecundarioDark,
+    onColorMarcaSecundario = onColorMarcaSecundarioDark,
+    colorMarcaSecundario02 = colorMarcaSecundario_02Dark,
+    onColorMarcaSecundario02 = onColorMarcaSecundario_02Dark,
+    colorMarcaSecundario03 = colorMarcaSecundario_03Dark,
+    onColorMarcaSecundario03 = onColorMarcaSecundario_03Dark,
+    infoColor = infoColorDark,
+    onInfoColor = onInfoColorDark,
+    successColor = successColorDark,
+    onSuccessColor = onSuccessColorDark,
+    surfaceDaw = surfaceDawColorDark,
 )
 
 // 3. CREA EL COMPOSITION LOCAL
 // Este es el "túnel" que pasará tus colores extendidos
 private val LocalExtendedColorScheme = staticCompositionLocalOf {
     // Provee valores por defecto para evitar crashes en previews
-    lightExtendedScheme
+    LightExtendedScheme
 }
 
 private val LightColorScheme = lightColorScheme(
@@ -240,9 +143,7 @@ private val DarkColorScheme = darkColorScheme(
     surfaceContainer = surfaceContainerDark,
     surfaceContainerHigh = surfaceContainerHighDark,
     surfaceContainerHighest = surfaceContainerHighestDark,
-
-
-    )
+)
 
 @Composable
 fun HarmoniaTPITheme(
@@ -251,7 +152,7 @@ fun HarmoniaTPITheme(
 ) {
     val systemUiController = rememberSystemUiController()
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
-    val extendedColorScheme = if (darkTheme) darkExtendedScheme else lightExtendedScheme
+    val extendedColorScheme = if (darkTheme) DarkExtendedScheme else LightExtendedScheme
 
     val baseTypography = Typography()
     val typographyStyle = remember {
@@ -273,6 +174,7 @@ fun HarmoniaTPITheme(
         )
     }
 }
+
 // Esto te permite escribir `HoloTheme.extendedScheme.holoSuccess.container`
 object HoloTheme {
     val extendedScheme: ExtendedColorScheme

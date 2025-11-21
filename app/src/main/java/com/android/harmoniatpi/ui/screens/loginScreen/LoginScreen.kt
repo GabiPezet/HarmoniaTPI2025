@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -83,7 +84,7 @@ fun LoginScreen(
     val uiState by viewModel.uiState.collectAsState()
     val username = rememberSaveable { mutableStateOf("") }
     val password = rememberSaveable { mutableStateOf("") }
-    val permissions = buildList {
+    /*val permissions = buildList {
         add(permission.RECORD_AUDIO)
         add(permission.CAMERA)
         add(permission.ACCESS_FINE_LOCATION)
@@ -124,7 +125,7 @@ fun LoginScreen(
         if (!context.hasPermissions(permissions)) {
             permissionLauncher.launch(permissions.toTypedArray())
         }
-    }
+    }*/
 
     LaunchedEffect(uiState.loginSuccess) {
         if (uiState.loginSuccess) {
@@ -171,6 +172,7 @@ fun LoginScreen(
                             LoginForm(
                                 username = username,
                                 password = password,
+                                isLoading = uiState.isLoading,
                                 onLogin = { u, p -> viewModel.onLogin(u, p) },
                                 onGoogleLogin = { idToken -> viewModel.onGoogleLogin(idToken) }
                             )
@@ -192,6 +194,7 @@ fun LoginScreen(
 private fun LoginForm(
     username: MutableState<String>,
     password: MutableState<String>,
+    isLoading: Boolean,
     onLogin: (String, String) -> Unit,
     onGoogleLogin: (String) -> Unit
 ) {
@@ -228,7 +231,8 @@ private fun LoginForm(
         Box(modifier = Modifier.weight(0.3f)) {
             LoginButton(
                 label = stringResource(R.string.login_screen_EnterApp),
-                enabled = isFormValid
+                enabled = isFormValid,
+                isLoading = isLoading,
             ) {
                 onLogin(username.value.trim(), password.value.trim())
                 keyboardController?.hide()
@@ -332,6 +336,7 @@ private fun NoAccountSection(
 private fun LoginButton(
     label: String,
     enabled: Boolean,
+    isLoading: Boolean,
     onClick: () -> Unit
 ) {
 
@@ -345,10 +350,19 @@ private fun LoginButton(
             .padding(vertical = 8.dp)
             .testTag("LOGIN_BUTTON"),
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-        )
+
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(24.dp),
+                color = MaterialTheme.colorScheme.onPrimary,
+                strokeWidth = 2.dp
+            )
+        } else {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+            )
+        }
     }
 }
 

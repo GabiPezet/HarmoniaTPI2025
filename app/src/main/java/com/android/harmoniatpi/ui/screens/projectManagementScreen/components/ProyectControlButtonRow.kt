@@ -1,4 +1,4 @@
-package com.android.harmoniatpi.ui.components
+package com.android.harmoniatpi.ui.screens.projectManagementScreen.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -9,12 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FiberManualRecord
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.SkipPrevious
-import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -22,6 +16,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
@@ -40,6 +35,7 @@ fun ProyectControlButtonRow(
     stopRecording: () -> Unit,
     isRecording: Boolean,
     isPlaying: Boolean,
+    onError: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -48,7 +44,7 @@ fun ProyectControlButtonRow(
         shadowElevation = 12.dp,
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 16.dp)
+            .padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 16.dp)
             .shadow(elevation = 12.dp, shape = RoundedCornerShape(24.dp))
             .clip(RoundedCornerShape(24.dp))
             .background(Color(0xFF1E1E1E))
@@ -60,44 +56,63 @@ fun ProyectControlButtonRow(
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
+
+            val isSkipEnabled = !isRecording
+            val isRecordEnabled = isRecording || !isPlaying
+            val isPlayEnabled = !isRecording
+
             // ⏮ Stop / SkipPrevious
             CircleIconButton(
-                onClick = onSkipPrevious,
+                onClick = {
+                    if (isSkipEnabled) {
+                        onSkipPrevious()
+                    } else {
+                        onError("Acción no permitida durante la grabación")
+                    }
+                },
                 iconColor = Color(0xFFEEEEEE),
                 backgroundColor = Color(0xFFB8B1B1),
-                pngRes = R.drawable.skip_previous_base
+                pngRes = R.drawable.skip_previous_base,
+                isActuallyEnabled = isSkipEnabled
             )
 
             // ⏺ Record / Stop
             CircleIconButton(
                 onClick = {
-                    if (isRecording) stopRecording() else startRecording()
+                    if (isRecordEnabled) {
+                        if (isRecording) stopRecording() else startRecording()
+                    } else {
+                        // Este es el caso "isRecording=false && isPlaying=true"
+                        onError("No puedes grabar mientras reproduces")
+                    }
                 },
-                //icon = if (isRecording) Icons.Default.Stop else Icons.Default.FiberManualRecord,
                 pngRes = if (isRecording) R.drawable.stop_button_base else R.drawable.record_button_base,
                 iconColor = Color.White,
-                backgroundColor = if (isRecording)
-                    Color(0xFFB71C1C)
+                backgroundColor = if (isRecordEnabled)
+                    Color(0xFFFF1744)
                 else
-                    Color(0xFFFF1744),
-                glow = true
+                    Color(0xFFB71C1C),
+                glow = true,
+                isActuallyEnabled = isRecordEnabled
             )
 
             // ▶ / ⏸ Play / Pause
             CircleIconButton(
                 onClick = {
-                    if (isPlaying) onPause() else onPlay()
+                    if (isPlayEnabled) {
+                        if (isPlaying) onPause() else onPlay()
+                    } else {
+                        onError("Acción no permitida durante la grabación")
+                    }
                 },
-                //icon = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                 pngRes = if (isPlaying) R.drawable.pause_button_base else R.drawable.play_button_base,
                 iconColor = Color.Black,
-                backgroundColor = if (isPlaying)
-                   // Color(0xFF9E9E9E)
-                    Color(0xFF036239)
-                else
+                backgroundColor = if (isPlayEnabled)
+                // Color(0xFF9E9E9E)
                     Color(0xFF36B37E)
-                    // Color(0xFF00E676) Verde original
-
+                else
+                    Color(0xFF036239),
+                isActuallyEnabled = isPlayEnabled
             )
         }
     }
@@ -107,10 +122,11 @@ fun ProyectControlButtonRow(
 private fun CircleIconButton(
     onClick: () -> Unit,
     icon: ImageVector? = null,
-    pngRes: Int? = null, //nueva modificación
+    pngRes: Int? = null,
     backgroundColor: Color,
     iconColor: Color,
-    glow: Boolean = false
+    glow: Boolean = false,
+    isActuallyEnabled: Boolean = true,
 ) {
     val glowBrush = if (glow) {
         Brush.radialGradient(
@@ -130,12 +146,14 @@ private fun CircleIconButton(
                         backgroundColor
                     )
                 )
-            ),
+            )
+            .alpha(if (isActuallyEnabled) 1f else 0.5f),
     ) {
         IconButton(
             onClick = onClick,
             colors = IconButtonDefaults.iconButtonColors(contentColor = iconColor),
-            modifier = Modifier.size(60.dp)
+            modifier = Modifier.size(60.dp),
+            enabled = true,
 //          modifier = Modifier.padding(12.dp)
         ) {
 //            Icon(
@@ -162,8 +180,6 @@ private fun CircleIconButton(
         }
     }
 }
-
-
 
 
 //package com.android.harmoniatpi.ui.components

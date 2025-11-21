@@ -1,5 +1,7 @@
 package com.android.harmoniatpi.ui.screens.notificationScreen
 
+import android.Manifest
+import android.os.Build
 import android.os.SystemClock
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
@@ -42,6 +44,7 @@ import com.android.harmoniatpi.ui.components.Toolbar
 import com.android.harmoniatpi.ui.screens.notificationScreen.components.NotificationCard
 import com.android.harmoniatpi.ui.screens.notificationScreen.model.NotificationHarmonia
 import com.android.harmoniatpi.ui.screens.notificationScreen.viewModel.NotificationsViewModel
+import com.android.harmoniatpi.ui.utils.PermissionRequester
 
 @Composable
 fun NotificationsScreen(
@@ -68,6 +71,15 @@ fun NotificationsScreen(
 
     BackHandler {
         safeNavigateToBack()
+    }
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        PermissionRequester(
+            permission = Manifest.permission.POST_NOTIFICATIONS,
+            rationaleRes = R.string.post_notifications_rationale,
+            permanentlyDeniedRes = R.string.post_notifications_denied_msg,
+            showPermanentlyDeclinedDialog = true
+        )
     }
 
     LaunchedEffect(Unit) {

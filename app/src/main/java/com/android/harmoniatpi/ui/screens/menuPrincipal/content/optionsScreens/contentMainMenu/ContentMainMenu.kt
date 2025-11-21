@@ -149,7 +149,7 @@ fun ContentMainMenu(
 
                         MenuOptionItem(
                             icon = Icons.Filled.Payment,
-                            text = "Mercado Pago",
+                            text = "HoloJam Premium",
                             onClick = { navigateToPaymentMarketScreen() }
                         )
 

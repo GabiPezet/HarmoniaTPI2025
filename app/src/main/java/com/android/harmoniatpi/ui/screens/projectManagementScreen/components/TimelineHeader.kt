@@ -1,4 +1,4 @@
-package com.android.harmoniatpi.ui.components
+package com.android.harmoniatpi.ui.screens.projectManagementScreen.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.height
