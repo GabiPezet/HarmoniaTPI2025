@@ -194,7 +194,10 @@ fun ProjectManagementScreen(
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
         ModalBottomSheet(
-            onDismissRequest = { viewModel.hideBottomSheet() },
+            onDismissRequest = {
+                viewModel.stopEffectPreview()
+                viewModel.hideBottomSheet()
+            },
             sheetState = sheetState
         ) {
             when (activeSheet) {
@@ -235,7 +238,7 @@ fun ProjectManagementScreen(
                 }
 
                 is BottomSheetContent.RenameTrack -> {
-                    RenameTrackSheetContent (
+                    RenameTrackSheetContent(
                         track = activeSheet.track,
                         onRename = { trackId, newName ->
                             viewModel.renameTrack(trackId, newName)
@@ -415,7 +418,7 @@ fun ProjectManagementScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
-            Column( modifier = Modifier.background(Color(0xFF858585))) {
+            Column(modifier = Modifier.background(Color(0xFF858585))) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
