@@ -63,8 +63,6 @@ import java.io.File
 import java.io.FileOutputStream
 import javax.inject.Inject
 
-private const val MS_PER_DP_SCALE = 10f
-
 @HiltViewModel
 class ProjectManagementScreenViewModel @Inject constructor(
     @ApplicationContext private val context: Context,

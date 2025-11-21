@@ -1,11 +1,7 @@
 package com.android.harmoniatpi.ui.screens.loginScreen
 
-import android.Manifest.permission
-import android.os.Build
 import android.util.Log
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -54,19 +50,15 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.core.app.ActivityCompat
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialException
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.android.harmoniatpi.R
-import com.android.harmoniatpi.data.local.ext.findActivity
 import com.android.harmoniatpi.ui.components.HoloTextField
 import com.android.harmoniatpi.ui.components.InternetDisableScreen
 import com.android.harmoniatpi.ui.components.LoginBackGroundHeader
 import com.android.harmoniatpi.ui.screens.loginScreen.components.PreviewScreen
-import com.android.harmoniatpi.ui.screens.loginScreen.util.hasPermissions
-import com.android.harmoniatpi.ui.screens.loginScreen.util.showPermissionsDeniedMessage
 import com.android.harmoniatpi.ui.screens.loginScreen.viewModel.LoginScreenViewModel
 import com.android.harmoniatpi.ui.screens.registerScreen.ScreenTitle
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption

@@ -58,7 +58,7 @@ class SongRepositoryImpl @Inject constructor(
                         audioUrl = versionDoc.getString("audioUrl"),
                         durationMillis = versionDoc.getLong("durationMillis") ?: 0L
                     )
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     // Si un perfil de usuario no se encuentra, omitimos esa versión derivada
                     null
                 }

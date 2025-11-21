@@ -87,7 +87,7 @@ import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.Vol
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.BottomSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.viewmodel.ProjectManagementScreenViewModel
-import com.android.harmoniatpi.ui.utils.PermissionRequester
+import com.android.harmoniatpi.ui.core.utils.PermissionRequester
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 

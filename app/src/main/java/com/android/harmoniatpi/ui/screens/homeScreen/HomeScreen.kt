@@ -48,7 +48,7 @@ import com.android.harmoniatpi.ui.core.navigation.bottomNavigationBar.BottomBarI
 import com.android.harmoniatpi.ui.core.navigation.bottomNavigationBar.NavigationBottomWrapper
 import com.android.harmoniatpi.ui.screens.homeScreen.viewmodel.HomeScreenViewModel
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.viewmodel.DrawerContentViewModel
-import com.android.harmoniatpi.ui.utils.PermissionRequester
+import com.android.harmoniatpi.ui.core.utils.PermissionRequester
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

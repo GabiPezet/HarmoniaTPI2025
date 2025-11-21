@@ -44,7 +44,7 @@ import com.android.harmoniatpi.ui.components.Toolbar
 import com.android.harmoniatpi.ui.screens.notificationScreen.components.NotificationCard
 import com.android.harmoniatpi.ui.screens.notificationScreen.model.NotificationHarmonia
 import com.android.harmoniatpi.ui.screens.notificationScreen.viewModel.NotificationsViewModel
-import com.android.harmoniatpi.ui.utils.PermissionRequester
+import com.android.harmoniatpi.ui.core.utils.PermissionRequester
 
 @Composable
 fun NotificationsScreen(
