@@ -101,9 +101,12 @@ fun CommunityScreen(
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.background)
             ) {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                LazyColumn(modifier = Modifier.fillMaxSize().testTag("COMMUNITY_LIST")) {
+
+
                     items(uiState.posts) { post ->
 
+                        val index = uiState.posts.indexOf(post)
                         val projectData = uiState.localProjects.find {
                             it.originalProjectId == post.idProject && it.ownerId == uiState.userID
                         }
@@ -114,6 +117,7 @@ fun CommunityScreen(
                         val isFriend = post.userID in friendsList
                         PostCard(
                             post = post,
+                            modifier = Modifier.testTag("POST_ITEM_$index"),
                             userName = uiState.userName,
                             userLastName = uiState.userLastName,
                             onLikeClicked = { viewModel.updateLikes(post) },

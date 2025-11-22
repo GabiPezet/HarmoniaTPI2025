@@ -34,10 +34,11 @@ fun ModernProjectInputRow(
     modifier: Modifier = Modifier,
     singleLine: Boolean = false,
     isError: Boolean = false,
-    supportingText: String? = null
+    supportingText: String? = null,
+    testTag: String = ""
 ) {
     // Columna para incluir el campo de texto y el texto de soporte/error
-    Column(modifier = modifier) {
+    Column {
 
         Text(
             text = labelText,
@@ -83,7 +84,7 @@ fun ModernProjectInputRow(
                     disabledIndicatorColor = Color.Transparent,
                     focusedTextColor = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
                 ),
-                modifier = Modifier.weight(1f),
+                modifier = modifier.weight(1f),
                 singleLine = singleLine,
                 textStyle = MaterialTheme.typography.bodyLarge,
                 isError = isError

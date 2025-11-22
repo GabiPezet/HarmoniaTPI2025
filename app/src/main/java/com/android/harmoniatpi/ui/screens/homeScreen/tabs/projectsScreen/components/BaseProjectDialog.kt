@@ -21,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -50,7 +51,8 @@ fun BaseProjectDialog(
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 48.dp),
+                .padding(horizontal = 24.dp, vertical = 48.dp)
+                .testTag("CreateProjectDialog"),
             shape = RoundedCornerShape(24.dp),
             color = MaterialTheme.colorScheme.background
         ) {
@@ -59,15 +61,18 @@ fun BaseProjectDialog(
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .verticalScroll(rememberScrollState()),
+                        .verticalScroll(rememberScrollState())
+                        .testTag("DialogContent"),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
                         dialogTitle,
                         style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .testTag("DialogTitle")
                     )
-                    // Slot para el contenido (el formulario)
+
                     content()
                 }
 
@@ -77,9 +82,12 @@ fun BaseProjectDialog(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
+
                     OutlinedButton(
                         onClick = onDismiss,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("CreateProjectCancelButton"),
                         shape = RoundedCornerShape(16.dp)
                     ) {
                         Text("Cancelar", fontWeight = FontWeight.Bold, fontSize = 16.sp)
@@ -87,17 +95,24 @@ fun BaseProjectDialog(
 
                     Button(
                         onClick = onConfirm,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("CreateProjectConfirmButton"),
                         shape = RoundedCornerShape(16.dp),
                         enabled = isConfirmEnabled && !isLoading,
                     ) {
                         if (isLoading) {
-                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .testTag("LoadingIndicator")
+                            )
                         } else {
                             Text(
                                 confirmButtonText,
                                 style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontWeight = FontWeight.Bold, fontSize = 16.sp
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp
                                 ),
                             )
                         }

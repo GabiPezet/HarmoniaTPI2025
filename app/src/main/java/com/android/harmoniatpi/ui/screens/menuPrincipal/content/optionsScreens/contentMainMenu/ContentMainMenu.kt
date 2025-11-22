@@ -47,6 +47,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -79,7 +80,7 @@ fun ContentMainMenu(
 
     Column(
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxSize().testTag("CONTENT_MAIN_MENU")
             .padding(innerPadding)
             .background(MaterialTheme.colorScheme.surface)
     ) {
@@ -121,6 +122,7 @@ fun ContentMainMenu(
                     ) {
 
                         MenuOptionItem(
+                            testTag = "MenuOptionItemProfile",
                             icon = Icons.Default.Person,
                             text = "Perfil",
                             onClick = { drawerViewModel.changeOptionsMenu(OptionsMenu.USER_PROFILE) },
@@ -128,6 +130,7 @@ fun ContentMainMenu(
                         )
 
                         MenuOptionItem(
+                            testTag = "MenuOptionItemNotifications",
                             icon = Icons.Default.Favorite,
                             text = "Notificaciones",
                             onClick = { onNavigateToNotifications() },
@@ -135,6 +138,7 @@ fun ContentMainMenu(
                         )
 
                         MenuOptionItem(
+                            testTag = "MenuOptionItemSettings",
                             icon = Icons.Default.Settings,
                             text = "Configuración",
                             onClick = { drawerViewModel.changeOptionsMenu(OptionsMenu.USER_PREFERENCES_SCREEN) },
@@ -142,12 +146,14 @@ fun ContentMainMenu(
                         )
 
                         MenuOptionItem(
+                            testTag = "MenuOptionItemMyPosts",
                             icon = Icons.Filled.Groups,
                             text = "Mis publicaciones",
                             onClick = { drawerViewModel.changeOptionsMenu(OptionsMenu.MY_POSTS_SCREEN) }
                         )
 
                         MenuOptionItem(
+                            testTag = "MenuOptionItemPremium",
                             icon = Icons.Filled.Payment,
                             text = "HoloJam Premium",
                             onClick = { navigateToPaymentMarketScreen() }
@@ -158,6 +164,7 @@ fun ContentMainMenu(
                     // Sección inferior con "Cerrar sesión"
                     Column {
                         MenuOptionItem(
+                            testTag = "MenuOptionItemCloseSession",
                             icon = Icons.AutoMirrored.Filled.ExitToApp,
                             text = stringResource(R.string.cerrar_sesion),
                             onClick = { showCloseSessionDialog() },
@@ -262,6 +269,7 @@ private fun UserProfileCard(
 
 @Composable
 private fun MenuOptionItem(
+    testTag: String,
     icon: ImageVector,
     text: String,
     onClick: () -> Unit,
@@ -271,7 +279,7 @@ private fun MenuOptionItem(
     val textColor = MaterialTheme.colorScheme.onBackground
 
     Row(
-        modifier = Modifier
+        modifier = Modifier.testTag(testTag)
             .fillMaxWidth()
             .clickable(
                 onClick = onClick

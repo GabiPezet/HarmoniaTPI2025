@@ -80,6 +80,7 @@ import java.util.Locale
 @Composable
 fun PostCard(
     post: Post,
+    modifier: Modifier = Modifier,
     userName: String,
     userLastName: String,
     onLikeClicked: () -> Unit,
@@ -148,7 +149,7 @@ fun PostCard(
 
     Column(
         modifier = if (isMyPost) {
-            Modifier
+            modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.surface)
                 .combinedClickable(
@@ -158,7 +159,7 @@ fun PostCard(
                     onLongClick = { showDeleteDialog = true }
                 )
         } else {
-            Modifier
+            modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.surface)
         }

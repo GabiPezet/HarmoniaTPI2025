@@ -44,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -75,7 +76,7 @@ fun ProjectCard(
     val hasBeenForkedByOthers = forkedByUsers.isNotEmpty()
 
     Card(
-        modifier = Modifier
+        modifier = Modifier.testTag("ProjectCard")
             .fillMaxWidth()
             .padding(4.dp)
             .clickable { onNavigateToManagement() },
@@ -211,7 +212,7 @@ fun ProjectCard(
 
                 // 4. Botón de "Más Opciones" (se queda igual)
                 Box {
-                    IconButton(onClick = { showMenu = true }) {
+                    IconButton(modifier = Modifier.testTag("MoreOptions"), onClick = { showMenu = true }) {
                         Icon(
                             Icons.Default.MoreVert,
                             contentDescription = "Más opciones"
@@ -219,6 +220,7 @@ fun ProjectCard(
                     }
 
                     DropdownMenu(
+                        modifier = Modifier.testTag("MoreOptionsMenuDropdown"),
                         expanded = showMenu,
                         onDismissRequest = { showMenu = false }
                     ) {
@@ -264,6 +266,7 @@ fun ProjectCard(
                                     (isMyClone && selectedTab == ProjectTab.COLLABS)
                         if (canDelete) {
                             DropdownMenuItem(
+                                modifier = Modifier.testTag("DeleteMenuItem"),
                                 text = { Text("Eliminar") },
                                 onClick = { onDeleteClick(); showMenu = false },
                                 leadingIcon = {
