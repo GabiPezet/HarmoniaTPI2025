@@ -91,6 +91,7 @@ class FriendsViewModel @Inject constructor(
                             }
                         )
                     }
+                    sharedMenuUiState.updateState { it.copy(totalFriends = friends.size) }
                 } else {
                     _uiState.update { it.copy(isLoading = true) } // Sigue cargando
                 }

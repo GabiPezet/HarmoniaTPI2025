@@ -21,6 +21,7 @@ data class MenuUiState(
     val userLastName : String = "",
     val userPhotoPath: String = "",
     val userPhotoPathRemote: String = "",
+    val totalFriends : Int = 0,
     val isLoading: Boolean = false,
     val logOutSuccess: Boolean = false,
     val appTheme: AppTheme = AppTheme.LIGHT,
