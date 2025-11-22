@@ -2,7 +2,6 @@ package com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.compon
 
 import android.widget.Toast
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.model.ProjectUiState

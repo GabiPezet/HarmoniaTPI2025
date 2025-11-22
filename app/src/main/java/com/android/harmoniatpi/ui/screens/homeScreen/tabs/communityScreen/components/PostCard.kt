@@ -318,32 +318,38 @@ fun PostCard(
 
                             // 2. Clonar
                             if (post.idProject.isNotBlank() && post.clonedOption == true && isFriend) {
-                                val isCloneEnabled = !isAlreadyCloned && !isMyPost && !isCloningThisPost
+                                val isCloneEnabled =
+                                    !isAlreadyCloned && !isMyPost && !isCloningThisPost
                                 if (isCloningThisPost) {
-                                    Box(modifier = Modifier.padding(vertical = 4.dp, horizontal = 6.dp)) {
+                                    Box(
+                                        modifier = Modifier.padding(
+                                            vertical = 4.dp,
+                                            horizontal = 6.dp
+                                        )
+                                    ) {
                                         CircularProgressIndicator(
                                             modifier = Modifier.size(18.dp),
                                             strokeWidth = 2.dp
                                         )
                                     }
                                 } else {
-                                // Muestra el botón de clonar
-                                val (cloneIcon) = if (isAlreadyCloned) {
-                                    Icons.Default.Check to MaterialTheme.colorScheme.primary
-                                } else {
-                                    Icons.Default.ContentCopy to defaultTint
+                                    // Muestra el botón de clonar
+                                    val (cloneIcon) = if (isAlreadyCloned) {
+                                        Icons.Default.Check to MaterialTheme.colorScheme.primary
+                                    } else {
+                                        Icons.Default.ContentCopy to defaultTint
+                                    }
+
+                                    PostActionItem(
+                                        icon = cloneIcon,
+                                        totalCloned = post.totalShared,
+                                        text = "",
+                                        onClick = onCloneClicked,
+                                        enabled = isCloneEnabled
+                                    )
                                 }
 
-                                PostActionItem(
-                                    icon = cloneIcon,
-                                    totalCloned = post.totalShared,
-                                    text = "",
-                                    onClick = onCloneClicked,
-                                    enabled = isCloneEnabled
-                                )
                             }
-
-                        }
 
                             // 3. Like
                             val (likeIcon, likeTint) = if (post.likes > 0) {
@@ -366,7 +372,15 @@ fun PostCard(
                                 tint = defaultTint,
                                 modifier = Modifier
                                     .size(18.dp)
-                                    .clickable { sharePost(post, context , isMyPost,userName,userLastName) }
+                                    .clickable {
+                                        sharePost(
+                                            post,
+                                            context,
+                                            isMyPost,
+                                            userName,
+                                            userLastName
+                                        )
+                                    }
                             )
 
                         }
@@ -490,6 +504,7 @@ fun AudioPlayerSection(
         }
     }
 }
+
 // Animación simple de ondas de sonido
 @Composable
 fun SoundWaveAnimation(

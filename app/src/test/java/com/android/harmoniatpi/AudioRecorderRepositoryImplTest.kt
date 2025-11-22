@@ -23,7 +23,6 @@ class AudioRecorderRepositoryImplTest {
     @Test
     fun `startRecording successfully calls recorder`() {
         val filePath = "audio.pcm"
-        val audioSource = 1
         val expectedResult = Result.success(Unit)
         every { recorder.startRecording(1) } returns expectedResult
 

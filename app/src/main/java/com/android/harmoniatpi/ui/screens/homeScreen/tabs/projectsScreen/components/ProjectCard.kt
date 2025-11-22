@@ -76,7 +76,8 @@ fun ProjectCard(
     val hasBeenForkedByOthers = forkedByUsers.isNotEmpty()
 
     Card(
-        modifier = Modifier.testTag("ProjectCard")
+        modifier = Modifier
+            .testTag("ProjectCard")
             .fillMaxWidth()
             .padding(4.dp)
             .clickable { onNavigateToManagement() },
@@ -199,7 +200,8 @@ fun ProjectCard(
                     // La duración total es el punto final (offset + duración)
                     // de la pista que termine más tarde.
                     project.urlAudioTracks.maxOfOrNull { track ->
-                        val trackDuration = (track.trimEndMs.takeIf { it != -1L } ?: track.durationMs) - track.trimStartMs
+                        val trackDuration = (track.trimEndMs.takeIf { it != -1L }
+                            ?: track.durationMs) - track.trimStartMs
                         track.startOffsetMs + trackDuration
                     } ?: project.duration // Si no hay pistas, usa la (probablemente 0)
                 }
@@ -212,7 +214,9 @@ fun ProjectCard(
 
                 // 4. Botón de "Más Opciones" (se queda igual)
                 Box {
-                    IconButton(modifier = Modifier.testTag("MoreOptions"), onClick = { showMenu = true }) {
+                    IconButton(
+                        modifier = Modifier.testTag("MoreOptions"),
+                        onClick = { showMenu = true }) {
                         Icon(
                             Icons.Default.MoreVert,
                             contentDescription = "Más opciones"
