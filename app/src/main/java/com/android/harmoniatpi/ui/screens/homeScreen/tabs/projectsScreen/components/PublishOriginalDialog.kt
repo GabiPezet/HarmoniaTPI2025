@@ -1,5 +1,7 @@
 package com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components
 
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -7,8 +9,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.android.harmoniatpi.domain.model.project.CloningAccess
 import com.android.harmoniatpi.domain.model.project.Project
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.viewmodel.ProjectViewModel
 
@@ -27,7 +32,7 @@ fun PublishOriginalDialog(
     var postHashtags by remember { mutableStateOf(project.hashtags.joinToString(", ")) }
     var postImageUrl by remember(project) { mutableStateOf(project.imageUrl) }
     var isPublishing by remember { mutableStateOf(false) }
-
+    var cloningAccess by remember { mutableStateOf(CloningAccess.PUBLIC) }
     BasePublishDialog(
         dialogTitle = "Publicar Proyecto",
         isPublishing = isPublishing,
@@ -42,6 +47,7 @@ fun PublishOriginalDialog(
                 postDescription = postDescription,
                 postHashtags = postHashtags,
                 postImageUrl = postImageUrl,
+                cloningAccess = cloningAccess,
                 onComplete = {
                     isPublishing = false
                     onDismiss()
@@ -70,6 +76,11 @@ fun PublishOriginalDialog(
                 onValueChange = { postDescription = it },
                 placeholder = "Describe tu publicación...",
                 textStyle = MaterialTheme.typography.bodyMedium
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            CloningAccessSelector(
+                selectedOption = cloningAccess,
+                onOptionSelected = { cloningAccess = it }
             )
         }
     }

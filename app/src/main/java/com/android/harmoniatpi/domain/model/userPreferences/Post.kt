@@ -3,6 +3,7 @@ package com.android.harmoniatpi.domain.model.userPreferences
 import com.android.harmoniatpi.data.database.entities.MyPostEntity
 import com.android.harmoniatpi.data.local.model.PostFirebaseModel
 import com.android.harmoniatpi.di.util.JsonUtils
+import com.android.harmoniatpi.domain.model.project.CloningAccess
 
 data class Post(
     val id: String,
@@ -24,7 +25,8 @@ data class Post(
     val clonedOption: Boolean = false,
     val hasNewComment: Boolean = false,
     val hasNewLike: Boolean = false,
-    val hasNewClone : Boolean = false
+    val hasNewClone : Boolean = false,
+    val cloningAccess: CloningAccess = CloningAccess.PUBLIC
 ) {
     fun toPostFirebaseModel(jsonUtils: JsonUtils): PostFirebaseModel {
         return PostFirebaseModel(
@@ -44,7 +46,8 @@ data class Post(
             likes = likes,
             comments = comments.map { it.toCommentFirebaseModel() },
             totalShared = totalShared,
-            clonedOption = clonedOption
+            clonedOption = clonedOption,
+            cloningAccess = cloningAccess
         )
     }
 
@@ -73,6 +76,7 @@ data class Post(
         clonedOption = clonedOption,
         hasNewComment = hasNewComment,
         hasNewLike = hasNewLike,
-        hasNewClone = hasNewClone
+        hasNewClone = hasNewClone,
+        cloningAccess = cloningAccess
     )
 }
