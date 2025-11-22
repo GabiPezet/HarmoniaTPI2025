@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -31,7 +32,11 @@ fun PreviewScreen(goToLogin: () -> Unit) {
         modifier = Modifier
             .fillMaxSize()
     ) {
-        PreviewBackGroundHeader()
+        PreviewBackGroundHeader(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.50f)
+        )
 
         ScreenTitle(
             "¿Todo listo?",
