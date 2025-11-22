@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -104,10 +105,13 @@ fun LoginScreen(
         } else {
 
             Box(modifier = Modifier.fillMaxSize()) {
-                // Imagen de fondo que cubre toda la pantalla
-                LoginBackGroundHeader()
 
-                // Column con fondo semi-transparente o gradiente para mejor legibilidad
+                LoginBackGroundHeader(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(0.40f)
+                )
+
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -118,7 +122,7 @@ fun LoginScreen(
                         Box(modifier = Modifier.weight(0.1f)) {
                             ScreenTitle("Inicia Sesión")
                         }
-                        Box(modifier = Modifier.weight(0.6f)) {
+                        Box(modifier = Modifier.weight(0.5f)) {
                             LoginForm(
                                 username = username,
                                 password = password,
