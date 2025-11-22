@@ -4,15 +4,41 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -112,7 +138,12 @@ fun PaymentMarketScreen(
                     NoSuscritoView(
                         isLoading = uiState.loading,
                         preferenceId = uiState.preference?.preferenceId,
-                        onGenerate = { viewModel.createPreference(100.0, "HoloJam Premium") }, //modificarlo luego
+                        onGenerate = {
+                            viewModel.createPreference(
+                                100.0,
+                                "HoloJam Premium"
+                            )
+                        }, //modificarlo luego
                         onPay = { prefId ->
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(prefId))
                             context.startActivity(intent)
@@ -162,7 +193,9 @@ fun NoSuscritoView(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        Divider(color = MaterialTheme.colorScheme.outlineVariant)
+        HorizontalDivider(
+            color = MaterialTheme.colorScheme.outlineVariant
+        )
 
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             BenefitItem("Acceso a más de 5 pistas")

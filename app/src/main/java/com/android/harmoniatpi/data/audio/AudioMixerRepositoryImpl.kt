@@ -87,7 +87,6 @@ class AudioMixerRepositoryImpl @Inject constructor(
 
     private var previewPlayer: PcmAudioPlayer? = null
     private val _previewCompletedFlow = MutableSharedFlow<Unit>(replay = 0)
-    private val bufferSize = 2048
     private var playbackStartTimeNs: Long = 0L
     private var initialPlaybackMs: Long = 0L
 
@@ -222,7 +221,7 @@ class AudioMixerRepositoryImpl @Inject constructor(
 
     override fun seekTo(ms: Long) {
         val wasPlaying =
-            playerList.any { it.audioTrack.playState == android.media.AudioTrack.PLAYSTATE_PLAYING }
+            playerList.any { it.audioTrack.playState == AudioTrack.PLAYSTATE_PLAYING }
 
         stopPlaybackTracking()
         stop()
@@ -531,9 +530,8 @@ class AudioMixerRepositoryImpl @Inject constructor(
         totalDurationMs: Long
     ): Result<Unit> {
         return runCatching {
-            tracks.value.find { it.id == trackId }?.let { track ->
-                track.setPlaybackRange(startMs, endMs, totalDurationMs)
-            } ?: throw NoSuchElementException("Track no encontrado: $trackId")
+            tracks.value.find { it.id == trackId }?.setPlaybackRange(startMs, endMs, totalDurationMs)
+                ?: throw NoSuchElementException("Track no encontrado: $trackId")
         }
     }
 

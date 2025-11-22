@@ -78,7 +78,7 @@ import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.u
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.ProfileTabItem
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.WorkProfileCard
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.viewmodel.DrawerContentViewModel
-import com.android.harmoniatpi.ui.utils.PermissionRequester
+import com.android.harmoniatpi.ui.core.utils.PermissionRequester
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)

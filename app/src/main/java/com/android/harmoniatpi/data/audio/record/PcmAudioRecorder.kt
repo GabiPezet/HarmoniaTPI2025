@@ -1,29 +1,18 @@
 package com.android.harmoniatpi.data.audio.record
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.media.AudioFormat
 import android.media.AudioRecord
-import android.media.MediaRecorder
-import android.media.audiofx.AcousticEchoCanceler
-import android.media.audiofx.AutomaticGainControl
-import android.media.audiofx.NoiseSuppressor
 import android.util.Log
-import androidx.annotation.RequiresPermission
-import be.tarsos.dsp.AudioDispatcher
 import be.tarsos.dsp.io.TarsosDSPAudioFormat
-import be.tarsos.dsp.io.jvm.AudioDispatcherFactory
-import be.tarsos.dsp.writer.WriterProcessor
 import com.android.harmoniatpi.domain.interfaces.AudioRecorder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
-import java.io.RandomAccessFile
 import javax.inject.Inject
 
 private const val SAMPLE_RATE = 44100

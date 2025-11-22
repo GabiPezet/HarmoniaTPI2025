@@ -1,6 +1,7 @@
 [versions]
 accompanistSystemuicontroller = "0.27.0"
 agp = "8.7.3"
+core = "2.5"
 credentials = "1.3.0"
 googleid = "1.1.0"
 kotlin = "2.1.10"
@@ -52,6 +53,7 @@ accompanist-systemuicontroller = { module = "com.google.accompanist:accompanist-
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-material3-window-size-class1 = { module = "androidx.compose.material3:material3-window-size-class", version.ref = "material3WindowSizeClass" }
 androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3Exoplayer" }
+core = { module = "be.tarsos.dsp:core", version.ref = "core" }
 core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "core-splashscreen" }
 # Testing
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -87,6 +89,7 @@ google-dagger-hilt-android-compiler = { group = "com.google.dagger", name = "hil
 google-dagger-hilt-android-testing = { group = "com.google.dagger", name = "hilt-android-testing", version.ref = "dagger" }
 androidx-hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "androidXHilt" }
 # Retrofit
+jvm = { module = "be.tarsos.dsp:jvm", version.ref = "core" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofitVersion" }
 converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "retrofitVersion" }
 # Coil

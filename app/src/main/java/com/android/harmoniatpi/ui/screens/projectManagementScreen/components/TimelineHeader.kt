@@ -19,7 +19,6 @@ fun TimelineHeader(
 ) {
     val density = LocalDensity.current
     val markerColor = MaterialTheme.colorScheme.onSurfaceVariant
-    val textColor = MaterialTheme.colorScheme.onSurface
 
     // Convertimos el ancho total en Dp a milisegundos
     val totalMs = (timelineWidth * msPerDpScale).toLong()
@@ -59,7 +58,6 @@ fun TimelineHeader(
                     val seconds = currentMs / 1000
                     val minutes = seconds / 60
                     val remainingSeconds = seconds % 60
-                    val timeString = String.format("%d:%02d", minutes, remainingSeconds)
 
                     // (Esta es una forma simple de dibujar texto en Canvas,
                     // para algo más complejo se usaría Text)

@@ -57,7 +57,6 @@ import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -66,7 +65,6 @@ import coil.compose.AsyncImage
 import com.android.harmoniatpi.R
 import com.android.harmoniatpi.domain.model.song.DerivedVersion
 import com.android.harmoniatpi.domain.model.song.Song
-import com.android.harmoniatpi.domain.model.user.User
 import com.android.harmoniatpi.ui.components.CircularProgressBar
 import com.android.harmoniatpi.ui.core.theme.HarmoniaTPITheme
 import com.android.harmoniatpi.ui.screens.songVersionsScreen.model.PlaybackState
@@ -682,7 +680,6 @@ fun SongVersionsScreenPreview() {
 @Preview(showBackground = true)
 @Composable
 fun SongHeaderPreview() {
-    val sampleCreator = User(id = "1", name = "Luna Beats", avatarUrl = null)
     val sampleSong = createMockSong()
     MaterialTheme {
         SongHeader(song = sampleSong, modifier = Modifier.padding(16.dp))
