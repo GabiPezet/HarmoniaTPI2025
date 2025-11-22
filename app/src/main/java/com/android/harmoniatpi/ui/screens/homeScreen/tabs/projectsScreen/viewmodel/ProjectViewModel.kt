@@ -732,6 +732,7 @@ class ProjectViewModel @Inject constructor(
     }
 
     fun setCurrentProject(project: Project) {
+        stopPlayback()
         holoJamCache.currentProjectSelected = project
     }
 
