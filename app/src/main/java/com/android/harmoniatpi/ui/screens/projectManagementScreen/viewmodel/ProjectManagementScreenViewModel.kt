@@ -46,7 +46,7 @@ import com.android.harmoniatpi.domain.usecases.audioUseCases.UndoEffectUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.UndoTrimUseCase
 import com.android.harmoniatpi.domain.usecases.roomUseCases.UpdateOrInsertProjectInDBUseCase
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.BottomSheetContent
-import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.ProyectScreenUiState
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.ProjectScreenUiState
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -105,7 +105,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
     private val metronomeEngine: MetronomeEngine,
     private val previewEffectUseCase: PreviewEffectUseCase
 ) : ViewModel() {
-    private val _state = MutableStateFlow(ProyectScreenUiState())
+    private val _state = MutableStateFlow(ProjectScreenUiState())
     private var selectedTrack: TrackUi? = null
     val state = _state.asStateFlow()
     private val originalVolumes = mutableMapOf<Long, Float>()

@@ -79,7 +79,7 @@ import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.Emp
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.InDevelopmentSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.MetronomeSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.PrecountOverlay
-import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.ProyectControlButtonRow
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.ProjectControlButtonRow
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.RenameTrackSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.TimeDisplayPanel
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.TimelineHeader
@@ -463,7 +463,7 @@ fun ProjectManagementScreen(
                     }
                 }
 
-                ProyectControlButtonRow(
+                ProjectControlButtonRow(
                     onSkipPrevious = {
                         viewModel.stopPlaying()
                         scope.launch {

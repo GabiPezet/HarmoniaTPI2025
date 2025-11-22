@@ -2,7 +2,7 @@ package com.android.harmoniatpi.ui.screens.projectManagementScreen.model
 
 import com.android.harmoniatpi.domain.model.project.Project
 
-data class ProyectScreenUiState(
+data class ProjectScreenUiState(
     val currentProjectSelected: Project? = null,
     val isRecording: Boolean = false,
     val isPlaying: Boolean = false,
