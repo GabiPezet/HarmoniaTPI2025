@@ -101,6 +101,7 @@ fun TrackItem(
     timelineWidth: Int,
     msPerDpScale: Float,
     onShowBottomSheet: (BottomSheetContent) -> Unit,
+    areControlsEnabled: Boolean = true,
 ) {
     var showOptions by remember { mutableStateOf(false) }
 
@@ -166,7 +167,10 @@ fun TrackItem(
                         horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        IconButton(onClick = onMute) {
+                        IconButton(
+                            onClick = onMute,
+                            enabled = areControlsEnabled
+                        ) {
                             val muteOptionText = if (track.isMuted) "Activar" else "Silenciar"
                             val muteOptionIcon =
                                 if (track.isMuted) R.drawable.mute_icon else R.drawable.unmute_icon
@@ -177,10 +181,13 @@ fun TrackItem(
                             )
                         }
 
-                        IconButton(onClick = {
-                            onClick()
-                            showOptions = true
-                        }) {
+                        IconButton(
+                            onClick = {
+                                onClick()
+                                showOptions = true
+                            },
+                            enabled = areControlsEnabled
+                        ) {
                             Icon(
                                 imageVector = Icons.Default.MoreVert,
                                 contentDescription = "Mostrar opciones de la pista",
@@ -234,7 +241,7 @@ fun TrackItem(
                 modifier = Modifier
                     .fillMaxHeight()
                     .width(100.dp)
-                    .clickable(onClick = onClick)
+                    .clickable(enabled = areControlsEnabled, onClick = onClick)
             ) {
                 Column(
                     modifier = Modifier
@@ -259,7 +266,10 @@ fun TrackItem(
                         horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        IconButton(onClick = onMute) {
+                        IconButton(
+                            onClick = onMute,
+                            enabled = areControlsEnabled
+                        ) {
                             val muteOptionText = if (track.isMuted) "Activar" else "Silenciar"
                             val muteOptionIcon =
                                 if (track.isMuted) R.drawable.mute_icon else R.drawable.unmute_icon
@@ -270,10 +280,13 @@ fun TrackItem(
                             )
                         }
 
-                        IconButton(onClick = {
-                            onClick()
-                            showOptions = true
-                        }) {
+                        IconButton(
+                            onClick = {
+                                onClick()
+                                showOptions = true
+                            },
+                            enabled = areControlsEnabled
+                        ) {
                             Icon(
                                 imageVector = Icons.Default.MoreVert,
                                 contentDescription = "Mostrar opciones de la pista",
@@ -298,7 +311,7 @@ fun TrackItem(
                         isSelectionActive = isSelectionActive,
                         track = track,
                         onShowBottomSheet = onShowBottomSheet,
-                        )
+                    )
                 }
             }
             Box(
@@ -408,7 +421,8 @@ private fun TrackOptionsMenu(
             },
             onClick = {
                 onDismiss()
-                onShowBottomSheet(BottomSheetContent.RenameTrack(track)) }
+                onShowBottomSheet(BottomSheetContent.RenameTrack(track))
+            }
         )
 
         DropdownMenuItem(
@@ -423,7 +437,8 @@ private fun TrackOptionsMenu(
             },
             onClick = {
                 onDismiss()
-                onShowBottomSheet(BottomSheetContent.EditVolume(track)) }
+                onShowBottomSheet(BottomSheetContent.EditVolume(track))
+            }
         )
 
         DropdownMenuItem(
@@ -550,7 +565,8 @@ fun DbWaveform(
     onSelectionChanged: (startMs: Long?, endMs: Long?) -> Unit,
     msPerDpScale: Float,
     color: Color = MaterialTheme.colorScheme.onPrimaryContainer,
-    onSeekClick: (Long) -> Unit
+    onSeekClick: (Long) -> Unit,
+    isInteractionEnabled: Boolean = true,
 ) {
     val waveformColor = if (isMuted) color else MaterialTheme.colorScheme.primary
     val backgroundColor =
@@ -600,11 +616,14 @@ fun DbWaveform(
                     modifier = Modifier
                         .fillMaxSize()
 
-                        .pointerInput(Unit, msPerDpScale, onSeekClick, density) {
-                            detectTapGestures(onTap = { offset ->
-                                val tappedMs = (offset.x / density.density * msPerDpScale).toLong()
-                                onSeekClick(tappedMs)
-                            })
+                        .pointerInput(Unit, msPerDpScale, onSeekClick, density, isInteractionEnabled) {
+                            if (isInteractionEnabled) {
+                                detectTapGestures(onTap = { offset ->
+                                    val tappedMs =
+                                        (offset.x / density.density * msPerDpScale).toLong()
+                                    onSeekClick(tappedMs)
+                                })
+                            }
                         }
 
                         .drawWithContent {
@@ -656,6 +675,7 @@ fun DbWaveform(
                         .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.4f))
                         .draggable(
                             orientation = Orientation.Horizontal,
+                            enabled = isInteractionEnabled,
                             state = rememberDraggableState { delta ->
 
                                 val dragMs = (delta / density.density * msPerDpScale).toLong()
@@ -696,6 +716,7 @@ fun DbWaveform(
                 )
                 .draggable(
                     orientation = Orientation.Horizontal,
+                    enabled = isInteractionEnabled,
                     state = rememberDraggableState { delta ->
                         val newPos =
                             (handleStartPx + delta).coerceIn(0f, handleEndPx - minClipWidthPx)
@@ -733,6 +754,7 @@ fun DbWaveform(
                 )
                 .draggable(
                     orientation = Orientation.Horizontal,
+                    enabled = isInteractionEnabled,
                     state = rememberDraggableState { delta ->
 
                         val newPos = (handleEndPx + delta).coerceIn(

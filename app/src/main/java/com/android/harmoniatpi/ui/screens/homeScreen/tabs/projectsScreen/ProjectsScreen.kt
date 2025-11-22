@@ -14,6 +14,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -26,6 +27,9 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.android.harmoniatpi.R
 import com.android.harmoniatpi.domain.model.project.Project
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.BottomMiniPlayer
@@ -58,6 +62,19 @@ fun ProjectsScreen(
     val bottomPadding = if (showMiniPlayer) 64.dp else 0.dp
     var projectToPublishAsOriginal by remember { mutableStateOf<Project?>(null) }
 
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) {
+                viewModel.stopPlayback()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -115,9 +132,16 @@ fun ProjectsScreen(
                         },
                         onTogglePlayPause = { viewModel.togglePlayPause(project) },
                         isCurrentlyPlaying = isCurrentlyPlaying,
-                        onEditClick = { projectToEdit = project },
-                        onDeleteClick = { viewModel.deleteProject(project.id) },
+                        onEditClick = {
+                            viewModel.stopPlayback()
+                            projectToEdit = project
+                        },
+                        onDeleteClick = {
+                            viewModel.stopPlayback()
+                            viewModel.deleteProject(project.id)
+                        },
                         onPublishClick = {
+                            viewModel.stopPlayback()
                             if (project.originalProjectId != null && project.ownerId == sharedState.userID) {
                                 // Es un clon mío, mostrar diálogo de clon
                                 projectToPublishAsClone = project
@@ -136,7 +160,10 @@ fun ProjectsScreen(
         // 3. Botón "Crear" (FAB)
         if (uiState.tabSelected == ProjectTab.MY_PROJECTS) {
             FloatingActionButton(
-                onClick = { showCreateForm = true },
+                onClick = {
+                    viewModel.stopPlayback()
+                    showCreateForm = true
+                },
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(16.dp)

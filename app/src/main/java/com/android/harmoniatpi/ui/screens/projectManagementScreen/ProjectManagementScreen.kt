@@ -396,13 +396,22 @@ fun ProjectManagementScreen(
                 },
 
                 actions = {
-                    IconButton(onClick = { viewModel.onShowTuner() }) {
+                    IconButton(
+                        onClick = { viewModel.onShowTuner() },
+                        enabled = !state.isRecording
+                    ) {
                         Icon(Icons.Default.Tune, "Afinador")
                     }
-                    IconButton(onClick = { viewModel.zoomOut() }) {
+                    IconButton(
+                        onClick = { viewModel.zoomOut() },
+                        enabled = !state.isRecording
+                    ) {
                         Icon(Icons.Default.ZoomOut, "Zoom Out")
                     }
-                    IconButton(onClick = { viewModel.zoomIn() }) {
+                    IconButton(
+                        onClick = { viewModel.zoomIn() },
+                        enabled = !state.isRecording
+                    ) {
                         Icon(Icons.Default.ZoomIn, "Zoom In")
                     }
                 },
@@ -571,6 +580,7 @@ fun ProjectManagementScreen(
                             isSelectionActive = track.selectionStartMs != null &&
                                     (track.selectionEndMs == null || track.selectionEndMs > track.selectionStartMs),
                             msPerDpScale = state.msPerDpScale,
+                            areControlsEnabled = !state.isRecording,
                             onShowBottomSheet = viewModel::showBottomSheet
                         )
                     }
