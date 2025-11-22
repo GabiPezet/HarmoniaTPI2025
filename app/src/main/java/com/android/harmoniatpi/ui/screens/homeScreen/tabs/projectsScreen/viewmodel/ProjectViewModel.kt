@@ -10,6 +10,7 @@ import com.android.harmoniatpi.di.util.JsonUtils
 import com.android.harmoniatpi.domain.cache.HoloJamCache
 import com.android.harmoniatpi.domain.model.UserPreferences
 import com.android.harmoniatpi.domain.model.project.AudioTrack
+import com.android.harmoniatpi.domain.model.project.CloningAccess
 import com.android.harmoniatpi.domain.model.project.Project
 import com.android.harmoniatpi.domain.model.userPreferences.Post
 import com.android.harmoniatpi.domain.usecases.GetProjectByIdUseCase
@@ -449,6 +450,7 @@ class ProjectViewModel @Inject constructor(
         postDescription: String,
         postHashtags: String,
         postImageUrl: String?,
+        cloningAccess: CloningAccess,
         onComplete: () -> Unit
     ) {
 
@@ -470,7 +472,7 @@ class ProjectViewModel @Inject constructor(
                 // El 'project.title' no lo cambiamos aquí.
                 description = postDescription,
                 hashtags = postHashtags.split(",").map { it.trim() },
-                imageUrl = postImageUrl
+                imageUrl = postImageUrl,
             )
             // --- 2. GUARDAR CAMBIOS EN ROOM ---
             try {
@@ -662,7 +664,8 @@ class ProjectViewModel @Inject constructor(
                     likes = 0,
                     totalShared = 0,
                     comments = emptyList(),
-                    clonedOption = true
+                    clonedOption = true,
+                    cloningAccess = cloningAccess
                 )
                 insertNewPostFirebaseDataBaseUseCase(post)
                 Log.i("ProjectViewModel", "Post creado en Firebase Realtime DB para ${project.id}")

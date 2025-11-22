@@ -4,6 +4,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.android.harmoniatpi.di.util.JsonUtils
+import com.android.harmoniatpi.domain.model.project.CloningAccess
 import com.android.harmoniatpi.domain.model.userPreferences.Comment
 import com.android.harmoniatpi.domain.model.userPreferences.Post
 
@@ -50,6 +51,8 @@ data class MyPostEntity(
     val hasNewLike: Boolean = false,
     @ColumnInfo(name = "hasNewClone", defaultValue = "0")
     val hasNewClone: Boolean = false,
+    @ColumnInfo(name = "cloningAccess", defaultValue = "0")
+    val cloningAccess: CloningAccess = CloningAccess.PUBLIC
 ) {
     fun toDomain(jsonUtils: JsonUtils) = Post(
         id = id,
@@ -71,6 +74,7 @@ data class MyPostEntity(
         clonedOption = clonedOption,
         hasNewComment = hasNewComment,
         hasNewLike = hasNewLike,
-        hasNewClone = hasNewClone
+        hasNewClone = hasNewClone,
+        cloningAccess = cloningAccess
     )
 }

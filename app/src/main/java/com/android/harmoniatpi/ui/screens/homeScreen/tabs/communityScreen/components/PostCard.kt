@@ -69,6 +69,7 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import coil.compose.AsyncImage
 import com.android.harmoniatpi.R
+import com.android.harmoniatpi.domain.model.project.CloningAccess
 import com.android.harmoniatpi.domain.model.userPreferences.Post
 import com.android.harmoniatpi.ui.components.ShowConfirmationDialog
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.util.sharePost
@@ -91,8 +92,16 @@ fun PostCard(
     onCloneClicked: () -> Unit,
     viewUserProfile: (String) -> Unit,
     isCloningThisPost: Boolean,
-    isFriend: Boolean
+    isFriend: Boolean,
 ) {
+
+    val showCloneButton = remember(post.cloningAccess, isFriend) {
+        when (post.cloningAccess) {
+            CloningAccess.PUBLIC -> true // Si es público, se muestra a todos
+            CloningAccess.FOLLOWERS_ONLY -> isFriend // Si es privado, solo si es amigo (seguidor)
+        }
+    }
+
     val postAudio = post.urlCompleteAudio
     val context = LocalContext.current
     var isPlaying by remember { mutableStateOf(false) }
@@ -317,9 +326,9 @@ fun PostCard(
 
 
                             // 2. Clonar
-                            if (post.idProject.isNotBlank() && post.clonedOption == true && isFriend) {
-                                val isCloneEnabled =
-                                    !isAlreadyCloned && !isMyPost && !isCloningThisPost
+                            if (post.idProject.isNotBlank() && post.clonedOption == true && showCloneButton) {
+                                val isCloneEnabled = !isAlreadyCloned && !isMyPost && !isCloningThisPost
+
                                 if (isCloningThisPost) {
                                     Box(
                                         modifier = Modifier.padding(
