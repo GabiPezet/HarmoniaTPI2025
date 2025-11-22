@@ -44,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -76,6 +77,7 @@ fun ProjectCard(
 
     Card(
         modifier = Modifier
+            .testTag("ProjectCard")
             .fillMaxWidth()
             .padding(4.dp)
             .clickable { onNavigateToManagement() },
@@ -198,7 +200,8 @@ fun ProjectCard(
                     // La duración total es el punto final (offset + duración)
                     // de la pista que termine más tarde.
                     project.urlAudioTracks.maxOfOrNull { track ->
-                        val trackDuration = (track.trimEndMs.takeIf { it != -1L } ?: track.durationMs) - track.trimStartMs
+                        val trackDuration = (track.trimEndMs.takeIf { it != -1L }
+                            ?: track.durationMs) - track.trimStartMs
                         track.startOffsetMs + trackDuration
                     } ?: project.duration // Si no hay pistas, usa la (probablemente 0)
                 }
@@ -211,7 +214,9 @@ fun ProjectCard(
 
                 // 4. Botón de "Más Opciones" (se queda igual)
                 Box {
-                    IconButton(onClick = { showMenu = true }) {
+                    IconButton(
+                        modifier = Modifier.testTag("MoreOptions"),
+                        onClick = { showMenu = true }) {
                         Icon(
                             Icons.Default.MoreVert,
                             contentDescription = "Más opciones"
@@ -219,6 +224,7 @@ fun ProjectCard(
                     }
 
                     DropdownMenu(
+                        modifier = Modifier.testTag("MoreOptionsMenuDropdown"),
                         expanded = showMenu,
                         onDismissRequest = { showMenu = false }
                     ) {
@@ -264,6 +270,7 @@ fun ProjectCard(
                                     (isMyClone && selectedTab == ProjectTab.COLLABS)
                         if (canDelete) {
                             DropdownMenuItem(
+                                modifier = Modifier.testTag("DeleteMenuItem"),
                                 text = { Text("Eliminar") },
                                 onClick = { onDeleteClick(); showMenu = false },
                                 leadingIcon = {

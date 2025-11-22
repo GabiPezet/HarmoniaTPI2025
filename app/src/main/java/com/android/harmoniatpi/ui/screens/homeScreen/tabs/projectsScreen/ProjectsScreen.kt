@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -75,7 +76,7 @@ fun ProjectsScreen(
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize().testTag("ProjectsScreen")) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
@@ -108,11 +109,12 @@ fun ProjectsScreen(
                 item {
                     EmptyListMessage(
                         tab = uiState.tabSelected,
-                        modifier = Modifier.padding(top = 48.dp)
+                        modifier = Modifier.padding(top = 48.dp).testTag("EmptyListMessage")
                     )
                 }
             } else {
                 items(listToShow) { project ->
+                    val index = listToShow.indexOf(project)
                     val isCurrentlyPlaying = uiState.currentlyPlayingProject?.id == project.id
                     val isPreviewLoading = uiState.isPreviewLoading && isCurrentlyPlaying
                     val forkedByUsers = remember(project.forkedByUserIds, uiState.allUsers) {
@@ -121,38 +123,40 @@ fun ProjectsScreen(
                             .filter { it.userID != project.ownerId } // Filtramos al dueño
                     }
                     Spacer(modifier = Modifier.height(8.dp))
-                    ProjectCard(
-                        project = project,
-                        currentUserId = sharedState.userID,
-                        selectedTab = uiState.tabSelected,
-                        forkedByUsers = forkedByUsers,
-                        onNavigateToManagement = {
-                            viewModel.setCurrentProject(project)
-                            onNavigateToProjectManagementScreen()
-                        },
-                        onTogglePlayPause = { viewModel.togglePlayPause(project) },
-                        isCurrentlyPlaying = isCurrentlyPlaying,
-                        onEditClick = {
-                            viewModel.stopPlayback()
-                            projectToEdit = project
-                        },
-                        onDeleteClick = {
-                            viewModel.stopPlayback()
-                            viewModel.deleteProject(project.id)
-                        },
-                        onPublishClick = {
-                            viewModel.stopPlayback()
-                            if (project.originalProjectId != null && project.ownerId == sharedState.userID) {
-                                // Es un clon mío, mostrar diálogo de clon
-                                projectToPublishAsClone = project
-                            } else {
-                                // Es un proyecto original, mostrar diálogo original
-                                projectToPublishAsOriginal = project
-                            }
-                        },
-                        onNavigateToVersions = { onNavigateToVersion(project) },
-                        isPreviewLoading = isPreviewLoading,
-                    )
+                    Box(modifier = Modifier.testTag("POST_ITEM_$index")){
+                        ProjectCard(
+                            project = project,
+                            currentUserId = sharedState.userID,
+                            selectedTab = uiState.tabSelected,
+                            forkedByUsers = forkedByUsers,
+                            onNavigateToManagement = {
+                                viewModel.setCurrentProject(project)
+                                onNavigateToProjectManagementScreen()
+                            },
+                            onTogglePlayPause = { viewModel.togglePlayPause(project) },
+                            isCurrentlyPlaying = isCurrentlyPlaying,
+                            onEditClick = {
+                                viewModel.stopPlayback()
+                                projectToEdit = project
+                            },
+                            onDeleteClick = {
+                                viewModel.stopPlayback()
+                                viewModel.deleteProject(project.id)
+                            },
+                            onPublishClick = {
+                                viewModel.stopPlayback()
+                                if (project.originalProjectId != null && project.ownerId == sharedState.userID) {
+                                    // Es un clon mío, mostrar diálogo de clon
+                                    projectToPublishAsClone = project
+                                } else {
+                                    // Es un proyecto original, mostrar diálogo original
+                                    projectToPublishAsOriginal = project
+                                }
+                            },
+                            onNavigateToVersions = { onNavigateToVersion(project) },
+                            isPreviewLoading = isPreviewLoading,
+                        )
+                    }
                 }
             }
         } // Fin del LazyColumn
@@ -167,7 +171,7 @@ fun ProjectsScreen(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(16.dp)
-                    .padding(bottom = bottomPadding + 8.dp), // Lo subimos encima del mini-reproductor
+                    .padding(bottom = bottomPadding + 8.dp).testTag("AddProjectButton"),
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ) {

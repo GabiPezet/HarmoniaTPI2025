@@ -62,8 +62,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
 import javax.inject.Inject
+import kotlin.math.roundToLong
 
 @HiltViewModel
 class ProjectManagementScreenViewModel @Inject constructor(
@@ -497,14 +499,52 @@ class ProjectManagementScreenViewModel @Inject constructor(
             it.selected && it.selectionStartMs != null && it.selectionEndMs != null
         } ?: return
 
-        audioClipboard = AudioClipboard(
-            sourceFilePath = selectedTrackWithSelection.path,
-            sourceType = selectedTrackWithSelection.sourceType,
-            startMs = selectedTrackWithSelection.selectionStartMs!!,
-            endMs = selectedTrackWithSelection.selectionEndMs!!
-        )
-        _state.update { it.copy(isClipboardFull = true) }
-        _uiMessages.emit("Selección copiada")
+        val clipboardFile = File(context.cacheDir, "clipboard.pcm")
+        val sourceFile = File(selectedTrackWithSelection.path)
+
+        if (!sourceFile.exists()) return
+
+        val sampleRate = 44100
+        val bytesPerSample = 2
+        val startByte = (selectedTrackWithSelection.selectionStartMs!! * sampleRate / 1000f).roundToLong() * bytesPerSample
+        val endByte = (selectedTrackWithSelection.selectionEndMs!! * sampleRate / 1000f).roundToLong() * bytesPerSample
+        val lengthToCopy = endByte - startByte
+
+        if (lengthToCopy <= 0) return
+
+        withContext(Dispatchers.IO) {
+            try {
+                FileInputStream(sourceFile).use { input ->
+                    FileOutputStream(clipboardFile).use { output ->
+                        input.skip(startByte)
+
+                        val buffer = ByteArray(4096)
+                        var bytesRemaining = lengthToCopy
+                        while (bytesRemaining > 0) {
+                            val bytesToRead = minOf(buffer.size.toLong(), bytesRemaining).toInt()
+                            val read = input.read(buffer, 0, bytesToRead)
+                            if (read == -1) break
+                            output.write(buffer, 0, read)
+                            bytesRemaining -= read
+                        }
+                    }
+                }
+
+                audioClipboard = AudioClipboard(
+                    sourceFilePath = clipboardFile.absolutePath,
+                    sourceType = selectedTrackWithSelection.sourceType,
+                    startMs = 0L,
+                    endMs = (selectedTrackWithSelection.selectionEndMs!! - selectedTrackWithSelection.selectionStartMs!!)
+                )
+
+                _state.update { it.copy(isClipboardFull = true) }
+                _uiMessages.emit("Selección copiada")
+
+            } catch (e: Exception) {
+                Log.e(TAG, "Error al copiar al portapapeles", e)
+                _uiMessages.emit("Error al copiar")
+            }
+        }
     }
 
     suspend fun cutSelection() {
@@ -611,6 +651,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
                     totalProjectMs = totalMs,
                 )
             }
+            updateCurrentProjectWithTracks()
         }
     }
 

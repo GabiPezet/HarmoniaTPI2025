@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -68,6 +69,7 @@ fun ProjectForm(
 
     // --- INPUTS MODERNOS ---
     ModernProjectInputRow(
+        modifier = Modifier.testTag("ProjectTitleInput"),
         labelText = "Nombre del proyecto o canción",
         value = title,
         onValueChange = onTitleChange,
@@ -79,6 +81,7 @@ fun ProjectForm(
     )
 
     ModernProjectInputRow(
+        modifier = Modifier.testTag("ProjectDescriptionInput"),
         labelText = "Descripción (Opcional)",
         value = description,
         onValueChange = onDescriptionChange,
@@ -87,6 +90,7 @@ fun ProjectForm(
     )
 
     ModernProjectInputRow(
+        modifier = Modifier.testTag("ProjectHashtagsInput"),
         labelText = "Hashtags (Opcional)",
         value = hashtags,
         onValueChange = onHashtagsChange,
@@ -140,6 +144,7 @@ fun ProjectForm(
                 contentDescription = "Imagen por defecto",
                 modifier = Modifier
                     .size(80.dp)
+                    .testTag("DefaultImage_$drawableRes")
                     .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
                     .clickable { onImageSelected(drawableUri) }
                     .border(

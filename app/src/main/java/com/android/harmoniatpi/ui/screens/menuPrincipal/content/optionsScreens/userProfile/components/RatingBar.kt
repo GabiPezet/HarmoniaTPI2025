@@ -33,7 +33,7 @@ fun RatingBar(
                 }
                 // Media estrella
                 rating >= starIndex - 0.5f -> {
-                    Icons.Filled.StarHalf to starColor
+                    Icons.AutoMirrored.Filled.StarHalf to starColor
                 }
                 // Estrella vacía
                 else -> {
