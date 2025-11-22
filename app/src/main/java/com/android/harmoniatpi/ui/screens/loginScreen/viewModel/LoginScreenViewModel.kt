@@ -91,7 +91,7 @@ class LoginScreenViewModel @Inject constructor(
                             _uiState.update {
                                 it.copy(
                                     isLoading = false,
-                                    errorMessage = e.message ?: "Error de autenticación"
+                                    errorMessage = "Error de autenticación"
                                 )
                             }
                         }
