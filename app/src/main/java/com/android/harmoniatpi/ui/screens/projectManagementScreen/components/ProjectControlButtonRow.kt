@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.android.harmoniatpi.R
 
 @Composable
-fun ProyectControlButtonRow(
+fun ProjectControlButtonRow(
     onSkipPrevious: () -> Unit,
     onPlay: () -> Unit,
     onPause: () -> Unit,

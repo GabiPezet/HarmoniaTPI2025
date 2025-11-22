@@ -482,7 +482,7 @@ private fun TrackOptionsMenu(
             },
             onClick = {
                 onDismiss()
-                onShowEffects()
+                onShowBottomSheet(BottomSheetContent.TrackEffects(track))
             }
         )
 
