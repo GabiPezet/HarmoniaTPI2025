@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
@@ -110,50 +112,56 @@ fun EffectsSheetContent(
             .fillMaxWidth()
             .fillMaxHeight(0.5f)
             .padding(vertical = 16.dp, horizontal = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        //Header
-        Text(
-            "Efectos: ${track.title}",
-            style = MaterialTheme.typography.titleLarge
-        )
-        // Selector de Efecto
-        PrimaryTabRow(selectedTabIndex = selectedTabIndex) {
-            tabs.forEachIndexed { index, title ->
-                Tab(
-                    selected = selectedTabIndex == index,
-                    onClick = { selectedTabIndex = index },
-                    text = { Text(title) }
-                )
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+        ) {
+            //Header
+            Text(
+                "Efectos: ${track.title}",
+                style = MaterialTheme.typography.titleLarge
+            )
+            Spacer(Modifier.height(16.dp))
+            // Selector de Efecto
+            PrimaryTabRow(selectedTabIndex = selectedTabIndex) {
+                tabs.forEachIndexed { index, title ->
+                    Tab(
+                        selected = selectedTabIndex == index,
+                        onClick = { selectedTabIndex = index },
+                        text = { Text(title) }
+                    )
+                }
             }
-        }
-        // Panel de Control (Modularizado)
-        Column(modifier = Modifier.weight(1f, fill = false)) {
-            when (selectedTabIndex) {
-                0 -> DelayControlPanel(
-                    timeMs = delayTimeMs,
-                    decay = delayDecay,
-                    onTimeChange = { delayTimeMs = it },
-                    onDecayChange = { delayDecay = it }
-                )
+            Spacer(Modifier.height(16.dp))
+            // Panel de Control (Modularizado)
+            Column {
+                when (selectedTabIndex) {
+                    0 -> DelayControlPanel(
+                        timeMs = delayTimeMs,
+                        decay = delayDecay,
+                        onTimeChange = { delayTimeMs = it },
+                        onDecayChange = { delayDecay = it }
+                    )
 
-                1 -> FilterControlPanel(
-                    frequency = hpfFrequency,
-                    onFrequencyChange = { hpfFrequency = it }
-                )
+                    1 -> FilterControlPanel(
+                        frequency = hpfFrequency,
+                        onFrequencyChange = { hpfFrequency = it }
+                    )
 
-                2 -> FlangerControlPanel(
-                    rate = flangerRate,
-                    wet = flangerWet,
-                    onRateChange = { flangerRate = it },
-                    onWetChange = { flangerWet = it }
-                )
+                    2 -> FlangerControlPanel(
+                        rate = flangerRate,
+                        wet = flangerWet,
+                        onRateChange = { flangerRate = it },
+                        onWetChange = { flangerWet = it }
+                    )
+                }
             }
+
+            Spacer(Modifier.height(16.dp))
         }
-
-        Spacer(Modifier.height(16.dp))
-
-        // Barra de Acciones Inferior
+        // Barra de Acciones Inferior (fija)
         EffectsActionButtons(
             isPremium = isPremium,
             onShowUpsell = onShowUpsell,
@@ -167,7 +175,7 @@ fun EffectsSheetContent(
                     1 -> onApplyHighPass(track.id, hpfFrequency)
                     2 -> onApplyFlanger(track.id, flangerRate, flangerWet)
                 }
-            }
+            },
         )
     }
 }
@@ -266,10 +274,11 @@ private fun EffectsActionButtons(
     onPreviewClick: () -> Unit,
     onCancelClick: () -> Unit,
     onApplyClick: () -> Unit,
-    onShowUpsell: () -> Unit
+    onShowUpsell: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
