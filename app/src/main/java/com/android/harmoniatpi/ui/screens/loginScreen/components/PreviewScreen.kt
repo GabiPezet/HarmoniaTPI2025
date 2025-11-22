@@ -20,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -30,7 +31,7 @@ import com.android.harmoniatpi.ui.screens.registerScreen.ScreenTitle
 fun PreviewScreen(goToLogin: () -> Unit) {
     Column(
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxSize().testTag("PREVIEW_SCREEN")
     ) {
         PreviewBackGroundHeader(
             modifier = Modifier
@@ -72,7 +73,7 @@ fun PreviewScreen(goToLogin: () -> Unit) {
 
             FloatingActionButton(
                 onClick = { goToLogin() },
-                modifier = Modifier.size(56.dp),
+                modifier = Modifier.size(56.dp).testTag("COMENZAR_BUTTON"),
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ) {

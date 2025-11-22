@@ -32,6 +32,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -48,7 +49,7 @@ import com.android.harmoniatpi.ui.core.navigation.bottomNavigationBar.BottomBarI
 import com.android.harmoniatpi.ui.core.navigation.bottomNavigationBar.NavigationBottomWrapper
 import com.android.harmoniatpi.ui.screens.homeScreen.viewmodel.HomeScreenViewModel
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.viewmodel.DrawerContentViewModel
-import com.android.harmoniatpi.ui.utils.PermissionRequester
+import com.android.harmoniatpi.ui.core.utils.PermissionRequester
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -105,7 +106,7 @@ fun HomeScreen(
                         )
                     },
                     navigationIcon = {
-                        IconButton(onClick = openDrawerState) {
+                        IconButton(modifier = Modifier.testTag("MENU_BUTTON"), onClick = openDrawerState) {
                             Icon(
                                 imageVector = Icons.Default.Menu,
                                 contentDescription = "Abrir menú"
@@ -170,6 +171,7 @@ fun BottomNavigation(
     val currentDestination = navBackStackEntry?.destination
 
     NavigationBar(
+        modifier = Modifier.testTag("BottomNavigationBar"),
         containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
         tonalElevation = 16.dp
     ) {
@@ -180,6 +182,7 @@ fun BottomNavigation(
 
         items.forEach { item ->
             NavigationBarItem(
+                modifier = Modifier.testTag("BOTTOM_TAB_${item.route.javaClass.simpleName}"),
                 icon = item.icon,
                 onClick = {
                     navControllerNavBar.navigate(route = item.route) {

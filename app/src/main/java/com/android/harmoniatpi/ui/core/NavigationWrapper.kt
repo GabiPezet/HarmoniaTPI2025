@@ -152,8 +152,8 @@ fun NavigationWrapper(
                 status = status,
                 paymentId = paymentId,
                 onContinue = {
-                    navController.navigate(NavigationRoutes.HomeScreenRoute) {
-                        popUpTo(NavigationRoutes.HomeScreenRoute) { inclusive = true }
+                    navController.navigate(HomeScreenRoute) {
+                        popUpTo(HomeScreenRoute) { inclusive = true }
                     }
                 }
             )

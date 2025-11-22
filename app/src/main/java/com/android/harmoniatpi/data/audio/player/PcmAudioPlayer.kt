@@ -29,7 +29,6 @@ class PcmAudioPlayer @Inject constructor() : AudioPlayer {
     internal var file: File? = null
     private var playJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    private var lastPos: Long = 0L
     private val sampleRate = 44100
     private val channel = AudioFormat.CHANNEL_OUT_MONO
     private val encoding = AudioFormat.ENCODING_PCM_16BIT
@@ -293,7 +292,6 @@ class PcmAudioPlayer @Inject constructor() : AudioPlayer {
         }
     }
 
-    fun getCurrentPositionMs(): Long = currentPosMs.get()
 
     fun getDurationMs(): Long {
         val currentFile = file ?: return 0L

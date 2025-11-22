@@ -4,7 +4,6 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,13 +11,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -35,12 +30,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.android.harmoniatpi.R
 import com.android.harmoniatpi.domain.model.userPreferences.Post
 import com.android.harmoniatpi.ui.components.ShowConfirmationDialog
-import com.android.harmoniatpi.R
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.components.CommentsBottomSheetContent
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.components.CreatePostDialog
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.components.PostCard
@@ -97,24 +93,31 @@ fun CommunityScreen(
             )
         }
     } else {
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .testTag("CommunityScreen")) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.background)
             ) {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                LazyColumn(modifier = Modifier.fillMaxSize().testTag("COMMUNITY_LIST")) {
+
+
                     items(uiState.posts) { post ->
 
+                        val index = uiState.posts.indexOf(post)
                         val projectData = uiState.localProjects.find {
                             it.originalProjectId == post.idProject && it.ownerId == uiState.userID
                         }
                         val isAlreadyCloned = projectData != null
                         val isCloningThisPost = uiState.cloningPostId == post.id
-                        val friendsList = uiState.currentUserData?.friendsList?.map { it.id } ?: emptyList()
+                        val friendsList =
+                            uiState.currentUserData?.friendsList?.map { it.id } ?: emptyList()
                         val isFriend = post.userID in friendsList
                         PostCard(
                             post = post,
+                            modifier = Modifier.testTag("POST_ITEM_$index"),
                             userName = uiState.userName,
                             userLastName = uiState.userLastName,
                             onLikeClicked = { viewModel.updateLikes(post) },
@@ -178,7 +181,6 @@ fun CommunityScreen(
             }
         }
     }
-
 
 
     // ModalBottomSheet

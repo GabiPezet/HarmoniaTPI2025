@@ -2,9 +2,7 @@ package com.android.harmoniatpi.ui.components
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -82,16 +80,21 @@ fun EffectsAudioDialog(
                                 valueRange = 0.1f..0.9f
                             )
                         }
+
                     1 -> // highpass
                         Column {
                             Text("Filtro Pasa-Altos (HPF): ${hpfFrequency.toInt()} Hz")
-                            Text("Corta las frecuencias graves por debajo de este valor.", style = MaterialTheme.typography.bodySmall)
+                            Text(
+                                "Corta las frecuencias graves por debajo de este valor.",
+                                style = MaterialTheme.typography.bodySmall
+                            )
                             Slider(
                                 value = hpfFrequency,
                                 onValueChange = { hpfFrequency = it },
                                 valueRange = 20f..1000f // Rango de 20Hz a 1kHz
                             )
                         }
+
                     2 -> // flanger
                         Column {
                             Text("Rate (Velocidad): ${decimalFormat.format(flangerRate)} Hz")

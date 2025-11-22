@@ -1,7 +1,6 @@
 package com.android.harmoniatpi.ui.screens.menuPrincipal.content.viewmodel
 
 import android.util.Log
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.harmoniatpi.domain.model.UserPreferences

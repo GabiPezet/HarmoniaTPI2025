@@ -36,7 +36,7 @@ fun HoloTextField(
     isError: Boolean = false,
     supportingText: String? = null
 ) {
-    Column(modifier = modifier) {
+    Column {
         Text(
             text = label,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -46,7 +46,7 @@ fun HoloTextField(
         BasicTextField(
             value = value,
             onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = modifier.fillMaxWidth(),
             textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
             keyboardOptions = keyboardOptions,
             visualTransformation = visualTransformation,
