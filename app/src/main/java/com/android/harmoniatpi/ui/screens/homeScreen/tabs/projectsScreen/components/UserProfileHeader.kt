@@ -62,7 +62,8 @@ fun UserProfileHeader(
                 imageVector = Icons.Default.AccountCircle,
                 contentDescription = "Foto de perfil por defecto",
                 tint = MaterialTheme.colorScheme.outline,
-                modifier = Modifier.size(80.dp)
+                modifier = Modifier
+                    .size(80.dp)
                     .border(
                         BorderStroke(2.dp, MaterialTheme.colorScheme.outline),
                         CircleShape
@@ -101,8 +102,7 @@ fun UserProfileHeader(
             ) {
                 CompactStatItem(count = projectsCount.toString(), label = "Proyectos")
                 CompactStatItem(count = clonesCount.toString(), label = "Clones")
-                // TODO: Añadir Followers reales cuando lo tengamos
-                CompactStatItem(count = "1.2K", label = "Followers")
+                CompactStatItem(count = "${sharedState.friendsList.size}", label = "Followers")
             }
         }
     }
