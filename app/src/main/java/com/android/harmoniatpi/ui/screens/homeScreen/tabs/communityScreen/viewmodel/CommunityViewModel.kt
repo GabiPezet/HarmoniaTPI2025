@@ -3,14 +3,18 @@ package com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.viewm
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.harmoniatpi.domain.model.UserPreferences
 import com.android.harmoniatpi.domain.model.userPreferences.Comment
 import com.android.harmoniatpi.domain.model.userPreferences.Post
 import com.android.harmoniatpi.domain.usecases.GetProjectByIdUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.DeletePostFirebaseDataBaseUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetAllPostFromFirebaseDataBaseUseCase
+import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetAllUserFromDBUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetProjectByIdFromFirestoreUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetUserOnFirebaseByIDUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.InsertNewPostFirebaseDataBaseUseCase
+import com.android.harmoniatpi.domain.usecases.firebaseUseCases.ObserveCurrentUserUseCase
+import com.android.harmoniatpi.domain.usecases.firebaseUseCases.SendFriendRequestUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.UpdatePostFirebaseDataBaseUseCase
 import com.android.harmoniatpi.domain.usecases.roomUseCases.GetAllProjectsFromDBUseCase
 import com.android.harmoniatpi.domain.usecases.roomUseCases.UpdateOrInsertProjectInDBUseCase
@@ -22,6 +26,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
@@ -39,7 +48,10 @@ class CommunityViewModel @Inject constructor(
     getAllProjectsFromDBUseCase: GetAllProjectsFromDBUseCase,
     private val getProjectByIdUseCase: GetProjectByIdUseCase,
     private val insertProjectInDBUseCase: UpdateOrInsertProjectInDBUseCase,
-    private val getUserOnFirebaseByIDUseCase: GetUserOnFirebaseByIDUseCase
+    private val getUserOnFirebaseByIDUseCase: GetUserOnFirebaseByIDUseCase,
+    private val sendFriendRequestUseCase: SendFriendRequestUseCase,
+    private val getAllUsersUseCase: GetAllUserFromDBUseCase,
+    private val observeCurrentUserUseCase: ObserveCurrentUserUseCase
 ) : ViewModel() {
 
     // 1. Canal privado para enviar eventos de Toast
@@ -65,31 +77,80 @@ class CommunityViewModel @Inject constructor(
                 }
             }
         }
-
         viewModelScope.launch {
-            // Combinamos los posts de Firebase con los proyectos locales
+            val currentUserIdFlow = sharedMenuUiState.uiState.map { it.userID }.distinctUntilChanged()
+            val currentUserDataFlow = currentUserIdFlow.flatMapLatest { userId ->
+                if (userId.isBlank()) {
+                    flowOf(null)
+                } else {
+                    // Escucha la DB local de usuarios y filtra por el ID actual
+                    getAllUsersUseCase().map { users ->
+                        users.find { it.userID == userId }
+                    }
+                }
+            }
             combine(
                 getAllPostFromFirebaseDataBaseUseCase(),
-                localProjectsFlow
-            ) { posts, localProjects ->
+                localProjectsFlow,
+                observeCurrentUserUseCase() // <-- Llama al nuevo Flow reactivo
+            ) { posts, localProjects, currentUserData ->
+
+                val currentCloningId = _uiState.value.cloningPostId
+                var newCloningId = currentCloningId
+
+                if (currentCloningId != null) {
+                    val postBeingCloned = posts.find { it.id == currentCloningId }
+                    val isNowCloned = localProjects.any {
+                        it.originalProjectId == postBeingCloned?.idProject && it.ownerId == _uiState.value.userID
+                    }
+                    if (isNowCloned) {
+                        newCloningId = null
+                    }
+                }
                 _uiState.update {
                     it.copy(
                         posts = posts,
-                        localProjects = localProjects // Guarda los proyectos locales
+                        localProjects = localProjects,
+                        cloningPostId = newCloningId,
+                        currentUserData = currentUserData
                     )
                 }
             }.collect {}
         }
     }
 
+
+    fun sendFollowRequest(targetUser: UserPreferences) {
+        val currentUser = _uiState.value.currentUserData
+        if (currentUser == null) {
+            viewModelScope.launch { _toastEvents.emit("Error: No se pudieron cargar tus datos.") }
+            return
+        }
+
+        _uiState.update { it.copy(isSendingFollowRequest = true) }
+        viewModelScope.launch {
+            sendFriendRequestUseCase(currentUser, targetUser)
+                .onSuccess {
+                    _uiState.update { it.copy(isSendingFollowRequest = false) }
+                    _toastEvents.emit("Solicitud enviada.")
+                }
+                .onFailure {
+                    _uiState.update { it.copy(isSendingFollowRequest = false) }
+                    _toastEvents.emit("Error al enviar la solicitud.")
+                }
+        }
+    }
+
+
     fun cloneProject(post: Post) {
         val currentUserId = _uiState.value.userID
-        // Si el post no es un proyecto, o si yo soy el dueño, no hago nada.
         if (post.idProject.isBlank() || post.userID == currentUserId) return
+        _uiState.update { it.copy(cloningPostId = post.id) }
 
         viewModelScope.launch {
+
+
             try {
-                // 1. Obtiene el proyecto original (asumiendo que está en la DB local por ahora)
                 val originalProject = getProjectByIdFromFirestoreUseCase(post.idProject)
 
                 if (originalProject == null) {
@@ -97,7 +158,7 @@ class CommunityViewModel @Inject constructor(
                     return@launch
                 }
                 insertProjectInDBUseCase(originalProject)
-                // 2. Crea el clon (local)
+
                 val clonedProject = originalProject.copy(
                     id = UUID.randomUUID().toString(),
                     ownerId = currentUserId,
@@ -105,14 +166,17 @@ class CommunityViewModel @Inject constructor(
                     lastName = _uiState.value.userLastName,
                     originalProjectId = originalProject.id,
                     forkedByUserIds = emptyList(),
-                    isPublished = false // <-- El clon siempre empieza como no publicado
+                    isPublished = false
                 )
+
                 insertProjectInDBUseCase(clonedProject)
 
+                updateCloned(post)
                 _toastEvents.emit("Proyecto clonado en colaboraciones.")
 
             } catch (e: Exception) {
                 _toastEvents.emit("Error al clonar: ${e.message}")
+                _uiState.update { it.copy(cloningPostId = null) }
             }
         }
     }

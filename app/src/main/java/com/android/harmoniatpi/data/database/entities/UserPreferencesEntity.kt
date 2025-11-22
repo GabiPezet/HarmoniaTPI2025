@@ -51,7 +51,7 @@ data class UserPreferencesEntity(
     val friendRequestReceived: String = "",
     @ColumnInfo
     val friendRequestSent: String = "",
-
+    @ColumnInfo val subscriptionId: String? = null
     ) {
     fun toDomain(jsonUtils: JsonUtils) = UserPreferences(
         userID = userID,

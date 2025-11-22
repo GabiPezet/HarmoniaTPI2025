@@ -22,6 +22,14 @@ sealed class NavigationRoutes() {
     @Serializable
     data class SongVersionsScreenRoute(val projectId: String) : NavigationRoutes()
 
+    @Serializable
+    data object FriendsScreenRoute : NavigationRoutes()
+
+    @Serializable
+    data object PaymentMarketScreenRoute : NavigationRoutes()
+
+    @Serializable
+    data object PaymentResultScreenRoute : NavigationRoutes()
 
 }
 

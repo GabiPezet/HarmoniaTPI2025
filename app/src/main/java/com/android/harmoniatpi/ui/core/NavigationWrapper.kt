@@ -8,10 +8,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navDeepLink
+import com.android.harmoniatpi.domain.model.project.Project
 import com.android.harmoniatpi.ui.components.AnimationHorizontalEffect
+import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes
+import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.FriendsScreenRoute
 import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.HomeScreenRoute
 import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.LoginScreenRoute
 import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.NotificationScreenRoute
+import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.PaymentMarketScreenRoute
 import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.ProjectManagementScreenRoute
 import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.RegisterScreenRoute
 import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes.SongVersionsScreenRoute
@@ -21,18 +26,19 @@ import com.android.harmoniatpi.ui.screens.menuPrincipal.DrawerScreen
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.DrawerContent
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.viewmodel.DrawerContentViewModel
 import com.android.harmoniatpi.ui.screens.notificationScreen.NotificationsScreen
+import com.android.harmoniatpi.ui.screens.paymentMarketScreen.PaymentMarketScreen
+import com.android.harmoniatpi.ui.screens.paymentResultScreen.PaymentResultScreen
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.ProjectManagementScreen
 import com.android.harmoniatpi.ui.screens.registerScreen.RegisterScreen
 import com.android.harmoniatpi.ui.screens.songVersionsScreen.SongVersionsScreen
 import kotlinx.coroutines.launch
-import com.android.harmoniatpi.domain.model.project.Project
 
 @Composable
 fun NavigationWrapper(
     innerPadding: PaddingValues,
     drawerViewModel: DrawerContentViewModel,
     startHarmoniaServices: () -> Unit,
-    stopHarmoniaServices: () -> Unit
+    stopHarmoniaServices: () -> Unit,
 ) {
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
@@ -73,7 +79,13 @@ fun NavigationWrapper(
                                     inclusive = true
                                 }
                             }
-                        }
+                        },
+                        onNavigateToFriends = { navController.navigate(FriendsScreenRoute) },
+                        navigateToPaymentMarketScreen = {
+                            navController.navigate(
+                                PaymentMarketScreenRoute
+                            )
+                        },
                     )
 
                 }, screenContent = {
@@ -115,6 +127,36 @@ fun NavigationWrapper(
 
         composable<SongVersionsScreenRoute> {
             SongVersionsScreen(onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable<FriendsScreenRoute> {
+            SongVersionsScreen(onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable<PaymentMarketScreenRoute> {
+            PaymentMarketScreen(onNavigateBack = { navController.popBackStack() })
+        }
+
+
+        composable<NavigationRoutes.PaymentResultScreenRoute>(
+            deepLinks = listOf(
+                navDeepLink {
+                    uriPattern = "https://holo-jam-landing-tpi.vercel.app/"
+                }
+            )
+        ) { backStackEntry ->
+            val status = backStackEntry.arguments?.getString("status") ?: "unknown"
+            val paymentId = backStackEntry.arguments?.getString("payment_id")
+
+            PaymentResultScreen(
+                status = status,
+                paymentId = paymentId,
+                onContinue = {
+                    navController.navigate(HomeScreenRoute) {
+                        popUpTo(HomeScreenRoute) { inclusive = true }
+                    }
+                }
+            )
         }
     }
 }

@@ -1,37 +1,35 @@
 package com.android.harmoniatpi.ui.screens.projectManagementScreen
 
+import android.Manifest
 import android.net.Uri
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.InlineTextContent
-import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ContentPaste
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.ZoomIn
 import androidx.compose.material.icons.filled.ZoomOut
 import androidx.compose.material3.Card
@@ -43,6 +41,8 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarColors
@@ -57,34 +57,38 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.Placeholder
-import androidx.compose.ui.text.PlaceholderVerticalAlign
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.android.harmoniatpi.R
 import com.android.harmoniatpi.domain.model.audio.AudioSourceType
 import com.android.harmoniatpi.ui.components.CircularProgressBar
-import com.android.harmoniatpi.ui.components.EffectsAudioDialog
 import com.android.harmoniatpi.ui.components.GlobalPlayhead
-import com.android.harmoniatpi.ui.components.ProyectControlButtonRow
 import com.android.harmoniatpi.ui.components.ShowConfirmationDialog
-import com.android.harmoniatpi.ui.components.TimelineHeader
-import com.android.harmoniatpi.ui.components.TrackItem
 import com.android.harmoniatpi.ui.components.TrimAudioDialog
+import com.android.harmoniatpi.ui.components.TunerDialog
+import com.android.harmoniatpi.ui.components.UpsellDialog
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.AddTrackSheetContent
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.EffectsSheetContent
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.EmptyProjectMessage
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.InDevelopmentSheetContent
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.MetronomeSheetContent
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.PrecountOverlay
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.ProjectControlButtonRow
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.RenameTrackSheetContent
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.TimeDisplayPanel
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.TimelineHeader
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.TrackItem
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.VolumeSheetContent
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.BottomSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.viewmodel.ProjectManagementScreenViewModel
+import com.android.harmoniatpi.ui.core.utils.PermissionRequester
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -94,30 +98,41 @@ fun ProjectManagementScreen(
     viewModel: ProjectManagementScreenViewModel = hiltViewModel(),
     onBack: () -> Unit
 ) {
-    val sheetState = rememberModalBottomSheetState()
-    var showSheet by remember { mutableStateOf(false) }
     val state by viewModel.state.collectAsState()
     val sharedScrollState = rememberScrollState()
     var showDeleteDialog by remember { mutableStateOf(false) }
     var trackForTrimming by remember { mutableStateOf<TrackUi?>(null) }
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var trackForEffects by remember { mutableStateOf<TrackUi?>(null) }
+    val showTuner by viewModel.showTunerDialog.collectAsState()
+    val tunerNote by viewModel.tunerNote.collectAsState()
+    var requestRecordVoiceAudioPermission by remember { mutableStateOf(false) }
+    var requestRecordInstrumentAudioPermission by remember { mutableStateOf(false) }
+
     val pickAudioLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
-            showSheet = false
             viewModel.importTrackFromFile(it)
         }
     }
 
     val density = LocalDensity.current
+
+    val isPreviewPlaying by viewModel.isPreviewPlaying.collectAsState()
+    val isUserPremium by viewModel.isUserPremium.collectAsState()
+
+    // Estado local para controlar el diálogo de venta
+    var showUpsellDialog by remember { mutableStateOf(false) }
+
     LaunchedEffect(state.currentPlaybackMs) {
         if (state.currentPlaybackMs > 0 && sharedScrollState.maxValue > 0 && state.isPlaying) {
-            val playbackPx = with(density) { (state.currentPlaybackMs / state.msPerDpScale).dp.toPx() }
-            val screenWidthPx = with(density) { 300.dp.toPx() } // Ancho aprox. de la pantalla visible
-            val targetScrollPosition = (playbackPx - screenWidthPx / 3).coerceAtLeast(0f).roundToInt()
+            val playbackPx =
+                with(density) { (state.currentPlaybackMs / state.msPerDpScale).dp.toPx() }
+            val screenWidthPx =
+                with(density) { 300.dp.toPx() } // Ancho aprox. de la pantalla visible
+            val targetScrollPosition =
+                (playbackPx - screenWidthPx / 3).coerceAtLeast(0f).roundToInt()
 
             if (targetScrollPosition > sharedScrollState.value && (targetScrollPosition - sharedScrollState.value) > 10) {
                 sharedScrollState.animateScrollTo(targetScrollPosition)
@@ -125,13 +140,12 @@ fun ProjectManagementScreen(
         }
     }
 
-
     BackHandler {
         viewModel.updateCurrentProjectWithTracks()
+        viewModel.stopRecording()
+        viewModel.stopPlaying()
         onBack()
     }
-
-
 
     if (showDeleteDialog) {
         ShowConfirmationDialog(
@@ -147,7 +161,7 @@ fun ProjectManagementScreen(
         )
     }
 
-    if (state.importAudioLoading){
+    if (state.importAudioLoading) {
         Dialog(
             onDismissRequest = {},
             properties = DialogProperties(usePlatformDefaultWidth = false)
@@ -164,6 +178,198 @@ fun ProjectManagementScreen(
         }
     }
 
+    if (showUpsellDialog) {
+        UpsellDialog(
+            onDismiss = { showUpsellDialog = false },
+            onConfirmPurchase = {
+                showUpsellDialog = false
+                // TODO: Aquí llamar al metodo para subcribirse
+                // viewModel.launchBillingFlow(activity)
+            }
+        )
+    }
+    //  ----INICIO BOTTOMSHEET ----
+    val activeSheet = state.activeSheetContent
+    if (activeSheet != null) {
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+        ModalBottomSheet(
+            onDismissRequest = {
+                viewModel.stopEffectPreview()
+                viewModel.hideBottomSheet()
+            },
+            sheetState = sheetState
+        ) {
+            when (activeSheet) {
+                is BottomSheetContent.AddTrackMenu -> {
+
+                    AddTrackSheetContent(
+                        onImportFromFile = {
+                            viewModel.hideBottomSheet()
+                            pickAudioLauncher.launch("audio/*")
+                        },
+                        onRecordVoice = {
+                            requestRecordVoiceAudioPermission = true
+                            viewModel.hideBottomSheet()
+                        },
+                        onRecordInstrument = {
+                            requestRecordInstrumentAudioPermission = true
+                            viewModel.hideBottomSheet()
+                        },
+                        onPasteTrack = {
+                            viewModel.hideBottomSheet()
+                            viewModel.pasteFromClipboard()
+                        },
+                        isClipboardFull = state.isClipboardFull
+                    )
+                }
+
+                is BottomSheetContent.EditVolume -> {
+                    VolumeSheetContent(
+                        track = activeSheet.track,
+                        onVolumeChange = { trackId, newVolume ->
+                            viewModel.setTrackVolume(trackId, newVolume)
+                        },
+                        onDismiss = {
+                            viewModel.hideBottomSheet()
+                        }
+
+                    )
+                }
+
+                is BottomSheetContent.RenameTrack -> {
+                    RenameTrackSheetContent(
+                        track = activeSheet.track,
+                        onRename = { trackId, newName ->
+                            viewModel.renameTrack(trackId, newName)
+                            viewModel.hideBottomSheet()
+                        },
+                        onDismiss = {
+                            viewModel.hideBottomSheet()
+                        }
+                    )
+                }
+
+                is BottomSheetContent.InDevelopment -> {
+                    // Composable para "En desarrollo"
+                    InDevelopmentSheetContent()
+                }
+
+                is BottomSheetContent.TrackEffects -> {
+                    EffectsSheetContent(
+                        track = activeSheet.track,
+                        isPremium = isUserPremium,
+                        isPreviewing = isPreviewPlaying,
+                        onShowUpsell = { showUpsellDialog = true },
+                        onPreviewToggle = { config ->
+                            viewModel.toggleEffectPreview(activeSheet.track.id, config)
+                        },
+                        onParamChange = { config ->
+                            viewModel.updatePreviewParams(activeSheet.track.id, config)
+                        },
+                        onApplyDelay = { id, delay, decay ->
+                            viewModel.stopEffectPreview() // Detener preview al aplicar
+                            viewModel.applyDelayEffect(id, delay, decay)
+                            viewModel.hideBottomSheet()
+                        },
+                        onApplyHighPass = { id, freq ->
+                            viewModel.stopEffectPreview()
+                            viewModel.applyHighPassFilter(id, freq)
+                            viewModel.hideBottomSheet()
+                        },
+                        onApplyFlanger = { id, rate, wet ->
+                            viewModel.stopEffectPreview()
+                            viewModel.applyFlangerEffect(id, rate, wet)
+                            viewModel.hideBottomSheet()
+                        },
+                        onDismiss = {
+                            viewModel.stopEffectPreview() // Detener al cancelar
+                            viewModel.hideBottomSheet()
+                        },
+                    )
+                }
+
+                is BottomSheetContent.MetronomeSettings -> {
+                    MetronomeSheetContent(
+                        currentBpm = state.bpm,
+                        isMetronomeEnabled = state.isMetronomeEnabled,
+                        currentVolume = state.metronomeVolume,
+                        onBpmChange = viewModel::setBpm,
+                        onMetronomeEnabledChange = viewModel::setMetronomeEnabled,
+                        onVolumeChange = viewModel::setMetronomeVolume,
+                        onDismiss = viewModel::hideBottomSheet
+                    )
+                }
+            }
+        }
+    }
+    // ----> FIN  BOTTOMSHEET <----
+
+    // ----> INICIO SNACKBAR <----
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    var snackbarMessage by remember { mutableStateOf<String?>(null) }
+
+    //Muestra el snackbar para los botones ProjectControlButtonRow cuando el mensaje cambie.
+    LaunchedEffect(snackbarMessage) {
+        snackbarMessage?.let {
+            scope.launch {
+                snackbarHostState.showSnackbar(it)
+                snackbarMessage = null
+            }
+        }
+    }
+    // Este escuchará los mensajes que vienen del VIEWMODEL
+    LaunchedEffect(Unit) {
+        viewModel.uiMessages.collect { message ->
+            scope.launch {
+                snackbarHostState.showSnackbar(message)
+            }
+        }
+    }
+    // ----> FIN SNACKBAR <----
+
+    // --- INICIO DE LA LÓGICA DE ANIMACIÓN DEL FAB ---
+    // Animación de "ERROR" (Pulso brusco)
+    val errorPulseScale = remember { Animatable(1f) }
+    LaunchedEffect(state.fabPulseTrigger) {
+        if (state.fabPulseTrigger > 0) {
+            scope.launch {
+                errorPulseScale.animateTo(
+                    targetValue = 1.3f,
+                    animationSpec = tween(150, easing = LinearOutSlowInEasing)
+                )
+                errorPulseScale.animateTo(
+                    targetValue = 1f,
+                    animationSpec = tween(200)
+                )
+            }
+        }
+    }
+
+    //Animación "CTA" (Pulso continuo)
+    val infiniteTransition = rememberInfiniteTransition(label = "FAB Empty Pulse")
+
+    val ctaPulseScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.15f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = LinearOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "fabCtaScale"
+    )
+    val baseScale = if (state.tracks.isEmpty()) {
+        ctaPulseScale
+    } else {
+        1f
+    }
+
+    val finalFabScale = baseScale * errorPulseScale.value
+
+    // --- Fin DE LA LÓGICA DE ANIMACIÓN DEL FAB ---
+
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = { //Impl de top bar
@@ -178,19 +384,34 @@ fun ProjectManagementScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = {
-                        viewModel.updateCurrentProjectWithTracks()
-                        onBack()
-                    }) {
+                    IconButton(
+                        onClick = {
+                            viewModel.updateCurrentProjectWithTracks()
+                            onBack()
+                        },
+                        enabled = !state.isRecording
+                    ) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 },
 
                 actions = {
-                    IconButton(onClick = { viewModel.zoomOut() }) {
+                    IconButton(
+                        onClick = { viewModel.onShowTuner() },
+                        enabled = !state.isRecording
+                    ) {
+                        Icon(Icons.Default.Tune, "Afinador")
+                    }
+                    IconButton(
+                        onClick = { viewModel.zoomOut() },
+                        enabled = !state.isRecording
+                    ) {
                         Icon(Icons.Default.ZoomOut, "Zoom Out")
                     }
-                    IconButton(onClick = { viewModel.zoomIn() }) {
+                    IconButton(
+                        onClick = { viewModel.zoomIn() },
+                        enabled = !state.isRecording
+                    ) {
                         Icon(Icons.Default.ZoomIn, "Zoom In")
                     }
                 },
@@ -204,7 +425,77 @@ fun ProjectManagementScreen(
                 )
             )
         },
-        //containerColor = MaterialTheme.colorScheme.background,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        bottomBar = {
+            Column(modifier = Modifier.background(Color(0xFF858585))) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    TimeDisplayPanel(
+                        currentMillis = state.currentPlaybackMs,
+                        totalMillis = state.totalProjectMs,
+                        onMetronomeClick = {
+                            viewModel.showMetronomeSheet()
+                        },
+                        isBeingRecorded = state.isRecording,
+                        isPlaying = state.isPlaying,
+                        bpm = state.bpm,
+                        isMetronomeEnabled = state.isMetronomeEnabled,
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (!state.isRecording) {
+                        IconButton(
+                            onClick = {
+                                viewModel.showBottomSheet(BottomSheetContent.AddTrackMenu)
+                            },
+                            modifier = Modifier
+                                .size(50.dp)
+                                .graphicsLayer {
+                                    scaleX = finalFabScale
+                                    scaleY = finalFabScale
+                                },
+                            colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Añadir Pista",
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        }
+                    }
+                }
+
+                ProjectControlButtonRow(
+                    onSkipPrevious = {
+                        viewModel.stopPlaying()
+                        scope.launch {
+                            sharedScrollState.animateScrollTo(0)
+                        }
+                    },
+                    onPlay = { viewModel.play() },
+                    onPause = { viewModel.pause() },
+                    startRecording = {
+                        snackbarMessage = "Para una mejor experiencia, usa auriculares."
+                        viewModel.startRecording()
+                    },
+                    stopRecording = { viewModel.stopRecording() },
+                    isRecording = state.isRecording,
+                    isPlaying = state.isPlaying,
+                    onError = { message ->
+                        snackbarMessage = message
+                    },
+                    modifier = Modifier // Ya no necesita modifier, el componente se autogestiona
+                )
+            }
+        }
+
     ) { padding ->
 
         Column(
@@ -212,7 +503,6 @@ fun ProjectManagementScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .background(Color(0xFF858585)), //Pasar ESTE background al Theme Colors
-            //verticalArrangement = Arrangement.Bottom,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
@@ -279,13 +569,19 @@ fun ProjectManagementScreen(
                             onSelectionChanged = { startMs, endMs ->
                                 viewModel.updateTrackSelection(track.id, startMs, endMs)
                             },
-                            onCopy = { viewModel.copySelection() },
-                            onCut = { viewModel.cutSelection() },
+                            onCopy = {
+                                scope.launch { viewModel.copySelection() }
+                            },
+                            onCut = {
+                                scope.launch { viewModel.cutSelection() }
+                            },
                             onUndoEffect = { viewModel.undoEffect(track.id) },
                             isUndoEffectAvailable = track.isUndoEffectAvailable,
                             isSelectionActive = track.selectionStartMs != null &&
                                     (track.selectionEndMs == null || track.selectionEndMs > track.selectionStartMs),
-                            msPerDpScale = state.msPerDpScale
+                            msPerDpScale = state.msPerDpScale,
+                            areControlsEnabled = !state.isRecording,
+                            onShowBottomSheet = viewModel::showBottomSheet
                         )
                     }
                 }
@@ -297,121 +593,11 @@ fun ProjectManagementScreen(
                 )
 
             }
-
-            IconButton(
-                onClick = {
-                    showSheet = true
-                },
-                modifier = Modifier
-                    .padding(top = 16.dp, start = 32.dp)
-                    .size(50.dp)
-                    .align(Alignment.End),
-
-                colors = IconButtonDefaults.iconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
-            Spacer(modifier = Modifier.weight(1f))
-
-            ProyectControlButtonRow(
-                onSkipPrevious = { viewModel.stopPlaying()
-                    scope.launch {
-                        sharedScrollState.animateScrollTo(0)
-                    }
-                                 },
-                onPlay = { viewModel.play() },
-                onPause = { viewModel.pause() },
-                startRecording = {
-                    Toast.makeText(
-                        context,
-                        "Para una mejor calidad, usa auriculares.",
-                        Toast.LENGTH_LONG
-                    ).show()
-                    viewModel.startRecording()
-                },
-                stopRecording = { viewModel.stopRecording() },
-                isRecording = state.isRecording,
-                isPlaying = state.isPlaying,
-                modifier = Modifier,
-            )
-
-            if (showSheet) {
-                ModalBottomSheet(
-                    onDismissRequest = { showSheet = false },
-                    sheetState = sheetState,
-                    containerColor = Color(0xFF121212), // Fondo oscuro del MBS
-                    tonalElevation = 8.dp
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Text(
-                            text = "Añadir pista",
-                            style = MaterialTheme.typography.titleLarge.copy(color = Color.White),
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-
-                        // Primera Fila - Pista de Voz y Pista de instrumento
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            OptionCard(
-                                title = "Grabar Voz\n(Cancelación\n de eco)",
-                                icon = Icons.Default.Mic,
-                                onClick = {
-                                    showSheet = false
-                                    viewModel.addNewTrack(AudioSourceType.VOICE)
-                                },
-                                modifier = Modifier.weight(1f)
-                            )
-                            OptionCard(
-                                title = "Grabar Instrumento\n(Hi-Fi)",
-                                icon = Icons.Default.MusicNote,
-                                onClick = {
-                                    showSheet = false
-                                    viewModel.addNewTrack(AudioSourceType.INSTRUMENT)
-                                },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-
-                        // Segunda fila - Importar desde un archivo
-                        OptionCard(
-                            title = "Importar desde archivo",
-                            icon = Icons.Default.Folder,
-                            onClick = { pickAudioLauncher.launch("audio/*") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        if (state.isClipboardFull) {
-                            OptionCard(
-                                title = "Pegar Pista",
-                                icon = Icons.Default.ContentPaste,
-                                onClick = {
-                                    showSheet = false
-                                    viewModel.pasteFromClipboard()
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-
-                    }
-                }
-            }
         }
     }
-
+    if (state.precountMessage != null) {
+        PrecountOverlay(message = state.precountMessage!!)
+    }
     trackForTrimming?.let { trackToTrim ->
         TrimAudioDialog(
             track = trackToTrim,
@@ -429,136 +615,41 @@ fun ProjectManagementScreen(
             }
         )
     }
-    trackForEffects?.let { trackToEffect ->
-        EffectsAudioDialog(
-            track = trackToEffect,
-            onDismiss = { trackForEffects = null },
-            onApplyDelay = { id, delay, decay ->
-                viewModel.applyDelayEffect(id, delay, decay)
-                trackForEffects = null
-            }
+
+    if (showTuner) {
+        TunerDialog(
+            note = tunerNote,
+            onDismiss = { viewModel.onDismissTuner() },
+            onStart = { viewModel.startTuner() },
+            onStop = { viewModel.stopTuner() }
+        )
+    }
+
+    if (requestRecordVoiceAudioPermission) {
+        PermissionRequester(
+            permission = Manifest.permission.RECORD_AUDIO,
+            rationaleRes = R.string.record_audio_rationale,
+            permanentlyDeniedRes = R.string.record_audio_denied_msg,
+            onGranted = {
+                viewModel.addNewTrack(AudioSourceType.VOICE)
+                requestRecordVoiceAudioPermission = false
+            },
+            onDialogDismiss = { requestRecordVoiceAudioPermission = false }
+        )
+    }
+    if (requestRecordInstrumentAudioPermission) {
+        PermissionRequester(
+            permission = Manifest.permission.RECORD_AUDIO,
+            rationaleRes = R.string.record_audio_rationale,
+            permanentlyDeniedRes = R.string.record_audio_denied_msg,
+            onGranted = {
+                viewModel.addNewTrack(AudioSourceType.INSTRUMENT)
+                requestRecordInstrumentAudioPermission = false
+            },
+            onDialogDismiss = { requestRecordInstrumentAudioPermission = false }
         )
     }
 }
 
-@Composable
-fun EmptyProjectMessage(modifier: Modifier = Modifier) {
-    // Usamos un mapa para definir el contenido del ícono en línea
-    val inlineContentMap = mapOf(
-        "add_icon" to InlineTextContent(
-            Placeholder(
-                width = 24.sp,
-                height = 24.sp,
-                placeholderVerticalAlign = PlaceholderVerticalAlign.TextCenter
-            )
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Agregar",
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(16.dp)
-                )
-            }
-        }
-    )
 
-    // Creamos el texto anotado
-    val annotatedText = buildAnnotatedString {
-        append("Presione ")
-        // Adjuntamos el ícono en línea usando su ID
-        appendInlineContent("add_icon", "[icono agregar]")
-        append(" para agregar una nueva pista para ")
-        withStyle(
-            style = SpanStyle(
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold
-            )
-        ) {
-            append("grabar, insertar un archivo")
-        }
-        append(" o buscar en la biblioteca de sonidos.")
-    }
 
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 32.dp),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Box(
-            modifier = Modifier.padding(24.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = annotatedText,
-                inlineContent = inlineContentMap,
-                textAlign = TextAlign.Center,
-                fontSize = 18.sp,
-                lineHeight = 28.sp
-            )
-        }
-    }
-}
-
-// Composable para cada opción de la BottomSheet
-@Composable
-fun OptionCard(
-    title: String,
-    icon: ImageVector,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        onClick = onClick,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF1E1E1E)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-        modifier = modifier
-            .height(100.dp)
-            .clip(RoundedCornerShape(16.dp))
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            contentAlignment = Alignment.CenterStart
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
-                ),
-                modifier = Modifier.align(Alignment.CenterStart)
-            )
-            Spacer(modifier = Modifier.padding(240.dp))
-            // Icono circular flotante
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .size(36.dp)
-                    .background(Color(0xFFFF8117), CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = Color.Black,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
-    }
-}

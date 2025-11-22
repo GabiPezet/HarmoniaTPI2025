@@ -1,18 +1,20 @@
 package com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -20,22 +22,28 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.android.harmoniatpi.R
 import com.android.harmoniatpi.domain.model.project.Project
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.BottomMiniPlayer
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.CreateProjectDialog
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.EditProjectDialog
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.EmptyListMessage
-import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.SoundCloudTabRow
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.ProjectCard
+import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.PublishCloneDialog
+import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.PublishOriginalDialog
+import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.SoundCloudTabRow
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.UserProfileHeader
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.model.ProjectTab
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.viewmodel.ProjectViewModel
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.MaterialTheme
-import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.PublishCloneDialog
-import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.PublishOriginalDialog
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProjectsScreen(
@@ -54,11 +62,25 @@ fun ProjectsScreen(
     val bottomPadding = if (showMiniPlayer) 64.dp else 0.dp
     var projectToPublishAsOriginal by remember { mutableStateOf<Project?>(null) }
 
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) {
+                viewModel.stopPlayback()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
-                bottom = bottomPadding + 80.dp) // 80.dp aprox para FAB + margen
+                bottom = bottomPadding + 80.dp
+            ) // 80.dp aprox para FAB + margen
         ) {
             item {
                 Spacer(modifier = Modifier.height(5.dp))
@@ -110,9 +132,16 @@ fun ProjectsScreen(
                         },
                         onTogglePlayPause = { viewModel.togglePlayPause(project) },
                         isCurrentlyPlaying = isCurrentlyPlaying,
-                        onEditClick = { projectToEdit = project },
-                        onDeleteClick = { viewModel.deleteProject(project.id) },
+                        onEditClick = {
+                            viewModel.stopPlayback()
+                            projectToEdit = project
+                        },
+                        onDeleteClick = {
+                            viewModel.stopPlayback()
+                            viewModel.deleteProject(project.id)
+                        },
                         onPublishClick = {
+                            viewModel.stopPlayback()
                             if (project.originalProjectId != null && project.ownerId == sharedState.userID) {
                                 // Es un clon mío, mostrar diálogo de clon
                                 projectToPublishAsClone = project
@@ -131,7 +160,10 @@ fun ProjectsScreen(
         // 3. Botón "Crear" (FAB)
         if (uiState.tabSelected == ProjectTab.MY_PROJECTS) {
             FloatingActionButton(
-                onClick = { showCreateForm = true },
+                onClick = {
+                    viewModel.stopPlayback()
+                    showCreateForm = true
+                },
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(16.dp)
@@ -139,7 +171,12 @@ fun ProjectsScreen(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Nuevo Proyecto")
+                Image(
+                    painter = painterResource(id = R.drawable.ic_new_project_add), // nuevo png de add project
+                    contentDescription = "Nuevo Proyecto",
+                    modifier = Modifier.size(28.dp),
+                    colorFilter = ColorFilter.tint(Color.White) // verificar si dejamos el add en blanco
+                )
             }
         }
 
@@ -166,7 +203,7 @@ fun ProjectsScreen(
         CreateProjectDialog(
             uiState = uiState,
             viewModel = viewModel,
-            onDismiss = { showCreateForm = false /* viewModel.dismissCreateDialog() */ }
+            onDismiss = { showCreateForm = false /* viewModel.dismissCreateDialog() */ },
         )
     }
 

@@ -4,17 +4,22 @@ import android.content.Context
 import android.media.MediaRecorder
 import android.net.Uri
 import android.util.Log
-import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import be.tarsos.dsp.AudioDispatcher
+import com.android.harmoniatpi.data.audio.util.TunerEngine
 import com.android.harmoniatpi.domain.cache.HoloJamCache
 import com.android.harmoniatpi.domain.model.audio.AudioSourceType
+import com.android.harmoniatpi.domain.model.audio.EffectConfig
 import com.android.harmoniatpi.domain.model.audio.WaveformResult
+import com.android.harmoniatpi.domain.model.metronome.MetronomeEngine
 import com.android.harmoniatpi.domain.model.project.AudioTrack
 import com.android.harmoniatpi.domain.usecases.audioUseCases.AddTrackFromFileUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.AddTrackFromSegmentUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.AddTrackUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.ApplyDelayEffectUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.ApplyFlangerEffectUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.ApplyHighPassFilterUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.ConvertMp3ToPcmUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.CutAudioSegmentUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.DeleteTrackUseCase
@@ -27,6 +32,7 @@ import com.android.harmoniatpi.domain.usecases.audioUseCases.LoadProjectTrackUse
 import com.android.harmoniatpi.domain.usecases.audioUseCases.MuteTrackUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.PauseAudioUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.PlayAudioUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.PreviewEffectUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.SeekToUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.SetTrackOffsetUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.SetTrackPlaybackRangeUseCase
@@ -39,13 +45,18 @@ import com.android.harmoniatpi.domain.usecases.audioUseCases.UnMuteTrackUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.UndoEffectUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.UndoTrimUseCase
 import com.android.harmoniatpi.domain.usecases.roomUseCases.UpdateOrInsertProjectInDBUseCase
-import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.ProyectScreenUiState
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.BottomSheetContent
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.ProjectScreenUiState
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -53,8 +64,6 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import javax.inject.Inject
-
-private const val MS_PER_DP_SCALE = 10f
 
 @HiltViewModel
 class ProjectManagementScreenViewModel @Inject constructor(
@@ -87,13 +96,39 @@ class ProjectManagementScreenViewModel @Inject constructor(
     private val setTrackPlaybackRangeUseCase: SetTrackPlaybackRangeUseCase,
     private val undoEffectUseCase: UndoEffectUseCase,
     private val downloadFileUseCase: DownloadFileUseCase,
-    private val convertMp3ToPcmUseCase: ConvertMp3ToPcmUseCase
+    private val convertMp3ToPcmUseCase: ConvertMp3ToPcmUseCase,
+    private val applyHighPassFilterUseCase: ApplyHighPassFilterUseCase,
+    private val applyFlangerEffectUseCase: ApplyFlangerEffectUseCase,
+    private val tunerEngine: TunerEngine,
+    private val metronomeEngine: MetronomeEngine,
+    private val previewEffectUseCase: PreviewEffectUseCase
 ) : ViewModel() {
-    private val _state = MutableStateFlow(ProyectScreenUiState())
+    private val _state = MutableStateFlow(ProjectScreenUiState())
     private var selectedTrack: TrackUi? = null
     val state = _state.asStateFlow()
     private val originalVolumes = mutableMapOf<Long, Float>()
+    private val _trackForVolume = MutableStateFlow<TrackUi?>(null)
+    val trackForVolume = _trackForVolume.asStateFlow()
+    // atributos para tuner
+    private var audioDispatcher: AudioDispatcher? = null
+    private var tunerThread: Thread? = null
+    private val _tunerNote = MutableStateFlow("")
 
+    val tunerNote = tunerEngine.tunerNoteFlow
+    private val _showTunerDialog = MutableStateFlow(false)
+    val showTunerDialog = _showTunerDialog.asStateFlow()
+
+    private val _uiMessages = MutableSharedFlow<String>()
+    val uiMessages = _uiMessages.asSharedFlow()
+
+    private var precountJob: Job? = null
+
+    private val _isPreviewPlaying = MutableStateFlow(false)
+    val isPreviewPlaying = _isPreviewPlaying.asStateFlow()
+
+    // Simulación de usuario Premium (Todo: modificar segun la logica que usemos para habilitar usuarios premium)
+    private val _isUserPremium = MutableStateFlow(false)
+    val isUserPremium = _isUserPremium.asStateFlow()
 
     init {
         startPlaybackObserver()
@@ -229,7 +264,11 @@ class ProjectManagementScreenViewModel @Inject constructor(
         }
     }
 
-    fun startRecording() {
+    /**
+     * Inicia la grabación de audio.
+     */
+   private fun executeRecording() {
+        metronomeEngine.start()
         selectedTrack = state.value.tracks.find { it.selected }
         selectedTrack?.let { trackToRecord ->
 
@@ -263,6 +302,19 @@ class ProjectManagementScreenViewModel @Inject constructor(
     }
 
     fun stopRecording() {
+        // 1. SI EL USUARIO APRETA STOP DURANTE LA PRECUENTA
+        if (precountJob != null) {
+            precountJob?.cancel() // Cancela la corutina de precuenta
+            precountJob = null
+            _state.update { it.copy(precountMessage = null) }
+            Log.d(TAG, "Pre-cuenta cancelada por el usuario")
+            return
+        }
+
+        // 2. LÓGICA NORMAL (si ya estaba grabando)
+        if (!state.value.isRecording) return // Evita dobles clics si ya se paró
+
+        metronomeEngine.stop()
         stopRecordingAudio()
             .onSuccess {
                 Log.i(TAG, "Grabación detenida")
@@ -283,10 +335,12 @@ class ProjectManagementScreenViewModel @Inject constructor(
                                     trackUi
                                 }
                             }
+                            val totalMs = getMaxProjectDuration(updatedTracks)
                             val timelineWidth = getUpdatedTimeline(updatedTracks, _state.value.msPerDpScale)
                             currentState.copy(
                                 tracks = updatedTracks,
-                                timelineWidth = timelineWidth
+                                timelineWidth = timelineWidth,
+                                totalProjectMs = totalMs,
                             )
                         }
                     }
@@ -307,6 +361,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
     }
 
     fun play() {
+        metronomeEngine.start()
         _state.update {
             it.copy(isPlaying = true)
         }
@@ -315,6 +370,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
 
 
     fun pause() {
+        metronomeEngine.stop()
         pauseAudio()
         _state.update {
             it.copy(isPlaying = false)
@@ -322,6 +378,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
     }
 
     fun stopPlaying() {
+        metronomeEngine.stop()
         stopAudio()
         _state.update {
             it.copy(isPlaying = false)
@@ -337,7 +394,14 @@ class ProjectManagementScreenViewModel @Inject constructor(
             deleteTrack(it.id)
         }.apply {
             _state.update {
-                it.copy(tracks = it.tracks.filter { track -> track.id != selectedTrack?.id })
+                val newTracks = it.tracks.filter { track -> track.id != selectedTrack?.id }
+                val totalMs = getMaxProjectDuration(newTracks)
+                val timelineWidth = getUpdatedTimeline(newTracks, it.msPerDpScale)
+                it.copy(
+                    tracks = newTracks,
+                    totalProjectMs = totalMs,
+                    timelineWidth = timelineWidth
+                )
             }
             viewModelScope.launch {
                 updateCurrentProjectWithTracks()
@@ -362,19 +426,18 @@ class ProjectManagementScreenViewModel @Inject constructor(
                 addTrackFromFileUseCase(tempFile.absolutePath)
                     .onSuccess {
                         Log.i(TAG, "Pista importada y convertida exitosamente desde $uri")
-                        Toast.makeText(context, "Pista importada exitosamente", Toast.LENGTH_SHORT)
-                            .show()
+                        _uiMessages.emit("Pista importada exitosamente")
                         _state.update { it.copy(importAudioLoading = false) }
                     }
                     .onFailure { e ->
                         Log.e(TAG, "Error importando pista desde $uri: ${e.message}", e)
-                        Toast.makeText(context, "Error al importar la pista", Toast.LENGTH_SHORT)
-                            .show()
+                        _uiMessages.emit("Error al importar la pista")
                         _state.update { it.copy(importAudioLoading = false) }
                     }
             } catch (e: Exception) {
+
                 Log.e(TAG, "Error resolviendo o copiando archivo de origen: ${e.message}", e)
-                Toast.makeText(context, "Error al procesar el archivo", Toast.LENGTH_SHORT).show()
+                _uiMessages.emit("Error al procesar el archivo")
             } finally {
                 tempFile.delete()
             }
@@ -429,7 +492,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
     }
 
 
-    fun copySelection() {
+    suspend fun copySelection() {
         val selectedTrackWithSelection = state.value.tracks.find {
             it.selected && it.selectionStartMs != null && it.selectionEndMs != null
         } ?: return
@@ -441,10 +504,10 @@ class ProjectManagementScreenViewModel @Inject constructor(
             endMs = selectedTrackWithSelection.selectionEndMs!!
         )
         _state.update { it.copy(isClipboardFull = true) }
-        Toast.makeText(context, "Selección copiada", Toast.LENGTH_SHORT).show()
+        _uiMessages.emit("Selección copiada")
     }
 
-    fun cutSelection() {
+    suspend fun cutSelection() {
         val selectedTrackWithSelection = state.value.tracks.find {
             it.selected && it.selectionStartMs != null && it.selectionEndMs != null
         } ?: return
@@ -456,11 +519,11 @@ class ProjectManagementScreenViewModel @Inject constructor(
                 selectedTrackWithSelection.selectionStartMs!!,
                 selectedTrackWithSelection.selectionEndMs!!
             ).onSuccess {
-                Toast.makeText(context, "Selección cortada", Toast.LENGTH_SHORT).show()
+                _uiMessages.emit("Selección cortada")
                 updateTrackUiAfterModification(selectedTrackWithSelection.id)
             }.onFailure {
                 Log.e(TAG, "Error al cortar", it)
-                Toast.makeText(context, "Error al cortar la pista", Toast.LENGTH_SHORT).show()
+                _uiMessages.emit("Error al cortar la pista")
             }
         }
     }
@@ -475,10 +538,10 @@ class ProjectManagementScreenViewModel @Inject constructor(
                 clipboard.endMs
 
             ).onSuccess {
-                Toast.makeText(context, "Pista pegada", Toast.LENGTH_SHORT).show()
+                _uiMessages.emit("Pista pegada")
             }.onFailure {
                 Log.e(TAG, "Error al pegar", it)
-                Toast.makeText(context, "Error al pegar la pista", Toast.LENGTH_SHORT).show()
+                _uiMessages.emit("Error al pegar la pista")
             }
         }
     }
@@ -488,13 +551,13 @@ class ProjectManagementScreenViewModel @Inject constructor(
         viewModelScope.launch {
             trimAudioTrack(trackId, startMs, endMs)
                 .onSuccess {
-                    Toast.makeText(context, "Pista recortada", Toast.LENGTH_SHORT).show()
+                    _uiMessages.emit("Pista recortada")
                     Log.i(TAG, "Audio trim successful for track $trackId")
                     updateTrackUiAfterModification(trackId)
                 }
                 .onFailure {
                     Log.e(TAG, "Error trimming audio for track $trackId", it)
-                    Toast.makeText(context, "Error al recortar la pista", Toast.LENGTH_SHORT).show()
+                    _uiMessages.emit("Error al recortar la pista")
                 }
         }
     }
@@ -505,12 +568,11 @@ class ProjectManagementScreenViewModel @Inject constructor(
                 .onSuccess {
                     Log.i(TAG, "Undo trim successful for track $trackId")
                     updateTrackUiAfterModification(trackId)
-                    Toast.makeText(context, "Recorte deshecho", Toast.LENGTH_SHORT).show()
+                    _uiMessages.emit("Recorte deshecho")
                 }
                 .onFailure { e ->
                     Log.e(TAG, "Error undoing trim for track $trackId", e)
-                    Toast.makeText(context, "No se pudo deshacer el recorte", Toast.LENGTH_SHORT)
-                        .show()
+                    _uiMessages.emit("No se pudo deshacer el recorte")
                     updateTrackUiAfterModification(trackId)
                 }
         }
@@ -541,10 +603,12 @@ class ProjectManagementScreenViewModel @Inject constructor(
                         track
                     }
                 }
+                val totalMs = getMaxProjectDuration(updatedTracks)
                 val timelineWidth = getUpdatedTimeline(updatedTracks, currentState.msPerDpScale)
                 currentState.copy(
                     tracks = updatedTracks,
-                    timelineWidth = timelineWidth
+                    timelineWidth = timelineWidth,
+                    totalProjectMs = totalMs,
                 )
             }
         }
@@ -592,11 +656,36 @@ class ProjectManagementScreenViewModel @Inject constructor(
         }
     }
 
-    fun setTrackVolume(volume: Float) {
-        selectedTrack?.let {
-            setTrackVolumeUseCase(it.id, volume)
-            updateTrackVolume(it.id, volume)
+    fun onShowVolumeSlider(track: TrackUi) {
+        _trackForVolume.value = track
+    }
+
+    fun onDismissVolumeSlider() {
+        _trackForVolume.value = null
+    }
+
+    fun setTrackVolume(trackId: Long, newVolume: Float) {
+        // 1. Clamp the value para asegurar que esté en el rango permitido (0f a 1.5f).
+        val clampedVolume = newVolume.coerceIn(0f, 1.5f)
+
+        // 2. Llama al Caso de Uso para que el motor de audio aplique el cambio de volumen.
+        //    Esta es la línea que faltaba y la más importante.
+        setTrackVolumeUseCase(trackId, clampedVolume)
+
+        // 3. Actualiza el estado de la UI para que refleje el cambio visualmente.
+        _state.update { currentState ->
+            val updatedTracks = currentState.tracks.map { track ->
+                if (track.id == trackId) {
+                    track.copy(volume = clampedVolume) // Actualiza el volumen en la lista de la UI
+                } else {
+                    track
+                }
+            }
+            currentState.copy(tracks = updatedTracks)
         }
+
+        // 4. (Opcional pero recomendado) Guarda el estado general del proyecto.
+        updateCurrentProjectWithTracks()
     }
 
     fun updateTrackOffset(trackId: Long, offsetMs: Long) {
@@ -610,12 +699,14 @@ class ProjectManagementScreenViewModel @Inject constructor(
                     track
                 }
             }
+            val totalMs = getMaxProjectDuration(updatedTracks)
             // debo recalcular ancho de la timeline
             val timelineWidth = getUpdatedTimeline(updatedTracks, currentState.msPerDpScale)
 
             currentState.copy(
                 tracks = updatedTracks,
-                timelineWidth = timelineWidth
+                timelineWidth = timelineWidth,
+                totalProjectMs = totalMs
             )
         }
 
@@ -687,8 +778,9 @@ class ProjectManagementScreenViewModel @Inject constructor(
                 }
 
                 val updatedTracks = updatedTracksPromises
+                val totalMs =getMaxProjectDuration(updatedTracks)
                 val timelineWidth = getUpdatedTimeline(updatedTracks, _state.value.msPerDpScale)
-                _state.update { it.copy(tracks = updatedTracks, timelineWidth = timelineWidth) }
+                _state.update { it.copy(tracks = updatedTracks, timelineWidth = timelineWidth, totalProjectMs = totalMs) }
 
                 if (updatedTracks.isNotEmpty()) {
                     // Verificar si el último track es nuevo (no estaba en la lista anterior)
@@ -739,13 +831,42 @@ class ProjectManagementScreenViewModel @Inject constructor(
             applyDelayEffectUseCase(trackId, delayTimeInSeconds, decay)
                 .onSuccess {
                     Log.i(TAG, "Efecto de delay aplicado a $trackId")
-                    Toast.makeText(context, "Efecto aplicado", Toast.LENGTH_SHORT).show()
-
+                    _uiMessages.emit("Efecto aplicado")
                     updateTrackUiAfterModification(trackId)
                 }
                 .onFailure { e ->
                     Log.e(TAG, "Error aplicando delay", e)
-                    Toast.makeText(context, "Error al aplicar efecto", Toast.LENGTH_SHORT).show()
+                    _uiMessages.emit("Error al aplicar efecto")
+                }
+        }
+    }
+
+    fun applyHighPassFilter(trackId: Long, frequency: Float) {
+        viewModelScope.launch {
+            applyHighPassFilterUseCase(trackId, frequency)
+                .onSuccess {
+                    Log.i(TAG, "Filtro HPF aplicado a $trackId")
+                    _uiMessages.emit("Filtro aplicado")
+                    updateTrackUiAfterModification(trackId)
+                }
+                .onFailure { e ->
+                    Log.e(TAG, "Error aplicando HPF", e)
+                    _uiMessages.emit("Error al aplicar filtro")
+                }
+        }
+    }
+
+    fun applyFlangerEffect(trackId: Long, rate: Float, wet: Float) {
+        viewModelScope.launch {
+            applyFlangerEffectUseCase(trackId, rate, wet)
+                .onSuccess {
+                    Log.i(TAG, "Efecto Flanger aplicado a $trackId")
+                    _uiMessages.emit("Flanger aplicado")
+                    updateTrackUiAfterModification(trackId)
+                }
+                .onFailure { e ->
+                    Log.e(TAG, "Error aplicando Flanger", e)
+                    _uiMessages.emit("Error al aplicar efecto")
                 }
         }
     }
@@ -756,12 +877,11 @@ class ProjectManagementScreenViewModel @Inject constructor(
                 .onSuccess {
                     Log.i(TAG, "Undo effect successful for track $trackId")
                     updateTrackUiAfterModification(trackId)
-                    Toast.makeText(context, "Efecto deshecho", Toast.LENGTH_SHORT).show()
+                    _uiMessages.emit("Efecto deshecho")
                 }
                 .onFailure { e ->
                     Log.e(TAG, "Error undoing effect for track $trackId", e)
-                    Toast.makeText(context, "No se pudo deshacer el efecto", Toast.LENGTH_SHORT)
-                        .show()
+                    _uiMessages.emit("No se pudo deshacer el efecto")
                 }
         }
     }
@@ -780,13 +900,6 @@ class ProjectManagementScreenViewModel @Inject constructor(
             .onFailure { e ->
                 Log.e("KlyxDevs", "Error restaurando pista ${audioTrack.id}: ${e.message}", e)
             }
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        // Limpia todas las pistas del AudioMixerRepository
-        loadProjectTrackUseCase.clearAllTracks()
-        Log.d("PManagementViewModel", "ViewModel destruido, limpiando pistas del mixer.")
     }
 
 
@@ -816,11 +929,209 @@ class ProjectManagementScreenViewModel @Inject constructor(
         }
     }
 
+    fun onShowTuner() {
+        _showTunerDialog.value = true
+    }
+
+    fun onDismissTuner() {
+        _showTunerDialog.value = false
+    }
+
+    // Simplemente delegamos al Engine
+    fun startTuner() {
+        tunerEngine.start()
+    }
+
+    fun stopTuner() {
+        tunerEngine.stop()
+    }
+
+    /**
+     * Muestra un tipo específico de BottomSheet.
+     * @param content El contenido a mostrar (ej. AddTrackMenu, EditVolume, etc.)
+     */
+    fun showBottomSheet(content: BottomSheetContent) {
+        _state.update { it.copy(activeSheetContent = content) }
+    }
+
+    /**
+     * Oculta el BottomSheet actualmente activo.
+     */
+    fun hideBottomSheet() {
+        _state.update { it.copy(activeSheetContent = null) }
+    }
+
+    /**
+     * Renombra una pista.y actualiza el proyecto en la DB para persistencia inmediata.
+     */
+    fun renameTrack(trackId: Long, newName: String) {
+        _state.update { currentState ->
+            val updatedTracks = currentState.tracks.map { track ->
+                if (track.id == trackId) {
+                    track.copy(title = newName)
+                } else {
+                    track
+                }
+            }
+            currentState.copy(tracks = updatedTracks)
+        }
+        updateCurrentProjectWithTracks()
+    }
+
+    /**
+     * Calcula la duración máxima del proyecto basándose en la pista
+     * que más tarde termina (considerando su duración + offset).
+     */
+    private fun getMaxProjectDuration(tracks: List<TrackUi>): Long {
+        if (tracks.isEmpty()) return 0L
+        return tracks.maxOf { (it.durationMs + it.startOffsetMs).coerceAtLeast(0L) }
+    }
+
+    /**
+     * Actualiza el BPM (Beats Per Minute) del proyecto.
+     * para que el metrónomo suene al tempo correcto.
+     */
+    fun setBpm(newBpm: Int) {
+        val clampedBpm = newBpm.coerceIn(40, 240)
+        _state.update { it.copy(bpm = clampedBpm) }
+
+        metronomeEngine.setBpm(clampedBpm)
+    }
+    /*
+    * Activa o desactiva el metrónomo.
+    */
+    fun setMetronomeEnabled(isEnabled: Boolean) {
+        _state.update { it.copy(isMetronomeEnabled = isEnabled) }
+        metronomeEngine.setSoundEnabled(isEnabled)
+    }
+
+    fun showMetronomeSheet() {
+        showBottomSheet(BottomSheetContent.MetronomeSettings)
+    }
+
+    /**
+     * Actualiza el volumen del metrónomo en el estado y en el motor.
+     */
+    fun setMetronomeVolume(newVolume: Float) {
+        val clampedVolume = newVolume.coerceIn(0f, 1.0f)
+        _state.update { it.copy(metronomeVolume = clampedVolume) }
+        metronomeEngine.setVolume(clampedVolume)
+    }
+
+
+    /**
+     * Esta es la nueva función PÚBLICA que la UI llamará.
+     * Intenta iniciar el proceso de grabación, comenzando con una precuenta.
+     *
+     * Realiza las siguientes validaciones antes de proceder:
+     * 1.  **Validación de Pistas:** Comprueba si la lista `state.value.tracks` está vacía.
+     * - Si está vacía, emite un mensaje de error al usuario (vía `_uiMessages`)
+     * - También activa una animación en el FAB (`fabPulseTrigger`) como feedback visual.
+     * 2.  **Validación de Doble Clic (Debounce):** Comprueba si la grabación ya está
+     * activa (`state.value.isRecording`) o si la corutina de precuenta
+     * (`precountJob`) ya está en ejecución.
+     * - Si es así, termina la ejecución para evitar múltiples grabaciones simultáneas.
+     * Si todas las validaciones son exitosas, lanza una nueva corutina en el [viewModelScope]
+     * para ejecutar [precountAndRecord] y almacena la referencia del [Job] en `precountJob`.
+     */
+    fun startRecording() {
+        if (state.value.tracks.isEmpty()) {
+            viewModelScope.launch {
+                _uiMessages.emit("Primero tenés que agregar una pista")
+            }
+            // Dispara la animación del fab incrementando el trigger
+            _state.update { it.copy(fabPulseTrigger = it.fabPulseTrigger + 1) }
+            return
+        }
+        //Comprobación de doble-click
+        if (state.value.isRecording || precountJob != null) return
+
+        //Inicia precuenta
+        Log.d(TAG, "Iniciando pre-cuenta.")
+        // Lanza la corutina y guarda la referencia en precountJob
+        precountJob = viewModelScope.launch {
+            precountAndRecord()
+        }
+    }
+
+    /**
+     * Lógica de la cuenta regresiva.
+     * Muestra la UI siempre, pero solo reproduce sonido si está habilitado.
+     */
+    private suspend fun precountAndRecord() {
+        val bpm = state.value.bpm
+        val beatDurationMs = (60_000L / bpm)
+        val playSound = state.value.isMetronomeEnabled
+
+        try {
+            _state.update { it.copy(precountMessage = "Preparate...") }
+            delay(beatDurationMs.coerceAtLeast(500L))
+
+            for (i in 4 downTo 1) {
+                _state.update { it.copy(precountMessage = "$i") }
+                if (playSound) {
+                    metronomeEngine.playTick()
+                }
+                delay(beatDurationMs)
+            }
+
+            _state.update { it.copy(precountMessage = null) }
+            executeRecording()
+
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            Log.d(TAG, "Pre-cuenta cancelada")
+            _state.update { it.copy(precountMessage = null) }
+        } finally {
+            precountJob = null // Limpia el job
+        }
+    }
+
+    /**
+     * Muestra o oculta el preview del efecto.
+     */
+    fun toggleEffectPreview(trackId: Long, config: EffectConfig) {
+        if (_isPreviewPlaying.value) {
+            stopEffectPreview()
+        } else {
+            // Detener reproducción normal si existe
+            stopPlaying()
+
+            // Iniciar preview del efecto
+            previewEffectUseCase.start(trackId, config)
+            _isPreviewPlaying.value = true
+        }
+    }
+
+    /**
+     * Detener la reproducción del efecto preview.
+     */
+    fun stopEffectPreview() {
+        previewEffectUseCase.stop()
+        _isPreviewPlaying.value = false
+    }
+
+    /**
+     * Cuando cambiamos sliders en tiempo real, reiniciamos el preview si está sonando
+     */
+    fun updatePreviewParams(trackId: Long, config: EffectConfig) {
+        if (_isPreviewPlaying.value) {
+            previewEffectUseCase.stop()
+            previewEffectUseCase.start(trackId, config)
+        }
+    }
 
     private companion object {
         const val TAG = "AudioTestsViewModel"
     }
 
+    override fun onCleared() {
+        super.onCleared()
+        tunerEngine.stop()
+        metronomeEngine.release()
+        loadProjectTrackUseCase.clearAllTracks()
+        Log.d("PManagementViewModel", "ViewModel destruido, limpiando pistas del mixer.")
+        stopEffectPreview()
+    }
 
     private data class AudioClipboard(
         val sourceFilePath: String,

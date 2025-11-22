@@ -1,3 +1,6 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -10,9 +13,24 @@ plugins {
     alias(libs.plugins.performance)
 }
 
+val mpAccessToken: String = try {
+    val properties = Properties()
+    val localPropertiesFile = project.rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        properties.load(FileInputStream(localPropertiesFile))
+        properties.getProperty("MP_ACCESS_TOKEN") ?: ""
+    } else {
+        ""
+    }
+} catch (e: Exception) {
+    println("Error leyendo local.properties: ${e.message}")
+    ""
+}
+
 android {
     namespace = "com.android.harmoniatpi"
     compileSdk = 35
+
 
     defaultConfig {
         applicationId = "com.android.harmoniatpi"
@@ -21,7 +39,9 @@ android {
         versionCode = 1
         versionName = "1.0.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "com.android.harmoniatpi.HiltTestRunner"
+
+        buildConfigField("String", "MP_ACCESS_TOKEN", "\"$mpAccessToken\"")
     }
 
     buildTypes {
@@ -42,6 +62,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -141,6 +162,8 @@ dependencies {
     //LAME
     implementation(libs.lame)
     //TARSOS
-    implementation ("be.tarsos.dsp:core:2.5")
-    implementation ("be.tarsos.dsp:jvm:2.5")
+    implementation (libs.core)
+    implementation (libs.jvm)
+
+
 }

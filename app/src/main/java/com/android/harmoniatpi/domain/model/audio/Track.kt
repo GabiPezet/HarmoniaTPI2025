@@ -45,17 +45,17 @@ class Track @AssistedInject constructor(
         }
 
         if (playbackEndMs == -1L) {
-            player.play(startTime)
+            player.play(startTime, delayPlay)
                 .onSuccess {
-                    Log.i(TAG, "Track $id played from $startTime ms (no end trim)")
+                    Log.i(TAG, "Track $id played from $startTime ms (no end trim) with delay $delayPlay")
                 }
                 .onFailure {
                     Log.e(TAG, "Error playing track $id", it)
                 }
         } else {
-            player.playSegment(startTime, playbackEndMs)
+            player.playSegment(startTime, playbackEndMs, delayPlay)
                 .onSuccess {
-                    Log.i(TAG, "Track $id segment played: $startTime to $playbackEndMs")
+                    Log.i(TAG, "Track $id segment played: $startTime to $playbackEndMs with delay $delayPlay")
                 }
                 .onFailure {
                     Log.e(TAG, "Error playing track segment $id", it)

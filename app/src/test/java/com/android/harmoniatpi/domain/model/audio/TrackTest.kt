@@ -30,12 +30,19 @@ class TrackTest {
     fun setUp() {
         mockPlayer = mockk(relaxed = true)
         folderPath = tempFolder.newFolder().absolutePath
+
         every { mockPlayer.setFile(any()) } just runs
         every { mockPlayer.play() } returns Result.success(Unit)
         every { mockPlayer.playSegment(any(), any()) } returns Result.success(Unit)
 
-        track = Track(folderPath, mockPlayer)
-        //clearMocks(mockPlayer)
+        track = Track(
+            folderPath = folderPath,
+            existingFilePath = null,
+            idExist = null,
+            sourceType = AudioSourceType.VOICE,
+            player = mockPlayer
+        )
+
     }
 
     @After
@@ -49,11 +56,42 @@ class TrackTest {
         val pathSlot = slot<String>()
         every { freshMockPlayer.setFile(capture(pathSlot)) } just runs
 
-        Track(folderPath, freshMockPlayer)
+        val newTrack = Track(
+            folderPath = folderPath,
+            existingFilePath = null,
+            idExist = null,
+            sourceType = AudioSourceType.VOICE,
+            player = freshMockPlayer
+        )
 
         verify(exactly = 1) { freshMockPlayer.setFile(any()) }
+        // Verificamos que el path capturado es el mismo que generó la clase Track
+        assertEquals(newTrack.path, pathSlot.captured)
         assertTrue(pathSlot.captured.startsWith(folderPath))
         assertTrue(pathSlot.captured.endsWith(".pcm"))
+    }
+
+    @Test
+    fun `init uses existingFilePath when provided`() {
+        val freshMockPlayer = mockk<AudioPlayer>()
+        val pathSlot = slot<String>()
+        every { freshMockPlayer.setFile(capture(pathSlot)) } just runs
+
+        val existingPath = "$folderPath/mi_audio_existente.pcm"
+
+        val newTrack = Track(
+            folderPath = folderPath,
+            existingFilePath = existingPath,
+            idExist = 123L,
+            sourceType = AudioSourceType.VOICE,
+            player = freshMockPlayer,
+        )
+
+        // Verificamos que se usó el path exacto que le pasamos
+        verify(exactly = 1) { freshMockPlayer.setFile(existingPath) }
+        assertEquals(existingPath, pathSlot.captured)
+        assertEquals(existingPath, newTrack.path)
+        assertEquals(123L, newTrack.id) // Verificamos que el ID se asignó
     }
 
     @Test

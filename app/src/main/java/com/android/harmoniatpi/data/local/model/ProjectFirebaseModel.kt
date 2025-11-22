@@ -1,8 +1,6 @@
 package com.android.harmoniatpi.data.local.model
 
 import com.android.harmoniatpi.data.database.entities.ProjectEntity
-import com.android.harmoniatpi.di.util.JsonUtils
-import com.android.harmoniatpi.domain.model.project.Project
 
 data class ProjectFirebaseModel(
     val id: String = "",
@@ -11,6 +9,7 @@ data class ProjectFirebaseModel(
     val lastName: String = "",
     val title: String = "",
     val description: String = "",
+    val imageUrl: String? = null,
     val duration: Long = 0L,
     val createdAt: String = "",
     val hashtags: String = "",
@@ -30,6 +29,7 @@ data class ProjectFirebaseModel(
             lastName = this.lastName,
             title = this.title,
             description = this.description,
+            imageUrl = this.imageUrl,
             duration = this.duration.toString(),
             createdAt = this.createdAt,
             status = true,

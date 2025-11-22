@@ -29,6 +29,7 @@ data class UserPreferences(
     val myPostsList: List<Post> = emptyList(),
     val friendRequestReceived: List<FriendRequestReceived> = emptyList(),
     val friendRequestSent: List<FriendRequestSending> = emptyList(),
+    val subscriptionId: String? = null
 ) {
     fun toDataBase(jsonUtils: JsonUtils) =
         UserPreferencesEntity(

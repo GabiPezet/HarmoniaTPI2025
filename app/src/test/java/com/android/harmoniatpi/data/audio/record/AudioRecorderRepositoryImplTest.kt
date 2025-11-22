@@ -1,5 +1,6 @@
 package com.android.harmoniatpi.data.audio.record
 
+import android.media.MediaRecorder.AudioSource
 import com.android.harmoniatpi.domain.interfaces.AudioRecorder
 import io.mockk.every
 import io.mockk.mockk
@@ -23,13 +24,14 @@ class AudioRecorderRepositoryImplTest {
     @Test
     fun `startRecording successfully calls recorder`() {
         val filePath = "audio.pcm"
+        val audioSource = 1
         val expectedResult = Result.success(Unit)
-        every { recorder.startRecording() } returns expectedResult
+        every { recorder.startRecording(1) } returns expectedResult
 
-        val result = repository.startRecording(filePath)
+        val result = repository.startRecording(filePath, 1)
 
         verify { recorder.setOutputFile(filePath) }
-        verify { recorder.startRecording() }
+        verify { recorder.startRecording(1) }
         assertEquals(expectedResult, result)
     }
 
@@ -38,12 +40,12 @@ class AudioRecorderRepositoryImplTest {
         val filePath = "audio.pcm"
         val exception = RuntimeException("Recording failed")
         val expectedResult = Result.failure<Unit>(exception)
-        every { recorder.startRecording() } returns expectedResult
+        every { recorder.startRecording(1) } returns expectedResult
 
-        val result = repository.startRecording(filePath)
+        val result = repository.startRecording(filePath, 1)
 
         verify { recorder.setOutputFile(filePath) }
-        verify { recorder.startRecording() }
+        verify { recorder.startRecording(1) }
         assertEquals(expectedResult, result)
         assertTrue(result.isFailure)
         assertEquals(exception, result.exceptionOrNull())

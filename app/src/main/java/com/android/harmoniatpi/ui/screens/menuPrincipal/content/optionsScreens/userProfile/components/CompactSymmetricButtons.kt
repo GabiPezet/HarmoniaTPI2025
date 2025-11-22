@@ -7,9 +7,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -24,8 +26,12 @@ fun CompactSymmetricButtons(
     modifier: Modifier = Modifier,
     leftLabel: String = "Seguidores",
     rightLabel: String = "Compartir perfil",
-    onLeftClick: () -> Unit = {},
-    onRightClick: () -> Unit = {}
+    onLeftClick: () -> Unit,
+    onRightClick: () -> Unit,
+    isLeftLoading: Boolean = false,
+    isRightLoading: Boolean = false,
+    isLeftEnabled: Boolean = true,
+    isRightEnabled: Boolean = true
 ) {
     Row(
         modifier = modifier
@@ -40,13 +46,18 @@ fun CompactSymmetricButtons(
         OutlinedButton(
             onClick = onLeftClick,
             modifier = buttonModifier,
+            enabled = isLeftEnabled,
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.outlinedButtonColors(
                 contentColor = MaterialTheme.colorScheme.primary
             ),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
         ) {
-            Text(text = leftLabel, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            if (isLeftLoading) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+            } else {
+                Text(text = leftLabel, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            }
         }
 
         Spacer(modifier = Modifier.width(12.dp))
@@ -54,13 +65,18 @@ fun CompactSymmetricButtons(
         OutlinedButton(
             onClick = onRightClick,
             modifier = buttonModifier,
+            enabled = isRightEnabled,
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.outlinedButtonColors(
                 contentColor = MaterialTheme.colorScheme.primary
             ),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
         ) {
-            Text(text = rightLabel, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            if (isRightLoading) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+            } else {
+                Text(text = rightLabel, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            }
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.components
 
+import android.util.Log
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -33,12 +35,13 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.Favorite
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -50,8 +53,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -63,6 +68,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import coil.compose.AsyncImage
+import com.android.harmoniatpi.R
 import com.android.harmoniatpi.domain.model.userPreferences.Post
 import com.android.harmoniatpi.ui.components.ShowConfirmationDialog
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.util.sharePost
@@ -82,7 +88,9 @@ fun PostCard(
     isMyPost: Boolean,
     isAlreadyCloned: Boolean,
     onCloneClicked: () -> Unit,
-    viewUserProfile: (String) -> Unit
+    viewUserProfile: (String) -> Unit,
+    isCloningThisPost: Boolean,
+    isFriend: Boolean
 ) {
     val postAudio = post.urlCompleteAudio
     val context = LocalContext.current
@@ -245,11 +253,12 @@ fun PostCard(
                     // --- Sección de Audio si está disponible ---
                     if (postAudio.isNotEmpty()) {
                         Spacer(Modifier.height(8.dp))
-
+                        Log.d("Post", "$post PostImage: ${post.imageUrl}")
                         AudioPlayerSection(
                             ownerName = post.name,
                             isPlaying = isPlaying,
                             isPrepared = isPrepared,
+                            imageUrl = post.imageUrl,
                             onPlayPauseClicked = {
                                 if (isPrepared) {
                                     if (isPlaying) exoPlayer.pause() else exoPlayer.play()
@@ -307,9 +316,18 @@ fun PostCard(
 
 
                             // 2. Clonar
-                            if (post.idProject.isNotBlank() && post.clonedOption == true) {
-                                val isCloneEnabled = !isAlreadyCloned && !isMyPost
-                                val (cloneIcon, cloneTint) = if (isAlreadyCloned) {
+                            if (post.idProject.isNotBlank() && post.clonedOption == true && isFriend) {
+                                val isCloneEnabled = !isAlreadyCloned && !isMyPost && !isCloningThisPost
+                                if (isCloningThisPost) {
+                                    Box(modifier = Modifier.padding(vertical = 4.dp, horizontal = 6.dp)) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(18.dp),
+                                            strokeWidth = 2.dp
+                                        )
+                                    }
+                                } else {
+                                // Muestra el botón de clonar
+                                val (cloneIcon) = if (isAlreadyCloned) {
                                     Icons.Default.Check to MaterialTheme.colorScheme.primary
                                 } else {
                                     Icons.Default.ContentCopy to defaultTint
@@ -322,8 +340,9 @@ fun PostCard(
                                     onClick = onCloneClicked,
                                     enabled = isCloneEnabled
                                 )
-
                             }
+
+                        }
 
                             // 3. Like
                             val (likeIcon, likeTint) = if (post.likes > 0) {
@@ -369,82 +388,112 @@ fun PostCard(
 
 @Composable
 fun AudioPlayerSection(
+    imageUrl: String,
     ownerName: String,
     isPlaying: Boolean,
     isPrepared: Boolean,
     onPlayPauseClicked: () -> Unit
 ) {
-    Surface(
+    // --- 3. Cambia Surface por Card y Box ---
+    // Card nos da un contenedor fácil de recortar
+    Card(
         shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+        // Box nos permite apilar la imagen, el scrim y el contenido
+        Box(
+            // Dale una altura fija para que todas las portadas se vean igual
+            modifier = Modifier.height(90.dp)
         ) {
-            IconButton(
-                onClick = onPlayPauseClicked,
-                modifier = Modifier.size(36.dp),
-                enabled = isPrepared
+
+            // --- 4. IMAGEN DE FONDO ---
+            val placeholderColor = MaterialTheme.colorScheme.surfaceVariant
+            AsyncImage(
+                model = imageUrl,
+                placeholder = ColorPainter(placeholderColor),
+                error = painterResource(id = R.drawable.portada_proyecto_error), // Tu imagen de error
+                contentDescription = "Portada del proyecto",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+
+            // --- 5. SCRIM (CAPA OSCURA) ---
+            // Esto asegura que el texto blanco sea legible encima de cualquier imagen
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.4f))
+            )
+
+            // --- 6. CONTENIDO (Tu Row original, con colores ajustados) ---
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                    contentDescription = if (isPlaying) "Pausar" else "Reproducir",
-                    tint = if (isPrepared)
-                        MaterialTheme.colorScheme.primary
-                    else
-                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                )
-            }
-
-            Spacer(Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Projecto HoloJam de $ownerName",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = when {
-                        !isPrepared -> "Preparando audio..."
-                        isPlaying -> "Reproduciendo..."
-                        else -> "Reproducir audio"
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            if (!isPrepared) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(18.dp),
-                    strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            } else if (isPlaying) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    SoundWaveAnimation()
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = "Sonando",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary
+                IconButton(
+                    onClick = onPlayPauseClicked,
+                    modifier = Modifier.size(36.dp),
+                    enabled = isPrepared
+                ) {
+                    Icon(
+                        imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        contentDescription = if (isPlaying) "Pausar" else "Reproducir",
+                        // --- CAMBIO DE COLOR ---
+                        tint = if (isPrepared) Color.White else Color.White.copy(alpha = 0.5f)
                     )
+                }
+
+                Spacer(Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Proyecto HoloJam de $ownerName",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.White // --- CAMBIO DE COLOR ---
+                    )
+                    Text(
+                        text = when {
+                            !isPrepared -> "Preparando audio..."
+                            isPlaying -> "Reproduciendo..."
+                            else -> "Reproducir audio"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White.copy(alpha = 0.8f) // --- CAMBIO DE COLOR ---
+                    )
+                }
+
+                if (!isPrepared) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp,
+                        color = Color.White // --- CAMBIO DE COLOR ---
+                    )
+                } else if (isPlaying) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        // Pasa el color blanco a la animación
+                        SoundWaveAnimation(color = Color.White) // <-- MODIFICADO
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = "Sonando",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White // --- CAMBIO DE COLOR ---
+                        )
+                    }
                 }
             }
         }
     }
 }
-
 // Animación simple de ondas de sonido
 @Composable
-fun SoundWaveAnimation() {
+fun SoundWaveAnimation(
+    color: Color = MaterialTheme.colorScheme.primary
+) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(2.dp)
@@ -466,7 +515,7 @@ fun SoundWaveAnimation() {
                 modifier = Modifier
                     .width(3.dp)
                     .height(animatedHeight.dp)
-                    .background(MaterialTheme.colorScheme.primary)
+                    .background(color)
             )
         }
     }

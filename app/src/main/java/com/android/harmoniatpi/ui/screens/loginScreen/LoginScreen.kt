@@ -1,11 +1,7 @@
 package com.android.harmoniatpi.ui.screens.loginScreen
 
-import android.Manifest.permission
-import android.os.Build
 import android.util.Log
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -28,6 +24,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -53,19 +50,15 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.core.app.ActivityCompat
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialException
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.android.harmoniatpi.R
-import com.android.harmoniatpi.data.local.ext.findActivity
 import com.android.harmoniatpi.ui.components.HoloTextField
 import com.android.harmoniatpi.ui.components.InternetDisableScreen
 import com.android.harmoniatpi.ui.components.LoginBackGroundHeader
 import com.android.harmoniatpi.ui.screens.loginScreen.components.PreviewScreen
-import com.android.harmoniatpi.ui.screens.loginScreen.util.hasPermissions
-import com.android.harmoniatpi.ui.screens.loginScreen.util.showPermissionsDeniedMessage
 import com.android.harmoniatpi.ui.screens.loginScreen.viewModel.LoginScreenViewModel
 import com.android.harmoniatpi.ui.screens.registerScreen.ScreenTitle
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
@@ -83,48 +76,6 @@ fun LoginScreen(
     val uiState by viewModel.uiState.collectAsState()
     val username = rememberSaveable { mutableStateOf("") }
     val password = rememberSaveable { mutableStateOf("") }
-    val permissions = buildList {
-        add(permission.RECORD_AUDIO)
-        add(permission.CAMERA)
-        add(permission.ACCESS_FINE_LOCATION)
-        add(permission.CALL_PHONE)
-        add(permission.READ_PHONE_STATE)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            add(permission.POST_NOTIFICATIONS)
-            add(permission.READ_MEDIA_IMAGES)
-            add(permission.READ_MEDIA_VIDEO)
-            add(permission.READ_MEDIA_AUDIO)
-        } else if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
-            add(permission.READ_EXTERNAL_STORAGE)
-            add(permission.WRITE_EXTERNAL_STORAGE)
-        } else {
-            add(permission.READ_EXTERNAL_STORAGE)
-        }
-    }
-
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissionsResult ->
-        val allGranted = permissionsResult.values.all { it }
-        if (!allGranted) {
-            val showSettings = permissionsResult.any { (perm, granted) ->
-                !granted && !ActivityCompat.shouldShowRequestPermissionRationale(
-                    context.findActivity(),
-                    perm
-                )
-            }
-            if (showSettings) {
-                showPermissionsDeniedMessage(context)
-            }
-        }
-    }
-
-
-    LaunchedEffect(Unit) {
-        if (!context.hasPermissions(permissions)) {
-            permissionLauncher.launch(permissions.toTypedArray())
-        }
-    }
 
     LaunchedEffect(uiState.loginSuccess) {
         if (uiState.loginSuccess) {
@@ -134,7 +85,7 @@ fun LoginScreen(
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize().testTag("LOGIN_SCREEN")) {
         if (uiState.previewScreen) {
             PreviewScreen(goToLogin = { viewModel.navigateToLogin() })
         } else if (uiState.showNoInternetScreen) {
@@ -171,6 +122,7 @@ fun LoginScreen(
                             LoginForm(
                                 username = username,
                                 password = password,
+                                isLoading = uiState.isLoading,
                                 onLogin = { u, p -> viewModel.onLogin(u, p) },
                                 onGoogleLogin = { idToken -> viewModel.onGoogleLogin(idToken) }
                             )
@@ -192,6 +144,7 @@ fun LoginScreen(
 private fun LoginForm(
     username: MutableState<String>,
     password: MutableState<String>,
+    isLoading: Boolean,
     onLogin: (String, String) -> Unit,
     onGoogleLogin: (String) -> Unit
 ) {
@@ -228,7 +181,8 @@ private fun LoginForm(
         Box(modifier = Modifier.weight(0.3f)) {
             LoginButton(
                 label = stringResource(R.string.login_screen_EnterApp),
-                enabled = isFormValid
+                enabled = isFormValid,
+                isLoading = isLoading,
             ) {
                 onLogin(username.value.trim(), password.value.trim())
                 keyboardController?.hide()
@@ -332,6 +286,7 @@ private fun NoAccountSection(
 private fun LoginButton(
     label: String,
     enabled: Boolean,
+    isLoading: Boolean,
     onClick: () -> Unit
 ) {
 
@@ -345,10 +300,19 @@ private fun LoginButton(
             .padding(vertical = 8.dp)
             .testTag("LOGIN_BUTTON"),
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-        )
+
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(24.dp),
+                color = MaterialTheme.colorScheme.onPrimary,
+                strokeWidth = 2.dp
+            )
+        } else {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+            )
+        }
     }
 }
 

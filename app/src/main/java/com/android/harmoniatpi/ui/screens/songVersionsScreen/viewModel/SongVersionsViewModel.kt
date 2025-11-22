@@ -15,8 +15,6 @@ import com.android.harmoniatpi.domain.usecases.firebaseUseCases.FetchAndSyncUser
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetAllUserFromDBUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetDerivedProjectsFromFirestoreUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetProjectByIdFromFirestoreUseCase
-import com.android.harmoniatpi.ui.screens.songVersionsScreen.createMockDerivedVersions
-import com.android.harmoniatpi.ui.screens.songVersionsScreen.createMockSong
 import com.android.harmoniatpi.ui.screens.songVersionsScreen.model.PlaybackState
 import com.android.harmoniatpi.ui.screens.songVersionsScreen.model.SongVersionsUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -156,7 +154,7 @@ class SongVersionsViewModel @Inject constructor(
             audioUrl = project.urlCompleteAudio ?: "", // URL del audio publicado (mix)
             durationMillis = project.duration,
             projectId = project.id, // ID para "Abrir proyecto"
-            imageUrl = null, // Project no tiene esta info, la UI mostrará un placeholder
+            imageUrl = project.imageUrl, // Project no tiene esta info, la UI mostrará un placeholder
             versionType = versionType // Mapeo simple del tipo
         )
     }
@@ -352,29 +350,5 @@ class SongVersionsViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         exoAudioPlayer.stop()
-    }
-
-    /**
-     * Carga inicial de datos simulada.
-     * ESTA FUNCIÓN YA NO SE LLAMA, AHORA SE USA loadProjectData
-     */
-    private fun loadInitialData() {
-        viewModelScope.launch {
-            // Simulamos una carga de red de 2 segundos
-            // delay(2000) // Ya no es necesario, 'loadProjectData' es real
-
-            // Creamos los datos de ejemplo
-            val song = createMockSong()
-
-            val derivedVersions = createMockDerivedVersions()
-
-            _uiState.update { currentState ->
-                currentState.copy(
-                    song = song,
-                    derivedVersions = derivedVersions,
-                    isLoading = false
-                )
-            }
-        }
     }
 }

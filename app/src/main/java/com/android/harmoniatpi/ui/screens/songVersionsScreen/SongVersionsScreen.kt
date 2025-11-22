@@ -53,10 +53,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -65,7 +65,6 @@ import coil.compose.AsyncImage
 import com.android.harmoniatpi.R
 import com.android.harmoniatpi.domain.model.song.DerivedVersion
 import com.android.harmoniatpi.domain.model.song.Song
-import com.android.harmoniatpi.domain.model.user.User
 import com.android.harmoniatpi.ui.components.CircularProgressBar
 import com.android.harmoniatpi.ui.core.theme.HarmoniaTPITheme
 import com.android.harmoniatpi.ui.screens.songVersionsScreen.model.PlaybackState
@@ -263,11 +262,13 @@ fun SongHeader(song: Song, modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier.fillMaxWidth()
     ) {
+        val placeholderColor = MaterialTheme.colorScheme.surfaceVariant
+
         AsyncImage(
             model = song.imageUrl,
             contentDescription = "Carátula de la canción ${song.title}",
-            placeholder = painterResource(id = R.drawable.holojamdefaultsonglightmode),
-            error = painterResource(id = R.drawable.holojamdefaultsonglightmode),
+            placeholder = ColorPainter(placeholderColor),
+            error = painterResource(id = R.drawable.portada_proyecto_error),
             modifier = Modifier
                 .size(80.dp)
                 .clip(shape = RoundedCornerShape(12.dp)),
@@ -360,7 +361,7 @@ fun PrincipalSongPlayer(
                         .border(BorderStroke(2.dp, MaterialTheme.colorScheme.outline), CircleShape),
                     contentScale = ContentScale.Crop
                 )
-                TextButton(
+                /*TextButton(
                     onClick = { if (song.projectId != null) onOpenProjectClick() },
                     colors = ButtonDefaults.textButtonColors(
                         contentColor = MaterialTheme.colorScheme.onTertiaryContainer
@@ -372,7 +373,7 @@ fun PrincipalSongPlayer(
                         fontWeight = FontWeight.SemiBold,
                         textDecoration = TextDecoration.Underline
                     )
-                }
+                }*/
             }
         }
         Row(
@@ -679,7 +680,6 @@ fun SongVersionsScreenPreview() {
 @Preview(showBackground = true)
 @Composable
 fun SongHeaderPreview() {
-    val sampleCreator = User(id = "1", name = "Luna Beats", avatarUrl = null)
     val sampleSong = createMockSong()
     MaterialTheme {
         SongHeader(song = sampleSong, modifier = Modifier.padding(16.dp))

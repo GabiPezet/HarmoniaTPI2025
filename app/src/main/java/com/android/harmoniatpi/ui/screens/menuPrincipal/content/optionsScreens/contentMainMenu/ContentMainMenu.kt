@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.DrawerState
@@ -65,7 +66,8 @@ fun ContentMainMenu(
     scrollState: ScrollState,
     innerPadding: PaddingValues,
     onNavigateToNotifications: () -> Unit,
-    showCloseSessionDialog: () -> Unit
+    showCloseSessionDialog: () -> Unit,
+    navigateToPaymentMarketScreen: () -> Unit
 ) {
 
     if (drawerState.isOpen) {
@@ -143,6 +145,12 @@ fun ContentMainMenu(
                             icon = Icons.Filled.Groups,
                             text = "Mis publicaciones",
                             onClick = { drawerViewModel.changeOptionsMenu(OptionsMenu.MY_POSTS_SCREEN) }
+                        )
+
+                        MenuOptionItem(
+                            icon = Icons.Filled.Payment,
+                            text = "HoloJam Premium",
+                            onClick = { navigateToPaymentMarketScreen() }
                         )
 
                     }

@@ -1,5 +1,6 @@
 package com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile
 
+import android.Manifest
 import android.content.Context
 import android.net.Uri
 import androidx.activity.compose.BackHandler
@@ -22,6 +23,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -32,10 +34,8 @@ import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PhotoLibrary
-import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -59,6 +59,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
@@ -66,14 +67,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import coil.compose.rememberAsyncImagePainter
+import com.android.harmoniatpi.R
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.MenuUiState
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.OptionsMenu
-import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.CompactSymmetricButtons
+import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.ContactProfileCard
+import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.FriendsScreen
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.MediaProjectList
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.ProfileNavButton
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.ProfileTab
+import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.ProfileTabItem
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.WorkProfileCard
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.viewmodel.DrawerContentViewModel
+import com.android.harmoniatpi.ui.core.utils.PermissionRequester
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -82,6 +87,7 @@ fun UserDetailProfile(
     viewModel: DrawerContentViewModel,
     uiState: MenuUiState,
     innerPadding: PaddingValues,
+    onNavigateToFriends: () -> Unit
 ) {
     val context = LocalContext.current
     var photoUri by rememberSaveable { mutableStateOf<Uri?>(null) }
@@ -90,6 +96,8 @@ fun UserDetailProfile(
     var selectedTab by remember { mutableStateOf(ProfileTab.WORK) }
     var isEditing by remember { mutableStateOf(false) }
     var name by remember(uiState.userName) { mutableStateOf(uiState.userName) }
+    var requestCameraPermission by remember { mutableStateOf(false) }
+    val contactData by viewModel.contactData.collectAsState()
 
     val takePictureLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
@@ -295,27 +303,41 @@ fun UserDetailProfile(
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(24.dp))
-            CompactSymmetricButtons()
-            Spacer(modifier = Modifier.height(16.dp))
+            //Spacer(modifier = Modifier.height(24.dp))
+            //CompactSymmetricButtons()
+            //Spacer(modifier = Modifier.height(16.dp))
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.Center
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                ProfileNavButton(
-                    icon = Icons.Default.School,
-                    label = "Perfil laboral",
-                    selected = selectedTab == ProfileTab.WORK,
-                    onClick = { selectedTab = ProfileTab.WORK })
-                Spacer(modifier = Modifier.width(24.dp))
-                ProfileNavButton(
-                    icon = Icons.Default.Movie,
-                    label = "Multimedia",
-                    selected = selectedTab == ProfileTab.MEDIA,
-                    onClick = { selectedTab = ProfileTab.MEDIA })
+                listOf(
+                    ProfileTabItem(painterResource(R.drawable.ic_community2_profile), "Seguidores", ProfileTab.FRIENDS),
+                    ProfileTabItem(painterResource(R.drawable.ic_projects_profile), "Proyectos", ProfileTab.MEDIA),
+                    ProfileTabItem(painterResource(R.drawable.ic_work_profile), "Mis Datos", ProfileTab.WORK),
+                    ProfileTabItem(
+                        painterResource(R.drawable.ic_contact2_profile),
+                        "Mi Contacto",
+                        ProfileTab.CONTACT
+                    ),
+
+                    ).forEach { (painter, label, tab) ->
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .wrapContentWidth(Alignment.CenterHorizontally)
+                    ) {
+                        ProfileNavButton(
+                            painter = painter,
+                            label = label,
+                            selected = selectedTab == tab,
+                            onClick = { selectedTab = tab }
+                        )
+                    }
+                }
             }
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -327,6 +349,12 @@ fun UserDetailProfile(
                 when (selectedTab) {
                     ProfileTab.WORK -> WorkProfileCard(uiState = uiState, viewModel = viewModel)
                     ProfileTab.MEDIA -> MediaProjectList(projects = uiState.projectsList)
+                    ProfileTab.CONTACT -> ContactProfileCard(
+                        contactData = contactData,
+                        onUpdateContact = { updated -> viewModel.updateContactInfo(updated) }
+                    )
+
+                    ProfileTab.FRIENDS -> FriendsScreen(uiState = uiState)
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))
@@ -347,9 +375,7 @@ fun UserDetailProfile(
 
                 Button(
                     onClick = {
-                        val uri = createImageUri(context)
-                        photoUri = uri
-                        takePictureLauncher.launch(uri)
+                        requestCameraPermission = true
                         showSheet = false
                     },
                     modifier = Modifier
@@ -416,4 +442,20 @@ fun UserDetailProfile(
             }
         }
     }
+
+    if (requestCameraPermission) {
+        PermissionRequester(
+            permission = Manifest.permission.CAMERA,
+            rationaleRes = R.string.camera_rationale,
+            permanentlyDeniedRes = R.string.camera_denied_msg,
+            onGranted = {
+                val uri = createImageUri(context)
+                photoUri = uri
+                takePictureLauncher.launch(uri)
+                requestCameraPermission = false
+            },
+            onDialogDismiss = { requestCameraPermission = false }
+        )
+    }
 }
+
