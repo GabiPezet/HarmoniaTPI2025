@@ -121,6 +121,13 @@ fun LoginScreen(
                     Column(modifier = Modifier.weight(2f)) {
                         Box(modifier = Modifier.weight(0.1f)) {
                             ScreenTitle("Inicia Sesión")
+                            uiState.errorMessage?.let {
+                                Text(
+                                    text = it,
+                                    color = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.align(Alignment.CenterStart).padding(top = 24.dp)
+                                )
+                            }
                         }
                         Box(modifier = Modifier.weight(0.5f)) {
                             LoginForm(
