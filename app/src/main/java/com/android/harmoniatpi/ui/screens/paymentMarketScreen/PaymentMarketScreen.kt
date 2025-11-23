@@ -1,5 +1,6 @@
 package com.android.harmoniatpi.ui.screens.paymentMarketScreen
 
+import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.BorderStroke
@@ -23,8 +24,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.android.harmoniatpi.domain.model.payment.PaymentResult
-import com.android.harmoniatpi.ui.screens.paymentMarketScreen.components.MercadoPagoButton
 import com.android.harmoniatpi.ui.screens.paymentMarketScreen.viewModel.PaymentMarketViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,6 +34,19 @@ fun PaymentMarketScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val activity = context as? Activity
+    val intent = activity?.intent
+    val data: Uri? = intent?.data
+
+    LaunchedEffect(data) {
+        if (data != null && data.scheme == "https" && data.host == "holo-jam-landing-tpi.vercel.app") {
+            // Pasamos la URI al ViewModel para que procese el pago
+            viewModel.handlePaymentResult(data)
+
+            // Limpiamos el intent para no reprocesar al rotar pantalla
+            activity.intent.data = null
+        }
+    }
     val premiumBrush = Brush.verticalGradient(
         colors = listOf(
             MaterialTheme.colorScheme.primary,

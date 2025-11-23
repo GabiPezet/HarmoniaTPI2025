@@ -376,19 +376,6 @@ fun ProjectManagementScreen(
                 },
 
                 actions = {
-                    TextButton(
-                        onClick = { viewModel.togglePremiumStatusForTesting() },
-                    ) {
-                        val nextStatusText = if (state.isPremium) "Switch to FREE" else "Switch to PRO"
-                        val nextStatusColor = if (state.isPremium) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-
-                        Text(
-                            text = nextStatusText,
-                            color = nextStatusColor,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp // Un poco más pequeño para ser discreto
-                        )
-                    }
                     IconButton(onClick = { viewModel.onShowTuner() }) {
                         Icon(Icons.Default.Tune, "Afinador")
                     }

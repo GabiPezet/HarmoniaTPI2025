@@ -6,6 +6,7 @@ import android.media.MediaRecorder
 import android.net.Uri
 import kotlinx.coroutines.flow.collectLatest
 import android.util.Log
+import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import be.tarsos.dsp.AudioDispatcher
@@ -394,8 +395,8 @@ class ProjectManagementScreenViewModel @Inject constructor(
 
     fun addNewTrack(sourceType: AudioSourceType) {
         val isPremium = state.value.isPremium // Obtener de UiState
-        if (!isPremium && state.value.tracks.size >= 3) {
-            Toast.makeText(context, "El límite para usuarios Free es de 3 pistas.", Toast.LENGTH_LONG).show()
+        if (!isPremium && state.value.tracks.size >= 5) {
+            Toast.makeText(context, "El límite para usuarios Free es de 5 pistas.", Toast.LENGTH_LONG).show()
             return
         }
         addTrack(sourceType)
@@ -423,8 +424,8 @@ class ProjectManagementScreenViewModel @Inject constructor(
 
     fun importTrackFromFile(uri: Uri) {
         val isPremium = state.value.isPremium
-        if (!isPremium && state.value.tracks.size >= 3) {
-            Toast.makeText(context, "El límite para usuarios Free es de 3 pistas.", Toast.LENGTH_LONG).show()
+        if (!isPremium && state.value.tracks.size >= 5) {
+            Toast.makeText(context, "El límite para usuarios Free es de 5 pistas.", Toast.LENGTH_LONG).show()
             return
         }
         _state.update { it.copy(importAudioLoading = true) }

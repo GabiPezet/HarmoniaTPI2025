@@ -61,7 +61,7 @@ class RepositoryImpl @Inject constructor(
 
     override suspend fun updatePremiumStatus(statusString: String): Result<UserPreferences> =
         withContext(Dispatchers.IO) {
-            val successKeyword = "aprobado" //o lo que devuelve mp.
+            val successKeyword = "approved" //o lo que devuelve mp.
 
             if (statusString.equals(successKeyword, ignoreCase = true)) {
                 try {
@@ -720,15 +720,30 @@ class RepositoryImpl @Inject constructor(
         val accessToken = com.android.harmoniatpi.BuildConfig.MP_ACCESS_TOKEN
 
         return try {
+            // 1. Llamada a la API de Mercado Pago para cancelar
             val request = SubscriptionStatusUpdateRequest(status = "cancelled")
             mercadoPagoApi.cancelSubscription("Bearer $accessToken", preapprovalId, request)
 
-            /**
-             * Importantísimo: acá es donde debemos decirle a firebase que el current user ya no es premium
-             * atte: juan
-             * */
+            // 2. Lógica para volver a FREE en la Base de Datos
+            // Obtenemos el usuario actual (que ya sincroniza Firestore -> Local)
+            val currentUser = getUserPreferences()
 
-            Result.success(Unit)
+            if (currentUser != null) {
+                // Creamos una copia del usuario con isPremium en FALSE
+                val updatedUser = currentUser.copy(
+                    isPremium = false,
+                    // Opcional: Si guardas el subscriptionId en el modelo, podrías borrarlo aquí también
+                    // subscriptionId = null
+                )
+
+                // Guardamos en Room y Firestore usando tu función existente
+                updateUserPreferences(updatedUser)
+
+                Log.i("RepositoryImpl", "Suscripción cancelada en MP y usuario actualizado a FREE local/remoto.")
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("No se pudo obtener el usuario local para degradar a Free."))
+            }
         } catch (e: Exception) {
             Log.e("MercadoPago", "Error cancelando suscripción: ${e.message}")
             Result.failure(e)
