@@ -371,7 +371,7 @@ fun PostCard(
                                 text = post.likes.toString(),
                                 totalCloned = post.likes,
                                 onClick = onLikeClicked,
-                                enabled = true
+                                enabled = !isMyPost
                             )
 
                             // 4. Icono de Share (placeholder)
