@@ -116,11 +116,13 @@ fun HomeScreen(
                     },
                     actions = {
                         IconButton(onClick = { viewModel.showSearchContentCommunity() }) {
-                            Icon(
-                                Icons.Default.Search,
-                                contentDescription = "Buscar",
-                                modifier = Modifier.size(28.dp)
-                            )
+                            if (currentTabName == "CommunityScreenRoute") {
+                                Icon(
+                                    Icons.Default.Search,
+                                    contentDescription = "Buscar",
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
                         }
                         BadgedBox (
                             badge = {
