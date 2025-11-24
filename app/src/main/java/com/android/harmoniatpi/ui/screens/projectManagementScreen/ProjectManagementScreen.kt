@@ -284,8 +284,8 @@ fun ProjectManagementScreen(
                             viewModel.stopEffectPreview() // Detener al cancelar
                             viewModel.hideBottomSheet()
                         },
-                        isPremium = TODO(),
-                        onShowUpsell = TODO(),
+                        isPremium = state.isPremium,
+                        onShowUpsell = onNavigateToPremium
                     )
                 }
 

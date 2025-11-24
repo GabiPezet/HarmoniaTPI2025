@@ -109,7 +109,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
     private val applyFlangerEffectUseCase: ApplyFlangerEffectUseCase,
     private val tunerEngine: TunerEngine,
     private val metronomeEngine: MetronomeEngine,
-    private val previewEffectUseCase: PreviewEffectUseCase
+    private val previewEffectUseCase: PreviewEffectUseCase,
     private val getUserIsPremiumUseCase: GetUserIsPremiumUseCase,
     private val togglePremiumStatusUseCase: TogglePremiumStatusUseCase
 ) : ViewModel() {

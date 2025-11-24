@@ -94,7 +94,7 @@ fun EffectsAudioDialog(
                                 valueRange = 0.1f..0.9f
                             )
                         }
-                    1 -> // HighPass (Premium)
+                    1 -> // highpass
                         Column {
                             Text("Filtro Pasa-Altos (HPF): ${hpfFrequency.toInt()} Hz")
                             Text(
