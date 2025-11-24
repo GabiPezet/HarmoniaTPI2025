@@ -87,8 +87,7 @@ class DrawerContentViewModel @Inject constructor(
                             myPostsList = currentUser.myPostsList,
                             friendRequestReceived = currentUser.friendRequestReceived,
                             friendRequestSent = currentUser.friendRequestSent,
-
-                            // ⚠️ ESTO ES LA CLAVE: Ahora MenuUiState se enterará de que es Premium
+                            subscriptionId = currentUser.subscriptionId,
                             isPremium = currentUser.isPremium
                         )
                     }
@@ -153,6 +152,7 @@ class DrawerContentViewModel @Inject constructor(
             myPostsList = uiState.value.myPostsList,
             friendRequestReceived = uiState.value.friendRequestReceived,
             friendRequestSent = uiState.value.friendRequestSent,
+            subscriptionId = uiState.value.subscriptionId,
             isPremium = uiState.value.isPremium
         )
         viewModelScope.launch(Dispatchers.IO) {

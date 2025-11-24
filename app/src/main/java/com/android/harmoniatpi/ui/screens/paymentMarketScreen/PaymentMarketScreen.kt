@@ -24,27 +24,46 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.android.harmoniatpi.ui.screens.paymentMarketScreen.viewModel.PaymentMarketViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PaymentMarketScreen(
     onNavigateBack: () -> Unit,
+    onPaymentReturn: (Uri) -> Unit,
     viewModel: PaymentMarketViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val activity = context as? Activity
-    val intent = activity?.intent
-    val data: Uri? = intent?.data
 
-    LaunchedEffect(data) {
-        if (data != null && data.scheme == "https" && data.host == "holo-jam-landing-tpi.vercel.app") {
-            // Pasamos la URI al ViewModel para que procese el pago
-            viewModel.handlePaymentResult(data)
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var deepLinkData by remember { mutableStateOf<Uri?>(null) }
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                // Actualizamos nuestro estado con lo que tenga la Activity en ese momento
+                deepLinkData = activity?.intent?.data
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+    LaunchedEffect(deepLinkData) {
+        val data = deepLinkData
+        if (data != null && data.scheme == "harmoniatpi" && data.host == "payment_return") {
 
-            // Limpiamos el intent para no reprocesar al rotar pantalla
-            activity.intent.data = null
+            // Navegar
+            onPaymentReturn(data)
+
+            // Limpiar para no volver a disparar
+            activity?.intent?.data = null
+            deepLinkData = null
         }
     }
     val premiumBrush = Brush.verticalGradient(

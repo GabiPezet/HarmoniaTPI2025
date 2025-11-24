@@ -68,6 +68,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -103,7 +104,8 @@ import kotlin.math.roundToInt
 @Composable
 fun ProjectManagementScreen(
     viewModel: ProjectManagementScreenViewModel = hiltViewModel(),
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onNavigateToPremium: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
     val sharedScrollState = rememberScrollState()
@@ -199,12 +201,10 @@ fun ProjectManagementScreen(
                         onRecordVoice = {
                             requestRecordVoiceAudioPermission = true
                             viewModel.hideBottomSheet()
-                            viewModel.addNewTrack(AudioSourceType.VOICE) // SIN isPremium
                         },
                         onRecordInstrument = {
                             requestRecordInstrumentAudioPermission = true
                             viewModel.hideBottomSheet()
-                            viewModel.addNewTrack(AudioSourceType.INSTRUMENT) // SIN isPremium
                         },
                         onPasteTrack = {
                             viewModel.hideBottomSheet()
@@ -345,6 +345,9 @@ fun ProjectManagementScreen(
                         Text(
                             text = state.currentProjectSelected!!.title,
                             style = MaterialTheme.typography.titleLarge,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
                             textAlign = TextAlign.End,
 
                         )
@@ -589,6 +592,8 @@ fun ProjectManagementScreen(
     trackForEffects?.let { trackToEffect ->
         EffectsAudioDialog(
             track = trackToEffect,
+            isPremium = state.isPremium,
+            onGoToPremium = onNavigateToPremium,
             onDismiss = { trackForEffects = null },
             onApplyDelay = { id, delay, decay ->
                 viewModel.applyDelayEffect(id, delay, decay)

@@ -59,32 +59,27 @@ class RepositoryImpl @Inject constructor(
     private val mercadoPagoApi: MercadoPagoApi
 ) : Repository {
 
-    override suspend fun updatePremiumStatus(statusString: String): Result<UserPreferences> =
+    override suspend fun updatePremiumStatus(statusString: String, subscriptionId: String?): Result<UserPreferences> =
         withContext(Dispatchers.IO) {
-            val successKeyword = "approved" //o lo que devuelve mp.
+            val successKeyword = "approved"
 
             if (statusString.equals(successKeyword, ignoreCase = true)) {
                 try {
-                    // 1. Obtener el usuario actual
-                    val currentUser = getUserPreferences() // Esto ya sincroniza Firestore a Local
-
+                    val currentUser = getUserPreferences()
                     if (currentUser == null) {
-                        return@withContext Result.failure(Exception("Usuario no autenticado o no encontrado."))
+                        return@withContext Result.failure(Exception("Usuario no autenticado."))
                     }
 
-                    // 2. Verificar si ya es premium para evitar operaciones innecesarias
-                    if (currentUser.isPremium) {
-                        Log.d("RepositoryImpl", "El usuario ${currentUser.userID} ya es Premium.")
-                        return@withContext Result.success(currentUser)
-                    }
+                    // ✨ AQUÍ ESTÁ LA MAGIA: Guardamos el ID de suscripción
+                    // Si viene un ID nuevo, lo usamos. Si no (ej. botón de prueba), mantenemos el que tenía o null.
+                    val updatedUser = currentUser.copy(
+                        isPremium = true,
+                        subscriptionId = subscriptionId ?: currentUser.subscriptionId
+                    )
 
-                    // 3. Crear el nuevo objeto UserPreferences con isPremium = true
-                    val updatedUser = currentUser.copy(isPremium = true)
-
-                    // 4. Actualizar en Room y Firestore (reutilizando la lógica existente)
                     updateUserPreferences(updatedUser)
 
-                    Log.i("RepositoryImpl", "Usuario ${currentUser.userID} actualizado a Premium.")
+                    Log.i("RepositoryImpl", "Usuario ${currentUser.userID} actualizado a Premium. ID: ${updatedUser.subscriptionId}")
                     Result.success(updatedUser)
 
                 } catch (e: Exception) {
@@ -92,10 +87,7 @@ class RepositoryImpl @Inject constructor(
                     Result.failure(e)
                 }
             } else {
-                Log.d("RepositoryImpl", "Estado recibido no es 'aprovado'. No se actualiza el estado Premium.")
-                // Opcional: Podrías devolver el usuario actual sin cambios o un error específico.
-                // Aquí devolvemos una falla para indicar que la acción no se completó.
-                Result.failure(Exception("Estado de pago no reconocido como '$successKeyword'."))
+                Result.failure(Exception("Estado no aprobado."))
             }
         }
 
@@ -683,7 +675,7 @@ class RepositoryImpl @Inject constructor(
         val accessToken = com.android.harmoniatpi.BuildConfig.MP_ACCESS_TOKEN
         val currentUser = firebaseAuth.currentUser
         val userEmail = currentUser?.email ?: throw Exception("Usuario no tiene email vinculado")
-        val myDeepLink = "https://holo-jam-landing-tpi.vercel.app/"
+        val myDeepLink = "https://idyllic-fudge-447568.netlify.app/"
 
         val request = SubscriptionRequest(
             reason = description,

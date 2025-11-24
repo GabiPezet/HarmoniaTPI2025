@@ -7,7 +7,8 @@ import javax.inject.Inject
 class UpdatePremiumStatusUseCase @Inject constructor(
     private val repository: Repository
 ) {
-    suspend operator fun invoke(status: String): Result<UserPreferences> {
-        return repository.updatePremiumStatus(status)
+    // CAMBIO: Aceptamos el ID opcional
+    suspend operator fun invoke(status: String, subscriptionId: String? = null): Result<UserPreferences> {
+        return repository.updatePremiumStatus(status, subscriptionId)
     }
 }

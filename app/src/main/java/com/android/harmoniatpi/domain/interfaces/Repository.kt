@@ -78,7 +78,7 @@ interface Repository {
 
     fun observeCurrentUserFromFirestore(): Flow<UserPreferences?>
 
-    suspend fun updatePremiumStatus(statusString: String): Result<UserPreferences>
+    suspend fun updatePremiumStatus(statusString: String, subscriptionId: String? = null): Result<UserPreferences>
 
     //--------------------Proyectos------------------------TODO(PROYECTOS)
     fun getAllProjects ():Flow<List<Project>>

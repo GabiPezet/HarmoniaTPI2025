@@ -52,6 +52,7 @@ data class UserPreferences(
             myPostsList = jsonUtils.encodeToJson(myPostsList),
             friendRequestReceived = jsonUtils.encodeToJson(friendRequestReceived),
             friendRequestSent = jsonUtils.encodeToJson(friendRequestSent),
+            subscriptionId = subscriptionId,
             isPremium = isPremium
         )
 }

@@ -45,8 +45,8 @@ fun AddTrackSheetContent(
 ) {
 
     // Lógica de restricción de 3 pistas
-    val maxTrackReached = !isPremium && currentTrackCount >= 3
-    val trackLimitMessage = "Límite de 3 pistas alcanzado para Free"
+    val maxTrackReached = !isPremium && currentTrackCount >= 5
+    val trackLimitMessage = "Límite de 5 pistas alcanzado para Free"
     val showWarning = maxTrackReached
 
     Column(

@@ -44,6 +44,28 @@ class PaymentMarketViewModel @Inject constructor(
     }
 
 
+    fun checkPaymentStatus(status: String, subscriptionId: String?) {
+        if (status == "approved") {
+            viewModelScope.launch {
+                _uiState.update { it.copy(loading = true) }
+                try {
+                    // CAMBIO: Pasar el subscriptionId
+                    val result = updatePremiumStatusUseCase("approved", subscriptionId)
+
+                    result.onSuccess {
+                        _uiState.update { state ->
+                            state.copy(loading = false, paymentResult = PaymentResult.APPROVED)
+                        }
+                    }.onFailure {
+                        // ...
+                    }
+                } catch (e: Exception) {
+                    // ...
+                }
+            }
+        }
+    }
+
     fun handlePaymentResult(uri: Uri) {
         val status = uri.getQueryParameter("collection_status")
 

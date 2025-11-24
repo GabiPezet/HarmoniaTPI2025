@@ -42,7 +42,8 @@ data class MenuUiState(
     val cloningPostId: String? = null,
     val currentUserData: UserPreferences? = null,
     val isSendingFollowRequest: Boolean = false,
-    val isPremium: Boolean = false
+    val isPremium: Boolean = false,
+    val subscriptionId: String? = null,
 )
 
 @Singleton

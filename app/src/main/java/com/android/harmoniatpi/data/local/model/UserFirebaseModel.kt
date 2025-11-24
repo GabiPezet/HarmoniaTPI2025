@@ -23,9 +23,11 @@ data class UserFirebaseModel(
     val genres: String = "",
     val location: String = "",
     val rating: Float = 0.0f,
+    val subscriptionId: String? = null,
     @get:PropertyName("isPremium") // Fuerza a leer del campo "isPremium"
     @set:PropertyName("isPremium") // Fuerza a escribir en el campo "isPremium"
-    var isPremium : Boolean = false
+    var isPremium : Boolean = false,
+
 ) {
     fun toEntity(): UserPreferencesEntity = UserPreferencesEntity(
         userID = userID,
@@ -46,6 +48,7 @@ data class UserFirebaseModel(
         genres = genres,
         location = location,
         rating = rating,
+        subscriptionId = subscriptionId,
         isPremium = isPremium
     )
 }

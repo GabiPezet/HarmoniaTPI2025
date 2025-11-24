@@ -1,13 +1,18 @@
 package com.android.harmoniatpi.ui.components
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Slider
@@ -20,7 +25,9 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import java.text.DecimalFormat
@@ -32,12 +39,14 @@ fun EffectsAudioDialog(
     onDismiss: () -> Unit,
     onApplyDelay: (id: Long, delayTimeMs: Float, decay: Float) -> Unit,
     onApplyHighPass: (id: Long, frequency: Float) -> Unit,
-    onApplyFlanger: (id: Long, rate: Float, wet: Float) -> Unit
+    onApplyFlanger: (id: Long, rate: Float, wet: Float) -> Unit,
+    isPremium: Boolean,
+    onGoToPremium: () -> Unit
 ) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     val tabs = listOf("Delay", "Filtro", "Flanger")
 
-    // estado efectos
+    // Estados de los efectos
     var delayTimeMs by remember { mutableFloatStateOf(500f) }
     var delayDecay by remember { mutableFloatStateOf(0.5f) }
     var hpfFrequency by remember { mutableFloatStateOf(100f) }
@@ -46,7 +55,10 @@ fun EffectsAudioDialog(
 
     val decimalFormat = remember { DecimalFormat("0.##") }
 
-
+    // Lógica para determinar si el efecto actual requiere Premium
+    // 0 = Delay (Free), 1 = Filtro (Premium), 2 = Flanger (Premium)
+    val isCurrentEffectPremium = selectedTabIndex != 0
+    val canApplyEffect = !isCurrentEffectPremium || isPremium
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -65,7 +77,7 @@ fun EffectsAudioDialog(
                 Spacer(Modifier.height(24.dp))
 
                 when (selectedTabIndex) {
-                    0 -> // delay
+                    0 -> // Delay (Free)
                         Column {
                             Text("Tiempo (ms): ${delayTimeMs.toInt()}")
                             Slider(
@@ -82,7 +94,7 @@ fun EffectsAudioDialog(
                                 valueRange = 0.1f..0.9f
                             )
                         }
-                    1 -> // highpass
+                    1 -> // HighPass (Premium)
                         Column {
                             Text("Filtro Pasa-Altos (HPF): ${hpfFrequency.toInt()} Hz")
                             Text("Corta las frecuencias graves por debajo de este valor.", style = MaterialTheme.typography.bodySmall)
@@ -92,7 +104,7 @@ fun EffectsAudioDialog(
                                 valueRange = 20f..1000f // Rango de 20Hz a 1kHz
                             )
                         }
-                    2 -> // flanger
+                    2 -> // Flanger (Premium)
                         Column {
                             Text("Rate (Velocidad): ${decimalFormat.format(flangerRate)} Hz")
                             Slider(
@@ -114,14 +126,36 @@ fun EffectsAudioDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    when (selectedTabIndex) {
-                        0 -> onApplyDelay(track.id, delayTimeMs / 1000f, delayDecay)
-                        1 -> onApplyHighPass(track.id, hpfFrequency)
-                        2 -> onApplyFlanger(track.id, flangerRate, flangerWet)
+                    if (canApplyEffect) {
+                        when (selectedTabIndex) {
+                            0 -> onApplyDelay(track.id, delayTimeMs / 1000f, delayDecay)
+                            1 -> onApplyHighPass(track.id, hpfFrequency)
+                            2 -> onApplyFlanger(track.id, flangerRate, flangerWet)
+                        }
+                    } else {
+                        // Si no puede aplicar, redirige a Premium
+                        onGoToPremium()
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(
+                    // Si puede aplicar usa el color primario, si no (es premium bloqueado), usa Dorado
+                    containerColor = if (canApplyEffect) MaterialTheme.colorScheme.primary else Color(0xFFD4AF37)
+                )
+            ) {
+                if (canApplyEffect) {
+                    Text("Aplicar")
+                } else {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = Color.White
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text("Premium Only - Obtener")
                     }
                 }
-            ) {
-                Text("Aplicar")
             }
         },
         dismissButton = {
