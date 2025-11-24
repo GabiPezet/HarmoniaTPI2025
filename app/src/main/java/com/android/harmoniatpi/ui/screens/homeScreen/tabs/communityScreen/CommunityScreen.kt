@@ -2,6 +2,12 @@ package com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen
 
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -16,6 +22,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -32,15 +39,18 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.android.harmoniatpi.R
 import com.android.harmoniatpi.domain.model.userPreferences.Post
 import com.android.harmoniatpi.ui.components.ShowConfirmationDialog
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.components.CommentsBottomSheetContent
+import com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.components.CommunitySearchBar
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.components.CreatePostDialog
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.components.PostCard
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.components.UserProfileDialog
+import com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.util.filterPosts
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.viewmodel.CommunityViewModel
 import kotlinx.coroutines.launch
 
@@ -93,47 +103,87 @@ fun CommunityScreen(
             )
         }
     } else {
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .testTag("CommunityScreen")) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .testTag("CommunityScreen")
+        ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.background)
             ) {
-                LazyColumn(modifier = Modifier.fillMaxSize().testTag("COMMUNITY_LIST")) {
 
+                AnimatedVisibility(
+                    visible = uiState.isShowSearchContentCommunity,
+                    enter = slideInVertically(tween(250)) + fadeIn(tween(250)),
+                    exit = slideOutVertically(tween(250)) + fadeOut(tween(250))
+                ) {
+                    CommunitySearchBar(
+                        searchQuery = uiState.searchQueryCommunity,
+                        onQueryChange = { viewModel.onSearchQueryChange(it) },
+                        onClose = { viewModel.onToggleSearch() }
+                    )
+                }
 
-                    items(uiState.posts) { post ->
+                val filteredPosts = remember(uiState.posts, uiState.searchQueryCommunity) {
+                    filterPosts(uiState.posts, uiState.searchQueryCommunity)
+                }
 
-                        val index = uiState.posts.indexOf(post)
-                        val projectData = uiState.localProjects.find {
-                            it.originalProjectId == post.idProject && it.ownerId == uiState.userID
-                        }
-                        val isAlreadyCloned = projectData != null
-                        val isCloningThisPost = uiState.cloningPostId == post.id
-                        val friendsList =
-                            uiState.currentUserData?.friendsList?.map { it.id } ?: emptyList()
-                        val isFriend = post.userID in friendsList
-                        PostCard(
-                            post = post,
-                            modifier = Modifier.testTag("POST_ITEM_$index"),
-                            userName = uiState.userName,
-                            userLastName = uiState.userLastName,
-                            onLikeClicked = { viewModel.updateLikes(post) },
-                            onCommentClicked = {
-                                selectedPostIdForComments = post.id
-                            },
-                            onDeleteClicked = { viewModel.deleteMyPost(post) },
-                            isMyPost = post.userID == uiState.userID,
-                            isAlreadyCloned = isAlreadyCloned,
-                            isCloningThisPost = isCloningThisPost,
-                            onCloneClicked = { postToClone = post },
-                            viewUserProfile = { id -> viewModel.onClickUserProfile(id) },
-                            isFriend = isFriend
+                if (filteredPosts.isEmpty()){
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No se encontraron resultados",
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+                }else{
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .testTag("COMMUNITY_LIST")
+                    ) {
+
+                        items(filteredPosts) { post: Post ->
+
+                            val index = uiState.posts.indexOf(post)
+                            val projectData = uiState.localProjects.find {
+                                it.originalProjectId == post.idProject && it.ownerId == uiState.userID
+                            }
+                            val isAlreadyCloned = projectData != null
+                            val isCloningThisPost = uiState.cloningPostId == post.id
+                            val friendsList =
+                                uiState.currentUserData?.friendsList?.map { it.id } ?: emptyList()
+                            val isFriend = post.userID in friendsList
+                            PostCard(
+                                post = post,
+                                modifier = Modifier.testTag("POST_ITEM_$index"),
+                                userName = uiState.userName,
+                                userLastName = uiState.userLastName,
+                                onLikeClicked = { viewModel.updateLikes(post) },
+                                onCommentClicked = {
+                                    selectedPostIdForComments = post.id
+                                },
+                                onDeleteClicked = { viewModel.deleteMyPost(post) },
+                                isMyPost = post.userID == uiState.userID,
+                                isAlreadyCloned = isAlreadyCloned,
+                                isCloningThisPost = isCloningThisPost,
+                                onCloneClicked = { postToClone = post },
+                                viewUserProfile = { id -> viewModel.onClickUserProfile(id) },
+                                isFriend = isFriend
+                            )
+                        }
+                    }
+
                 }
+
             }
 
             FloatingActionButton(

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -114,6 +115,13 @@ fun HomeScreen(
                         }
                     },
                     actions = {
+                        IconButton(onClick = { viewModel.showSearchContentCommunity() }) {
+                            Icon(
+                                Icons.Default.Search,
+                                contentDescription = "Buscar",
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
                         BadgedBox (
                             badge = {
                                 if (drawerUiState.newNotification) {

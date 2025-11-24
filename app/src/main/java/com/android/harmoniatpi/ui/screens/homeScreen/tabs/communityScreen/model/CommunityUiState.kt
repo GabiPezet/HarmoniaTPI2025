@@ -17,5 +17,7 @@ data class CommunityUiState(
     val showUserProfile : Boolean = false,
     val cloningPostId: String? = null,
     val currentUserData: UserPreferences? = null,
-    val isSendingFollowRequest: Boolean = false
+    val isSendingFollowRequest: Boolean = false,
+    val isShowSearchContentCommunity: Boolean = false,
+    val searchQueryCommunity: String = ""
 )
