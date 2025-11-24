@@ -3,6 +3,7 @@ package com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.compon
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -33,10 +34,12 @@ fun PublishOriginalDialog(
     var postImageUrl by remember(project) { mutableStateOf(project.imageUrl) }
     var isPublishing by remember { mutableStateOf(false) }
     var cloningAccess by remember { mutableStateOf(CloningAccess.PUBLIC) }
+    var postAudioUrl by remember { mutableStateOf(project.urlCompleteAudio) }
+
     BasePublishDialog(
         dialogTitle = "Publicar Proyecto",
         isPublishing = isPublishing,
-        isPublishButtonEnabled = postTitle.isNotBlank(),
+        isPublishButtonEnabled = postTitle.isNotBlank() && !postAudioUrl.isNullOrBlank(),
         onDismissRequest = onDismiss,
         onPublishClick = {
             keyboardController?.hide()
@@ -68,7 +71,7 @@ fun PublishOriginalDialog(
                 value = postTitle,
                 onValueChange = { postTitle = it },
                 placeholder = "Título del Post",
-                textStyle = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                textStyle = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
                 singleLine = true
             )
             PostEditorTextField(
@@ -77,11 +80,21 @@ fun PublishOriginalDialog(
                 placeholder = "Describe tu publicación...",
                 textStyle = MaterialTheme.typography.bodyMedium
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            CloningAccessSelector(
-                selectedOption = cloningAccess,
-                onOptionSelected = { cloningAccess = it }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+
+        CloningAccessSelector(
+            selectedOption = cloningAccess,
+            onOptionSelected = { cloningAccess = it }
+        )
+        if (postAudioUrl.isNullOrBlank()) {
+            Text(
+                text = "Tu proyecto aún no tiene audio para ser publicado. ",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.error
             )
         }
     }
 }
+
+
