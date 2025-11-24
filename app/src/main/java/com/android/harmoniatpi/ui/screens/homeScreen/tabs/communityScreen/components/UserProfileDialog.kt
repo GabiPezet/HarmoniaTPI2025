@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MusicNote
@@ -43,6 +44,13 @@ import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import com.android.harmoniatpi.domain.model.UserPreferences
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Slider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.android.harmoniatpi.ui.components.ShowConfirmationDialog
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.CompactSymmetricButtons
 
 @SuppressLint("DefaultLocale")
@@ -52,8 +60,28 @@ fun UserProfileDialog(
     onDismiss: () -> Unit,
     currentUserData: UserPreferences?,
     isSendingFollowRequest: Boolean,
-    onFollowClick: (UserPreferences) -> Unit
+    onFollowClick: (UserPreferences) -> Unit,
+    onRateUser: (Float) -> Unit
 ) {
+    var showRatingConfirmation by remember { mutableStateOf(false) }
+    var tempRating by remember { mutableFloatStateOf(5f) }
+    // Estado local para bloquear el voto inmediatamente después de hacerlo
+    var hasVotedSession by remember { mutableStateOf(false) }
+
+    if (showRatingConfirmation) {
+        ShowConfirmationDialog(
+            show = true,
+            onDismiss = { showRatingConfirmation = false },
+            onConfirm = {
+                onRateUser(tempRating)
+                hasVotedSession = true // Bloqueamos la UI
+                showRatingConfirmation = false
+            },
+            title = "Confirmar Valoración",
+            message = "¿Deseas enviar una valoración de ${"%.1f".format(tempRating)} estrellas?",
+            confirmText = "Enviar"
+        )
+    }
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
@@ -168,6 +196,51 @@ fun UserProfileDialog(
                         title = "Ubicación",
                         value = userPreferences.location.ifEmpty { "No especificada" }
                     )
+
+                    if (currentUserData != null && userPreferences.userID != currentUserData.userID) {
+                        Text(
+                            text = "Valoración",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        if (!hasVotedSession) {
+                            // MODO: PUEDO VOTAR
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "${"%.1f".format(tempRating)} / 5.0",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Slider(
+                                value = tempRating,
+                                onValueChange = { tempRating = it },
+                                valueRange = 1f..5f, // Mínimo 1 estrella
+                                steps = 7 // Pasos de 0.5 (1, 1.5, 2... 5)
+                            )
+                            Button(
+                                onClick = { showRatingConfirmation = true },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Calificar")
+                            }
+                        } else {
+                            // MODO: YA VOTÉ (Bloqueado)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Text(
+                                text = "¡Gracias por tu valoración!",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
 
                     // Rating
                     ProfileInfoItem(

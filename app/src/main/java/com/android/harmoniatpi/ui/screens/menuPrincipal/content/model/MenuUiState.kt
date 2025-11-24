@@ -42,7 +42,9 @@ data class MenuUiState(
     val listProjects : List<Project> = emptyList(),
     val cloningPostId: String? = null,
     val currentUserData: UserPreferences? = null,
-    val isSendingFollowRequest: Boolean = false
+    val isSendingFollowRequest: Boolean = false,
+    val ratingCount: Int = 0,
+    val isShowSearchContentCommunity: Boolean = false
 )
 
 @Singleton
