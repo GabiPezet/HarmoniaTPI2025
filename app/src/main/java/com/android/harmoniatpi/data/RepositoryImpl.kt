@@ -11,7 +11,6 @@ import com.android.harmoniatpi.data.local.model.PostFirebaseModel
 import com.android.harmoniatpi.data.local.model.ProjectFirebaseModel
 import com.android.harmoniatpi.data.local.model.UserFirebaseModel
 import com.android.harmoniatpi.data.remote.MercadoPagoApi
-import com.android.harmoniatpi.data.remote.MockMercadoPagoApi
 import com.android.harmoniatpi.data.remote.model.AutoRecurring
 import com.android.harmoniatpi.data.remote.model.SubscriptionRequest
 import com.android.harmoniatpi.data.remote.model.SubscriptionStatusUpdateRequest
@@ -419,11 +418,11 @@ class RepositoryImpl @Inject constructor(
                 //Subir 'targetUser' y 'currentUser' actualizados ---
                 transaction.set(
                     targetUserRef,
-                    updatedTargetUser!!.toDataBase(jsonUtils).toFirebaseModel()
+                    updatedTargetUser.toDataBase(jsonUtils).toFirebaseModel()
                 )
                 transaction.set(
                     currentUserRef,
-                    updatedCurrentUser!!.toDataBase(jsonUtils).toFirebaseModel()
+                    updatedCurrentUser.toDataBase(jsonUtils).toFirebaseModel()
                 )
 
                 // Requerido por la lambda de la transacción
@@ -432,11 +431,11 @@ class RepositoryImpl @Inject constructor(
 
             //  Actualización Adicional: Sincronizar Room ---
             if (updatedTargetUser != null) {
-                userPreferencesDao.insertUserPreferences(updatedTargetUser!!.toDataBase(jsonUtils))
+                userPreferencesDao.insertUserPreferences(updatedTargetUser.toDataBase(jsonUtils))
             }
             if (updatedCurrentUser != null) {
-                userPreferencesDao.insertUserPreferences(updatedCurrentUser!!.toDataBase(jsonUtils))
-                Result.success(updatedCurrentUser!!) // Devuelve el usuario actual actualizado
+                userPreferencesDao.insertUserPreferences(updatedCurrentUser.toDataBase(jsonUtils))
+                Result.success(updatedCurrentUser) // Devuelve el usuario actual actualizado
             } else {
                 Result.failure(Exception("La transacción falló y 'updatedCurrentUser' es nulo."))
             }
@@ -519,15 +518,15 @@ class RepositoryImpl @Inject constructor(
                 )
                 transaction.set(
                     firestore.collection("users").document(currentUser.userID),
-                    updatedCurrentUser!!.toDataBase(jsonUtils).toFirebaseModel()
+                    updatedCurrentUser.toDataBase(jsonUtils).toFirebaseModel()
                 )
 
             }.await()
 
             //Sincronizar Room
             if (updatedCurrentUser != null) {
-                userPreferencesDao.insertUserPreferences(updatedCurrentUser!!.toDataBase(jsonUtils))
-                Result.success(updatedCurrentUser!!)
+                userPreferencesDao.insertUserPreferences(updatedCurrentUser.toDataBase(jsonUtils))
+                Result.success(updatedCurrentUser)
             } else {
                 Result.failure(Exception("Error en la transacción al aceptar solicitud."))
             }
@@ -577,15 +576,15 @@ class RepositoryImpl @Inject constructor(
                 )
                 transaction.set(
                     firestore.collection("users").document(currentUser.userID),
-                    updatedCurrentUser!!.toDataBase(jsonUtils).toFirebaseModel()
+                    updatedCurrentUser.toDataBase(jsonUtils).toFirebaseModel()
                 )
 
             }.await()
 
             //Sincronizar Room
             if (updatedCurrentUser != null) {
-                userPreferencesDao.insertUserPreferences(updatedCurrentUser!!.toDataBase(jsonUtils))
-                Result.success(updatedCurrentUser!!)
+                userPreferencesDao.insertUserPreferences(updatedCurrentUser.toDataBase(jsonUtils))
+                Result.success(updatedCurrentUser)
             } else {
                 Result.failure(Exception("Error en la transacción al rechazar solicitud."))
             }
@@ -920,6 +919,33 @@ class RepositoryImpl @Inject constructor(
 
             } catch (e: Exception) {
                 Log.e("RepositoryImpl", "Error en fetchAndSyncUsersFromFirestore", e)
+                Result.failure(e)
+            }
+        }
+
+    override suspend fun deletePostByProjectId(projectId: String): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            try {
+                // 1. Buscamos el post que tenga este idProject
+                val snapshot = database.reference.child("posts")
+                    .orderByChild("idProject")
+                    .equalTo(projectId)
+                    .get()
+                    .await()
+
+                // 2. Iteramos (por si acaso hubiera duplicados, aunque debería ser uno)
+                for (child in snapshot.children) {
+                    child.ref.removeValue().await()
+                    // También borramos de Room local si es necesario
+                    child.key?.let { postId ->
+                        myPostDao.deletePostById(postId)
+                    }
+                }
+
+                Log.i("RepositoryImpl", "Post asociado al proyecto $projectId eliminado.")
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Log.e("RepositoryImpl", "Error borrando post asociado al proyecto $projectId", e)
                 Result.failure(e)
             }
         }

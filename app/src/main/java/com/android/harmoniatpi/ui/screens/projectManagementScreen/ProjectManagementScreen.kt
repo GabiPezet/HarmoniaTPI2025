@@ -67,6 +67,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -82,12 +83,14 @@ import com.android.harmoniatpi.ui.components.GlobalPlayhead
 import com.android.harmoniatpi.ui.components.ShowConfirmationDialog
 import com.android.harmoniatpi.ui.components.TrimAudioDialog
 import com.android.harmoniatpi.ui.components.TunerDialog
+import com.android.harmoniatpi.ui.components.UpsellDialog
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.AddTrackSheetContent
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.EffectsSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.EmptyProjectMessage
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.InDevelopmentSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.MetronomeSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.PrecountOverlay
-import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.ProyectControlButtonRow
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.ProjectControlButtonRow
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.RenameTrackSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.TimeDisplayPanel
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.TimelineHeader
@@ -96,7 +99,7 @@ import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.Vol
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.BottomSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.viewmodel.ProjectManagementScreenViewModel
-import com.android.harmoniatpi.ui.utils.PermissionRequester
+import com.android.harmoniatpi.ui.core.utils.PermissionRequester
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -127,6 +130,8 @@ fun ProjectManagementScreen(
     }
 
     val density = LocalDensity.current
+
+    val isPreviewPlaying by viewModel.isPreviewPlaying.collectAsState()
 
     LaunchedEffect(state.currentPlaybackMs) {
         if (state.currentPlaybackMs > 0 && sharedScrollState.maxValue > 0 && state.isPlaying) {
@@ -187,7 +192,10 @@ fun ProjectManagementScreen(
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
         ModalBottomSheet(
-            onDismissRequest = { viewModel.hideBottomSheet() },
+            onDismissRequest = {
+                viewModel.stopEffectPreview()
+                viewModel.hideBottomSheet()
+            },
             sheetState = sheetState
         ) {
             when (activeSheet) {
@@ -230,7 +238,7 @@ fun ProjectManagementScreen(
                 }
 
                 is BottomSheetContent.RenameTrack -> {
-                    RenameTrackSheetContent (
+                    RenameTrackSheetContent(
                         track = activeSheet.track,
                         onRename = { trackId, newName ->
                             viewModel.renameTrack(trackId, newName)
@@ -248,7 +256,37 @@ fun ProjectManagementScreen(
                 }
 
                 is BottomSheetContent.TrackEffects -> {
-                    // ... el contenido para los efectos
+                    EffectsSheetContent(
+                        track = activeSheet.track,
+                        isPreviewing = isPreviewPlaying,
+                        onPreviewToggle = { config ->
+                            viewModel.toggleEffectPreview(activeSheet.track.id, config)
+                        },
+                        onParamChange = { config ->
+                            viewModel.updatePreviewParams(activeSheet.track.id, config)
+                        },
+                        onApplyDelay = { id, delay, decay ->
+                            viewModel.stopEffectPreview() // Detener preview al aplicar
+                            viewModel.applyDelayEffect(id, delay, decay)
+                            viewModel.hideBottomSheet()
+                        },
+                        onApplyHighPass = { id, freq ->
+                            viewModel.stopEffectPreview()
+                            viewModel.applyHighPassFilter(id, freq)
+                            viewModel.hideBottomSheet()
+                        },
+                        onApplyFlanger = { id, rate, wet ->
+                            viewModel.stopEffectPreview()
+                            viewModel.applyFlangerEffect(id, rate, wet)
+                            viewModel.hideBottomSheet()
+                        },
+                        onDismiss = {
+                            viewModel.stopEffectPreview() // Detener al cancelar
+                            viewModel.hideBottomSheet()
+                        },
+                        isPremium = TODO(),
+                        onShowUpsell = TODO(),
+                    )
                 }
 
                 is BottomSheetContent.MetronomeSettings -> {
@@ -333,7 +371,7 @@ fun ProjectManagementScreen(
 
 
     Scaffold(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().testTag("ProjectManagementScreen"),
         topBar = { //Impl de top bar
             TopAppBar(
                 title = {
@@ -379,13 +417,22 @@ fun ProjectManagementScreen(
                 },
 
                 actions = {
-                    IconButton(onClick = { viewModel.onShowTuner() }) {
+                    IconButton(
+                        onClick = { viewModel.onShowTuner() },
+                        enabled = !state.isRecording
+                    ) {
                         Icon(Icons.Default.Tune, "Afinador")
                     }
-                    IconButton(onClick = { viewModel.zoomOut() }) {
+                    IconButton(
+                        onClick = { viewModel.zoomOut() },
+                        enabled = !state.isRecording
+                    ) {
                         Icon(Icons.Default.ZoomOut, "Zoom Out")
                     }
-                    IconButton(onClick = { viewModel.zoomIn() }) {
+                    IconButton(
+                        onClick = { viewModel.zoomIn() },
+                        enabled = !state.isRecording
+                    ) {
                         Icon(Icons.Default.ZoomIn, "Zoom In")
                     }
                 },
@@ -401,7 +448,7 @@ fun ProjectManagementScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
-            Column( modifier = Modifier.background(Color(0xFF858585))) {
+            Column(modifier = Modifier.background(Color(0xFF858585))) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -446,7 +493,7 @@ fun ProjectManagementScreen(
                     }
                 }
 
-                ProyectControlButtonRow(
+                ProjectControlButtonRow(
                     onSkipPrevious = {
                         viewModel.stopPlaying()
                         scope.launch {
@@ -469,7 +516,7 @@ fun ProjectManagementScreen(
                 )
             }
         }
-        //containerColor = MaterialTheme.colorScheme.background,
+
     ) { padding ->
 
         Column(
@@ -477,7 +524,6 @@ fun ProjectManagementScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .background(Color(0xFF858585)), //Pasar ESTE background al Theme Colors
-            //verticalArrangement = Arrangement.Bottom,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
@@ -555,6 +601,7 @@ fun ProjectManagementScreen(
                             isSelectionActive = track.selectionStartMs != null &&
                                     (track.selectionEndMs == null || track.selectionEndMs > track.selectionStartMs),
                             msPerDpScale = state.msPerDpScale,
+                            areControlsEnabled = !state.isRecording,
                             onShowBottomSheet = viewModel::showBottomSheet
                         )
                     }

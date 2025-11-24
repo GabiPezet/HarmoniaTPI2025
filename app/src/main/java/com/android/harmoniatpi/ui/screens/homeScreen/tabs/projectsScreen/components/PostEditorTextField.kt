@@ -1,6 +1,7 @@
 package com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -9,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.ImeAction
 
 @Composable
 fun PostEditorTextField(
@@ -17,7 +19,9 @@ fun PostEditorTextField(
     placeholder: String,
     textStyle: TextStyle,
     modifier: Modifier = Modifier,
-    singleLine: Boolean = false
+    singleLine: Boolean = false,
+    imeAction: ImeAction = ImeAction.Done,
+    keyboardActions: KeyboardActions = KeyboardActions.Default
 ) {
     TextField(
         value = value,

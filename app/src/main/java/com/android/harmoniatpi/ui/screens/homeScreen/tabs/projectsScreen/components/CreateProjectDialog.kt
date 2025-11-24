@@ -11,7 +11,8 @@ import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.viewmod
 fun CreateProjectDialog(
     uiState: ProjectUiState,
     viewModel: ProjectViewModel,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onNavigateToManagement: () -> Unit,
 ) {
     val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -28,6 +29,7 @@ fun CreateProjectDialog(
                 onSuccess = {
                     Toast.makeText(context, "Proyecto guardado", Toast.LENGTH_SHORT).show()
                     onDismiss()
+                    onNavigateToManagement()
                 },
                 onError = { error ->
                     Toast.makeText(context, "Error: $error", Toast.LENGTH_LONG).show()

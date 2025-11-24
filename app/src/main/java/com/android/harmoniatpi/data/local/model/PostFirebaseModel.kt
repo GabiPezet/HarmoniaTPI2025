@@ -1,6 +1,7 @@
 package com.android.harmoniatpi.data.local.model
 
 import com.android.harmoniatpi.di.util.JsonUtils
+import com.android.harmoniatpi.domain.model.project.CloningAccess
 import com.android.harmoniatpi.domain.model.userPreferences.Post
 
 data class PostFirebaseModel(
@@ -20,7 +21,8 @@ data class PostFirebaseModel(
     val likes: Int = 0,
     val comments: List<CommentFirebaseModel> = emptyList(),
     val totalShared: Int = 0,
-    val clonedOption: Boolean = false
+    val clonedOption: Boolean = false,
+    val cloningAccess: CloningAccess = CloningAccess.PUBLIC
 ) {
     fun toDomain(jsonUtils: JsonUtils): Post {
         return Post(
@@ -40,7 +42,8 @@ data class PostFirebaseModel(
             likes = likes,
             comments = comments.map { it.toDomain() },
             totalShared = totalShared,
-            clonedOption = clonedOption
+            clonedOption = clonedOption,
+            cloningAccess = cloningAccess
         )
     }
 }

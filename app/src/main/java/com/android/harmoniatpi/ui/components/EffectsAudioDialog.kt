@@ -97,7 +97,10 @@ fun EffectsAudioDialog(
                     1 -> // HighPass (Premium)
                         Column {
                             Text("Filtro Pasa-Altos (HPF): ${hpfFrequency.toInt()} Hz")
-                            Text("Corta las frecuencias graves por debajo de este valor.", style = MaterialTheme.typography.bodySmall)
+                            Text(
+                                "Corta las frecuencias graves por debajo de este valor.",
+                                style = MaterialTheme.typography.bodySmall
+                            )
                             Slider(
                                 value = hpfFrequency,
                                 onValueChange = { hpfFrequency = it },

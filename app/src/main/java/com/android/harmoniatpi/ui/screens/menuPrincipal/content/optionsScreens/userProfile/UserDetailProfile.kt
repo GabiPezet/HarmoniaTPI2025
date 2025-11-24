@@ -59,6 +59,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -78,7 +79,7 @@ import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.u
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.ProfileTabItem
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.WorkProfileCard
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.viewmodel.DrawerContentViewModel
-import com.android.harmoniatpi.ui.utils.PermissionRequester
+import com.android.harmoniatpi.ui.core.utils.PermissionRequester
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -87,7 +88,6 @@ fun UserDetailProfile(
     viewModel: DrawerContentViewModel,
     uiState: MenuUiState,
     innerPadding: PaddingValues,
-    onNavigateToFriends: () -> Unit
 ) {
     val context = LocalContext.current
     var photoUri by rememberSaveable { mutableStateOf<Uri?>(null) }
@@ -143,6 +143,7 @@ fun UserDetailProfile(
     }
 
     Scaffold(
+        modifier = Modifier.testTag("UserDetailProfile"),
         topBar = {
             CenterAlignedTopAppBar(
                 title = {

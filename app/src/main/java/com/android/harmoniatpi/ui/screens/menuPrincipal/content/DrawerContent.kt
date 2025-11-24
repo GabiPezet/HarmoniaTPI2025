@@ -120,7 +120,6 @@ fun DrawerScreenContent(
                 viewModel = drawerViewModel,
                 uiState = uiState,
                 innerPadding = innerPadding,
-                onNavigateToFriends = onNavigateToFriends
             )
         }
 

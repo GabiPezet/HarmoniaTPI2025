@@ -31,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -44,7 +45,7 @@ import com.android.harmoniatpi.ui.components.Toolbar
 import com.android.harmoniatpi.ui.screens.notificationScreen.components.NotificationCard
 import com.android.harmoniatpi.ui.screens.notificationScreen.model.NotificationHarmonia
 import com.android.harmoniatpi.ui.screens.notificationScreen.viewModel.NotificationsViewModel
-import com.android.harmoniatpi.ui.utils.PermissionRequester
+import com.android.harmoniatpi.ui.core.utils.PermissionRequester
 
 @Composable
 fun NotificationsScreen(
@@ -87,6 +88,7 @@ fun NotificationsScreen(
     }
 
     Scaffold(
+        modifier = Modifier.testTag("NOTIFICATION_SCREEN"),
         topBar = {
             Toolbar(
                 title = "Notificaciones",

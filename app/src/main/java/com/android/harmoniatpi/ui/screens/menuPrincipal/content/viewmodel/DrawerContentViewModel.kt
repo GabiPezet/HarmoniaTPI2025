@@ -1,7 +1,6 @@
 package com.android.harmoniatpi.ui.screens.menuPrincipal.content.viewmodel
 
 import android.util.Log
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.harmoniatpi.domain.interfaces.Repository
@@ -88,7 +87,8 @@ class DrawerContentViewModel @Inject constructor(
                             friendRequestReceived = currentUser.friendRequestReceived,
                             friendRequestSent = currentUser.friendRequestSent,
                             subscriptionId = currentUser.subscriptionId,
-                            isPremium = currentUser.isPremium
+                            isPremium = currentUser.isPremium,
+                            ratingCount = currentUser.ratingCount
                         )
                     }
                 }
@@ -153,7 +153,8 @@ class DrawerContentViewModel @Inject constructor(
             friendRequestReceived = uiState.value.friendRequestReceived,
             friendRequestSent = uiState.value.friendRequestSent,
             subscriptionId = uiState.value.subscriptionId,
-            isPremium = uiState.value.isPremium
+            isPremium = uiState.value.isPremium,
+            ratingCount = uiState.value.ratingCount
         )
         viewModelScope.launch(Dispatchers.IO) {
             setUserPreferencesUseCase(preferences)

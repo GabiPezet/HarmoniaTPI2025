@@ -10,6 +10,7 @@ import com.android.harmoniatpi.di.util.JsonUtils
 import com.android.harmoniatpi.domain.cache.HoloJamCache
 import com.android.harmoniatpi.domain.model.UserPreferences
 import com.android.harmoniatpi.domain.model.project.AudioTrack
+import com.android.harmoniatpi.domain.model.project.CloningAccess
 import com.android.harmoniatpi.domain.model.project.Project
 import com.android.harmoniatpi.domain.model.userPreferences.Post
 import com.android.harmoniatpi.domain.usecases.GetProjectByIdUseCase
@@ -20,6 +21,7 @@ import com.android.harmoniatpi.domain.usecases.audioUseCases.OnPreviewCompletedU
 import com.android.harmoniatpi.domain.usecases.audioUseCases.PlayPreviewUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.StopPreviewUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.DeleteFileFromStorageUseCase
+import com.android.harmoniatpi.domain.usecases.firebaseUseCases.DeletePostByProjectIdUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.DeleteProjectFromFirestoreUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.FetchAndSyncUsersUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetAllUserFromDBUseCase
@@ -84,6 +86,7 @@ class ProjectViewModel @Inject constructor(
     private val jsonUtils: JsonUtils,
     internal val getProjectByIdFromFirestoreUseCase: GetProjectByIdFromFirestoreUseCase,
     internal val getUserOnFirebaseByIDUseCase: GetUserOnFirebaseByIDUseCase,
+    private val deletePostByProjectIdUseCase: DeletePostByProjectIdUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProjectUiState())
@@ -328,9 +331,11 @@ class ProjectViewModel @Inject constructor(
                         Log.e("ProjectViewModel", "Error al borrar $remotePath de Storage", it)
                     }
                     // TODO: Borrar el Post de Realtime DB
-                    // Esto es más complejo porque el Post tiene su propio ID.
-                    // Necesitarías un caso de uso que "busque el post por projectId y lo borre".
-                    // Por ahora, esto borra el Proyecto y el Audio.
+                    deletePostByProjectIdUseCase(id)
+                        .onSuccess { Log.i("ProjectViewModel", "Post de comunidad eliminado.") }
+                        .onFailure { Log.e("ProjectViewModel", "Fallo al borrar post de comunidad", it) }
+
+                    Log.i("ProjectViewModel", "Borrado completo de Firebase.")
                     Log.i(
                         "ProjectViewModel",
                         "Borrado de Firebase para $id completado (excepto Post RTDB)."
@@ -424,6 +429,7 @@ class ProjectViewModel @Inject constructor(
 
                 insertProjectInDBUseCase(project)
 
+                setCurrentProject(project)
 
                 _uiState.update {
                     it.copy(
@@ -449,6 +455,7 @@ class ProjectViewModel @Inject constructor(
         postDescription: String,
         postHashtags: String,
         postImageUrl: String?,
+        cloningAccess: CloningAccess,
         onComplete: () -> Unit
     ) {
 
@@ -470,7 +477,7 @@ class ProjectViewModel @Inject constructor(
                 // El 'project.title' no lo cambiamos aquí.
                 description = postDescription,
                 hashtags = postHashtags.split(",").map { it.trim() },
-                imageUrl = postImageUrl
+                imageUrl = postImageUrl,
             )
             // --- 2. GUARDAR CAMBIOS EN ROOM ---
             try {
@@ -662,7 +669,8 @@ class ProjectViewModel @Inject constructor(
                     likes = 0,
                     totalShared = 0,
                     comments = emptyList(),
-                    clonedOption = true
+                    clonedOption = true,
+                    cloningAccess = cloningAccess
                 )
                 insertNewPostFirebaseDataBaseUseCase(post)
                 Log.i("ProjectViewModel", "Post creado en Firebase Realtime DB para ${project.id}")
@@ -732,6 +740,7 @@ class ProjectViewModel @Inject constructor(
     }
 
     fun setCurrentProject(project: Project) {
+        stopPlayback()
         holoJamCache.currentProjectSelected = project
     }
 

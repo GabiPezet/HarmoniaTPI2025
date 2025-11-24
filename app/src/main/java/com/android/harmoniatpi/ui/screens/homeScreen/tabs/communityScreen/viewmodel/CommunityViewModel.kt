@@ -17,17 +17,18 @@ import com.android.harmoniatpi.domain.usecases.firebaseUseCases.ObserveCurrentUs
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.SendFriendRequestUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.UpdatePostFirebaseDataBaseUseCase
 import com.android.harmoniatpi.domain.usecases.roomUseCases.GetAllProjectsFromDBUseCase
+import com.android.harmoniatpi.domain.usecases.roomUseCases.SetUserPreferencesUseCase
 import com.android.harmoniatpi.domain.usecases.roomUseCases.UpdateOrInsertProjectInDBUseCase
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.model.CommunityUiState
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.SharedMenuUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -37,6 +38,7 @@ import java.time.LocalDateTime
 import java.util.UUID
 import javax.inject.Inject
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class CommunityViewModel @Inject constructor(
     private val sharedMenuUiState: SharedMenuUiState,
@@ -51,7 +53,8 @@ class CommunityViewModel @Inject constructor(
     private val getUserOnFirebaseByIDUseCase: GetUserOnFirebaseByIDUseCase,
     private val sendFriendRequestUseCase: SendFriendRequestUseCase,
     private val getAllUsersUseCase: GetAllUserFromDBUseCase,
-    private val observeCurrentUserUseCase: ObserveCurrentUserUseCase
+    private val observeCurrentUserUseCase: ObserveCurrentUserUseCase,
+    private val setUserPreferencesUseCase: SetUserPreferencesUseCase
 ) : ViewModel() {
 
     // 1. Canal privado para enviar eventos de Toast
@@ -72,13 +75,15 @@ class CommunityViewModel @Inject constructor(
                         userName = state.userName,
                         userLastName = state.userLastName,
                         userID = state.userID,
-                        userPhotoPathRemote = state.userPhotoPathRemote
+                        userPhotoPathRemote = state.userPhotoPathRemote,
+                        isShowSearchContentCommunity = state.isShowSearchContentCommunity
                     )
                 }
             }
         }
         viewModelScope.launch {
-            val currentUserIdFlow = sharedMenuUiState.uiState.map { it.userID }.distinctUntilChanged()
+            val currentUserIdFlow =
+                sharedMenuUiState.uiState.map { it.userID }.distinctUntilChanged()
             val currentUserDataFlow = currentUserIdFlow.flatMapLatest { userId ->
                 if (userId.isBlank()) {
                     flowOf(null)
@@ -279,5 +284,48 @@ class CommunityViewModel @Inject constructor(
 
     fun onDismissUserProfile() {
         _uiState.update { it.copy(showUserProfile = false) }
+    }
+
+    fun onSearchQueryChange(query: String) {
+        _uiState.update { it.copy(searchQueryCommunity = query) }
+    }
+
+    fun onToggleSearch() {
+        sharedMenuUiState.updateState { it.copy(isShowSearchContentCommunity = !it.isShowSearchContentCommunity) }
+    }
+
+    fun rateUser(targetUser: UserPreferences, newScore: Float) {
+        val currentUserId = _uiState.value.userID
+        if (currentUserId.isBlank()) return
+
+        // 1. Recuperamos valores actuales
+        val currentAvg = targetUser.rating
+        val currentCount = targetUser.ratingCount
+
+        // 2. Matemática del promedio acumulado
+        val newCount = currentCount + 1
+        val newAverage = ((currentAvg * currentCount) + newScore) / newCount
+
+        // 3. Actualizamos el usuario con los nuevos datos
+        val updatedUser = targetUser.copy(
+            rating = newAverage,
+            ratingCount = newCount
+        )
+
+        viewModelScope.launch {
+            try {
+                // 4. LLAMADA REAL A FIREBASE/ROOM USANDO EL NUEVO USECASE
+                setUserPreferencesUseCase(updatedUser)
+
+                // Feedback visual
+                _toastEvents.emit("¡Valoración enviada!")
+
+                // Actualizamos la UI localmente
+                _uiState.update { it.copy(userSelected = updatedUser) }
+            } catch (e: Exception) {
+                Log.e("CommunityViewModel", "Error al valorar usuario", e)
+                _toastEvents.emit("Error al enviar la valoración.")
+            }
+        }
     }
 }

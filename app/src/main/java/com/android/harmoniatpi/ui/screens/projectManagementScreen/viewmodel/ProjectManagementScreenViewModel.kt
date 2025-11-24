@@ -14,6 +14,7 @@ import com.android.harmoniatpi.data.audio.util.TunerEngine
 import com.android.harmoniatpi.domain.cache.HoloJamCache
 import com.android.harmoniatpi.domain.interfaces.Repository
 import com.android.harmoniatpi.domain.model.audio.AudioSourceType
+import com.android.harmoniatpi.domain.model.audio.EffectConfig
 import com.android.harmoniatpi.domain.model.audio.WaveformResult
 import com.android.harmoniatpi.domain.model.metronome.MetronomeEngine
 import com.android.harmoniatpi.domain.model.project.AudioTrack
@@ -36,6 +37,7 @@ import com.android.harmoniatpi.domain.usecases.audioUseCases.LoadProjectTrackUse
 import com.android.harmoniatpi.domain.usecases.audioUseCases.MuteTrackUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.PauseAudioUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.PlayAudioUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.PreviewEffectUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.SeekToUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.SetTrackOffsetUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.SetTrackPlaybackRangeUseCase
@@ -50,7 +52,7 @@ import com.android.harmoniatpi.domain.usecases.audioUseCases.UndoTrimUseCase
 import com.android.harmoniatpi.domain.usecases.paymentUseCases.TogglePremiumStatusUseCase
 import com.android.harmoniatpi.domain.usecases.roomUseCases.UpdateOrInsertProjectInDBUseCase
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.BottomSheetContent
-import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.ProyectScreenUiState
+import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.ProjectScreenUiState
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -66,10 +68,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
 import javax.inject.Inject
-
-private const val MS_PER_DP_SCALE = 10f
+import kotlin.math.roundToLong
 
 @HiltViewModel
 class ProjectManagementScreenViewModel @Inject constructor(
@@ -107,10 +109,11 @@ class ProjectManagementScreenViewModel @Inject constructor(
     private val applyFlangerEffectUseCase: ApplyFlangerEffectUseCase,
     private val tunerEngine: TunerEngine,
     private val metronomeEngine: MetronomeEngine,
+    private val previewEffectUseCase: PreviewEffectUseCase
     private val getUserIsPremiumUseCase: GetUserIsPremiumUseCase,
     private val togglePremiumStatusUseCase: TogglePremiumStatusUseCase
 ) : ViewModel() {
-    private val _state = MutableStateFlow(ProyectScreenUiState())
+    private val _state = MutableStateFlow(ProjectScreenUiState())
     private var selectedTrack: TrackUi? = null
     val state = _state.asStateFlow()
     private val originalVolumes = mutableMapOf<Long, Float>()
@@ -129,6 +132,9 @@ class ProjectManagementScreenViewModel @Inject constructor(
     val uiMessages = _uiMessages.asSharedFlow()
 
     private var precountJob: Job? = null
+
+    private val _isPreviewPlaying = MutableStateFlow(false)
+    val isPreviewPlaying = _isPreviewPlaying.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -528,14 +534,52 @@ class ProjectManagementScreenViewModel @Inject constructor(
             it.selected && it.selectionStartMs != null && it.selectionEndMs != null
         } ?: return
 
-        audioClipboard = AudioClipboard(
-            sourceFilePath = selectedTrackWithSelection.path,
-            sourceType = selectedTrackWithSelection.sourceType,
-            startMs = selectedTrackWithSelection.selectionStartMs!!,
-            endMs = selectedTrackWithSelection.selectionEndMs!!
-        )
-        _state.update { it.copy(isClipboardFull = true) }
-        _uiMessages.emit("Selección copiada")
+        val clipboardFile = File(context.cacheDir, "clipboard.pcm")
+        val sourceFile = File(selectedTrackWithSelection.path)
+
+        if (!sourceFile.exists()) return
+
+        val sampleRate = 44100
+        val bytesPerSample = 2
+        val startByte = (selectedTrackWithSelection.selectionStartMs!! * sampleRate / 1000f).roundToLong() * bytesPerSample
+        val endByte = (selectedTrackWithSelection.selectionEndMs!! * sampleRate / 1000f).roundToLong() * bytesPerSample
+        val lengthToCopy = endByte - startByte
+
+        if (lengthToCopy <= 0) return
+
+        withContext(Dispatchers.IO) {
+            try {
+                FileInputStream(sourceFile).use { input ->
+                    FileOutputStream(clipboardFile).use { output ->
+                        input.skip(startByte)
+
+                        val buffer = ByteArray(4096)
+                        var bytesRemaining = lengthToCopy
+                        while (bytesRemaining > 0) {
+                            val bytesToRead = minOf(buffer.size.toLong(), bytesRemaining).toInt()
+                            val read = input.read(buffer, 0, bytesToRead)
+                            if (read == -1) break
+                            output.write(buffer, 0, read)
+                            bytesRemaining -= read
+                        }
+                    }
+                }
+
+                audioClipboard = AudioClipboard(
+                    sourceFilePath = clipboardFile.absolutePath,
+                    sourceType = selectedTrackWithSelection.sourceType,
+                    startMs = 0L,
+                    endMs = (selectedTrackWithSelection.selectionEndMs!! - selectedTrackWithSelection.selectionStartMs!!)
+                )
+
+                _state.update { it.copy(isClipboardFull = true) }
+                _uiMessages.emit("Selección copiada")
+
+            } catch (e: Exception) {
+                Log.e(TAG, "Error al copiar al portapapeles", e)
+                _uiMessages.emit("Error al copiar")
+            }
+        }
     }
 
     suspend fun cutSelection() {
@@ -642,6 +686,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
                     totalProjectMs = totalMs,
                 )
             }
+            updateCurrentProjectWithTracks()
         }
     }
 
@@ -987,17 +1032,6 @@ class ProjectManagementScreenViewModel @Inject constructor(
         tunerEngine.stop()
     }
 
-
-
-    override fun onCleared() {
-        super.onCleared()
-        tunerEngine.stop()
-        metronomeEngine.release()
-        loadProjectTrackUseCase.clearAllTracks()
-        Log.d("PManagementViewModel", "ViewModel destruido, limpiando pistas del mixer.")
-    }
-
-
     /**
      * Muestra un tipo específico de BottomSheet.
      * @param content El contenido a mostrar (ej. AddTrackMenu, EditVolume, etc.)
@@ -1121,7 +1155,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
 
             for (i in 4 downTo 1) {
                 _state.update { it.copy(precountMessage = "$i") }
-                if (playSound) { // <-- Lógica condicional de sonido
+                if (playSound) {
                     metronomeEngine.playTick()
                 }
                 delay(beatDurationMs)
@@ -1133,15 +1167,57 @@ class ProjectManagementScreenViewModel @Inject constructor(
         } catch (e: kotlinx.coroutines.CancellationException) {
             Log.d(TAG, "Pre-cuenta cancelada")
             _state.update { it.copy(precountMessage = null) }
-            // No llames a executeRecording()
         } finally {
             precountJob = null // Limpia el job
         }
     }
+
+    /**
+     * Muestra o oculta el preview del efecto.
+     */
+    fun toggleEffectPreview(trackId: Long, config: EffectConfig) {
+        if (_isPreviewPlaying.value) {
+            stopEffectPreview()
+        } else {
+            // Detener reproducción normal si existe
+            stopPlaying()
+
+            // Iniciar preview del efecto
+            previewEffectUseCase.start(trackId, config)
+            _isPreviewPlaying.value = true
+        }
+    }
+
+    /**
+     * Detener la reproducción del efecto preview.
+     */
+    fun stopEffectPreview() {
+        previewEffectUseCase.stop()
+        _isPreviewPlaying.value = false
+    }
+
+    /**
+     * Cuando cambiamos sliders en tiempo real, reiniciamos el preview si está sonando
+     */
+    fun updatePreviewParams(trackId: Long, config: EffectConfig) {
+        if (_isPreviewPlaying.value) {
+            previewEffectUseCase.stop()
+            previewEffectUseCase.start(trackId, config)
+        }
+    }
+
     private companion object {
         const val TAG = "AudioTestsViewModel"
     }
 
+    override fun onCleared() {
+        super.onCleared()
+        tunerEngine.stop()
+        metronomeEngine.release()
+        loadProjectTrackUseCase.clearAllTracks()
+        Log.d("PManagementViewModel", "ViewModel destruido, limpiando pistas del mixer.")
+        stopEffectPreview()
+    }
 
     private data class AudioClipboard(
         val sourceFilePath: String,

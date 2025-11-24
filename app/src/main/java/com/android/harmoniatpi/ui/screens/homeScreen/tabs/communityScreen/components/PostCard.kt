@@ -69,6 +69,7 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import coil.compose.AsyncImage
 import com.android.harmoniatpi.R
+import com.android.harmoniatpi.domain.model.project.CloningAccess
 import com.android.harmoniatpi.domain.model.userPreferences.Post
 import com.android.harmoniatpi.ui.components.ShowConfirmationDialog
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.util.sharePost
@@ -80,6 +81,7 @@ import java.util.Locale
 @Composable
 fun PostCard(
     post: Post,
+    modifier: Modifier = Modifier,
     userName: String,
     userLastName: String,
     onLikeClicked: () -> Unit,
@@ -90,8 +92,16 @@ fun PostCard(
     onCloneClicked: () -> Unit,
     viewUserProfile: (String) -> Unit,
     isCloningThisPost: Boolean,
-    isFriend: Boolean
+    isFriend: Boolean,
 ) {
+
+    val showCloneButton = remember(post.cloningAccess, isFriend) {
+        when (post.cloningAccess) {
+            CloningAccess.PUBLIC -> true // Si es público, se muestra a todos
+            CloningAccess.FOLLOWERS_ONLY -> isFriend // Si es privado, solo si es amigo (seguidor)
+        }
+    }
+
     val postAudio = post.urlCompleteAudio
     val context = LocalContext.current
     var isPlaying by remember { mutableStateOf(false) }
@@ -148,7 +158,7 @@ fun PostCard(
 
     Column(
         modifier = if (isMyPost) {
-            Modifier
+            modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.surface)
                 .combinedClickable(
@@ -158,7 +168,7 @@ fun PostCard(
                     onLongClick = { showDeleteDialog = true }
                 )
         } else {
-            Modifier
+            modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.surface)
         }
@@ -316,33 +326,39 @@ fun PostCard(
 
 
                             // 2. Clonar
-                            if (post.idProject.isNotBlank() && post.clonedOption == true && isFriend) {
+                            if (post.idProject.isNotBlank() && post.clonedOption == true && showCloneButton) {
                                 val isCloneEnabled = !isAlreadyCloned && !isMyPost && !isCloningThisPost
+
                                 if (isCloningThisPost) {
-                                    Box(modifier = Modifier.padding(vertical = 4.dp, horizontal = 6.dp)) {
+                                    Box(
+                                        modifier = Modifier.padding(
+                                            vertical = 4.dp,
+                                            horizontal = 6.dp
+                                        )
+                                    ) {
                                         CircularProgressIndicator(
                                             modifier = Modifier.size(18.dp),
                                             strokeWidth = 2.dp
                                         )
                                     }
                                 } else {
-                                // Muestra el botón de clonar
-                                val (cloneIcon) = if (isAlreadyCloned) {
-                                    Icons.Default.Check to MaterialTheme.colorScheme.primary
-                                } else {
-                                    Icons.Default.ContentCopy to defaultTint
+                                    // Muestra el botón de clonar
+                                    val (cloneIcon) = if (isAlreadyCloned) {
+                                        Icons.Default.Check to MaterialTheme.colorScheme.primary
+                                    } else {
+                                        Icons.Default.ContentCopy to defaultTint
+                                    }
+
+                                    PostActionItem(
+                                        icon = cloneIcon,
+                                        totalCloned = post.totalShared,
+                                        text = "",
+                                        onClick = onCloneClicked,
+                                        enabled = isCloneEnabled
+                                    )
                                 }
 
-                                PostActionItem(
-                                    icon = cloneIcon,
-                                    totalCloned = post.totalShared,
-                                    text = "",
-                                    onClick = onCloneClicked,
-                                    enabled = isCloneEnabled
-                                )
                             }
-
-                        }
 
                             // 3. Like
                             val (likeIcon, likeTint) = if (post.likes > 0) {
@@ -355,7 +371,7 @@ fun PostCard(
                                 text = post.likes.toString(),
                                 totalCloned = post.likes,
                                 onClick = onLikeClicked,
-                                enabled = true
+                                enabled = !isMyPost
                             )
 
                             // 4. Icono de Share (placeholder)
@@ -365,7 +381,15 @@ fun PostCard(
                                 tint = defaultTint,
                                 modifier = Modifier
                                     .size(18.dp)
-                                    .clickable { sharePost(post, context , isMyPost,userName,userLastName) }
+                                    .clickable {
+                                        sharePost(
+                                            post,
+                                            context,
+                                            isMyPost,
+                                            userName,
+                                            userLastName
+                                        )
+                                    }
                             )
 
                         }
@@ -489,6 +513,7 @@ fun AudioPlayerSection(
         }
     }
 }
+
 // Animación simple de ondas de sonido
 @Composable
 fun SoundWaveAnimation(

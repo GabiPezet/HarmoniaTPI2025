@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -18,6 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -34,10 +38,11 @@ fun ModernProjectInputRow(
     modifier: Modifier = Modifier,
     singleLine: Boolean = false,
     isError: Boolean = false,
-    supportingText: String? = null
-) {
+    supportingText: String? = null,
+    imeAction: ImeAction = ImeAction.Next,
+    keyboardActions: KeyboardActions = KeyboardActions.Default) {
     // Columna para incluir el campo de texto y el texto de soporte/error
-    Column(modifier = modifier) {
+    Column {
 
         Text(
             text = labelText,
@@ -83,7 +88,12 @@ fun ModernProjectInputRow(
                     disabledIndicatorColor = Color.Transparent,
                     focusedTextColor = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
                 ),
-                modifier = Modifier.weight(1f),
+                keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.Sentences,
+                    imeAction = imeAction
+                ),
+                keyboardActions = keyboardActions,
+                modifier = modifier.weight(1f),
                 singleLine = singleLine,
                 textStyle = MaterialTheme.typography.bodyLarge,
                 isError = isError

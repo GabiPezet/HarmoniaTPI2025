@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -36,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -56,8 +58,16 @@ fun RegisterScreen(
     val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        RegisterBackgroundHeader()
+    Box(modifier = Modifier.fillMaxSize().testTag("REGISTER_SCREEN")) {
+
+
+        RegisterBackgroundHeader(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.35f)
+        )
+
+
         Column(modifier = Modifier.fillMaxSize()) {
 
             Spacer(modifier = Modifier.weight(0.2f))

@@ -39,7 +39,7 @@ android {
         versionCode = 1
         versionName = "1.0.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "com.android.harmoniatpi.HiltTestRunner"
 
         buildConfigField("String", "MP_ACCESS_TOKEN", "\"$mpAccessToken\"")
     }
@@ -162,8 +162,8 @@ dependencies {
     //LAME
     implementation(libs.lame)
     //TARSOS
-    implementation ("be.tarsos.dsp:core:2.5")
-    implementation ("be.tarsos.dsp:jvm:2.5")
+    implementation (libs.core)
+    implementation (libs.jvm)
 
 
     implementation("androidx.browser:browser:1.7.0")

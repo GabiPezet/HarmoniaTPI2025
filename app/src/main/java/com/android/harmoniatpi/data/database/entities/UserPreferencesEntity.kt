@@ -55,8 +55,8 @@ data class UserPreferencesEntity(
     val subscriptionId: String? = null,
     @ColumnInfo
     val isPremium : Boolean = false,
-
-
+    @ColumnInfo
+    val ratingCount: Int = 0
     ) {
     fun toDomain(jsonUtils: JsonUtils) = UserPreferences(
         userID = userID,
@@ -102,6 +102,7 @@ data class UserPreferencesEntity(
         } else {
             emptyList()
         },
+        ratingCount = ratingCount,
         subscriptionId = subscriptionId,
         isPremium = isPremium
     )
@@ -125,6 +126,7 @@ data class UserPreferencesEntity(
         genres = this.genres,
         location = this.location,
         rating = this.rating,
+        ratingCount = ratingCount,
         subscriptionId = subscriptionId,
         isPremium = isPremium
     )
