@@ -37,6 +37,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -77,7 +78,8 @@ fun ProjectForm(
         icon = Icons.Default.Create,
         singleLine = true,
         isError = !isTitleValid && title.isNotEmpty(),
-        supportingText = if (!isTitleValid && title.isNotEmpty()) "El título no puede estar vacío" else null
+        supportingText = if (!isTitleValid && title.isNotEmpty()) "El título no puede estar vacío" else null,
+        imeAction = ImeAction.Next
     )
 
     ModernProjectInputRow(
@@ -86,7 +88,8 @@ fun ProjectForm(
         value = description,
         onValueChange = onDescriptionChange,
         placeholderText = "Describe tu proyecto",
-        icon = Icons.Default.Description
+        icon = Icons.Default.Description,
+        imeAction = ImeAction.Next
     )
 
     ModernProjectInputRow(
@@ -96,7 +99,8 @@ fun ProjectForm(
         onValueChange = onHashtagsChange,
         placeholderText = "#música, #creatividad",
         icon = Icons.Default.Tag,
-        singleLine = true
+        singleLine = true,
+        imeAction = ImeAction.Done
     )
 
     // --- SECCIÓN DE IMAGEN ---
