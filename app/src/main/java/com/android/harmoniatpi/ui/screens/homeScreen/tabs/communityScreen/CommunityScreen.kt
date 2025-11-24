@@ -89,7 +89,8 @@ fun CommunityScreen(
                 onDismiss = { viewModel.onDismissUserProfile() },
                 currentUserData = uiState.currentUserData,
                 isSendingFollowRequest = uiState.isSendingFollowRequest,
-                onFollowClick = { targetUser -> viewModel.sendFollowRequest(targetUser) }
+                onFollowClick = { targetUser -> viewModel.sendFollowRequest(targetUser) },
+                onRateUser = { score -> viewModel.rateUser(userProfile, score) }
             )
         }
     } else {

@@ -51,7 +51,10 @@ data class UserPreferencesEntity(
     val friendRequestReceived: String = "",
     @ColumnInfo
     val friendRequestSent: String = "",
-    @ColumnInfo val subscriptionId: String? = null
+    @ColumnInfo
+    val subscriptionId: String? = null,
+    @ColumnInfo
+    val ratingCount: Int = 0
     ) {
     fun toDomain(jsonUtils: JsonUtils) = UserPreferences(
         userID = userID,
@@ -96,7 +99,8 @@ data class UserPreferencesEntity(
             jsonUtils.decodeJsonToListObject<FriendRequestSending>(friendRequestSent)
         } else {
             emptyList()
-        }
+        },
+        ratingCount = ratingCount
     )
 
     fun toFirebaseModel() = UserFirebaseModel(
@@ -117,7 +121,8 @@ data class UserPreferencesEntity(
         instrument = this.instrument,
         genres = this.genres,
         location = this.location,
-        rating = this.rating
+        rating = this.rating,
+        ratingCount = ratingCount
     )
 
 }
