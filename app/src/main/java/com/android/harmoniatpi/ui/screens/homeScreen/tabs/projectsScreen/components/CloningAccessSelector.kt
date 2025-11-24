@@ -21,7 +21,7 @@ fun CloningAccessSelector(
     Column(modifier = Modifier.padding(vertical = 8.dp)) {
         Text(
             text = "Permisos de Clonado",
-            style = MaterialTheme.typography.bodyLarge,
+            style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
         )
         Row (verticalAlignment = Alignment.CenterVertically) {
@@ -29,14 +29,14 @@ fun CloningAccessSelector(
                 selected = selectedOption == CloningAccess.PUBLIC,
                 onClick = { onOptionSelected(CloningAccess.PUBLIC) }
             )
-            Text("Público (Todos)")
+            Text("Público (Todos)", style = MaterialTheme.typography.bodyMedium)
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             RadioButton(
                 selected = selectedOption == CloningAccess.FOLLOWERS_ONLY,
                 onClick = { onOptionSelected(CloningAccess.FOLLOWERS_ONLY) }
             )
-            Text("Solo Seguidores")
+            Text("Solo Seguidores",style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
