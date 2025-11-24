@@ -81,7 +81,8 @@ class DrawerContentViewModel @Inject constructor(
                         projectsList = currentUser.projectsList,
                         myPostsList = currentUser.myPostsList,
                         friendRequestReceived = currentUser.friendRequestReceived,
-                        friendRequestSent = currentUser.friendRequestSent
+                        friendRequestSent = currentUser.friendRequestSent,
+                        ratingCount = currentUser.ratingCount
                     )
                 }
                 delay(2000L)
@@ -142,7 +143,8 @@ class DrawerContentViewModel @Inject constructor(
             projectsList = uiState.value.projectsList,
             myPostsList = uiState.value.myPostsList,
             friendRequestReceived = uiState.value.friendRequestReceived,
-            friendRequestSent = uiState.value.friendRequestSent
+            friendRequestSent = uiState.value.friendRequestSent,
+            ratingCount = uiState.value.ratingCount
         )
         viewModelScope.launch(Dispatchers.IO) {
             setUserPreferencesUseCase(preferences)

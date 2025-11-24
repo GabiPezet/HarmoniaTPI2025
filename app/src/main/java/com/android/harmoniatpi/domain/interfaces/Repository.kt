@@ -85,6 +85,8 @@ interface Repository {
 
     suspend fun deleteProject(projectId: String)
 
+    suspend fun deletePostByProjectId(projectId: String): Result<Unit>
+
     suspend fun insertOrUpdateProject(project: Project)
 
     suspend fun getProjectById(projectId: String): Project

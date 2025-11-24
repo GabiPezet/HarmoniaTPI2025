@@ -17,6 +17,7 @@ import com.android.harmoniatpi.domain.usecases.firebaseUseCases.ObserveCurrentUs
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.SendFriendRequestUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.UpdatePostFirebaseDataBaseUseCase
 import com.android.harmoniatpi.domain.usecases.roomUseCases.GetAllProjectsFromDBUseCase
+import com.android.harmoniatpi.domain.usecases.roomUseCases.SetUserPreferencesUseCase
 import com.android.harmoniatpi.domain.usecases.roomUseCases.UpdateOrInsertProjectInDBUseCase
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.model.CommunityUiState
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.SharedMenuUiState
@@ -53,7 +54,8 @@ class CommunityViewModel @Inject constructor(
     private val getUserOnFirebaseByIDUseCase: GetUserOnFirebaseByIDUseCase,
     private val sendFriendRequestUseCase: SendFriendRequestUseCase,
     private val getAllUsersUseCase: GetAllUserFromDBUseCase,
-    private val observeCurrentUserUseCase: ObserveCurrentUserUseCase
+    private val observeCurrentUserUseCase: ObserveCurrentUserUseCase,
+    private val setUserPreferencesUseCase: SetUserPreferencesUseCase
 ) : ViewModel() {
 
     // 1. Canal privado para enviar eventos de Toast
@@ -281,5 +283,40 @@ class CommunityViewModel @Inject constructor(
 
     fun onDismissUserProfile() {
         _uiState.update { it.copy(showUserProfile = false) }
+    }
+
+    fun rateUser(targetUser: UserPreferences, newScore: Float) {
+        val currentUserId = _uiState.value.userID
+        if (currentUserId.isBlank()) return
+
+        // 1. Recuperamos valores actuales
+        val currentAvg = targetUser.rating
+        val currentCount = targetUser.ratingCount
+
+        // 2. Matemática del promedio acumulado
+        val newCount = currentCount + 1
+        val newAverage = ((currentAvg * currentCount) + newScore) / newCount
+
+        // 3. Actualizamos el usuario con los nuevos datos
+        val updatedUser = targetUser.copy(
+            rating = newAverage,
+            ratingCount = newCount
+        )
+
+        viewModelScope.launch {
+            try {
+                // 4. LLAMADA REAL A FIREBASE/ROOM USANDO EL NUEVO USECASE
+                setUserPreferencesUseCase(updatedUser)
+
+                // Feedback visual
+                _toastEvents.emit("¡Valoración enviada!")
+
+                // Actualizamos la UI localmente
+                _uiState.update { it.copy(userSelected = updatedUser) }
+            } catch (e: Exception) {
+                Log.e("CommunityViewModel", "Error al valorar usuario", e)
+                _toastEvents.emit("Error al enviar la valoración.")
+            }
+        }
     }
 }
