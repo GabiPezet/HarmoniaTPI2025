@@ -44,6 +44,8 @@ data class MenuUiState(
     val currentUserData: UserPreferences? = null,
     val isSendingFollowRequest: Boolean = false,
     val ratingCount: Int = 0
+    val isSendingFollowRequest: Boolean = false,
+    val isShowSearchContentCommunity: Boolean = false
 )
 
 @Singleton

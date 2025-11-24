@@ -29,7 +29,6 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -76,13 +75,15 @@ class CommunityViewModel @Inject constructor(
                         userName = state.userName,
                         userLastName = state.userLastName,
                         userID = state.userID,
-                        userPhotoPathRemote = state.userPhotoPathRemote
+                        userPhotoPathRemote = state.userPhotoPathRemote,
+                        isShowSearchContentCommunity = state.isShowSearchContentCommunity
                     )
                 }
             }
         }
         viewModelScope.launch {
-            val currentUserIdFlow = sharedMenuUiState.uiState.map { it.userID }.distinctUntilChanged()
+            val currentUserIdFlow =
+                sharedMenuUiState.uiState.map { it.userID }.distinctUntilChanged()
             val currentUserDataFlow = currentUserIdFlow.flatMapLatest { userId ->
                 if (userId.isBlank()) {
                     flowOf(null)
@@ -283,6 +284,14 @@ class CommunityViewModel @Inject constructor(
 
     fun onDismissUserProfile() {
         _uiState.update { it.copy(showUserProfile = false) }
+    }
+
+    fun onSearchQueryChange(query: String) {
+        _uiState.update { it.copy(searchQueryCommunity = query) }
+    }
+
+    fun onToggleSearch() {
+        sharedMenuUiState.updateState { it.copy(isShowSearchContentCommunity = !it.isShowSearchContentCommunity) }
     }
 
     fun rateUser(targetUser: UserPreferences, newScore: Float) {
