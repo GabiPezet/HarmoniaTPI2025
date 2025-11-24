@@ -33,6 +33,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.android.harmoniatpi.R
 import com.android.harmoniatpi.domain.model.project.Project
+import com.android.harmoniatpi.ui.components.ShowConfirmationDialog
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.BottomMiniPlayer
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.CreateProjectDialog
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components.EditProjectDialog
@@ -62,6 +63,8 @@ fun ProjectsScreen(
     // Padding inferior dinámico
     val bottomPadding = if (showMiniPlayer) 64.dp else 0.dp
     var projectToPublishAsOriginal by remember { mutableStateOf<Project?>(null) }
+    //dialogo borrado
+    var projectToDelete by remember { mutableStateOf<Project?>(null) }
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -141,7 +144,7 @@ fun ProjectsScreen(
                             },
                             onDeleteClick = {
                                 viewModel.stopPlayback()
-                                viewModel.deleteProject(project.id)
+                                projectToDelete = project
                             },
                             onPublishClick = {
                                 viewModel.stopPlayback()
@@ -224,6 +227,25 @@ fun ProjectsScreen(
             project = project,
             viewModel = viewModel,
             onDismiss = { projectToPublishAsOriginal = null }
+        )
+    }
+
+    if (projectToDelete != null) {
+        ShowConfirmationDialog(
+            show = true,
+            onDismiss = { projectToDelete = null },
+            onConfirm = {
+                projectToDelete?.let {
+                    viewModel.deleteProject(it.id)
+                }
+                projectToDelete = null
+            },
+            title = "Eliminar Proyecto",
+            message = if (projectToDelete?.isPublished == true)
+                "Este proyecto está publicado. Si lo eliminas, también se borrará la publicación en la Comunidad y no podrá recuperarse. ¿Estás seguro?"
+            else
+                "Se eliminará este proyecto de tu dispositivo. Esta acción no se puede deshacer. ¿Estás seguro?",
+            confirmText = "Eliminar"
         )
     }
 }

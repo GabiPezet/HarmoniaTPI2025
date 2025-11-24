@@ -876,6 +876,33 @@ class RepositoryImpl @Inject constructor(
             }
         }
 
+    override suspend fun deletePostByProjectId(projectId: String): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            try {
+                // 1. Buscamos el post que tenga este idProject
+                val snapshot = database.reference.child("posts")
+                    .orderByChild("idProject")
+                    .equalTo(projectId)
+                    .get()
+                    .await()
+
+                // 2. Iteramos (por si acaso hubiera duplicados, aunque debería ser uno)
+                for (child in snapshot.children) {
+                    child.ref.removeValue().await()
+                    // También borramos de Room local si es necesario
+                    child.key?.let { postId ->
+                        myPostDao.deletePostById(postId)
+                    }
+                }
+
+                Log.i("RepositoryImpl", "Post asociado al proyecto $projectId eliminado.")
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Log.e("RepositoryImpl", "Error borrando post asociado al proyecto $projectId", e)
+                Result.failure(e)
+            }
+        }
+
     //--------------------ProyectosFin------------------------
 
 }

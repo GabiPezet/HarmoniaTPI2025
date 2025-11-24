@@ -21,6 +21,7 @@ import com.android.harmoniatpi.domain.usecases.audioUseCases.OnPreviewCompletedU
 import com.android.harmoniatpi.domain.usecases.audioUseCases.PlayPreviewUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.StopPreviewUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.DeleteFileFromStorageUseCase
+import com.android.harmoniatpi.domain.usecases.firebaseUseCases.DeletePostByProjectIdUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.DeleteProjectFromFirestoreUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.FetchAndSyncUsersUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetAllUserFromDBUseCase
@@ -85,6 +86,7 @@ class ProjectViewModel @Inject constructor(
     private val jsonUtils: JsonUtils,
     internal val getProjectByIdFromFirestoreUseCase: GetProjectByIdFromFirestoreUseCase,
     internal val getUserOnFirebaseByIDUseCase: GetUserOnFirebaseByIDUseCase,
+    private val deletePostByProjectIdUseCase: DeletePostByProjectIdUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProjectUiState())
@@ -329,9 +331,11 @@ class ProjectViewModel @Inject constructor(
                         Log.e("ProjectViewModel", "Error al borrar $remotePath de Storage", it)
                     }
                     // TODO: Borrar el Post de Realtime DB
-                    // Esto es más complejo porque el Post tiene su propio ID.
-                    // Necesitarías un caso de uso que "busque el post por projectId y lo borre".
-                    // Por ahora, esto borra el Proyecto y el Audio.
+                    deletePostByProjectIdUseCase(id)
+                        .onSuccess { Log.i("ProjectViewModel", "Post de comunidad eliminado.") }
+                        .onFailure { Log.e("ProjectViewModel", "Fallo al borrar post de comunidad", it) }
+
+                    Log.i("ProjectViewModel", "Borrado completo de Firebase.")
                     Log.i(
                         "ProjectViewModel",
                         "Borrado de Firebase para $id completado (excepto Post RTDB)."
