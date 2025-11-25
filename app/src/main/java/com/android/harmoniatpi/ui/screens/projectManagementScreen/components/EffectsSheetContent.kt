@@ -8,13 +8,16 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -37,6 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.android.harmoniatpi.domain.model.audio.EffectConfig
 import com.android.harmoniatpi.ui.components.PremiumAwareButton
@@ -125,6 +129,15 @@ fun EffectsSheetContent(
             else -> EffectConfig.Delay(0.5f, 0.5f)
         }
     }
+    val isEffectPremium = selectedTabIndex != 0
+    val canApply = isPremium || !isEffectPremium
+
+    // Observador de cambios en tiempo real
+    LaunchedEffect(delayTimeMs, delayDecay, hpfFrequency, flangerRate, flangerWet) {
+        if (isPreviewing) {
+            onParamChange(getCurrentConfig())
+        }
+    }
 
     // Observador de cambios en tiempo real:
     // Si el usuario mueve un slider mientras el preview está activo, actualizamos el motor de audio.
@@ -142,13 +155,13 @@ fun EffectsSheetContent(
         }
     }
 
-    // Seguridad: Si cambiamos de efecto (Tab), detenemos el preview para evitar
-    // que suene un Delay con los parámetros de un Flanger.
+    // Seguridad: Si cambiamos de efecto (Tab), detenemos el preview
     LaunchedEffect(selectedTabIndex) {
         if (isPreviewing) {
             onPreviewToggle(getCurrentConfig())
         }
     }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -272,29 +285,29 @@ fun EffectsSheetContent(
             }
 
             Spacer(Modifier.height(16.dp))
-
-            // --- BOTONES DE ACCIÓN (Inferior) ---
-            EffectsActionButtons(
-                isPremium = isPremium,
-                onShowUpsell = onShowUpsell,
-                isPreviewing = isPreviewing,
-                onPreviewClick = { onPreviewToggle(getCurrentConfig()) },
-                onCancelClick = onDismiss,
-                onApplyClick = {
-                    when (selectedTabIndex) {
-                        0 -> onApplyDelay(track.id, delayTimeMs / 1000f, delayDecay)
-                        1 -> onApplyHighPass(track.id, hpfFrequency)
-                        2 -> onApplyLowPass(track.id, lpfFrequency)
-                        3 -> onApplyFlanger(track.id, flangerRate, flangerWet)
-                        4 -> onApplyFadeIn(track.id, fadeInSec)
-                        5 -> onApplyFadeOut(track.id, fadeOutSec)
-                        6 -> onApplyTelephone(track.id)
-                        7 -> onApplyDistortion(track.id, distDrive)
-                        8 -> onApplyTremolo(track.id, tremFreq, tremDepth)
-                    }
-                },
-            )
         }
+        // Barra de Acciones Inferior (fija)
+        EffectsActionButtons(
+            canApply = canApply,
+            isPreviewing = isPreviewing,
+            onPreviewClick = { onPreviewToggle(getCurrentConfig()) },
+            onCancelClick = onDismiss,
+            onApplyClick = {
+                // Despacha la acción correspondiente al Tab activo
+                when (selectedTabIndex) {
+                    0 -> onApplyDelay(track.id, delayTimeMs / 1000f, delayDecay)
+                    1 -> onApplyHighPass(track.id, hpfFrequency)
+                    2 -> onApplyLowPass(track.id, lpfFrequency)
+                    3 -> onApplyFlanger(track.id, flangerRate, flangerWet)
+                    4 -> onApplyFadeIn(track.id, fadeInSec)
+                    5 -> onApplyFadeOut(track.id, fadeOutSec)
+                    6 -> onApplyTelephone(track.id)
+                    7 -> onApplyDistortion(track.id, distDrive)
+                    8 -> onApplyTremolo(track.id, tremFreq, tremDepth)
+                }
+            },
+            onUpsellClick = onShowUpsell
+        )
     }
 }
     @Composable
@@ -318,7 +331,6 @@ private fun DelayControlPanel(
     onDecayChange: (Float) -> Unit
 ) {
     val decimalFormat = remember { DecimalFormat("0.##") }
-
     Column {
         Text("Tiempo: ${timeMs.toInt()} ms", style = MaterialTheme.typography.bodyMedium)
         Slider(
@@ -374,7 +386,6 @@ private fun FlangerControlPanel(
     onWetChange: (Float) -> Unit
 ) {
     val decimalFormat = remember { DecimalFormat("0.##") }
-
     Column {
         Text(
             "Rate (Velocidad): ${decimalFormat.format(rate)} Hz",
@@ -398,51 +409,76 @@ private fun FlangerControlPanel(
     }
 }
 
-
-
 @Composable
 private fun EffectsActionButtons(
-    isPremium: Boolean,
+    canApply: Boolean,
     isPreviewing: Boolean,
     onPreviewClick: () -> Unit,
     onCancelClick: () -> Unit,
     onApplyClick: () -> Unit,
-    onShowUpsell: () -> Unit,
+    onUpsellClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp)
     ) {
-        // Botón de PREVIEW (Izquierda)
-        OutlinedButton(
-            onClick = onPreviewClick,
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = if (isPreviewing) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-            )
+        // 1. NIVEL SUPERIOR: Botón de Preview (Alineado a la izquierda)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Start
         ) {
-            Icon(
-                imageVector = if (isPreviewing) Icons.Default.Stop else Icons.Default.PlayArrow,
-                contentDescription = if (isPreviewing) "Detener preview" else "Iniciar preview"
-            )
-            Spacer(Modifier.width(8.dp))
-            Text(if (isPreviewing) "Detener" else "Preescuchar")
+            OutlinedButton(
+                onClick = onPreviewClick,
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = if (isPreviewing) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                )
+            ) {
+                Icon(
+                    imageVector = if (isPreviewing) Icons.Default.Stop else Icons.Default.PlayArrow,
+                    contentDescription = if (isPreviewing) "Detener preview" else "Iniciar preview"
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(if (isPreviewing) "Detener" else "Preescuchar")
+            }
         }
 
-        // Botones de Acción (Derecha)
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Spacer(Modifier.height(16.dp)) // Espacio entre la fila de preview y la fila de acciones
+
+        // 2. NIVEL INFERIOR: Cancelar y Aplicar (Alineados a la derecha, uno al lado del otro)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End, // Alineados al final
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             TextButton(onClick = onCancelClick) {
                 Text("Cancelar")
             }
+
             Spacer(Modifier.width(8.dp))
 
-            PremiumAwareButton(
-                text = "Aplicar",
-                isPremium = isPremium,
-                onClick = onApplyClick,
-                onShowUpsell = onShowUpsell
-            )
+            Button(
+                onClick = { if (canApply) onApplyClick() else onUpsellClick() },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (canApply) MaterialTheme.colorScheme.primary else Color(0xFFD4AF37) // Dorado
+                )
+            ) {
+                if (canApply) {
+                    Text("Aplicar")
+                } else {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = Color.White
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text("Premium Only - Obtener", color = Color.White)
+                    }
+                }
+            }
         }
     }
 }

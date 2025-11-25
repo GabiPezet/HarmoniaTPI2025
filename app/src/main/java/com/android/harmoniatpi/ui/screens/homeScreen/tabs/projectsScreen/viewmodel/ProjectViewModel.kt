@@ -429,6 +429,7 @@ class ProjectViewModel @Inject constructor(
 
                 insertProjectInDBUseCase(project)
 
+                setCurrentProject(project)
 
                 _uiState.update {
                     it.copy(

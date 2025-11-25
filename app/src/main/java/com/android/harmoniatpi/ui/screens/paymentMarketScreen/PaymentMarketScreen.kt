@@ -1,5 +1,6 @@
 package com.android.harmoniatpi.ui.screens.paymentMarketScreen
 
+import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.BorderStroke
@@ -37,8 +38,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -50,16 +56,48 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.android.harmoniatpi.ui.screens.paymentMarketScreen.viewModel.PaymentMarketViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PaymentMarketScreen(
     onNavigateBack: () -> Unit,
+    onPaymentReturn: (Uri) -> Unit,
     viewModel: PaymentMarketViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val activity = context as? Activity
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var deepLinkData by remember { mutableStateOf<Uri?>(null) }
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                // Actualizamos nuestro estado con lo que tenga la Activity en ese momento
+                deepLinkData = activity?.intent?.data
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+    LaunchedEffect(deepLinkData) {
+        val data = deepLinkData
+        if (data != null && data.scheme == "harmoniatpi" && data.host == "payment_return") {
+
+            // Navegar
+            onPaymentReturn(data)
+
+            // Limpiar para no volver a disparar
+            activity?.intent?.data = null
+            deepLinkData = null
+        }
+    }
     val premiumBrush = Brush.verticalGradient(
         colors = listOf(
             MaterialTheme.colorScheme.primary,

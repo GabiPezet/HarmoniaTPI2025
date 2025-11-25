@@ -37,7 +37,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.communityScreen.components.AudioPlayerSection
 import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.util.defaultImages
@@ -71,9 +70,8 @@ fun PostEditor(
 
     Text(
         text = "Edita cómo se verá tu publicación:",
-        style = MaterialTheme.typography.bodySmall.copy(
+        style = MaterialTheme.typography.titleMedium.copy(
             fontWeight = FontWeight.SemiBold,
-            fontSize = 12.sp
         ),
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
@@ -82,9 +80,8 @@ fun PostEditor(
     Column(
         modifier = Modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-            .padding(horizontal = 12.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f))
+            .padding(horizontal = 12.dp, vertical = 8.dp),
     ) {
         // Slot para Título, Descripción, Atribución...
         content()
@@ -100,59 +97,58 @@ fun PostEditor(
             onPlayPauseClicked = {}
         )
 
-        // --- Selección de Imagen (Compartida) ---
-        Spacer(Modifier.height(12.dp))
-        OutlinedButton(
-            onClick = {
-                imagePickerLauncher.launch(
-                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                )
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(Icons.Default.AddPhotoAlternate, contentDescription = null, Modifier.size(18.dp))
-            Spacer(Modifier.width(8.dp))
-            Text("Cambiar portada", style = MaterialTheme.typography.bodySmall)
-        }
-
-        Text(
-            "O elegir una por defecto:",
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier.padding(top = 8.dp)
-        )
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(defaultImages) { drawableRes ->
-                val drawableUri = "android.resource://${context.packageName}/$drawableRes"
-                AsyncImage(
-                    model = drawableUri,
-                    contentDescription = "Imagen por defecto",
-                    modifier = Modifier
-                        .size(60.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .clickable { onImageUrlChange(drawableUri) }
-                        .border(
-                            BorderStroke(
-                                2.dp,
-                                if (postImageUrl == drawableUri) MaterialTheme.colorScheme.primary else Color.Transparent
-                            ), RoundedCornerShape(8.dp)
-                        ),
-                    contentScale = ContentScale.Crop
-                )
-            }
-        }
-
-        Spacer(Modifier.height(4.dp))
-
         // --- Hashtags (Compartido) ---
         PostEditorTextField(
             value = postHashtags,
             onValueChange = onHashtagsChange,
             placeholder = "#música, #creatividad",
-            textStyle = MaterialTheme.typography.bodyMedium.copy(
+            textStyle = MaterialTheme.typography.labelLarge.copy(
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.SemiBold
             ),
             singleLine = true
         )
+
+
+    }
+    Spacer(Modifier.height(12.dp))
+    // --- Selección de Imagen (Compartida) ---
+    OutlinedButton(
+        onClick = {
+            imagePickerLauncher.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+            )
+        },
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Icon(Icons.Default.AddPhotoAlternate, contentDescription = null, Modifier.size(18.dp))
+        Spacer(Modifier.width(8.dp))
+        Text("Cambiar portada", style = MaterialTheme.typography.bodySmall)
+    }
+    Text(
+        "O elegir una por defecto:",
+        style = MaterialTheme.typography.titleSmall,
+        modifier = Modifier.padding(top = 8.dp)
+    )
+    Spacer(Modifier.height(8.dp))
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        items(defaultImages) { drawableRes ->
+            val drawableUri = "android.resource://${context.packageName}/$drawableRes"
+            AsyncImage(
+                model = drawableUri,
+                contentDescription = "Imagen por defecto",
+                modifier = Modifier
+                    .size(60.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable { onImageUrlChange(drawableUri) }
+                    .border(
+                        BorderStroke(
+                            2.dp,
+                            if (postImageUrl == drawableUri) MaterialTheme.colorScheme.primary else Color.Transparent
+                        ), RoundedCornerShape(8.dp)
+                    ),
+                contentScale = ContentScale.Crop
+            )
+        }
     }
 }

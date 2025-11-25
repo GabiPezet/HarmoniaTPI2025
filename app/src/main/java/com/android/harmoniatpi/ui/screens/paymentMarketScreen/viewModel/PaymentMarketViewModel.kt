@@ -6,10 +6,12 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.harmoniatpi.domain.model.payment.PaymentResult
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.ObserveCurrentUserUseCase
 import com.android.harmoniatpi.domain.usecases.paymentUseCases.CancelSubscriptionUseCase
 import com.android.harmoniatpi.domain.usecases.paymentUseCases.CreatePaymentPreferenceUseCase
 import com.android.harmoniatpi.domain.usecases.paymentUseCases.SendPaymentUseCase
+import com.android.harmoniatpi.domain.usecases.paymentUseCases.UpdatePremiumStatusUseCase
 import com.android.harmoniatpi.ui.screens.paymentMarketScreen.model.PaymentUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,7 +25,8 @@ class PaymentMarketViewModel @Inject constructor(
     private val createPreferenceUseCase: CreatePaymentPreferenceUseCase,
     private val sendPaymentUseCase: SendPaymentUseCase,
     private val cancelSubscriptionUseCase: CancelSubscriptionUseCase,
-    private val observeCurrentUserUseCase: ObserveCurrentUserUseCase
+    private val observeCurrentUserUseCase: ObserveCurrentUserUseCase,
+    private val updatePremiumStatusUseCase: UpdatePremiumStatusUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PaymentUiState())
@@ -40,6 +43,57 @@ class PaymentMarketViewModel @Inject constructor(
         }
     }
 
+
+    fun checkPaymentStatus(status: String, subscriptionId: String?) {
+        if (status == "approved") {
+            viewModelScope.launch {
+                _uiState.update { it.copy(loading = true) }
+                try {
+                    // CAMBIO: Pasar el subscriptionId
+                    val result = updatePremiumStatusUseCase("approved", subscriptionId)
+
+                    result.onSuccess {
+                        _uiState.update { state ->
+                            state.copy(loading = false, paymentResult = PaymentResult.APPROVED)
+                        }
+                    }.onFailure {
+                        // ...
+                    }
+                } catch (e: Exception) {
+                    // ...
+                }
+            }
+        }
+    }
+
+    fun handlePaymentResult(uri: Uri) {
+        val status = uri.getQueryParameter("collection_status")
+
+        // MercadoPago devuelve "approved", pero tu Repository espera "aprobado"
+        if (status == "approved") {
+            viewModelScope.launch {
+                _uiState.update { it.copy(loading = true) }
+                try {
+                    // Enviamos "aprobado" para que coincida con la lógica de tu RepositoryImpl
+                    val result = updatePremiumStatusUseCase(status)
+
+                    result.onSuccess {
+                        _uiState.update { state ->
+                            state.copy(loading = false, paymentResult = PaymentResult.APPROVED)
+                        }
+                    }.onFailure { e ->
+                        _uiState.update { state ->
+                            state.copy(loading = false, errorMessage = "Error actualizando premium: ${e.message}")
+                        }
+                    }
+                } catch (e: Exception) {
+                    _uiState.update { it.copy(loading = false, errorMessage = e.message) }
+                }
+            }
+        } else if (status == "rejected" || status == "null") {
+            // Manejar rechazo si es necesario
+        }
+    }
 
     fun createPreference(amount: Double, description: String) {
         viewModelScope.launch {
@@ -84,7 +138,13 @@ class PaymentMarketViewModel @Inject constructor(
             val result = cancelSubscriptionUseCase(subscriptionId)
 
             result.onSuccess {
-                _uiState.update { it.copy(loading = false) }
+                _uiState.update {
+                    it.copy(
+                        loading = false,
+                        subscriptionId = null, // Forzamos la vista de "No Suscrito"
+                        paymentResult = null
+                    )
+                }
 
             }.onFailure { error ->
                 _uiState.update { it.copy(loading = false, errorMessage = "Error al cancelar: ${error.message}") }

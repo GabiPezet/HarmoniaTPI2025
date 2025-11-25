@@ -43,6 +43,8 @@ data class MenuUiState(
     val cloningPostId: String? = null,
     val currentUserData: UserPreferences? = null,
     val isSendingFollowRequest: Boolean = false,
+    val isPremium: Boolean = false,
+    val subscriptionId: String? = null,
     val ratingCount: Int = 0,
     val isShowSearchContentCommunity: Boolean = false
 )

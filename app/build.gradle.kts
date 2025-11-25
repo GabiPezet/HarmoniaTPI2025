@@ -166,4 +166,5 @@ dependencies {
     implementation (libs.jvm)
 
 
+    implementation("androidx.browser:browser:1.7.0")
 }

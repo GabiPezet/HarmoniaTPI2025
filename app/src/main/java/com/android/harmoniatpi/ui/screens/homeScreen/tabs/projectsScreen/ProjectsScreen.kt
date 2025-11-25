@@ -211,6 +211,9 @@ fun ProjectsScreen(
             uiState = uiState,
             viewModel = viewModel,
             onDismiss = { showCreateForm = false /* viewModel.dismissCreateDialog() */ },
+            onNavigateToManagement = {
+                onNavigateToProjectManagementScreen()
+            }
         )
     }
 

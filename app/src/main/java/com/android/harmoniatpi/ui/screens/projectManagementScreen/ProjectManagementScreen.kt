@@ -18,11 +18,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -33,6 +36,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.ZoomIn
 import androidx.compose.material.icons.filled.ZoomOut
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -45,6 +49,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarColors
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -58,18 +63,23 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.android.harmoniatpi.R
 import com.android.harmoniatpi.domain.model.audio.AudioSourceType
 import com.android.harmoniatpi.ui.components.CircularProgressBar
+import com.android.harmoniatpi.ui.components.EffectsAudioDialog
 import com.android.harmoniatpi.ui.components.GlobalPlayhead
 import com.android.harmoniatpi.ui.components.ShowConfirmationDialog
 import com.android.harmoniatpi.ui.components.TrimAudioDialog
@@ -98,7 +108,8 @@ import kotlin.math.roundToInt
 @Composable
 fun ProjectManagementScreen(
     viewModel: ProjectManagementScreenViewModel = hiltViewModel(),
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onNavigateToPremium: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
     val sharedScrollState = rememberScrollState()
@@ -122,10 +133,6 @@ fun ProjectManagementScreen(
     val density = LocalDensity.current
 
     val isPreviewPlaying by viewModel.isPreviewPlaying.collectAsState()
-    val isUserPremium by viewModel.isUserPremium.collectAsState()
-
-    // Estado local para controlar el diálogo de venta
-    var showUpsellDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.currentPlaybackMs) {
         if (state.currentPlaybackMs > 0 && sharedScrollState.maxValue > 0 && state.isPlaying) {
@@ -180,17 +187,7 @@ fun ProjectManagementScreen(
         }
     }
 
-    if (showUpsellDialog) {
-        UpsellDialog(
-            onDismiss = { showUpsellDialog = false },
-            onConfirmPurchase = {
-                showUpsellDialog = false
-                // TODO: Aquí llamar al metodo para subcribirse
-                // viewModel.launchBillingFlow(activity)
-            }
-        )
-    }
-    // BottomSheet inicio
+    //  ----INICIO BOTTOMSHEET ----
     val activeSheet = state.activeSheetContent
     if (activeSheet != null) {
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -222,7 +219,9 @@ fun ProjectManagementScreen(
                             viewModel.hideBottomSheet()
                             viewModel.pasteFromClipboard()
                         },
-                        isClipboardFull = state.isClipboardFull
+                        isClipboardFull = state.isClipboardFull,
+                        isPremium = state.isPremium, // USANDO EL UI STATE
+                        currentTrackCount = state.tracks.size // USANDO EL UI STATE
                     )
                 }
 
@@ -253,16 +252,14 @@ fun ProjectManagementScreen(
                 }
 
                 is BottomSheetContent.InDevelopment -> {
-
+                    // Composable para "En desarrollo"
                     InDevelopmentSheetContent()
                 }
 
                 is BottomSheetContent.TrackEffects -> {
                     EffectsSheetContent(
                         track = activeSheet.track,
-                        isPremium = isUserPremium,
                         isPreviewing = isPreviewPlaying,
-                        onShowUpsell = { showUpsellDialog = true },
                         onPreviewToggle = { config ->
                             viewModel.toggleEffectPreview(activeSheet.track.id, config)
                         },
@@ -326,6 +323,8 @@ fun ProjectManagementScreen(
                             viewModel.stopEffectPreview() // Detener al cancelar
                             viewModel.hideBottomSheet()
                         },
+                        isPremium = state.isPremium,
+                        onShowUpsell = onNavigateToPremium
                     )
                 }
 
@@ -415,13 +414,34 @@ fun ProjectManagementScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(end = 16.dp),
-                        text = state.currentProjectSelected!!.title,
-                        textAlign = TextAlign.Center
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = state.currentProjectSelected!!.title,
+                            style = MaterialTheme.typography.titleLarge,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
+                            textAlign = TextAlign.End,
+
+                        )
+
+                        Spacer(Modifier.width(8.dp))
+
+                        val statusText = if (state.isPremium) "PRO" else "FREE"
+
+                        Text(
+                            text = statusText,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
                 },
                 navigationIcon = {
                     IconButton(
@@ -652,6 +672,26 @@ fun ProjectManagementScreen(
             },
             onStopPreview = { id ->
                 viewModel.stopPreviewTrim(id)
+            }
+        )
+    }
+    trackForEffects?.let { trackToEffect ->
+        EffectsAudioDialog(
+            track = trackToEffect,
+            isPremium = state.isPremium,
+            onGoToPremium = onNavigateToPremium,
+            onDismiss = { trackForEffects = null },
+            onApplyDelay = { id, delay, decay ->
+                viewModel.applyDelayEffect(id, delay, decay)
+                trackForEffects = null
+            },
+            onApplyHighPass = { id, freq ->
+                viewModel.applyHighPassFilter(id, freq)
+                trackForEffects = null
+            },
+            onApplyFlanger = { id, rate, wet ->
+                viewModel.applyFlangerEffect(id, rate, wet)
+                trackForEffects = null
             }
         )
     }
