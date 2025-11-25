@@ -52,6 +52,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.credentials.CredentialManager
+import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialException
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -64,6 +65,7 @@ import com.android.harmoniatpi.ui.screens.loginScreen.viewModel.LoginScreenViewM
 import com.android.harmoniatpi.ui.screens.registerScreen.ScreenTitle
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential.Companion.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
 import kotlinx.coroutines.launch
 
 
@@ -204,27 +206,33 @@ private fun LoginForm(
                 onClick = {
                     scope.launch {
                         try {
-                            Log.d("GoogleLogin", "🚀 Iniciando flujo con Credential Manager...")
+                            Log.d("GoogleLogin", "Iniciando flujo con Credential Manager")
                             val result = credentialManager.getCredential(
                                 request = credentialRequest,
                                 context = context
                             )
 
                             val credential = result.credential
-                            if (credential is GoogleIdTokenCredential) {
-                                val idToken = credential.idToken
-                                if (idToken.isNotBlank()) {
+                            if (credential is CustomCredential && credential.type == TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+                                try {
+                                    val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                                    val idToken = googleIdTokenCredential.idToken
+
+                                    Log.d("GoogleLogin", "Token obtenido exitosamente")
                                     onGoogleLogin(idToken)
-                                } else {
-                                    Log.e("GoogleLogin", "idToken vacío o nulo")
+
+                                } catch (e: Exception) {
+                                    Log.e("GoogleLogin", "Error al extraer el token de los datos", e)
+                                    Toast.makeText(context, "Error procesando credenciales de Google", Toast.LENGTH_LONG).show()
                                 }
                             } else {
-                                Log.e("GoogleLogin", "❌ Credencial no es GoogleIdTokenCredential")
+                                Log.e("GoogleLogin", "Tipo de credencial desconocido: ${credential.javaClass.name}")
+                                Toast.makeText(context, "Error: Credencial no reconocida", Toast.LENGTH_LONG).show()
                             }
                         } catch (e: GetCredentialException) {
-                            Log.e("GoogleLogin", "❌ Error al obtener credencial: ${e.message}", e)
+                            Log.e("GoogleLogin", "Error al obtener credencial: ${e.message}", e)
                         } catch (e: Exception) {
-                            Log.e("GoogleLogin", "❌ Excepción inesperada: ${e.message}", e)
+                            Log.e("GoogleLogin", "Excepción inesperada: ${e.message}", e)
                         }
                     }
                 }
