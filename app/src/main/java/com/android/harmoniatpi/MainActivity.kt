@@ -66,13 +66,15 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         handleDeepLink(intent)
+        this.intent = intent
     }
 
     private fun handleDeepLink(intent: Intent?) {
         val data: Uri? = intent?.data
-        if (data != null && data.scheme == "harmoniatpi" && data.host == "subscription_return") {
-            val status = data.getQueryParameter("status")
-            val id = data.getQueryParameter("preapproval_id")
+        // CAMBIAR "subscription_return" POR "payment_return"
+        if (data != null && data.scheme == "harmoniatpi" && data.host == "payment_return") {
+            val status = data.getQueryParameter("collection_status") // MercadoPago usa collection_status, no status a secas a veces
+            val id = data.getQueryParameter("payment_id") // o preapproval_id dependiendo de lo que mandes
 
             Log.d("DeepLink", "Retorno de MP: Status=$status, ID=$id")
         }

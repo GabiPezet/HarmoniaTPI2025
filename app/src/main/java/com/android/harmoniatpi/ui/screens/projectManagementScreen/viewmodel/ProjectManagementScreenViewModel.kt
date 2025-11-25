@@ -1,25 +1,36 @@
 package com.android.harmoniatpi.ui.screens.projectManagementScreen.viewmodel
 
 import android.content.Context
+import android.media.MediaMetadataRetriever
 import android.media.MediaRecorder
 import android.net.Uri
+import kotlinx.coroutines.flow.collectLatest
 import android.util.Log
+import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import be.tarsos.dsp.AudioDispatcher
 import com.android.harmoniatpi.data.audio.util.TunerEngine
 import com.android.harmoniatpi.domain.cache.HoloJamCache
+import com.android.harmoniatpi.domain.interfaces.Repository
 import com.android.harmoniatpi.domain.model.audio.AudioSourceType
 import com.android.harmoniatpi.domain.model.audio.EffectConfig
 import com.android.harmoniatpi.domain.model.audio.WaveformResult
 import com.android.harmoniatpi.domain.model.metronome.MetronomeEngine
 import com.android.harmoniatpi.domain.model.project.AudioTrack
+import com.android.harmoniatpi.domain.usecases.GetUserIsPremiumUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.AddTrackFromFileUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.AddTrackFromSegmentUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.AddTrackUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.ApplyDelayEffectUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.ApplyDistortionUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.ApplyFadeInUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.ApplyFadeOutUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.ApplyFlangerEffectUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.ApplyHighPassFilterUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.ApplyLowPassFilterUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.ApplyTelephoneEffectUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.ApplyTremoloUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.ConvertMp3ToPcmUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.CutAudioSegmentUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.DeleteTrackUseCase
@@ -30,6 +41,7 @@ import com.android.harmoniatpi.domain.usecases.audioUseCases.GetIfAllTracksWhere
 import com.android.harmoniatpi.domain.usecases.audioUseCases.GetTracksUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.LoadProjectTrackUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.MuteTrackUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.NormalizeTrackUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.PauseAudioUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.PlayAudioUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.PreviewEffectUseCase
@@ -44,6 +56,7 @@ import com.android.harmoniatpi.domain.usecases.audioUseCases.TrimAudioTrackUseCa
 import com.android.harmoniatpi.domain.usecases.audioUseCases.UnMuteTrackUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.UndoEffectUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.UndoTrimUseCase
+import com.android.harmoniatpi.domain.usecases.paymentUseCases.TogglePremiumStatusUseCase
 import com.android.harmoniatpi.domain.usecases.roomUseCases.UpdateOrInsertProjectInDBUseCase
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.BottomSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.ProjectScreenUiState
@@ -103,7 +116,16 @@ class ProjectManagementScreenViewModel @Inject constructor(
     private val applyFlangerEffectUseCase: ApplyFlangerEffectUseCase,
     private val tunerEngine: TunerEngine,
     private val metronomeEngine: MetronomeEngine,
-    private val previewEffectUseCase: PreviewEffectUseCase
+    private val previewEffectUseCase: PreviewEffectUseCase,
+    private val applyLowPassFilterUseCase: ApplyLowPassFilterUseCase,
+    private val normalizeTrackUseCase: NormalizeTrackUseCase,
+    private val applyFadeInUseCase: ApplyFadeInUseCase,
+    private val applyFadeOutUseCase: ApplyFadeOutUseCase,
+    private val applyTelephoneEffectUseCase: ApplyTelephoneEffectUseCase,
+    private val applyDistortionUseCase: ApplyDistortionUseCase,
+    private val applyTremoloUseCase: ApplyTremoloUseCase,
+    private val getUserIsPremiumUseCase: GetUserIsPremiumUseCase,
+    private val togglePremiumStatusUseCase: TogglePremiumStatusUseCase
 ) : ViewModel() {
     private val _state = MutableStateFlow(ProjectScreenUiState())
     private var selectedTrack: TrackUi? = null
@@ -128,11 +150,15 @@ class ProjectManagementScreenViewModel @Inject constructor(
     private val _isPreviewPlaying = MutableStateFlow(false)
     val isPreviewPlaying = _isPreviewPlaying.asStateFlow()
 
-    // Simulación de usuario Premium (Todo: modificar segun la logica que usemos para habilitar usuarios premium)
-    private val _isUserPremium = MutableStateFlow(false)
-    val isUserPremium = _isUserPremium.asStateFlow()
-
     init {
+        viewModelScope.launch {
+            // Ahora la función invoke() devuelve el Flow<Boolean>
+            getUserIsPremiumUseCase().collectLatest { isPremium ->
+                _state.update {
+                    it.copy(isPremium = isPremium) // Esto se actualiza CADA VEZ que cambia en Firestore/DB
+                }
+            }
+        }
         startPlaybackObserver()
         fetchTracks()
         checkIfTracksWherePlayed()
@@ -153,36 +179,36 @@ class ProjectManagementScreenViewModel @Inject constructor(
                         launch(Dispatchers.IO) { // Cada pista en su propio hilo
                             val pcmFile = File(audioTrack.path)
 
-                            // --- LÓGICA DE RESTAURACIÓN ---
+                            // Lógica de restaurar pista
                             if (!pcmFile.exists() && audioTrack.remoteUrl != null) {
 
                                 Log.w("KlyxDevs", "Falta archivo local ${pcmFile.name}. Descargando desde ${audioTrack.remoteUrl}...")
                                 val tempMp3File = File(context.cacheDir, "restore_${audioTrack.id}.mp3")
 
                                 try {
-                                    // 1. Descargar MP3
+
                                     downloadFileUseCase(audioTrack.remoteUrl, tempMp3File).getOrThrow()
 
-                                    // 2. Convertir MP3 -> PCM (en la ruta final)
-                                    Log.i("KlyxDevs", "Descarga completa. Convirtiendo ${tempMp3File.name} a ${pcmFile.name}...")
-                                    convertMp3ToPcmUseCase(tempMp3File, pcmFile).getOrThrow() // Usa el UseCase corregido
 
-                                    // 3. Cargar en el mixer
+                                    Log.i("KlyxDevs", "Descarga completa. Convirtiendo ${tempMp3File.name} a ${pcmFile.name}...")
+                                    convertMp3ToPcmUseCase(tempMp3File, pcmFile).getOrThrow()
+
+
                                     Log.i("KlyxDevs", "Pista ${audioTrack.id} restaurada. Cargando en mixer...")
                                     loadTrackIntoMixer(audioTrack)
 
                                 } catch (e: Exception) {
                                     Log.e("KlyxDevs", "Error restaurando pista ${audioTrack.id} desde backup", e)
                                 } finally {
-                                    // 4. Borrar MP3 temporal
+
                                     tempMp3File.delete()
                                 }
 
                             } else if (pcmFile.exists()) {
-                                // LOCAL: Cargar como siempre
+
                                 loadTrackIntoMixer(audioTrack)
                             } else {
-                                // ERROR: No local, no remoto
+
                                 Log.e("KlyxDevs", "Archivo no encontrado y sin backup remoto: ${audioTrack.path}")
                             }
                         }
@@ -257,7 +283,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
             it.copy(currentProjectSelected = updatedProject)
         }
 
-        // Guardar en cache y/o base de datos
+        // Guarda en cache o BBDD
         viewModelScope.launch {
             updateOrInsertProjectInDBUseCase(updatedProject)
             updatedProject.urlAudioTracks.forEach {
@@ -304,17 +330,17 @@ class ProjectManagementScreenViewModel @Inject constructor(
     }
 
     fun stopRecording() {
-        // 1. SI EL USUARIO APRETA STOP DURANTE LA PRECUENTA
+
         if (precountJob != null) {
-            precountJob?.cancel() // Cancela la corutina de precuenta
+            precountJob?.cancel()
             precountJob = null
             _state.update { it.copy(precountMessage = null) }
             Log.d(TAG, "Pre-cuenta cancelada por el usuario")
             return
         }
 
-        // 2. LÓGICA NORMAL (si ya estaba grabando)
-        if (!state.value.isRecording) return // Evita dobles clics si ya se paró
+
+        if (!state.value.isRecording) return
 
         metronomeEngine.stop()
         stopRecordingAudio()
@@ -388,6 +414,11 @@ class ProjectManagementScreenViewModel @Inject constructor(
     }
 
     fun addNewTrack(sourceType: AudioSourceType) {
+        val isPremium = state.value.isPremium // Obtener de UiState
+        if (!isPremium && state.value.tracks.size >= 5) {
+            Toast.makeText(context, "El límite para usuarios Free es de 5 pistas.", Toast.LENGTH_LONG).show()
+            return
+        }
         addTrack(sourceType)
     }
 
@@ -412,10 +443,28 @@ class ProjectManagementScreenViewModel @Inject constructor(
     }
 
     fun importTrackFromFile(uri: Uri) {
+        val isPremium = state.value.isPremium
+        if (!isPremium && state.value.tracks.size >= 5) {
+            Toast.makeText(context, "El límite para usuarios Free es de 5 pistas.", Toast.LENGTH_LONG).show()
+            return
+        }
         _state.update { it.copy(importAudioLoading = true) }
         viewModelScope.launch {
             val tempFile = File(context.cacheDir, "temp_import_${System.currentTimeMillis()}.tmp")
-
+            try {
+                // *** ATENCIÓN: Debes implementar 'getMediaDuration' para obtener la duración real del archivo ***
+                val durationMs = getMediaDuration(uri)
+                if (!isPremium && durationMs > 300000L) { // 5 minutos = 300,000 ms
+                    Toast.makeText(context, "La duración máxima para usuarios Free es de 5 minutos.", Toast.LENGTH_LONG).show()
+                    _state.update { it.copy(importAudioLoading = false) }
+                    return@launch
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "No se pudo obtener la duración del archivo importado.", e)
+                Toast.makeText(context, "Error al validar la duración del archivo.", Toast.LENGTH_SHORT).show()
+                _state.update { it.copy(importAudioLoading = false) }
+                return@launch
+            }
             try {
                 withContext(Dispatchers.IO) {
                     context.contentResolver.openInputStream(uri)?.use { inputStream ->
@@ -657,7 +706,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
 
     fun previewTrim(trackId: Long, startMs: Long, endMs: Long) {
         viewModelScope.launch {
-            // Detener cualquier reproducción
+
             stopPlaying()
 
             val trackToPreview = getTracks().value.find { it.id == trackId }
@@ -668,7 +717,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
                 }
 
                 track.playSegment(startMs, endMs)
-                // Actualiza el estado para mostrar el icono de pausa
+
                 _state.update { it.copy(isPlaying = false, previewTrackId = trackId) }
             }
         }
@@ -678,7 +727,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
         viewModelScope.launch {
             val trackToStop = getTracks().value.find { it.id == trackId }
             trackToStop?.stop()
-            // Limpia el estado
+
             _state.update { it.copy(previewTrackId = null) }
         }
     }
@@ -706,18 +755,18 @@ class ProjectManagementScreenViewModel @Inject constructor(
     }
 
     fun setTrackVolume(trackId: Long, newVolume: Float) {
-        // 1. Clamp the value para asegurar que esté en el rango permitido (0f a 1.5f).
+
         val clampedVolume = newVolume.coerceIn(0f, 1.5f)
 
-        // 2. Llama al Caso de Uso para que el motor de audio aplique el cambio de volumen.
-        //    Esta es la línea que faltaba y la más importante.
+
+
         setTrackVolumeUseCase(trackId, clampedVolume)
 
-        // 3. Actualiza el estado de la UI para que refleje el cambio visualmente.
+
         _state.update { currentState ->
             val updatedTracks = currentState.tracks.map { track ->
                 if (track.id == trackId) {
-                    track.copy(volume = clampedVolume) // Actualiza el volumen en la lista de la UI
+                    track.copy(volume = clampedVolume)
                 } else {
                     track
                 }
@@ -725,7 +774,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
             currentState.copy(tracks = updatedTracks)
         }
 
-        // 4. (Opcional pero recomendado) Guarda el estado general del proyecto.
+
         updateCurrentProjectWithTracks()
     }
 
@@ -741,7 +790,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
                 }
             }
             val totalMs = getMaxProjectDuration(updatedTracks)
-            // debo recalcular ancho de la timeline
+            // recalcula ancho de timeline
             val timelineWidth = getUpdatedTimeline(updatedTracks, currentState.msPerDpScale)
 
             currentState.copy(
@@ -824,7 +873,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
                 _state.update { it.copy(tracks = updatedTracks, timelineWidth = timelineWidth, totalProjectMs = totalMs) }
 
                 if (updatedTracks.isNotEmpty()) {
-                    // Verificar si el último track es nuevo (no estaba en la lista anterior)
+                    // Verificar si el último track es nuevo
                     val lastTrack = updatedTracks.last()
                     val wasLastTrackInPreviousList = currentUiTracksMap.containsKey(lastTrack.id)
                     // Solo seleccionar si es un track nuevo
@@ -883,6 +932,11 @@ class ProjectManagementScreenViewModel @Inject constructor(
     }
 
     fun applyHighPassFilter(trackId: Long, frequency: Float) {
+        val isPremium = state.value.isPremium // Obtener de UiState
+        if (!isPremium) {
+            Toast.makeText(context, "El Filtro de Paso Alto es un efecto Premium.", Toast.LENGTH_LONG).show()
+            return
+        }
         viewModelScope.launch {
             applyHighPassFilterUseCase(trackId, frequency)
                 .onSuccess {
@@ -898,6 +952,11 @@ class ProjectManagementScreenViewModel @Inject constructor(
     }
 
     fun applyFlangerEffect(trackId: Long, rate: Float, wet: Float) {
+        val isPremium = state.value.isPremium // Obtener de UiState
+        if (!isPremium) {
+            Toast.makeText(context, "El efecto Flanger es una función Premium.", Toast.LENGTH_LONG).show()
+            return
+        }
         viewModelScope.launch {
             applyFlangerEffectUseCase(trackId, rate, wet)
                 .onSuccess {
@@ -978,7 +1037,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
         _showTunerDialog.value = false
     }
 
-    // Simplemente delegamos al Engine
+
     fun startTuner() {
         tunerEngine.start()
     }
@@ -1080,16 +1139,16 @@ class ProjectManagementScreenViewModel @Inject constructor(
             viewModelScope.launch {
                 _uiMessages.emit("Primero tenés que agregar una pista")
             }
-            // Dispara la animación del fab incrementando el trigger
+
             _state.update { it.copy(fabPulseTrigger = it.fabPulseTrigger + 1) }
             return
         }
         //Comprobación de doble-click
         if (state.value.isRecording || precountJob != null) return
 
-        //Inicia precuenta
+
         Log.d(TAG, "Iniciando pre-cuenta.")
-        // Lanza la corutina y guarda la referencia en precountJob
+
         precountJob = viewModelScope.launch {
             precountAndRecord()
         }
@@ -1123,7 +1182,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
             Log.d(TAG, "Pre-cuenta cancelada")
             _state.update { it.copy(precountMessage = null) }
         } finally {
-            precountJob = null // Limpia el job
+            precountJob = null
         }
     }
 
@@ -1134,10 +1193,10 @@ class ProjectManagementScreenViewModel @Inject constructor(
         if (_isPreviewPlaying.value) {
             stopEffectPreview()
         } else {
-            // Detener reproducción normal si existe
+
             stopPlaying()
 
-            // Iniciar preview del efecto
+
             previewEffectUseCase.start(trackId, config)
             _isPreviewPlaying.value = true
         }
@@ -1161,6 +1220,103 @@ class ProjectManagementScreenViewModel @Inject constructor(
         }
     }
 
+    fun applyLowPassFilter(trackId: Long, frequency: Float) {
+        viewModelScope.launch {
+            _state.update { it.copy(importAudioLoading = true) }
+            applyLowPassFilterUseCase(trackId, frequency)
+                .onSuccess {
+                    _uiMessages.emit("Filtro Low Pass aplicado")
+                    updateTrackUiAfterModification(trackId)
+                }
+                .onFailure { _uiMessages.emit("Error al aplicar filtro") }
+            _state.update { it.copy(importAudioLoading = false) }
+        }
+    }
+
+
+    fun normalizeTrack(trackId: Long) {
+        viewModelScope.launch {
+            _state.update { it.copy(importAudioLoading = true) }
+            normalizeTrackUseCase(trackId)
+                .onSuccess {
+                    _uiMessages.emit("Pista normalizada")
+                    updateTrackUiAfterModification(trackId)
+                }
+                .onFailure { _uiMessages.emit("Error al normalizar") }
+            _state.update { it.copy(importAudioLoading = false) }
+        }
+    }
+
+
+    fun applyTelephoneEffect(trackId: Long) {
+        viewModelScope.launch {
+            _state.update { it.copy(importAudioLoading = true) }
+            applyTelephoneEffectUseCase(trackId)
+                .onSuccess {
+                    _uiMessages.emit("Efecto Teléfono aplicado")
+                    updateTrackUiAfterModification(trackId)
+                }
+                .onFailure { _uiMessages.emit("Error al aplicar efecto") }
+
+            _state.update { it.copy(importAudioLoading = false) }
+        }
+    }
+
+    fun applyFadeIn(trackId: Long, duration: Float) {
+        viewModelScope.launch {
+            _state.update { it.copy(importAudioLoading = true) }
+
+            applyFadeInUseCase(trackId, duration)
+                .onSuccess {
+                    _uiMessages.emit("Fade In aplicado")
+                    updateTrackUiAfterModification(trackId)
+                }
+                .onFailure { _uiMessages.emit("Error al aplicar Fade In") }
+            _state.update { it.copy(importAudioLoading = false) }
+        }
+    }
+
+    fun applyFadeOut(trackId: Long, duration: Float) {
+        viewModelScope.launch {
+            _state.update { it.copy(importAudioLoading = true) }
+
+            applyFadeOutUseCase(trackId, duration)
+                .onSuccess {
+                    _uiMessages.emit("Fade Out aplicado")
+                    updateTrackUiAfterModification(trackId)
+                }
+                .onFailure { _uiMessages.emit("Error al aplicar Fade Out") }
+            _state.update { it.copy(importAudioLoading = false) }
+        }
+    }
+
+    fun applyDistortion(trackId: Long, drive: Float) {
+        viewModelScope.launch {
+            _state.update { it.copy(importAudioLoading = true) }
+            applyDistortionUseCase(trackId, drive)
+                .onSuccess {
+                    _uiMessages.emit("Distorsión aplicada")
+                    updateTrackUiAfterModification(trackId)
+                }
+                .onFailure { _uiMessages.emit("Error en distorsión") }
+            _state.update { it.copy(importAudioLoading = false) }
+        }
+    }
+
+    fun applyTremolo(trackId: Long, frequency: Float, depth: Float) {
+        viewModelScope.launch {
+            _state.update { it.copy(importAudioLoading = true) }
+            applyTremoloUseCase(trackId, frequency, depth)
+                .onSuccess {
+                    _uiMessages.emit("Trémolo aplicado")
+                    updateTrackUiAfterModification(trackId)
+                }
+                .onFailure { _uiMessages.emit("Error en trémolo") }
+            _state.update { it.copy(importAudioLoading = false) }
+        }
+    }
+
+
     private companion object {
         const val TAG = "AudioTestsViewModel"
     }
@@ -1183,4 +1339,52 @@ class ProjectManagementScreenViewModel @Inject constructor(
 
     private var audioClipboard: AudioClipboard? = null
 
+    private fun getMediaDuration(uri: Uri): Long {
+        // 'context' es la instancia inyectada en el ViewModel
+        val retriever = MediaMetadataRetriever()
+
+        return try {
+            // 1. Establecer el origen de datos usando el Content URI
+            retriever.setDataSource(context, uri)
+
+            // 2. Extraer la duración (viene como String en milisegundos)
+            val durationString = retriever.extractMetadata(
+                MediaMetadataRetriever.METADATA_KEY_DURATION
+            )
+
+            // 3. Convertir el String a Long. Si es nulo o falla, devuelve 0L.
+            durationString?.toLongOrNull() ?: 0L
+
+        } catch (e: Exception) {
+            // Capturar y loguear cualquier excepción (Ej. SecurityException, IllegalArgumentException)
+            Log.e(TAG, "Error al obtener duración para URI: $uri", e)
+            0L
+        } finally {
+            // 4. MUY IMPORTANTE: Liberar los recursos del retriever.
+            retriever.release()
+        }
+    }
+
+    fun togglePremiumStatusForTesting() {
+        viewModelScope.launch {
+            val isCurrentlyPremium = state.value.isPremium
+
+            // 1. Llamada a la base de datos
+            togglePremiumStatusUseCase(isCurrentlyPremium)
+                .onSuccess { updatedUser ->
+                    val statusText = if (updatedUser.isPremium) "PRO" else "FREE"
+
+                    // 2. ✨ ACTUALIZACIÓN OPTIMISTA (Inmediata) DE LA UI
+                    _state.update {
+                        it.copy(isPremium = updatedUser.isPremium)
+                    }
+
+                    Toast.makeText(context, "Modo de prueba: $statusText activado", Toast.LENGTH_SHORT).show()
+                }
+                .onFailure { e ->
+                    Log.e(TAG, "Error al cambiar el estado Premium de prueba", e)
+                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+        }
+    }
 }

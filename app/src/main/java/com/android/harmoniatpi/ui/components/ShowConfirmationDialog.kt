@@ -11,6 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Devices
@@ -38,6 +39,7 @@ fun ShowExitConfirmationPreview() {
 
 @Composable
 fun ShowConfirmationDialog(
+    modifier: Modifier = Modifier,
     show: Boolean,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
@@ -52,7 +54,7 @@ fun ShowConfirmationDialog(
     if (show) {
         AlertDialog(
             onDismissRequest = onDismiss,
-            modifier = Modifier
+            modifier = modifier
                 .border(
                     width = 1.dp,
                     color = MaterialTheme.colorScheme.outlineVariant,
@@ -67,6 +69,7 @@ fun ShowConfirmationDialog(
             confirmButton = {
 
                 Button(
+                    modifier = Modifier.testTag("CONFIRM_BUTTON"),
                     onClick = onConfirm,
                     shape = MaterialTheme.shapes.small,
 

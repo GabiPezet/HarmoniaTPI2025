@@ -22,7 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun PaymentResultScreen(
+    fun PaymentResultScreen(
     status: String,
     paymentId: String?,
     onContinue: () -> Unit

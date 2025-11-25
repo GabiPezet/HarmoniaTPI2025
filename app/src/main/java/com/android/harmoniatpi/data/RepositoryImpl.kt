@@ -58,6 +58,38 @@ class RepositoryImpl @Inject constructor(
     private val mercadoPagoApi: MercadoPagoApi
 ) : Repository {
 
+    override suspend fun updatePremiumStatus(statusString: String, subscriptionId: String?): Result<UserPreferences> =
+        withContext(Dispatchers.IO) {
+            val successKeyword = "approved"
+
+            if (statusString.equals(successKeyword, ignoreCase = true)) {
+                try {
+                    val currentUser = getUserPreferences()
+                    if (currentUser == null) {
+                        return@withContext Result.failure(Exception("Usuario no autenticado."))
+                    }
+
+                    // ✨ AQUÍ ESTÁ LA MAGIA: Guardamos el ID de suscripción
+                    // Si viene un ID nuevo, lo usamos. Si no (ej. botón de prueba), mantenemos el que tenía o null.
+                    val updatedUser = currentUser.copy(
+                        isPremium = true,
+                        subscriptionId = subscriptionId ?: currentUser.subscriptionId
+                    )
+
+                    updateUserPreferences(updatedUser)
+
+                    Log.i("RepositoryImpl", "Usuario ${currentUser.userID} actualizado a Premium. ID: ${updatedUser.subscriptionId}")
+                    Result.success(updatedUser)
+
+                } catch (e: Exception) {
+                    Log.e("RepositoryImpl", "Error al actualizar estado Premium.", e)
+                    Result.failure(e)
+                }
+            } else {
+                Result.failure(Exception("Estado no aprobado."))
+            }
+        }
+
     override fun getFirebaseCurrentUser(): FirebaseUser? = firebaseAuth.currentUser
 
     override suspend fun getUserById(userId: String): UserPreferences? {
@@ -642,7 +674,7 @@ class RepositoryImpl @Inject constructor(
         val accessToken = com.android.harmoniatpi.BuildConfig.MP_ACCESS_TOKEN
         val currentUser = firebaseAuth.currentUser
         val userEmail = currentUser?.email ?: throw Exception("Usuario no tiene email vinculado")
-        val myDeepLink = "https://holo-jam-landing-tpi.vercel.app/"
+        val myDeepLink = "https://idyllic-fudge-447568.netlify.app/"
 
         val request = SubscriptionRequest(
             reason = description,
@@ -679,15 +711,30 @@ class RepositoryImpl @Inject constructor(
         val accessToken = com.android.harmoniatpi.BuildConfig.MP_ACCESS_TOKEN
 
         return try {
+            // 1. Llamada a la API de Mercado Pago para cancelar
             val request = SubscriptionStatusUpdateRequest(status = "cancelled")
             mercadoPagoApi.cancelSubscription("Bearer $accessToken", preapprovalId, request)
 
-            /**
-             * Importantísimo: acá es donde debemos decirle a firebase que el current user ya no es premium
-             * atte: juan
-             * */
+            // 2. Lógica para volver a FREE en la Base de Datos
+            // Obtenemos el usuario actual (que ya sincroniza Firestore -> Local)
+            val currentUser = getUserPreferences()
 
-            Result.success(Unit)
+            if (currentUser != null) {
+                // Creamos una copia del usuario con isPremium en FALSE
+                val updatedUser = currentUser.copy(
+                    isPremium = false,
+                    // Opcional: Si guardas el subscriptionId en el modelo, podrías borrarlo aquí también
+                    // subscriptionId = null
+                )
+
+                // Guardamos en Room y Firestore usando tu función existente
+                updateUserPreferences(updatedUser)
+
+                Log.i("RepositoryImpl", "Suscripción cancelada en MP y usuario actualizado a FREE local/remoto.")
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("No se pudo obtener el usuario local para degradar a Free."))
+            }
         } catch (e: Exception) {
             Log.e("MercadoPago", "Error cancelando suscripción: ${e.message}")
             Result.failure(e)
@@ -872,6 +919,33 @@ class RepositoryImpl @Inject constructor(
 
             } catch (e: Exception) {
                 Log.e("RepositoryImpl", "Error en fetchAndSyncUsersFromFirestore", e)
+                Result.failure(e)
+            }
+        }
+
+    override suspend fun deletePostByProjectId(projectId: String): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            try {
+                // 1. Buscamos el post que tenga este idProject
+                val snapshot = database.reference.child("posts")
+                    .orderByChild("idProject")
+                    .equalTo(projectId)
+                    .get()
+                    .await()
+
+                // 2. Iteramos (por si acaso hubiera duplicados, aunque debería ser uno)
+                for (child in snapshot.children) {
+                    child.ref.removeValue().await()
+                    // También borramos de Room local si es necesario
+                    child.key?.let { postId ->
+                        myPostDao.deletePostById(postId)
+                    }
+                }
+
+                Log.i("RepositoryImpl", "Post asociado al proyecto $projectId eliminado.")
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Log.e("RepositoryImpl", "Error borrando post asociado al proyecto $projectId", e)
                 Result.failure(e)
             }
         }

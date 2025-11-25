@@ -38,9 +38,8 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:screenOrientation="portrait"
+            android:launchMode="singleTask" android:screenOrientation="portrait"
             android:theme="@style/Theme.HarmoniaTPI">
-
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -52,11 +51,9 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <data android:scheme="harmoniatpi" android:host="subscription_return" />
+                <data android:scheme="harmoniatpi" android:host="payment_return" />
             </intent-filter>
-
         </activity>
-
 
         <provider
             android:name="androidx.core.content.FileProvider"

@@ -39,4 +39,21 @@ sealed class EffectConfig {
      * Un valor de 0.0 es solo la señal original, 1.0 es máxima intensidad del efecto.
      */
     data class Flanger(val rate: Float, val wet: Float) : EffectConfig()
+
+    data class LowPass(val frequency: Float) : EffectConfig()
+
+
+    data class Reverb(val roomSize: Float, val damping: Float, val wet: Float) : EffectConfig()
+    object Telephone : EffectConfig()
+    data class Speed(val speed: Float) : EffectConfig()
+    data class Distortion(val drive: Float) : EffectConfig()
+    data class Compressor(val threshold: Float, val ratio: Float) : EffectConfig()
+    data class MidBoost(val frequency: Float, val bandwidth: Float) : EffectConfig()
+    data class FadeIn(val durationSeconds: Float) : EffectConfig()
+    data class FadeOut(val durationSeconds: Float) : EffectConfig()
+    data class Tremolo(val frequency: Float, val depth: Float) : EffectConfig()
+
+    data class Preset(val type: PresetType) : EffectConfig()
 }
+
+enum class PresetType { MEGAPHONE, UNDERWATER, SLAPBACK }

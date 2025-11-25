@@ -29,7 +29,11 @@ sealed class NavigationRoutes() {
     data object PaymentMarketScreenRoute : NavigationRoutes()
 
     @Serializable
-    data object PaymentResultScreenRoute : NavigationRoutes()
+    data class PaymentResultScreenRoute(
+        val status: String? = null,
+        val payment_id: String? = null,
+        val preapproval_id: String? = null
+    ) : NavigationRoutes()
 
 }
 

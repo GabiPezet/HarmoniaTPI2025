@@ -2,6 +2,7 @@ package com.android.harmoniatpi
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -35,6 +36,11 @@ class LoginPreviewTest {
     fun showPreviewScreenTest() {
         setOrientationScreenPortrait(composeTestRule)
 
+        composeTestRule.waitUntil(3000) {
+            composeTestRule.onAllNodesWithTag("PREVIEW_SCREEN", useUnmergedTree = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+
         composeTestRule
             .onNodeWithTag("PREVIEW_SCREEN", useUnmergedTree = true)
             .assertIsDisplayed()
@@ -49,6 +55,11 @@ class LoginPreviewTest {
     fun showLoginScreenAfterClickPreviewScreen() {
         setOrientationScreenPortrait(composeTestRule)
 
+        composeTestRule.waitUntil(3000) {
+            composeTestRule.onAllNodesWithTag("PREVIEW_SCREEN", useUnmergedTree = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+
         composeTestRule
             .onNodeWithTag("PREVIEW_SCREEN", useUnmergedTree = true)
             .assertIsDisplayed()
@@ -62,6 +73,8 @@ class LoginPreviewTest {
         composeTestRule
             .onNodeWithTag("LOGIN_SCREEN", useUnmergedTree = true)
             .assertIsDisplayed()
+
+        Thread.sleep(5000)
     }
 
 }

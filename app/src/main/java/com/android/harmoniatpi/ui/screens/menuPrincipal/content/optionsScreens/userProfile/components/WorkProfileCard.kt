@@ -107,25 +107,6 @@ fun WorkProfileCard(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Column(horizontalAlignment = Alignment.Start, modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = "Tu valoración: ${"%.1f".format(rating)} / 5.0",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Slider(
-                        value = rating,
-                        onValueChange = { rating = it },
-                        valueRange = 0f..5f,
-                        steps = 9
-                    )
-                    RatingBar(
-                        rating = rating,
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
-                    )
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
@@ -168,7 +149,15 @@ fun WorkProfileCard(
                     label = "Ubicación:", value = uiState.location, leading = Icons.Default.Place
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                RatingBar(rating = uiState.rating, modifier = Modifier.fillMaxWidth())
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "Valoración de la comunidad",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    // Muestra el float tal cual viene de la base de datos
+                    RatingBar(rating = uiState.rating, modifier = Modifier.padding(top = 4.dp))
+                }
             }
         }
     }

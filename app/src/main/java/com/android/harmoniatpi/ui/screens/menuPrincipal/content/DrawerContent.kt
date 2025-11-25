@@ -15,6 +15,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import com.android.harmoniatpi.ui.components.ShowConfirmationDialog
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.MenuUiState
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.OptionsMenu
@@ -49,6 +50,7 @@ fun DrawerContent(
     }
 
     ShowConfirmationDialog(
+        modifier = Modifier.testTag("showCloseSessionDialog"),
         show = showCloseSessionDialog,
         onDismiss = { showCloseSessionDialog = false },
         onConfirm = {
@@ -120,7 +122,6 @@ fun DrawerScreenContent(
                 viewModel = drawerViewModel,
                 uiState = uiState,
                 innerPadding = innerPadding,
-                onNavigateToFriends = onNavigateToFriends
             )
         }
 
