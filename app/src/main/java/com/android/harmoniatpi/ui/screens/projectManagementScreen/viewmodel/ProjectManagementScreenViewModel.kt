@@ -1,19 +1,24 @@
 package com.android.harmoniatpi.ui.screens.projectManagementScreen.viewmodel
 
 import android.content.Context
+import android.media.MediaMetadataRetriever
 import android.media.MediaRecorder
 import android.net.Uri
+import kotlinx.coroutines.flow.collectLatest
 import android.util.Log
+import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import be.tarsos.dsp.AudioDispatcher
 import com.android.harmoniatpi.data.audio.util.TunerEngine
 import com.android.harmoniatpi.domain.cache.HoloJamCache
+import com.android.harmoniatpi.domain.interfaces.Repository
 import com.android.harmoniatpi.domain.model.audio.AudioSourceType
 import com.android.harmoniatpi.domain.model.audio.EffectConfig
 import com.android.harmoniatpi.domain.model.audio.WaveformResult
 import com.android.harmoniatpi.domain.model.metronome.MetronomeEngine
 import com.android.harmoniatpi.domain.model.project.AudioTrack
+import com.android.harmoniatpi.domain.usecases.GetUserIsPremiumUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.AddTrackFromFileUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.AddTrackFromSegmentUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.AddTrackUseCase
@@ -44,6 +49,7 @@ import com.android.harmoniatpi.domain.usecases.audioUseCases.TrimAudioTrackUseCa
 import com.android.harmoniatpi.domain.usecases.audioUseCases.UnMuteTrackUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.UndoEffectUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.UndoTrimUseCase
+import com.android.harmoniatpi.domain.usecases.paymentUseCases.TogglePremiumStatusUseCase
 import com.android.harmoniatpi.domain.usecases.roomUseCases.UpdateOrInsertProjectInDBUseCase
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.BottomSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.ProjectScreenUiState
@@ -103,7 +109,9 @@ class ProjectManagementScreenViewModel @Inject constructor(
     private val applyFlangerEffectUseCase: ApplyFlangerEffectUseCase,
     private val tunerEngine: TunerEngine,
     private val metronomeEngine: MetronomeEngine,
-    private val previewEffectUseCase: PreviewEffectUseCase
+    private val previewEffectUseCase: PreviewEffectUseCase,
+    private val getUserIsPremiumUseCase: GetUserIsPremiumUseCase,
+    private val togglePremiumStatusUseCase: TogglePremiumStatusUseCase
 ) : ViewModel() {
     private val _state = MutableStateFlow(ProjectScreenUiState())
     private var selectedTrack: TrackUi? = null
@@ -128,11 +136,15 @@ class ProjectManagementScreenViewModel @Inject constructor(
     private val _isPreviewPlaying = MutableStateFlow(false)
     val isPreviewPlaying = _isPreviewPlaying.asStateFlow()
 
-    // Simulación de usuario Premium (Todo: modificar segun la logica que usemos para habilitar usuarios premium)
-    private val _isUserPremium = MutableStateFlow(false)
-    val isUserPremium = _isUserPremium.asStateFlow()
-
     init {
+        viewModelScope.launch {
+            // Ahora la función invoke() devuelve el Flow<Boolean>
+            getUserIsPremiumUseCase().collectLatest { isPremium ->
+                _state.update {
+                    it.copy(isPremium = isPremium) // Esto se actualiza CADA VEZ que cambia en Firestore/DB
+                }
+            }
+        }
         startPlaybackObserver()
         fetchTracks()
         checkIfTracksWherePlayed()
@@ -388,6 +400,11 @@ class ProjectManagementScreenViewModel @Inject constructor(
     }
 
     fun addNewTrack(sourceType: AudioSourceType) {
+        val isPremium = state.value.isPremium // Obtener de UiState
+        if (!isPremium && state.value.tracks.size >= 5) {
+            Toast.makeText(context, "El límite para usuarios Free es de 5 pistas.", Toast.LENGTH_LONG).show()
+            return
+        }
         addTrack(sourceType)
     }
 
@@ -412,10 +429,28 @@ class ProjectManagementScreenViewModel @Inject constructor(
     }
 
     fun importTrackFromFile(uri: Uri) {
+        val isPremium = state.value.isPremium
+        if (!isPremium && state.value.tracks.size >= 5) {
+            Toast.makeText(context, "El límite para usuarios Free es de 5 pistas.", Toast.LENGTH_LONG).show()
+            return
+        }
         _state.update { it.copy(importAudioLoading = true) }
         viewModelScope.launch {
             val tempFile = File(context.cacheDir, "temp_import_${System.currentTimeMillis()}.tmp")
-
+            try {
+                // *** ATENCIÓN: Debes implementar 'getMediaDuration' para obtener la duración real del archivo ***
+                val durationMs = getMediaDuration(uri)
+                if (!isPremium && durationMs > 300000L) { // 5 minutos = 300,000 ms
+                    Toast.makeText(context, "La duración máxima para usuarios Free es de 5 minutos.", Toast.LENGTH_LONG).show()
+                    _state.update { it.copy(importAudioLoading = false) }
+                    return@launch
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "No se pudo obtener la duración del archivo importado.", e)
+                Toast.makeText(context, "Error al validar la duración del archivo.", Toast.LENGTH_SHORT).show()
+                _state.update { it.copy(importAudioLoading = false) }
+                return@launch
+            }
             try {
                 withContext(Dispatchers.IO) {
                     context.contentResolver.openInputStream(uri)?.use { inputStream ->
@@ -883,6 +918,11 @@ class ProjectManagementScreenViewModel @Inject constructor(
     }
 
     fun applyHighPassFilter(trackId: Long, frequency: Float) {
+        val isPremium = state.value.isPremium // Obtener de UiState
+        if (!isPremium) {
+            Toast.makeText(context, "El Filtro de Paso Alto es un efecto Premium.", Toast.LENGTH_LONG).show()
+            return
+        }
         viewModelScope.launch {
             applyHighPassFilterUseCase(trackId, frequency)
                 .onSuccess {
@@ -898,6 +938,11 @@ class ProjectManagementScreenViewModel @Inject constructor(
     }
 
     fun applyFlangerEffect(trackId: Long, rate: Float, wet: Float) {
+        val isPremium = state.value.isPremium // Obtener de UiState
+        if (!isPremium) {
+            Toast.makeText(context, "El efecto Flanger es una función Premium.", Toast.LENGTH_LONG).show()
+            return
+        }
         viewModelScope.launch {
             applyFlangerEffectUseCase(trackId, rate, wet)
                 .onSuccess {
@@ -1183,4 +1228,52 @@ class ProjectManagementScreenViewModel @Inject constructor(
 
     private var audioClipboard: AudioClipboard? = null
 
+    private fun getMediaDuration(uri: Uri): Long {
+        // 'context' es la instancia inyectada en el ViewModel
+        val retriever = MediaMetadataRetriever()
+
+        return try {
+            // 1. Establecer el origen de datos usando el Content URI
+            retriever.setDataSource(context, uri)
+
+            // 2. Extraer la duración (viene como String en milisegundos)
+            val durationString = retriever.extractMetadata(
+                MediaMetadataRetriever.METADATA_KEY_DURATION
+            )
+
+            // 3. Convertir el String a Long. Si es nulo o falla, devuelve 0L.
+            durationString?.toLongOrNull() ?: 0L
+
+        } catch (e: Exception) {
+            // Capturar y loguear cualquier excepción (Ej. SecurityException, IllegalArgumentException)
+            Log.e(TAG, "Error al obtener duración para URI: $uri", e)
+            0L
+        } finally {
+            // 4. MUY IMPORTANTE: Liberar los recursos del retriever.
+            retriever.release()
+        }
+    }
+
+    fun togglePremiumStatusForTesting() {
+        viewModelScope.launch {
+            val isCurrentlyPremium = state.value.isPremium
+
+            // 1. Llamada a la base de datos
+            togglePremiumStatusUseCase(isCurrentlyPremium)
+                .onSuccess { updatedUser ->
+                    val statusText = if (updatedUser.isPremium) "PRO" else "FREE"
+
+                    // 2. ✨ ACTUALIZACIÓN OPTIMISTA (Inmediata) DE LA UI
+                    _state.update {
+                        it.copy(isPremium = updatedUser.isPremium)
+                    }
+
+                    Toast.makeText(context, "Modo de prueba: $statusText activado", Toast.LENGTH_SHORT).show()
+                }
+                .onFailure { e ->
+                    Log.e(TAG, "Error al cambiar el estado Premium de prueba", e)
+                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+        }
+    }
 }

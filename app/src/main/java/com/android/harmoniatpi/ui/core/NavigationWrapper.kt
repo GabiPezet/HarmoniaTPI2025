@@ -4,11 +4,16 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
+import androidx.navigation.toRoute
 import com.android.harmoniatpi.domain.model.project.Project
 import com.android.harmoniatpi.ui.components.AnimationHorizontalEffect
 import com.android.harmoniatpi.ui.core.navigation.NavigationRoutes
@@ -27,6 +32,7 @@ import com.android.harmoniatpi.ui.screens.menuPrincipal.content.DrawerContent
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.viewmodel.DrawerContentViewModel
 import com.android.harmoniatpi.ui.screens.notificationScreen.NotificationsScreen
 import com.android.harmoniatpi.ui.screens.paymentMarketScreen.PaymentMarketScreen
+import com.android.harmoniatpi.ui.screens.paymentMarketScreen.viewModel.PaymentMarketViewModel
 import com.android.harmoniatpi.ui.screens.paymentResultScreen.PaymentResultScreen
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.ProjectManagementScreen
 import com.android.harmoniatpi.ui.screens.registerScreen.RegisterScreen
@@ -115,7 +121,8 @@ fun NavigationWrapper(
                 ProjectManagementScreen(
                     onBack = {
                         navController.popBackStack()
-                    }
+                    },
+                    onNavigateToPremium = { navController.navigate(PaymentMarketScreenRoute) }
                 )
             }
         }
@@ -134,23 +141,51 @@ fun NavigationWrapper(
         }
 
         composable<PaymentMarketScreenRoute> {
-            PaymentMarketScreen(onNavigateBack = { navController.popBackStack() })
+            PaymentMarketScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onPaymentReturn = { deepLinkUri ->
+                    navController.navigate(deepLinkUri)
+                }
+            )
         }
 
 
         composable<NavigationRoutes.PaymentResultScreenRoute>(
             deepLinks = listOf(
                 navDeepLink {
-                    uriPattern = "https://holo-jam-landing-tpi.vercel.app/"
+                    // El patrón mapea 'collection_status' de la URL externa al campo 'status' de tu data class
+                    uriPattern = "harmoniatpi://payment_return?collection_status={status}&payment_id={payment_id}&preapproval_id={preapproval_id}"
                 }
             )
         ) { backStackEntry ->
-            val status = backStackEntry.arguments?.getString("status") ?: "unknown"
-            val paymentId = backStackEntry.arguments?.getString("payment_id")
+
+            // 1. Recuperamos el objeto ruta completo de forma segura
+            val route = backStackEntry.toRoute<NavigationRoutes.PaymentResultScreenRoute>()
+
+            val rawStatus = route.status
+            val paymentId = route.payment_id
+            val preapprovalId = route.preapproval_id
+
+            // 2. Lógica de "Preferencia de Suscripción"
+            val finalStatus = when {
+                !rawStatus.isNullOrBlank() && rawStatus != "null" -> rawStatus
+                !preapprovalId.isNullOrBlank() -> "approved"
+                else -> "unknown"
+            }
+
+            // Para mostrar en pantalla, usamos el ID que haya llegado
+            val finalId = route.payment_id ?: route.preapproval_id
+
+            val paymentViewModel: PaymentMarketViewModel = hiltViewModel()
+
+            // 3. Usamos el estado calculado
+            LaunchedEffect(finalStatus) {
+                paymentViewModel.checkPaymentStatus(finalStatus, finalId)
+            }
 
             PaymentResultScreen(
-                status = status,
-                paymentId = paymentId,
+                status = finalStatus,
+                paymentId = finalId,
                 onContinue = {
                     navController.navigate(HomeScreenRoute) {
                         popUpTo(HomeScreenRoute) { inclusive = true }
