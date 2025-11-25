@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -189,7 +190,7 @@ fun ProjectManagementScreen(
             }
         )
     }
-    //  ----INICIO BOTTOMSHEET ----
+    // BottomSheet inicio
     val activeSheet = state.activeSheetContent
     if (activeSheet != null) {
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -252,7 +253,7 @@ fun ProjectManagementScreen(
                 }
 
                 is BottomSheetContent.InDevelopment -> {
-                    // Composable para "En desarrollo"
+
                     InDevelopmentSheetContent()
                 }
 
@@ -283,6 +284,44 @@ fun ProjectManagementScreen(
                             viewModel.applyFlangerEffect(id, rate, wet)
                             viewModel.hideBottomSheet()
                         },
+                        onApplyLowPass = { id, frequency ->
+                            viewModel.stopEffectPreview()
+                            viewModel.applyLowPassFilter(id, frequency)
+                            viewModel.hideBottomSheet()
+                        },
+                        onApplyTelephone = {
+                            id ->
+                            viewModel.stopEffectPreview()
+                            viewModel.applyTelephoneEffect(id)
+                            viewModel.hideBottomSheet()
+                        },
+                        onApplyFadeIn = {
+                                id, duration ->
+                            viewModel.stopEffectPreview()
+                            viewModel.applyFadeIn(id, duration)
+                            viewModel.hideBottomSheet()
+                        },
+                        onApplyFadeOut = {
+                                id, duration ->
+                            viewModel.stopEffectPreview()
+                            viewModel.applyFadeOut(id, duration)
+                            viewModel.hideBottomSheet()
+                        },
+                        onApplyDistortion = { id, drive ->
+                            viewModel.stopEffectPreview()
+                            viewModel.applyDistortion(id, drive)
+                            viewModel.hideBottomSheet()
+                        },
+                        onApplyTremolo = { id, frequency, depth ->
+                            viewModel.stopEffectPreview()
+                            viewModel.applyTremolo(id, frequency, depth)
+                            viewModel.hideBottomSheet()
+                        },
+                        onNormalize = { id ->
+                            viewModel.stopEffectPreview()
+                            viewModel.normalizeTrack(id)
+                            viewModel.hideBottomSheet()
+                        },
                         onDismiss = {
                             viewModel.stopEffectPreview() // Detener al cancelar
                             viewModel.hideBottomSheet()
@@ -304,14 +343,14 @@ fun ProjectManagementScreen(
             }
         }
     }
-    // ----> FIN  BOTTOMSHEET <----
+    // BottomSheet final
 
-    // ----> INICIO SNACKBAR <----
+    // SnackBar inicio
 
     val snackbarHostState = remember { SnackbarHostState() }
     var snackbarMessage by remember { mutableStateOf<String?>(null) }
 
-    //Muestra el snackbar para los botones ProjectControlButtonRow cuando el mensaje cambie.
+    //Muestra el snackbar para ProjectControlButtonRow al cambiar mensaje
     LaunchedEffect(snackbarMessage) {
         snackbarMessage?.let {
             scope.launch {
@@ -320,7 +359,7 @@ fun ProjectManagementScreen(
             }
         }
     }
-    // Este escuchará los mensajes que vienen del VIEWMODEL
+    // Escucha mensajes del viewmodel
     LaunchedEffect(Unit) {
         viewModel.uiMessages.collect { message ->
             scope.launch {
@@ -328,10 +367,10 @@ fun ProjectManagementScreen(
             }
         }
     }
-    // ----> FIN SNACKBAR <----
+    // SnackBar fin
 
-    // --- INICIO DE LA LÓGICA DE ANIMACIÓN DEL FAB ---
-    // Animación de "ERROR" (Pulso brusco)
+
+
     val errorPulseScale = remember { Animatable(1f) }
     LaunchedEffect(state.fabPulseTrigger) {
         if (state.fabPulseTrigger > 0) {
@@ -348,7 +387,7 @@ fun ProjectManagementScreen(
         }
     }
 
-    //Animación "CTA" (Pulso continuo)
+
     val infiniteTransition = rememberInfiniteTransition(label = "FAB Empty Pulse")
 
     val ctaPulseScale by infiniteTransition.animateFloat(
@@ -368,12 +407,12 @@ fun ProjectManagementScreen(
 
     val finalFabScale = baseScale * errorPulseScale.value
 
-    // --- Fin DE LA LÓGICA DE ANIMACIÓN DEL FAB ---
+
 
 
     Scaffold(
         modifier = Modifier.fillMaxSize().testTag("ProjectManagementScreen"),
-        topBar = { //Impl de top bar
+        topBar = {
             TopAppBar(
                 title = {
                     Text(
@@ -492,7 +531,7 @@ fun ProjectManagementScreen(
                     onError = { message ->
                         snackbarMessage = message
                     },
-                    modifier = Modifier // Ya no necesita modifier, el componente se autogestiona
+                    modifier = Modifier.navigationBarsPadding()
                 )
             }
         }
@@ -510,7 +549,7 @@ fun ProjectManagementScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .horizontalScroll(sharedScrollState) // Se sincroniza con el LazyColumn
+                    .horizontalScroll(sharedScrollState)
                     .background(MaterialTheme.colorScheme.surfaceContainer)
             ) {
                 TimelineHeader(
