@@ -123,8 +123,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
     private val applyFadeOutUseCase: ApplyFadeOutUseCase,
     private val applyTelephoneEffectUseCase: ApplyTelephoneEffectUseCase,
     private val applyDistortionUseCase: ApplyDistortionUseCase,
-    private val applyTremoloUseCase: ApplyTremoloUseCase
-    private val previewEffectUseCase: PreviewEffectUseCase,
+    private val applyTremoloUseCase: ApplyTremoloUseCase,
     private val getUserIsPremiumUseCase: GetUserIsPremiumUseCase,
     private val togglePremiumStatusUseCase: TogglePremiumStatusUseCase
 ) : ViewModel() {
