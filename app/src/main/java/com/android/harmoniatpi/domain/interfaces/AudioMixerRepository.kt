@@ -220,4 +220,16 @@ interface AudioMixerRepository {
      */
     fun isPreviewActive(): Boolean
 
+    suspend fun applyLowPassFilter(trackId: Long, frequency: Float): Result<Unit>
+    suspend fun applyFadeIn(trackId: Long, durationSeconds: Float): Result<Unit>
+
+    suspend fun normalizeTrack(trackId: Long): Result<Unit>
+
+    suspend fun applyTelephoneEffect(trackId: Long): Result<Unit>
+
+    suspend fun applyFadeOut(trackId: Long, durationSeconds: Float): Result<Unit>
+
+    suspend fun applyDistortion(trackId: Long, drive: Float): Result<Unit>
+    suspend fun applyTremolo(trackId: Long, frequency: Float, depth: Float): Result<Unit>
+
 }

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Stop
@@ -23,8 +24,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -42,6 +46,7 @@ import com.android.harmoniatpi.domain.model.audio.EffectConfig
 import com.android.harmoniatpi.ui.components.PremiumAwareButton
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import java.text.DecimalFormat
+import kotlin.math.ln
 
 /**
  * Contenido del BottomSheet para la configuración y aplicación de efectos de audio.
@@ -73,10 +78,27 @@ fun EffectsSheetContent(
     onApplyDelay: (id: Long, delayTimeSec: Float, decay: Float) -> Unit,
     onApplyHighPass: (id: Long, frequency: Float) -> Unit,
     onApplyFlanger: (id: Long, rate: Float, wet: Float) -> Unit,
+    onApplyLowPass: (id: Long, frequency: Float) -> Unit,
+    onApplyFadeIn: (Long, Float) -> Unit,
+    onApplyFadeOut: (Long, Float) -> Unit,
+    onApplyTelephone: (Long) -> Unit,
+    onApplyDistortion: (Long, Float) -> Unit,
+    onApplyTremolo: (Long, Float, Float) -> Unit,
+    onNormalize: (id: Long) -> Unit,
     onDismiss: () -> Unit,
 ) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
-    val tabs = listOf("Delay", "Filtro", "Flanger")
+    val tabs = listOf(
+        "Delay",
+        "High Pass",
+        "Low Pass",
+        "Flanger",
+        "Fade In",
+        "Fade Out",
+        "Telephone",
+        "Distorsión",
+        "Trémolo",
+    )
 
     // Estado local para cada efecto
     var delayTimeMs by remember { mutableFloatStateOf(500f) }
@@ -84,22 +106,50 @@ fun EffectsSheetContent(
     var hpfFrequency by remember { mutableFloatStateOf(100f) }
     var flangerRate by remember { mutableFloatStateOf(0.1f) }
     var flangerWet by remember { mutableFloatStateOf(0.5f) }
+    var lpfFrequency by remember { mutableFloatStateOf(5000f) }
+    var pitchFactor by remember { mutableFloatStateOf(1.0f) }
+    var fadeInSec by remember { mutableFloatStateOf(2.0f) }
+    var fadeOutSec by remember { mutableFloatStateOf(2.0f) }
+    val decimalFormat = remember { DecimalFormat("0.##") }
+    var distDrive by remember { mutableFloatStateOf(0.5f) }
+    var tremFreq by remember { mutableFloatStateOf(5.0f) }
+    var tremDepth by remember { mutableFloatStateOf(0.8f) }
 
     fun getCurrentConfig(): EffectConfig {
         return when (selectedTabIndex) {
             0 -> EffectConfig.Delay(delayTimeMs / 1000f, delayDecay)
             1 -> EffectConfig.HighPass(hpfFrequency)
-            2 -> EffectConfig.Flanger(flangerRate, flangerWet)
+            2 -> EffectConfig.LowPass(lpfFrequency)
+            3 -> EffectConfig.Flanger(flangerRate, flangerWet)
+            4 -> EffectConfig.FadeIn(fadeInSec)
+            5 -> EffectConfig.FadeOut(fadeOutSec)
+            6 -> EffectConfig.Telephone
+            7 -> EffectConfig.Distortion(distDrive)
+            8 -> EffectConfig.Tremolo(tremFreq, tremDepth)
             else -> EffectConfig.Delay(0.5f, 0.5f)
         }
     }
-
-    // Lógica crítica: El Delay (0) es gratis. Los otros (1 y 2) requieren Premium.
     val isEffectPremium = selectedTabIndex != 0
     val canApply = isPremium || !isEffectPremium
 
     // Observador de cambios en tiempo real
     LaunchedEffect(delayTimeMs, delayDecay, hpfFrequency, flangerRate, flangerWet) {
+        if (isPreviewing) {
+            onParamChange(getCurrentConfig())
+        }
+    }
+
+    // Observador de cambios en tiempo real:
+    // Si el usuario mueve un slider mientras el preview está activo, actualizamos el motor de audio.
+    LaunchedEffect(
+        delayTimeMs,
+        delayDecay,
+        hpfFrequency,
+        lpfFrequency,
+        flangerRate,
+        flangerWet,
+        pitchFactor
+    ) {
         if (isPreviewing) {
             onParamChange(getCurrentConfig())
         }
@@ -115,23 +165,55 @@ fun EffectsSheetContent(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .fillMaxHeight(0.6f) // Un poco más alto para que entren bien los controles
+            .fillMaxHeight(0.65f)
             .padding(vertical = 16.dp, horizontal = 20.dp),
     ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                "Efectos: ${track.title}",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.weight(1f)
+            )
+
+            // Botón de Acción Rápida: Normalizar
+            OutlinedButton(
+                onClick = { onNormalize(track.id) },
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Icon(Icons.Default.AutoFixHigh, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text("Normalizar")
+            }
+        }
+
+        Spacer(Modifier.height(12.dp))
+
         Column(
             modifier = Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
         ) {
-            // Header
-            Text(
-                "Efectos: ${track.title}",
-                style = MaterialTheme.typography.titleLarge
-            )
-            Spacer(Modifier.height(16.dp))
-
-            // Selector de Efecto
-            PrimaryTabRow(selectedTabIndex = selectedTabIndex) {
+            // --- PESTAÑAS SCROLLABLES ---
+            ScrollableTabRow(
+                selectedTabIndex = selectedTabIndex,
+                edgePadding = 0.dp,
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.primary,
+                indicator = { tabPositions ->
+                    if (selectedTabIndex < tabPositions.size) {
+                        TabRowDefaults.SecondaryIndicator(
+                            modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            ) {
                 tabs.forEachIndexed { index, title ->
                     Tab(
                         selected = selectedTabIndex == index,
@@ -140,53 +222,106 @@ fun EffectsSheetContent(
                     )
                 }
             }
-            Spacer(Modifier.height(16.dp))
 
-            // Panel de Control
-            Column {
-                when (selectedTabIndex) {
-                    0 -> DelayControlPanel(
-                        timeMs = delayTimeMs,
-                        decay = delayDecay,
-                        onTimeChange = { delayTimeMs = it },
-                        onDecayChange = { delayDecay = it }
-                    )
+            Spacer(Modifier.height(24.dp))
 
-                    1 -> FilterControlPanel(
-                        frequency = hpfFrequency,
-                        onFrequencyChange = { hpfFrequency = it }
-                    )
+            // --- PANELES DE CONTROL ---
+            when (selectedTabIndex) {
+                0 -> DelayControlPanel(
+                    timeMs = delayTimeMs,
+                    decay = delayDecay,
+                    onTimeChange = { delayTimeMs = it },
+                    onDecayChange = { delayDecay = it }
+                )
 
-                    2 -> FlangerControlPanel(
-                        rate = flangerRate,
-                        wet = flangerWet,
-                        onRateChange = { flangerRate = it },
-                        onWetChange = { flangerWet = it }
+                1 -> FilterControlPanel(
+                    title = "Filtro Pasa-Altos (High Pass)",
+                    description = "Elimina frecuencias graves (ruido de fondo, golpes) por debajo del corte.",
+                    frequency = hpfFrequency,
+                    range = 20f..1000f,
+                    onFrequencyChange = { hpfFrequency = it }
+                )
+
+                2 -> FilterControlPanel(
+                    title = "Filtro Pasa-Bajos (Low Pass)",
+                    description = "Elimina frecuencias agudas (silbidos) por encima del corte. Crea sonido 'apagado'.",
+                    frequency = lpfFrequency,
+                    range = 200f..20000f,
+                    onFrequencyChange = { lpfFrequency = it }
+                )
+
+                3 -> FlangerControlPanel(
+                    rate = flangerRate,
+                    wet = flangerWet,
+                    onRateChange = { flangerRate = it },
+                    onWetChange = { flangerWet = it }
+                )
+
+                4 -> FadeControlPanel("Fade In", fadeInSec) { fadeInSec = it }
+                5 -> FadeControlPanel("Fade Out", fadeOutSec) { fadeOutSec = it }
+
+                6 -> Column {
+                    Text("Efecto Teléfono", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Aplica un filtro de banda y distorsión ligera para simular una llamada.",
+                        style = MaterialTheme.typography.bodyMedium
                     )
                 }
+
+                7 -> Column {
+                    Text("Drive (Intensidad): ${(distDrive * 100).toInt()}%")
+                    Slider(value = distDrive, onValueChange = { distDrive = it }, valueRange = 0.0f..1.0f)
+                    Text("Agrega suciedad y saturación a la señal.", style = MaterialTheme.typography.bodySmall)
+                }
+
+                8 -> Column {
+                    Text("Velocidad: ${String.format("%.1f", tremFreq)} Hz")
+                    Slider(value = tremFreq, onValueChange = { tremFreq = it }, valueRange = 0.5f..15.0f)
+                    Spacer(Modifier.height(8.dp))
+                    Text("Profundidad: ${(tremDepth * 100).toInt()}%")
+                    Slider(value = tremDepth, onValueChange = { tremDepth = it }, valueRange = 0.0f..1.0f)
+                }
+
             }
+
             Spacer(Modifier.height(16.dp))
         }
-
-        // Barra de Acciones Inferior
+        // Barra de Acciones Inferior (fija)
         EffectsActionButtons(
             canApply = canApply,
             isPreviewing = isPreviewing,
             onPreviewClick = { onPreviewToggle(getCurrentConfig()) },
             onCancelClick = onDismiss,
             onApplyClick = {
+                // Despacha la acción correspondiente al Tab activo
                 when (selectedTabIndex) {
                     0 -> onApplyDelay(track.id, delayTimeMs / 1000f, delayDecay)
                     1 -> onApplyHighPass(track.id, hpfFrequency)
-                    2 -> onApplyFlanger(track.id, flangerRate, flangerWet)
+                    2 -> onApplyLowPass(track.id, lpfFrequency)
+                    3 -> onApplyFlanger(track.id, flangerRate, flangerWet)
+                    4 -> onApplyFadeIn(track.id, fadeInSec)
+                    5 -> onApplyFadeOut(track.id, fadeOutSec)
+                    6 -> onApplyTelephone(track.id)
+                    7 -> onApplyDistortion(track.id, distDrive)
+                    8 -> onApplyTremolo(track.id, tremFreq, tremDepth)
                 }
             },
             onUpsellClick = onShowUpsell
         )
     }
 }
+    @Composable
+    fun FadeControlPanel(title: String, seconds: Float, onValueChange: (Float) -> Unit) {
+        Column {
+            Text("$title: ${String.format("%.1f", seconds)} segundos")
+            Slider(
+                value = seconds,
+                onValueChange = onValueChange,
+                valueRange = 0.1f..10.0f
+            )
+        }
+    }
 
-// --- Sub-componentes ---
 
 @Composable
 private fun DelayControlPanel(
@@ -218,24 +353,27 @@ private fun DelayControlPanel(
 
 @Composable
 private fun FilterControlPanel(
+    title: String,
+    description: String,
     frequency: Float,
+    range: ClosedFloatingPointRange<Float>,
     onFrequencyChange: (Float) -> Unit
 ) {
     Column {
         Text(
-            "Frecuencia de corte: ${frequency.toInt()} Hz",
+            "$title: ${frequency.toInt()} Hz",
             style = MaterialTheme.typography.bodyMedium
         )
         Text(
-            "Elimina frecuencias graves por debajo de este valor.",
+            description,
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(16.dp))
         Slider(
             value = frequency,
             onValueChange = onFrequencyChange,
-            valueRange = 20f..1000f
+            valueRange = range
         )
     }
 }

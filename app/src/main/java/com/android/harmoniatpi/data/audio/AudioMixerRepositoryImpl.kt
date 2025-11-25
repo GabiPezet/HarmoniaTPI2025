@@ -48,6 +48,13 @@ import java.util.Arrays
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import kotlin.math.roundToLong
+import be.tarsos.dsp.filters.LowPassFS
+import be.tarsos.dsp.PitchShifter
+import be.tarsos.dsp.GainProcessor
+import com.android.harmoniatpi.data.audio.util.DistortionProcessor
+import com.android.harmoniatpi.data.audio.util.FadeInProcessor
+import com.android.harmoniatpi.data.audio.util.FadeOutProcessor
+import com.android.harmoniatpi.data.audio.util.TremoloProcessor
 
 /**
  * Implementación concreta de [AudioMixerRepository].
@@ -154,7 +161,7 @@ class AudioMixerRepositoryImpl @Inject constructor(
         val id = System.currentTimeMillis()
         val file = File(context.filesDir, "$id.pcm")
 
-        // 🔹 Crea el archivo físico vacío
+
         if (!file.exists()) {
             file.createNewFile()
         }
@@ -931,7 +938,7 @@ class AudioMixerRepositoryImpl @Inject constructor(
     }
 
     override fun startEffectPreview(trackId: Long, config: EffectConfig) {
-        // 1. Detener cualquier preview anterior
+
         stopEffectPreview()
 
         val track = tracks.value.find { it.id == trackId } ?: return
@@ -939,19 +946,19 @@ class AudioMixerRepositoryImpl @Inject constructor(
         if (!file.exists()) return
 
         try {
-            // 2. Configurar el formato (Asumimos PCMs 44100, 16bit, Mono como en PcmAudioPlayer)
+
             val sampleRate = 44100
             val bufferSize = 2048
             val overlap = 0
 
-            // 3. Crear el Dispatcher desde el archivo
-            // Usamos FileInputStream envuelto para Tarsos
+
+
             val fileStream = FileInputStream(file)
             val audioStream = UniversalAudioInputStream(fileStream, TARSOS_FORMAT)
 
             previewDispatcher = AudioDispatcher(audioStream, bufferSize, overlap)
 
-            // 4. Crear y añadir el procesador de efecto según la configuración
+
             val effectProcessor = when (config) {
                 is EffectConfig.Delay -> {
                     DelayEffect(
@@ -967,23 +974,57 @@ class AudioMixerRepositoryImpl @Inject constructor(
 
                 is EffectConfig.Flanger -> {
                     FlangerEffect(
-                        0.005, // Delay base fijo para flanger
+                        0.005,
                         config.wet.toDouble(),
                         sampleRate.toDouble(),
                         config.rate.toDouble()
                     )
                 }
+
+                is EffectConfig.LowPass -> {
+                    LowPassFS(config.frequency, sampleRate.toFloat())
+                }
+
+                is EffectConfig.Telephone -> {
+
+                    HighPass(300f, TARSOS_FORMAT.sampleRate)
+                }
+
+
+                is EffectConfig.FadeIn -> {
+                    FadeInProcessor(config.durationSeconds, TARSOS_FORMAT.sampleRate.toInt())
+                }
+
+
+                is EffectConfig.FadeOut -> {
+
+                    val totalDurationSec = (file.length() / TARSOS_FORMAT.frameSize) / TARSOS_FORMAT.sampleRate
+                    FadeOutProcessor(config.durationSeconds, totalDurationSec, TARSOS_FORMAT.sampleRate.toInt())
+                }
+
+                is EffectConfig.Distortion -> DistortionProcessor(config.drive.toDouble())
+
+                is EffectConfig.Tremolo -> TremoloProcessor(config.frequency, config.depth, TARSOS_FORMAT.sampleRate)
+
+                else -> null
             }
 
-            previewDispatcher?.addAudioProcessor(effectProcessor)
+            if (effectProcessor != null) {
+                previewDispatcher?.addAudioProcessor(effectProcessor)
 
-            // 5. Añadir el "Sink" (Salida a parlantes)
-            // AndroidAudioPlayer es parte de TarsosDSP para Android
-            val audioPlayer =
-                AndroidAudioPlayer(TARSOS_FORMAT, bufferSize * 2, AudioManager.STREAM_MUSIC)
+
+                if (config is EffectConfig.Telephone) {
+                    val lowPass = LowPassFS(3000f, TARSOS_FORMAT.sampleRate.toFloat())
+                    previewDispatcher?.addAudioProcessor(lowPass)
+
+                    previewDispatcher?.addAudioProcessor(GainProcessor(1.5))
+                }
+            }
+
+
+            val audioPlayer = AndroidAudioPlayer(TARSOS_FORMAT, bufferSize * 2, AudioManager.STREAM_MUSIC)
             previewDispatcher?.addAudioProcessor(audioPlayer)
 
-            // 6. Ejecutar en un hilo separado
             Thread {
                 isPreviewing = true
                 previewDispatcher?.run()
@@ -991,7 +1032,7 @@ class AudioMixerRepositoryImpl @Inject constructor(
             }.start()
 
         } catch (e: Exception) {
-            Log.e(TAG, "Error iniciando preview de efecto", e)
+            Log.e(TAG, "Error iniciando preview", e)
             stopEffectPreview()
         }
     }
@@ -1003,6 +1044,232 @@ class AudioMixerRepositoryImpl @Inject constructor(
         }
         previewDispatcher = null
     }
+
+    override suspend fun applyLowPassFilter(trackId: Long, frequency: Float): Result<Unit> =
+        withContext(Dispatchers.IO) {
+
+            runCatching {
+                val track = tracks.value.find { it.id == trackId }
+                    ?: throw IllegalStateException("Track no encontrado: $trackId")
+
+                prepareFileForEffect(track)
+
+                val tempFile = File(track.path + ".tmp")
+                processAudioWithTarsos(track.path + ".original_effect", tempFile.path) { audioEvent ->
+
+                    val lowPass = LowPassFS(frequency, TARSOS_FORMAT.sampleRate)
+                    lowPass.process(audioEvent)
+                }
+
+
+                finalizeEffectApplication(track, tempFile)
+            }
+        }
+
+    override suspend fun normalizeTrack(trackId: Long): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val track = tracks.value.find { it.id == trackId }
+                ?: throw IllegalStateException("Track no encontrado")
+
+            val file = File(track.path)
+            if (!file.exists()) throw FileNotFoundException("Archivo no existe")
+
+
+
+            var maxAmplitude = 0.0f
+            val inputStream = FileInputStream(file)
+            val buffer = ByteArray(4096)
+            val converter = TarsosDSPAudioFloatConverter.getConverter(TARSOS_FORMAT)
+            val floatBuffer = FloatArray(2048) // 4096 bytes / 2 bytes por sample
+
+            while (inputStream.read(buffer) != -1) {
+                converter.toFloatArray(buffer, floatBuffer)
+                for (sample in floatBuffer) {
+                    val absSample = Math.abs(sample)
+                    if (absSample > maxAmplitude) {
+                        maxAmplitude = absSample
+                    }
+                }
+            }
+            inputStream.close()
+
+
+            if (maxAmplitude < 0.0001f || maxAmplitude >= 1.0f) return@runCatching
+
+
+            val targetPeak = 0.98f
+            val gainFactor = targetPeak / maxAmplitude
+
+            Log.i("AudioMixer", "Normalizando track con ID: ${track.id}. Max: $maxAmplitude, Gain: $gainFactor")
+
+
+            prepareFileForEffect(track)
+            val tempFile = File(track.path + ".tmp")
+            val gainProcessor = GainProcessor(gainFactor.toDouble())
+
+            processAudioWithTarsos(track.path + ".original_effect", tempFile.path) { audioEvent ->
+                gainProcessor.process(audioEvent)
+            }
+
+            finalizeEffectApplication(track, tempFile)
+        }
+    }
+
+    override suspend fun applyTelephoneEffect(trackId: Long): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val track = tracks.value.find { it.id == trackId }
+                    ?: throw IllegalStateException("Track no encontrado")
+
+                prepareFileForEffect(track)
+                val tempFile = File(track.path + ".tmp")
+
+
+                processAudioWithTarsos(track.path + ".original_effect", tempFile.path) { audioEvent ->
+                    val sampleRate = TARSOS_FORMAT.sampleRate
+
+
+                    val hpf = HighPass(300f, sampleRate)
+                    val lpf = LowPassFS(3000f, sampleRate)
+                    val gain = GainProcessor(1.5)
+
+                    hpf.process(audioEvent)
+                    lpf.process(audioEvent)
+                    gain.process(audioEvent)
+                }
+
+                finalizeEffectApplication(track, tempFile)
+            }
+        }
+
+    override suspend fun applyFadeIn(trackId: Long, durationSeconds: Float): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val track = tracks.value.find { it.id == trackId } ?: throw IllegalStateException("Track no encontrado")
+                prepareFileForEffect(track)
+                val tempFile = File(track.path + ".tmp")
+
+
+                val fadeIn = FadeInProcessor(durationSeconds, TARSOS_FORMAT.sampleRate.toInt())
+
+                processAudioWithTarsos(track.path + ".original_effect", tempFile.path) { audioEvent ->
+                    fadeIn.process(audioEvent)
+                }
+
+                finalizeEffectApplication(track, tempFile)
+            }
+        }
+
+    override suspend fun applyFadeOut(trackId: Long, durationSeconds: Float): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val track = tracks.value.find { it.id == trackId } ?: throw IllegalStateException("Track no encontrado")
+                prepareFileForEffect(track)
+                val tempFile = File(track.path + ".tmp")
+
+                // calculo duración total para saber cuándo bajar el volumen
+                val fileLen = File(track.path + ".original_effect").length()
+                val totalDurationSec = (fileLen / TARSOS_FORMAT.frameSize) / TARSOS_FORMAT.sampleRate
+
+                val fadeOut = FadeOutProcessor(durationSeconds, totalDurationSec.toFloat(), TARSOS_FORMAT.sampleRate.toInt())
+
+                processAudioWithTarsos(track.path + ".original_effect", tempFile.path) { audioEvent ->
+                    fadeOut.process(audioEvent)
+                }
+
+                finalizeEffectApplication(track, tempFile)
+            }
+        }
+
+    override suspend fun applyDistortion(trackId: Long, drive: Float): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val track = tracks.value.find { it.id == trackId } ?: throw IllegalStateException("No track")
+                prepareFileForEffect(track)
+                val tempFile = File(track.path + ".tmp")
+
+                val distortion = DistortionProcessor(drive.toDouble())
+
+                processAudioWithTarsos(track.path + ".original_effect", tempFile.path) { audioEvent ->
+                    distortion.process(audioEvent)
+                }
+                finalizeEffectApplication(track, tempFile)
+            }
+        }
+
+    override suspend fun applyTremolo(trackId: Long, frequency: Float, depth: Float): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val track = tracks.value.find { it.id == trackId } ?: throw IllegalStateException("No track")
+                prepareFileForEffect(track)
+                val tempFile = File(track.path + ".tmp")
+
+                val tremolo = TremoloProcessor(frequency, depth, TARSOS_FORMAT.sampleRate.toFloat())
+
+                processAudioWithTarsos(track.path + ".original_effect", tempFile.path) { audioEvent ->
+                    tremolo.process(audioEvent)
+                }
+                finalizeEffectApplication(track, tempFile)
+            }
+        }
+
+
+
+    private fun prepareFileForEffect(track: Track) {
+        val originalFile = File(track.path)
+        val backupFile = File(track.path + ".original_effect")
+
+        if (backupFile.exists()) backupFile.delete()
+
+
+        val trimBackup = File(track.path + ".original_trim")
+        if (trimBackup.exists()) trimBackup.delete()
+
+        if (!originalFile.renameTo(backupFile)) {
+            throw IOException("No se pudo crear backup para efecto")
+        }
+    }
+
+    private fun finalizeEffectApplication(track: Track, tempFile: File) {
+        val originalFile = File(track.path)
+        if (tempFile.exists()) {
+            if (!tempFile.renameTo(originalFile)) {
+                throw IOException("No se pudo renombrar archivo temporal")
+            }
+        }
+    }
+
+
+    private fun processAudioWithTarsos(inputPath: String, outputPath: String, processor: (AudioEvent) -> Unit) {
+        val inputFile = File(inputPath)
+        val outputFile = File(outputPath)
+
+        FileInputStream(inputFile).use { fis ->
+            FileOutputStream(outputFile).use { fos ->
+                val converter = TarsosDSPAudioFloatConverter.getConverter(TARSOS_FORMAT)
+                val byteBuffer = ByteArray(2048)
+                val floatBuffer = FloatArray(1024)
+                val audioEvent = AudioEvent(TARSOS_FORMAT)
+                audioEvent.setFloatBuffer(floatBuffer)
+
+                var bytesRead = fis.read(byteBuffer)
+                while (bytesRead != -1) {
+                    audioEvent.setBytesProcessing(bytesRead)
+                    converter.toFloatArray(byteBuffer, floatBuffer)
+
+
+                    processor(audioEvent)
+
+                    converter.toByteArray(floatBuffer, byteBuffer)
+                    fos.write(byteBuffer, 0, bytesRead)
+                    bytesRead = fis.read(byteBuffer)
+                }
+            }
+        }
+    }
+
+
+
 
     override fun isPreviewActive(): Boolean = isPreviewing
 
