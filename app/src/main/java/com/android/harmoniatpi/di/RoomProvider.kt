@@ -26,7 +26,7 @@ object RoomProvider {
             context,
             DataBaseHarmonia::class.java,
             DATABASE_NAME
-        ).build()
+        ).fallbackToDestructiveMigration(true).build()
 
     @Provides
     @Singleton
