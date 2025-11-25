@@ -23,6 +23,14 @@
           }
         },
         {
+          "client_id": "154479614223-p85rgdskfoe094drachh62uls2i4mjrt.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.android.harmoniatpi",
+            "certificate_hash": "dcc9c386a3a823d73c2ac95a98e68edb7a728646"
+          }
+        },
+        {
           "client_id": "154479614223-a77ds345029sk98m3ko76f3r4vkouhld.apps.googleusercontent.com",
           "client_type": 3
         }
