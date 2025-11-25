@@ -38,6 +38,15 @@ class ShowProjectScreenTest {
     private fun loginUntilCommunityScreen() {
         setOrientationScreenPortrait(composeTestRule)
 
+        composeTestRule.waitUntil(3000) {
+            composeTestRule.onAllNodesWithTag("PREVIEW_SCREEN", useUnmergedTree = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeTestRule
+            .onNodeWithTag("PREVIEW_SCREEN", useUnmergedTree = true)
+            .assertIsDisplayed()
+
         composeTestRule.onNodeWithTag("COMENZAR_BUTTON", useUnmergedTree = true)
             .assertIsDisplayed()
             .performClick()
@@ -173,19 +182,6 @@ class ShowProjectScreenTest {
             .assertDoesNotExist()
 
         composeTestRule.waitUntil(5000) {
-            composeTestRule.onAllNodesWithTag("POST_ITEM_0", useUnmergedTree = true)
-                .fetchSemanticsNodes().isNotEmpty()
-        }
-
-        composeTestRule
-            .onNodeWithTag("POST_ITEM_0", useUnmergedTree = true)
-            .assertIsDisplayed()
-
-        composeTestRule
-            .onNodeWithTag("ProjectCard", useUnmergedTree = true)
-            .performClick()
-
-        composeTestRule.waitUntil(5000) {
             composeTestRule.onAllNodesWithTag("ProjectManagementScreen", useUnmergedTree = true)
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -239,6 +235,21 @@ class ShowProjectScreenTest {
         composeTestRule
             .onNodeWithTag("DeleteMenuItem", useUnmergedTree = true)
             .performClick()
+
+        Thread.sleep(5000)
+
+        composeTestRule.waitUntil(2000) {
+            composeTestRule.onAllNodesWithTag("DeleteProjectDialog", useUnmergedTree = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeTestRule
+            .onNodeWithTag("DeleteProjectDialog", useUnmergedTree = true)
+            .assertIsDisplayed()
+
+                composeTestRule
+                    .onNodeWithTag("CONFIRM_BUTTON", useUnmergedTree = true)
+                    .performClick()
 
         composeTestRule.waitUntil(2000) {
             composeTestRule.onAllNodesWithTag("EmptyListMessage", useUnmergedTree = true)
@@ -437,6 +448,18 @@ class ShowProjectScreenTest {
             .onNodeWithTag("MenuOptionItemCloseSession", useUnmergedTree = true)
             .performClick()
 
+        composeTestRule.waitUntil(2000) {
+            composeTestRule.onAllNodesWithTag("showCloseSessionDialog", useUnmergedTree = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeTestRule
+            .onNodeWithTag("showCloseSessionDialog", useUnmergedTree = true)
+            .assertIsDisplayed()
+
+        composeTestRule
+            .onNodeWithTag("CONFIRM_BUTTON", useUnmergedTree = true)
+            .performClick()
     }
 
 }

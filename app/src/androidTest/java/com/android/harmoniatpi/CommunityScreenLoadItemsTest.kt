@@ -66,6 +66,8 @@ class CommunityScreenLoadItemsTest {
 
         composeTestRule.onNodeWithTag("CommunityScreen", useUnmergedTree = true)
             .assertIsDisplayed()
+
+        Thread.sleep(5000)
     }
 
     @Test
@@ -82,6 +84,40 @@ class CommunityScreenLoadItemsTest {
         composeTestRule.onNodeWithTag("POST_ITEM_1").assertIsDisplayed()
 
         composeTestRule.onNodeWithTag("POST_ITEM_2").assertIsDisplayed()
+
+        Thread.sleep(5000)
+
+        composeTestRule
+            .onNodeWithTag("MENU_BUTTON", useUnmergedTree = true)
+            .performClick()
+
+        composeTestRule.waitUntil(2000) {
+            composeTestRule.onAllNodesWithTag("CONTENT_MAIN_MENU", useUnmergedTree = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeTestRule
+            .onNodeWithTag("CONTENT_MAIN_MENU", useUnmergedTree = true)
+            .assertIsDisplayed()
+
+        Thread.sleep(5000)
+
+        composeTestRule
+            .onNodeWithTag("MenuOptionItemCloseSession", useUnmergedTree = true)
+            .performClick()
+
+        composeTestRule.waitUntil(2000) {
+            composeTestRule.onAllNodesWithTag("showCloseSessionDialog", useUnmergedTree = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeTestRule
+            .onNodeWithTag("showCloseSessionDialog", useUnmergedTree = true)
+            .assertIsDisplayed()
+
+        composeTestRule
+            .onNodeWithTag("CONFIRM_BUTTON", useUnmergedTree = true)
+            .performClick()
     }
 
 }

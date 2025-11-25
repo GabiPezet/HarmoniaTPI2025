@@ -39,6 +39,11 @@ class LoginScreenNormalLoginTest {
     fun showPreviewScreenTest() {
         setOrientationScreenPortrait(composeTestRule)
 
+        composeTestRule.waitUntil(3000) {
+            composeTestRule.onAllNodesWithTag("PREVIEW_SCREEN", useUnmergedTree = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+
         composeTestRule
             .onNodeWithTag("PREVIEW_SCREEN", useUnmergedTree = true)
             .assertIsDisplayed()
@@ -52,6 +57,15 @@ class LoginScreenNormalLoginTest {
     @Test
     fun userCanLoginPortrait() {
         setOrientationScreenPortrait(composeTestRule)
+
+        composeTestRule.waitUntil(3000) {
+            composeTestRule.onAllNodesWithTag("PREVIEW_SCREEN", useUnmergedTree = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeTestRule
+            .onNodeWithTag("PREVIEW_SCREEN", useUnmergedTree = true)
+            .assertIsDisplayed()
 
         composeTestRule
             .onNodeWithTag("COMENZAR_BUTTON", useUnmergedTree = true)
@@ -86,5 +100,39 @@ class LoginScreenNormalLoginTest {
         composeTestRule
             .onNodeWithTag("CommunityScreen", useUnmergedTree = true)
             .assertIsDisplayed()
+
+        Thread.sleep(5000)
+
+        composeTestRule
+            .onNodeWithTag("MENU_BUTTON", useUnmergedTree = true)
+            .performClick()
+
+        composeTestRule.waitUntil(2000) {
+            composeTestRule.onAllNodesWithTag("CONTENT_MAIN_MENU", useUnmergedTree = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeTestRule
+            .onNodeWithTag("CONTENT_MAIN_MENU", useUnmergedTree = true)
+            .assertIsDisplayed()
+
+        Thread.sleep(5000)
+
+        composeTestRule
+            .onNodeWithTag("MenuOptionItemCloseSession", useUnmergedTree = true)
+            .performClick()
+
+        composeTestRule.waitUntil(2000) {
+            composeTestRule.onAllNodesWithTag("showCloseSessionDialog", useUnmergedTree = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeTestRule
+            .onNodeWithTag("showCloseSessionDialog", useUnmergedTree = true)
+            .assertIsDisplayed()
+
+        composeTestRule
+            .onNodeWithTag("CONFIRM_BUTTON", useUnmergedTree = true)
+            .performClick()
     }
 }

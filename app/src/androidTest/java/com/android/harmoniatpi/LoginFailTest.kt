@@ -38,6 +38,11 @@ class LoginFailTest {
     fun showPreviewScreenTest() {
         setOrientationScreenPortrait(composeTestRule)
 
+        composeTestRule.waitUntil(3000) {
+            composeTestRule.onAllNodesWithTag("PREVIEW_SCREEN", useUnmergedTree = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+
         composeTestRule
             .onNodeWithTag("PREVIEW_SCREEN", useUnmergedTree = true)
             .assertIsDisplayed()
@@ -51,6 +56,10 @@ class LoginFailTest {
     @Test
     fun showLoginScreenAfterClickPreviewScreen() {
         setOrientationScreenPortrait(composeTestRule)
+        composeTestRule.waitUntil(3000) {
+            composeTestRule.onAllNodesWithTag("PREVIEW_SCREEN", useUnmergedTree = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        }
 
         composeTestRule
             .onNodeWithTag("PREVIEW_SCREEN", useUnmergedTree = true)
@@ -72,6 +81,14 @@ class LoginFailTest {
     @Test
     fun userDonTCanLoginUserIncorrectPortrait() {
         setOrientationScreenPortrait(composeTestRule)
+        composeTestRule.waitUntil(8000) {
+            composeTestRule.onAllNodesWithTag("PREVIEW_SCREEN", useUnmergedTree = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeTestRule
+            .onNodeWithTag("PREVIEW_SCREEN", useUnmergedTree = true)
+            .assertIsDisplayed()
 
         composeTestRule
             .onNodeWithTag("COMENZAR_BUTTON", useUnmergedTree = true)
@@ -98,5 +115,7 @@ class LoginFailTest {
         composeTestRule
             .onNodeWithTag("CommunityScreen", useUnmergedTree = true)
             .assertIsNotDisplayed()
+
+        Thread.sleep(5000)
     }
 }

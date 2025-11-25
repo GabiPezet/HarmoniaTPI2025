@@ -235,6 +235,7 @@ fun ProjectsScreen(
 
     if (projectToDelete != null) {
         ShowConfirmationDialog(
+            modifier = Modifier.testTag("DeleteProjectDialog"),
             show = true,
             onDismiss = { projectToDelete = null },
             onConfirm = {
