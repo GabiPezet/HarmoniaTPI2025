@@ -13,8 +13,8 @@ import com.android.harmoniatpi.data.database.entities.UserPreferencesEntity
 
 @Database(
     entities = [UserPreferencesEntity::class, ProjectEntity::class, MyPostEntity::class],
-    version = 1,
-    exportSchema = false
+    version = 2,
+    exportSchema = true
 )
 @TypeConverters(UserPreferencesTypeConverters::class)
 abstract class DataBaseHarmonia : RoomDatabase() {
