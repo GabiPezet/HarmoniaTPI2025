@@ -90,6 +90,39 @@ class RepositoryImpl @Inject constructor(
 
     override fun getFirebaseCurrentUser(): FirebaseUser? = firebaseAuth.currentUser
 
+    override suspend fun getUsersFromFirestore(userIds: List<String>): Result<List<UserPreferences>> =
+        withContext(Dispatchers.IO) {
+            try {
+                // Firestore tiene un límite de 10 items para comparaciones "IN",
+                // así que dividimos la lista en lotes pequeños para ser seguros.
+                val chunks = userIds.distinct().chunked(10)
+                val allUsers = mutableListOf<UserPreferences>()
+
+                chunks.forEach { chunk ->
+                    if (chunk.isNotEmpty()) {
+                        val querySnapshot = firestore.collection("users")
+                            .whereIn("userID", chunk)
+                            .get()
+                            .await()
+
+                        val users = querySnapshot.documents.mapNotNull { doc ->
+                            val firebaseModel = doc.toObject(UserFirebaseModel::class.java)
+                            // Convertimos a dominio, pero NO guardamos en Room
+                            firebaseModel?.toEntity()?.toDomain(jsonUtils)
+                        }
+                        allUsers.addAll(users)
+                    }
+                }
+
+                // Devolvemos la lista limpia desde Firestore
+                Result.success(allUsers)
+
+            } catch (e: Exception) {
+                Log.e("RepositoryImpl", "Error obteniendo usuarios de Firestore", e)
+                Result.failure(e)
+            }
+        }
+
     override suspend fun getUserById(userId: String): UserPreferences? {
         return try {
             val document = firestore.collection("users")
@@ -873,55 +906,6 @@ class RepositoryImpl @Inject constructor(
             } catch (e: Exception) {
                 Log.e("RepositoryImpl", "Error al obtener derivados de Firestore", e)
                 emptyList<Project>() // Devuelve lista vacía en caso de error
-            }
-        }
-
-    override suspend fun fetchAndSyncUsersFromFirestore(userIds: List<String>): Result<Unit> =
-        withContext(Dispatchers.IO) {
-            try {
-                val chunks = userIds.distinct().chunked(30)
-                Log.d(
-                    "RepositoryImpl",
-                    "Iniciando fetch de ${userIds.size} usuarios en ${chunks.size} lotes."
-                )
-
-                chunks.forEach { chunk ->
-                    val querySnapshot = firestore.collection("users")
-                        .whereIn("userID", chunk)
-                        .get()
-                        .await()
-
-                    // 1. Mapea de FirebaseModel a Entity
-                    querySnapshot.documents.mapNotNull { doc ->
-                        doc.toObject(UserFirebaseModel::class.java)
-                            ?.toEntity() // Convierte a UserPreferencesEntity
-
-                        // --- ✨ 2. SANITIZA LA INFORMACIÓN ANTES DE GUARDAR ✨ ---
-                    }.forEach { entity ->
-                        // Creamos una copia de la entidad, pero borrando
-                        // todos los datos privados/innecesarios.
-                        val sanitizedEntity = entity.copy(
-                            friendsList = "[]", // Borra la lista de amigos de otros
-                            projectsList = "[]", // Borra sus proyectos
-                            myPostsList = "[]", // Borra sus posts
-                            notificationList = "[]", // Borra sus notificaciones
-                            friendRequestReceived = "[]",
-                            friendRequestSent = "[]"
-                            // Dejamos intactos: userID, userName, userLastName,
-                            // userPhotoPath y userPhotoPathRemote
-                        )
-
-                        // 3. Inserta la entidad "limpia" en Room
-                        userPreferencesDao.insertUserPreferences(sanitizedEntity)
-                    }
-                }
-
-                Log.d("RepositoryImpl", "Sincronización de usuarios (sanitizada) completada.")
-                Result.success(Unit)
-
-            } catch (e: Exception) {
-                Log.e("RepositoryImpl", "Error en fetchAndSyncUsersFromFirestore", e)
-                Result.failure(e)
             }
         }
 

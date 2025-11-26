@@ -2,6 +2,7 @@ package com.android.harmoniatpi.ui.screens.homeScreen
 
 import android.Manifest
 import android.os.Build
+import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -63,6 +64,7 @@ fun HomeScreen(
     onNavigateToVersion: (Project) -> Unit,
     viewModel: HomeScreenViewModel = hiltViewModel()
 ) {
+    val sharedUiState by drawerViewModel.uiState.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
     val itemsTabs = listOf(
         BottomBarItem.CommunityTab,
@@ -73,6 +75,24 @@ fun HomeScreen(
     var currentTabName by remember { mutableStateOf("CommunityScreenRoute") }
     val drawerUiState by drawerViewModel.uiState.collectAsState()
     val activity = LocalContext.current.findActivity()
+
+    LaunchedEffect(sharedUiState.isAutoNavigationToProject) {
+        if (sharedUiState.isAutoNavigationToProject) {
+
+            navControllerNavBar.navigate(route = BottomBarItem.ProjectsTab.route) {
+                navControllerNavBar.graph.startDestinationRoute?.let { route ->
+                    popUpTo(route) {
+                        saveState = true
+                    }
+
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
+
+            drawerViewModel.updateAutoNavigationToProject(false)
+        }
+    }
 
     ShowConfirmationDialog(
         show = showExitAppDialog,
@@ -157,7 +177,7 @@ fun HomeScreen(
                     .padding(innerScaffoldPadding)
             ) {
                 NavigationBottomWrapper(
-                    navControllerNavBar,
+                    navController = navControllerNavBar,
                     drawerState = drawerState,
                     onExitApp = { showExitAppDialog = true },
                     onNavigateToProjectManagementScreen = {onNavigateToProjectManagementScreen()},
@@ -186,6 +206,7 @@ fun BottomNavigation(
         tonalElevation = 16.dp
     ) {
         val currentScreen = currentDestination?.toString()?.substringAfterLast(".")
+
         LaunchedEffect(currentScreen) {
             currentScreen?.let { onCurrentScreenChanged(it) }
         }

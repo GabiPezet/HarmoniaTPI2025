@@ -97,8 +97,19 @@ class CommunityViewModel @Inject constructor(
             combine(
                 getAllPostFromFirebaseDataBaseUseCase(),
                 localProjectsFlow,
-                observeCurrentUserUseCase() // <-- Llama al nuevo Flow reactivo
-            ) { posts, localProjects, currentUserData ->
+                observeCurrentUserUseCase(),
+                getAllUsersUseCase()
+            ) { posts, localProjects, currentUserData, allUsers ->
+
+                val updatedPosts = posts.map { post ->
+                    val author = allUsers.find { it.userID == post.userID }
+                    if (author != null && author.userPhotoPathRemote.isNotBlank()) {
+                        // Si encontramos al autor, usamos su foto actual
+                        post.copy(userImagePathURL = author.userPhotoPathRemote)
+                    } else {
+                        post
+                    }
+                }
 
                 val currentCloningId = _uiState.value.cloningPostId
                 var newCloningId = currentCloningId
@@ -114,7 +125,7 @@ class CommunityViewModel @Inject constructor(
                 }
                 _uiState.update {
                     it.copy(
-                        posts = posts,
+                        posts = updatedPosts,
                         localProjects = localProjects,
                         cloningPostId = newCloningId,
                         currentUserData = currentUserData

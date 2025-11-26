@@ -23,11 +23,10 @@ import com.android.harmoniatpi.domain.usecases.audioUseCases.StopPreviewUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.DeleteFileFromStorageUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.DeletePostByProjectIdUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.DeleteProjectFromFirestoreUseCase
-import com.android.harmoniatpi.domain.usecases.firebaseUseCases.FetchAndSyncUsersUseCase
-import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetAllUserFromDBUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetFirestoreProjectsByUserUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetProjectByIdFromFirestoreUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetUserOnFirebaseByIDUseCase
+import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetUsersFromFirestoreUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.InsertNewPostFirebaseDataBaseUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.UploadAudioToStorageUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.UpsertProjectInFirestoreUseCase
@@ -62,6 +61,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ProjectViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val getUsersFromFirestoreUseCase: GetUsersFromFirestoreUseCase,
     private val getAllProjectsFromDBUseCase: GetAllProjectsFromDBUseCase,
     private val getProjectsByUserUseCase: GetProjectsByUserUseCase,
     internal val getProjectByIdUseCase: GetProjectByIdUseCase,
@@ -81,8 +81,6 @@ class ProjectViewModel @Inject constructor(
     private val upsertProjectInFirestoreUseCase: UpsertProjectInFirestoreUseCase,
     private val deleteProjectFromFirestoreUseCase: DeleteProjectFromFirestoreUseCase,
     private val deleteFileFromStorageUseCase: DeleteFileFromStorageUseCase,
-    private val getAllUsersUseCase: GetAllUserFromDBUseCase,
-    private val fetchAndSyncUsersUseCase: FetchAndSyncUsersUseCase,
     private val jsonUtils: JsonUtils,
     internal val getProjectByIdFromFirestoreUseCase: GetProjectByIdFromFirestoreUseCase,
     internal val getUserOnFirebaseByIDUseCase: GetUserOnFirebaseByIDUseCase,
@@ -95,16 +93,21 @@ class ProjectViewModel @Inject constructor(
 
 
     init {
+
+        //Inicia la sincronización en segundo plano.
         syncFirestoreToRoomInBackground()
-        //OBSERVADOR DE USUARIOS
+
+        //OBSERVADOR DE USUARIOS (Ahora usa Firestore directo)
         observeProjectsAndFetchUsers()
+
         //Carga los proyectos de "Mis Proyectos" DESDE ROOM.
         loadMyProjectsFromRoom()
+
         //Carga los clones
         loadCollabProjects()
 
+        //Escucha el reproductor
         listenForPreviewCompletion()
-        observeAllUsersFromRoom()
 
     }
 
@@ -649,39 +652,28 @@ class ProjectViewModel @Inject constructor(
         Log.d("ProjectViewModel", "ViewModel cleared.")
     }
 
-    private fun observeAllUsersFromRoom() {
-        viewModelScope.launch {
-            // getAllUsersUseCase() ya devuelve un Flow<List<UserPreferences>>
-            // (gracias a cómo arreglamos el DAO de Room antes)
-            getAllUsersUseCase().collect { usersListFromRoom ->
-                _uiState.update { it.copy(allUsers = usersListFromRoom) }
-            }
-        }
-    }
-
     private fun observeProjectsAndFetchUsers() {
         viewModelScope.launch(Dispatchers.IO) {
+            // Combinamos Mis Proyectos y Colaboraciones para obtener todos los IDs
+            uiState.map { it.myProjects + it.allProjects }
+                .collect { projects ->
+                    val allUserIds = projects.flatMap {
+                        // Dueños de los proyectos y usuarios que hicieron fork
+                        listOf(it.ownerId) + it.forkedByUserIds
+                    }.distinct().filter { it.isNotBlank() }
 
-            // Este flow se re-ejecuta cada vez que 'myProjects' cambia (ej. por un sync)
-            uiState.map { it.myProjects }.collect { myProjectsList ->
-
-                // Obtiene TODOS los IDs únicos de la lista de 'forkedByUserIds'
-                val allForkedUserIds = myProjectsList
-                    .flatMap { it.forkedByUserIds }
-                    .distinct()
-
-                if (allForkedUserIds.isNotEmpty()) {
-                    Log.d(
-                        "ProjectViewModel",
-                        "IDs de usuarios detectados: $allForkedUserIds. Sincronizando..."
-                    )
-                    // Llama al UseCase para buscar esos IDs en Firestore
-                    fetchAndSyncUsersUseCase(allForkedUserIds)
-                        .onFailure { e ->
-                            Log.e("ProjectViewModel", "[Users Sync] Error fatal", e)
-                        }
+                    if (allUserIds.isNotEmpty()) {
+                        // Consultamos Firestore sin ensuciar la DB local
+                        getUsersFromFirestoreUseCase(allUserIds)
+                            .onSuccess { remoteUsers ->
+                                // Actualizamos la lista en memoria (UI State)
+                                _uiState.update { it.copy(allUsers = remoteUsers) }
+                            }
+                            .onFailure {
+                                Log.e("ProjectViewModel", "Error cargando usuarios remotos", it)
+                            }
+                    }
                 }
-            }
         }
     }
 
