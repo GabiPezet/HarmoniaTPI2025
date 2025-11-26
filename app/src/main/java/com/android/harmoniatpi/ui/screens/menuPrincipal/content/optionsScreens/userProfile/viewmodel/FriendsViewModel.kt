@@ -3,7 +3,6 @@ package com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.android.harmoniatpi.domain.interfaces.Repository
 import com.android.harmoniatpi.domain.model.UserPreferences
 import com.android.harmoniatpi.domain.model.userPreferences.FriendRequestReceived
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetUsersFromFirestoreUseCase
@@ -63,7 +62,13 @@ class FriendsViewModel @Inject constructor(
                 val allRequiredIds = (friendIds + requestIds).distinct()
 
                 if (allRequiredIds.isEmpty()) {
-                    _uiState.update { it.copy(isLoading = false, friendsList = emptyList(), requestList = emptyList()) }
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            friendsList = emptyList(),
+                            requestList = emptyList()
+                        )
+                    }
                     return@collect
                 }
 

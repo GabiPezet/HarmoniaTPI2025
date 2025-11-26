@@ -51,7 +51,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.android.harmoniatpi.R
@@ -213,31 +215,73 @@ private fun UserProfileCard(
                     uiState.userPhotoPath
                 }
 
-                if (imagePath.isNotBlank()) {
-                    Image(
-                        painter = rememberAsyncImagePainter(imagePath),
-                        contentDescription = "Foto de perfil",
-                        modifier = Modifier
-                            .size(80.dp)
-                            .clip(CircleShape)
-                            .border(
-                                BorderStroke(2.dp, MaterialTheme.colorScheme.outline),
-                                CircleShape
+                if (uiState.isPremium) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
+                        if (imagePath.isNotBlank()) {
+                            Image(
+                                painter = rememberAsyncImagePainter(imagePath),
+                                contentDescription = "Foto de perfil",
+                                modifier = Modifier
+                                    .size(80.dp)
+                                    .clip(CircleShape)
+                                    .border(
+                                        BorderStroke(2.dp, MaterialTheme.colorScheme.outline),
+                                        CircleShape
+                                    ),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.AccountCircle,
+                                contentDescription = "Foto de perfil por defecto",
+                                tint = MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.size(80.dp)
+                                    .border(
+                                        BorderStroke(2.dp, MaterialTheme.colorScheme.outline),
+                                        CircleShape
+                                    ),
+                            )
+                        }
+                        Spacer(modifier = Modifier.width( 12.dp))
+                        Text(
+                            modifier = Modifier.fillMaxWidth(),
+                            text = "PREMIUM",
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Bold
                             ),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Default.AccountCircle,
-                        contentDescription = "Foto de perfil por defecto",
-                        tint = MaterialTheme.colorScheme.outline,
-                        modifier = Modifier.size(80.dp)
-                            .border(
-                                BorderStroke(2.dp, MaterialTheme.colorScheme.outline),
-                                CircleShape
-                            ),
-                    )
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }else{
+                    if (imagePath.isNotBlank()) {
+                        Image(
+                            painter = rememberAsyncImagePainter(imagePath),
+                            contentDescription = "Foto de perfil",
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clip(CircleShape)
+                                .border(
+                                    BorderStroke(2.dp, MaterialTheme.colorScheme.outline),
+                                    CircleShape
+                                ),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.AccountCircle,
+                            contentDescription = "Foto de perfil por defecto",
+                            tint = MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.size(80.dp)
+                                .border(
+                                    BorderStroke(2.dp, MaterialTheme.colorScheme.outline),
+                                    CircleShape
+                                ),
+                        )
+                    }
                 }
+
+
 
                 Spacer(modifier = Modifier.height(12.dp))
 
