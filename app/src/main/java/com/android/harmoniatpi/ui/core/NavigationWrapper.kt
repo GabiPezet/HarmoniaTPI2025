@@ -143,10 +143,6 @@ fun NavigationWrapper(
             SongVersionsScreen(onNavigateBack = { navController.popBackStack() })
         }
 
-        composable<FriendsScreenRoute> {
-            SongVersionsScreen(onNavigateBack = { navController.popBackStack() })
-        }
-
         composable<PaymentMarketScreenRoute> {
             PaymentMarketScreen(
                 onNavigateBack = { navController.popBackStack() },

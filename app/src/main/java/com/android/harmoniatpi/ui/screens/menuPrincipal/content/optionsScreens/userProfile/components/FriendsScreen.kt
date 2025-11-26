@@ -1,6 +1,7 @@
 package com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components
 
 import android.annotation.SuppressLint
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,7 +33,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -95,14 +95,12 @@ fun FriendsScreen(
                     onUnfollowClick = { /* TODO: Implementar lógica unfollow */ }
                 )
                 // Pestaña Solicitudes
-                1 -> FriendsList(
+                1 -> FriendsListSolicitud(
                     requests = uiState.requestList, // Lista de perfiles de usuario
-                    // --- 1. PASA LA LISTA DE SOLICITUDES ---
                     // Esta lista contiene los 'FriendRequestReceived'
                     requestsReceived = uiState.friendRequestReceived,
                     loadingActionId = uiState.loadingActionId,
 
-                    // --- 2. MODIFICA onAccept y onDecline ---
                     onAccept = { requestToHandle ->
                         // 'requestToHandle' ya es el objeto FriendRequestReceived
                         viewModel.handleRequest(requestToHandle, accept = true)
@@ -144,7 +142,7 @@ fun FriendsList(
 }
 
 @Composable
-fun FriendsList(
+fun FriendsListSolicitud(
     requests: List<UserPreferences>,
     requestsReceived: List<FriendRequestReceived>,
     loadingActionId: String?,
@@ -188,15 +186,35 @@ fun FriendsItem(
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        AsyncImage(
-            model = friend.urlPhoto,
-            contentDescription = "Foto de ${friend.name}",
-            modifier = Modifier
-                .size(50.dp)
-                .clip(CircleShape),
-            contentScale = ContentScale.Crop
-        )
+        // --- INICIO CAMBIO VISUAL ---
+        if (friend.urlPhoto.isNotBlank()) {
+            AsyncImage(
+                model = friend.urlPhoto,
+                contentDescription = "Foto de ${friend.name}",
+                modifier = Modifier
+                    .size(50.dp)
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .size(50.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = friend.name.firstOrNull()?.toString()?.uppercase() ?: "?",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
         Spacer(Modifier.width(16.dp))
+
         Column(Modifier.weight(1f)) {
             Text(
                 text = "${friend.name} ${friend.lastName}",
