@@ -188,7 +188,7 @@ fun ProjectManagementScreen(
         }
     }
 
-    //  ----INICIO BOTTOMSHEET ----
+    //  bottomSheet inicio
     val activeSheet = state.activeSheetContent
     if (activeSheet != null) {
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -266,6 +266,11 @@ fun ProjectManagementScreen(
                         },
                         onParamChange = { config ->
                             viewModel.updatePreviewParams(activeSheet.track.id, config)
+                        },
+                        onApplyPreset = { id, type ->
+                            viewModel.stopEffectPreview()
+                            viewModel.applyPreset(id, type)
+                            viewModel.hideBottomSheet()
                         },
                         onApplyDelay = { id, delay, decay ->
                             viewModel.stopEffectPreview() // Detener preview al aplicar

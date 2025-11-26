@@ -15,6 +15,7 @@ import com.android.harmoniatpi.domain.cache.HoloJamCache
 import com.android.harmoniatpi.domain.interfaces.Repository
 import com.android.harmoniatpi.domain.model.audio.AudioSourceType
 import com.android.harmoniatpi.domain.model.audio.EffectConfig
+import com.android.harmoniatpi.domain.model.audio.PresetType
 import com.android.harmoniatpi.domain.model.audio.WaveformResult
 import com.android.harmoniatpi.domain.model.metronome.MetronomeEngine
 import com.android.harmoniatpi.domain.model.project.AudioTrack
@@ -29,6 +30,7 @@ import com.android.harmoniatpi.domain.usecases.audioUseCases.ApplyFadeOutUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.ApplyFlangerEffectUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.ApplyHighPassFilterUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.ApplyLowPassFilterUseCase
+import com.android.harmoniatpi.domain.usecases.audioUseCases.ApplyPresetUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.ApplyTelephoneEffectUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.ApplyTremoloUseCase
 import com.android.harmoniatpi.domain.usecases.audioUseCases.ConvertMp3ToPcmUseCase
@@ -125,7 +127,8 @@ class ProjectManagementScreenViewModel @Inject constructor(
     private val applyDistortionUseCase: ApplyDistortionUseCase,
     private val applyTremoloUseCase: ApplyTremoloUseCase,
     private val getUserIsPremiumUseCase: GetUserIsPremiumUseCase,
-    private val togglePremiumStatusUseCase: TogglePremiumStatusUseCase
+    private val togglePremiumStatusUseCase: TogglePremiumStatusUseCase,
+    private val applyPresetUseCase: ApplyPresetUseCase
 ) : ViewModel() {
     private val _state = MutableStateFlow(ProjectScreenUiState())
     private var selectedTrack: TrackUi? = null
@@ -1295,6 +1298,18 @@ class ProjectManagementScreenViewModel @Inject constructor(
         }
     }
 
+    fun applyPreset(trackId: Long, type: PresetType) {
+        viewModelScope.launch {
+            _state.update { it.copy(importAudioLoading = true) }
+            applyPresetUseCase(trackId, type)
+                .onSuccess {
+                    _uiMessages.emit("Preset ${type.name} aplicado")
+                    updateTrackUiAfterModification(trackId)
+                }
+                .onFailure { _uiMessages.emit("Error aplicando preset") }
+            _state.update { it.copy(importAudioLoading = false) }
+        }
+    }
 
     private companion object {
         const val TAG = "AudioTestsViewModel"

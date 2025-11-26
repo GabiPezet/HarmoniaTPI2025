@@ -34,12 +34,14 @@ fun PublishOriginalDialog(
     var postImageUrl by remember(project) { mutableStateOf(project.imageUrl) }
     var isPublishing by remember { mutableStateOf(false) }
     var cloningAccess by remember { mutableStateOf(CloningAccess.PUBLIC) }
-    var postAudioUrl by remember { mutableStateOf(project.urlCompleteAudio) }
+    val hasValidContent = remember(project.urlAudioTracks) {
+        project.urlAudioTracks.isNotEmpty() && project.urlAudioTracks.any { it.durationMs > 0 }
+    }
 
     BasePublishDialog(
         dialogTitle = "Publicar Proyecto",
         isPublishing = isPublishing,
-        isPublishButtonEnabled = postTitle.isNotBlank(),
+        isPublishButtonEnabled = postTitle.isNotBlank() && hasValidContent,
         onDismissRequest = onDismiss,
         onPublishClick = {
             keyboardController?.hide()
@@ -87,7 +89,7 @@ fun PublishOriginalDialog(
             selectedOption = cloningAccess,
             onOptionSelected = { cloningAccess = it }
         )
-        if (postAudioUrl.isNullOrBlank()) {
+        if (!hasValidContent) {
             Text(
                 text = "Tu proyecto aún no tiene audio para ser publicado. ",
                 style = MaterialTheme.typography.labelMedium,
