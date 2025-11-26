@@ -28,6 +28,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
@@ -157,6 +158,13 @@ fun ContentMainMenu(
                             icon = Icons.Filled.Payment,
                             text = "HoloJam Premium",
                             onClick = { navigateToPaymentMarketScreen() }
+                        )
+
+                        MenuOptionItem(
+                            testTag = "MenuOptionItemHelp",
+                            icon = Icons.AutoMirrored.Filled.Help,
+                            text = "Ayuda y Soporte",
+                            onClick = { drawerViewModel.changeOptionsMenu(OptionsMenu.HELP_SCREEN) },
                         )
 
                     }
