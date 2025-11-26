@@ -44,6 +44,10 @@ fun MyPostsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    val myFilteredPosts = remember(uiState.myPostsList, uiState.userID) {
+        uiState.myPostsList.filter { it.userID == uiState.userID }
+    }
+
     var selectedPostForComments by remember { mutableStateOf<Post?>(null) }
     val modalBottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -59,7 +63,6 @@ fun MyPostsScreen(
     Scaffold(
         modifier = Modifier.testTag("MY_POSTS_SCREEN"),
         topBar = {
-            // --- CAMBIO 1: TopAppBar actualizada ---
             CenterAlignedTopAppBar(
                 title = {
                     Text(
@@ -79,7 +82,6 @@ fun MyPostsScreen(
                         )
                     }
                 },
-                // --- CAMBIO 2: Color consistente con HomeScreen ---
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                     titleContentColor = MaterialTheme.colorScheme.onSurface,
@@ -87,7 +89,6 @@ fun MyPostsScreen(
                 )
             )
         },
-        // --- CAMBIO 3: Fondo consistente con CommunityScreen ---
         containerColor = MaterialTheme.colorScheme.background,
     ) { innerPadding ->
         Box(
@@ -95,13 +96,11 @@ fun MyPostsScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // --- CAMBIO 4: Se quita el padding de la Columna ---
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                // .padding(16.dp) // <-- Eliminado
+                modifier = Modifier.fillMaxSize()
             ) {
-                if (uiState.myPostsList.isEmpty()) {
+                // --- Usamos la lista filtrada aquí ---
+                if (myFilteredPosts.isEmpty()) {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
@@ -113,27 +112,23 @@ fun MyPostsScreen(
                         )
                     }
                 } else {
-
-                    // --- CAMBIO 5: LazyColumn limpia ---
-                    LazyColumn(modifier = Modifier.fillMaxSize()) { // <-- Arrangement eliminado
-                        items(uiState.myPostsList) { post ->
+                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        // --- Iteramos sobre myFilteredPosts ---
+                        items(myFilteredPosts) { post ->
                             val isCloningThisPost = uiState.cloningPostId == post.id
                             val friendsList = uiState.currentUserData?.friendsList?.map { it.id } ?: emptyList()
                             val isFriend = post.userID in friendsList
 
-                            // --- CAMBIO 6: Se llama al NUEVO PostCard ---
                             PostCard(
                                 post = post,
                                 userName = uiState.userName,
                                 userLastName = uiState.userLastName,
                                 onLikeClicked = {
-                                    // El DrawerContentViewModel no tiene updateLikes
-                                    // Si lo añades, pon la llamada aquí.
                                 },
                                 onCommentClicked = { selectedPostForComments = post },
                                 onDeleteClicked = { viewModel.deleteMyPost(post.id) },
-                                isMyPost = true, // En esta pantalla, siempre es tu post
-                                isAlreadyCloned = false, // No relevante
+                                isMyPost = true,
+                                isAlreadyCloned = false,
                                 onCloneClicked = { /* No relevante */ },
                                 viewUserProfile = {},
                                 isCloningThisPost = isCloningThisPost,
@@ -144,13 +139,11 @@ fun MyPostsScreen(
                 }
             }
 
-            // --- CAMBIO 7: Se llama al NUEVO BottomSheet ---
             if (selectedPostForComments != null) {
                 ModalBottomSheet(
                     onDismissRequest = { selectedPostForComments = null },
                     sheetState = modalBottomSheetState
                 ) {
-                    // Se reutiliza el Composable de CommunityScreen
                     CommentsBottomSheetContent(
                         post = selectedPostForComments!!,
                         onCommentAdded = { comment ->
