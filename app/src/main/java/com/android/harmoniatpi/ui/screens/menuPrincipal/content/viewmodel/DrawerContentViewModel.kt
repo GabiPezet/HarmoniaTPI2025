@@ -62,7 +62,10 @@ class DrawerContentViewModel @Inject constructor(
         viewModelScope.launch {
             repository.observeCurrentUserFromFirestore().collectLatest { currentUser ->
                 if (currentUser != null) {
-                    Log.d("KlyxDevs", "DrawerViewModel: Recibido update de usuario. Premium: ${currentUser.isPremium}")
+                    Log.d(
+                        "KlyxDevs",
+                        "DrawerViewModel: Recibido update de usuario. Premium: ${currentUser.isPremium}"
+                    )
                     _userPhotoPath.update {
                         it.copy(
                             path = currentUser.userPhotoPath,
@@ -102,6 +105,7 @@ class DrawerContentViewModel @Inject constructor(
             initMyPostCollect()
         }
     }
+
     private fun initMyPostCollect() {
         viewModelScope.launch {
             getMyPostFromDataBaseUseCase().collect { posts ->
@@ -197,7 +201,10 @@ class DrawerContentViewModel @Inject constructor(
         }
     }
 
-    fun changeOptionsMenu(option: OptionsMenu) {
+    fun changeOptionsMenu(option: OptionsMenu, isAutoNavigationToProject: Boolean = false) {
+        if (isAutoNavigationToProject) {
+            sharedMenuUiState.updateState { it.copy(isAutoNavigationToProject = true) }
+        }
         sharedMenuUiState.updateState { it.copy(optionsMenu = option) }
     }
 
@@ -285,6 +292,14 @@ class DrawerContentViewModel @Inject constructor(
                     isAudioPlaying = true
                 )
             }
+        }
+    }
+
+    fun updateAutoNavigationToProject(value: Boolean) {
+        sharedMenuUiState.updateState {
+            it.copy(
+                isAutoNavigationToProject = value
+            )
         }
     }
 

@@ -36,7 +36,7 @@ fun DrawerContent(
     onLogOutNavigateToLogin: () -> Unit,
     onNavigateToFriends: () -> Unit,
     navigateToPaymentMarketScreen: () -> Unit,
-    onNavigateToProfile: () -> Unit,
+    navigateToProjectScreen : () -> Unit
 ) {
     val scrollState = rememberScrollState()
     val uiState by drawerViewModel.uiState.collectAsState()
@@ -76,9 +76,8 @@ fun DrawerContent(
             scrollState = scrollState,
             innerPadding = innerPadding,
             showCloseSessionDialog = { showCloseSessionDialog = true },
-            onNavigateToFriends = onNavigateToFriends,
-            navigateToPaymentMarketScreen = { navigateToPaymentMarketScreen() },
-            onNavigateToProfile = onNavigateToProfile,
+            navigateToProjectScreen = navigateToProjectScreen,
+            navigateToPaymentMarketScreen = { navigateToPaymentMarketScreen() }
         )
     }
 }
@@ -94,8 +93,7 @@ fun DrawerScreenContent(
     scrollState: ScrollState,
     innerPadding: PaddingValues,
     showCloseSessionDialog: () -> Unit,
-    onNavigateToFriends: () -> Unit,
-    onNavigateToProfile: () -> Unit,
+    navigateToProjectScreen: () -> Unit,
     navigateToPaymentMarketScreen: () -> Unit
 ) {
     when (optionsMenu) {
@@ -110,7 +108,6 @@ fun DrawerScreenContent(
                 onNavigateToNotifications = onNavigateToNotifications,
                 showCloseSessionDialog = showCloseSessionDialog,
                 navigateToPaymentMarketScreen = { navigateToPaymentMarketScreen() },
-                onNavigateToProfile = onNavigateToProfile,
             )
         }
 
@@ -121,6 +118,15 @@ fun DrawerScreenContent(
             )
         }
 
+        OptionsMenu.USER_PROFILE -> {
+            UserDetailProfile(
+                viewModel = drawerViewModel,
+                uiState = uiState,
+                innerPadding = innerPadding,
+                onNavigateBack = { drawerViewModel.changeOptionsMenu(OptionsMenu.MAIN_CONTENT_SCREEN) },
+                onGoToStudio = { navigateToProjectScreen() }
+            )
+        }
 
         OptionsMenu.MY_POSTS_SCREEN -> {
             MyPostsScreen(

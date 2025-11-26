@@ -68,8 +68,7 @@ fun ContentMainMenu(
     innerPadding: PaddingValues,
     onNavigateToNotifications: () -> Unit,
     showCloseSessionDialog: () -> Unit,
-    navigateToPaymentMarketScreen: () -> Unit,
-    onNavigateToProfile: () -> Unit,
+    navigateToPaymentMarketScreen: () -> Unit
 ) {
 
     if (drawerState.isOpen) {
@@ -126,7 +125,7 @@ fun ContentMainMenu(
                             testTag = "MenuOptionItemProfile",
                             icon = Icons.Default.Person,
                             text = "Perfil",
-                            onClick = onNavigateToProfile,
+                            onClick = { drawerViewModel.changeOptionsMenu(OptionsMenu.USER_PROFILE) },
                             drawable = R.drawable.ic_profile
                         )
 

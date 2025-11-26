@@ -48,7 +48,8 @@ data class MenuUiState(
     val ratingCount: Int = 0,
     val isShowSearchContentCommunity: Boolean = false,
     val currentlyPlayingProjectId: String? = null,
-    val isAudioPlaying: Boolean = false
+    val isAudioPlaying: Boolean = false,
+    val isAutoNavigationToProject: Boolean = false
 )
 
 @Singleton
@@ -64,6 +65,7 @@ class SharedMenuUiState @Inject constructor() {
 enum class OptionsMenu {
     USER_PREFERENCES_SCREEN,
     MAIN_CONTENT_SCREEN,
-    MY_POSTS_SCREEN
+    MY_POSTS_SCREEN,
+    USER_PROFILE
 }
 
