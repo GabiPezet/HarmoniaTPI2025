@@ -2,6 +2,7 @@ package com.android.harmoniatpi.domain.interfaces
 
 import com.android.harmoniatpi.domain.model.audio.AudioSourceType
 import com.android.harmoniatpi.domain.model.audio.EffectConfig
+import com.android.harmoniatpi.domain.model.audio.PresetType
 import com.android.harmoniatpi.domain.model.audio.Track
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -232,4 +233,5 @@ interface AudioMixerRepository {
     suspend fun applyDistortion(trackId: Long, drive: Float): Result<Unit>
     suspend fun applyTremolo(trackId: Long, frequency: Float, depth: Float): Result<Unit>
 
+    suspend fun applyPreset(trackId: Long, type: PresetType): Result<Unit>
 }

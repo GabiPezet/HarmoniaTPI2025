@@ -55,6 +55,7 @@ import com.android.harmoniatpi.data.audio.util.DistortionProcessor
 import com.android.harmoniatpi.data.audio.util.FadeInProcessor
 import com.android.harmoniatpi.data.audio.util.FadeOutProcessor
 import com.android.harmoniatpi.data.audio.util.TremoloProcessor
+import com.android.harmoniatpi.domain.model.audio.PresetType
 
 /**
  * Implementación concreta de [AudioMixerRepository].
@@ -958,69 +959,127 @@ class AudioMixerRepositoryImpl @Inject constructor(
 
             previewDispatcher = AudioDispatcher(audioStream, bufferSize, overlap)
 
+            if (config is EffectConfig.Preset) {
+                val sampleRate = TARSOS_FORMAT.sampleRate.toFloat()
 
-            val effectProcessor = when (config) {
-                is EffectConfig.Delay -> {
-                    DelayEffect(
-                        config.timeSec.toDouble(),
-                        config.decay.toDouble(),
-                        sampleRate.toDouble()
+                when (config.type) {
+                    PresetType.ROBOT -> {
+
+                        previewDispatcher?.addAudioProcessor(FlangerEffect(0.01, 0.8, sampleRate.toDouble(), 10.0))
+                        previewDispatcher?.addAudioProcessor(DelayEffect(0.05, 0.6, sampleRate.toDouble()))
+                    }
+                    PresetType.MEGAPHONE -> {
+
+                        previewDispatcher?.addAudioProcessor(HighPass(500f, sampleRate))
+                        previewDispatcher?.addAudioProcessor(LowPassFS(2500f, sampleRate))
+                        previewDispatcher?.addAudioProcessor(DistortionProcessor(0.1))
+                        previewDispatcher?.addAudioProcessor(GainProcessor(2.0))
+                    }
+                    PresetType.CATHEDRAL -> {
+
+                        previewDispatcher?.addAudioProcessor(DelayEffect(0.4, 0.6, sampleRate.toDouble()))
+                        previewDispatcher?.addAudioProcessor(LowPassFS(12000f, sampleRate))
+                    }
+                    PresetType.UNDERWATER -> {
+
+                        previewDispatcher?.addAudioProcessor(LowPassFS(400f, sampleRate))
+                        previewDispatcher?.addAudioProcessor(GainProcessor(1.5))
+                    }
+                    PresetType.ALIEN -> {
+
+                        previewDispatcher?.addAudioProcessor(TremoloProcessor(10f, 0.8f, sampleRate))
+                        previewDispatcher?.addAudioProcessor(FlangerEffect(0.005, 0.7, sampleRate.toDouble(), 2.0))
+                    }
+                    PresetType.SLAPBACK -> {
+                        previewDispatcher?.addAudioProcessor(DelayEffect(0.12, 0.0, sampleRate.toDouble()))
+                    }
+                    PresetType.ETHEREAL -> {
+                        previewDispatcher?.addAudioProcessor(HighPass(300f, sampleRate))
+                        previewDispatcher?.addAudioProcessor(FlangerEffect(0.05, 0.4, sampleRate.toDouble(), 0.2))
+                        previewDispatcher?.addAudioProcessor(DelayEffect(0.6, 0.5, sampleRate.toDouble()))
+                    }
+                    PresetType.RADIO_AM -> {
+                        previewDispatcher?.addAudioProcessor(HighPass(500f, sampleRate))
+                        previewDispatcher?.addAudioProcessor(LowPassFS(4000f, sampleRate))
+                        previewDispatcher?.addAudioProcessor(DistortionProcessor(0.3))
+                        previewDispatcher?.addAudioProcessor(GainProcessor(1.8))
+                    }
+                    PresetType.CHOPPER -> {
+                        previewDispatcher?.addAudioProcessor(TremoloProcessor(8.0f, 1.0f, sampleRate))
+                    }
+                }
+            } else {
+                val effectProcessor = when (config) {
+                    is EffectConfig.Delay -> {
+                        DelayEffect(
+                            config.timeSec.toDouble(),
+                            config.decay.toDouble(),
+                            sampleRate.toDouble()
+                        )
+                    }
+
+                    is EffectConfig.HighPass -> {
+                        HighPass(config.frequency, sampleRate.toFloat())
+                    }
+
+                    is EffectConfig.Flanger -> {
+                        FlangerEffect(
+                            0.005,
+                            config.wet.toDouble(),
+                            sampleRate.toDouble(),
+                            config.rate.toDouble()
+                        )
+                    }
+
+                    is EffectConfig.LowPass -> {
+                        LowPassFS(config.frequency, sampleRate.toFloat())
+                    }
+
+                    is EffectConfig.Telephone -> {
+
+                        HighPass(300f, TARSOS_FORMAT.sampleRate)
+                    }
+
+
+                    is EffectConfig.FadeIn -> {
+                        FadeInProcessor(config.durationSeconds, TARSOS_FORMAT.sampleRate.toInt())
+                    }
+
+
+                    is EffectConfig.FadeOut -> {
+
+                        val totalDurationSec =
+                            (file.length() / TARSOS_FORMAT.frameSize) / TARSOS_FORMAT.sampleRate
+                        FadeOutProcessor(
+                            config.durationSeconds,
+                            totalDurationSec,
+                            TARSOS_FORMAT.sampleRate.toInt()
+                        )
+                    }
+
+                    is EffectConfig.Distortion -> DistortionProcessor(config.drive.toDouble())
+
+                    is EffectConfig.Tremolo -> TremoloProcessor(
+                        config.frequency,
+                        config.depth,
+                        TARSOS_FORMAT.sampleRate
                     )
+
+                    else -> null
                 }
 
-                is EffectConfig.HighPass -> {
-                    HighPass(config.frequency, sampleRate.toFloat())
-                }
-
-                is EffectConfig.Flanger -> {
-                    FlangerEffect(
-                        0.005,
-                        config.wet.toDouble(),
-                        sampleRate.toDouble(),
-                        config.rate.toDouble()
-                    )
-                }
-
-                is EffectConfig.LowPass -> {
-                    LowPassFS(config.frequency, sampleRate.toFloat())
-                }
-
-                is EffectConfig.Telephone -> {
-
-                    HighPass(300f, TARSOS_FORMAT.sampleRate)
-                }
+                if (effectProcessor != null) {
+                    previewDispatcher?.addAudioProcessor(effectProcessor)
 
 
-                is EffectConfig.FadeIn -> {
-                    FadeInProcessor(config.durationSeconds, TARSOS_FORMAT.sampleRate.toInt())
-                }
+                    if (config is EffectConfig.Telephone) {
+                        val lowPass = LowPassFS(3000f, TARSOS_FORMAT.sampleRate.toFloat())
+                        previewDispatcher?.addAudioProcessor(lowPass)
 
-
-                is EffectConfig.FadeOut -> {
-
-                    val totalDurationSec = (file.length() / TARSOS_FORMAT.frameSize) / TARSOS_FORMAT.sampleRate
-                    FadeOutProcessor(config.durationSeconds, totalDurationSec, TARSOS_FORMAT.sampleRate.toInt())
-                }
-
-                is EffectConfig.Distortion -> DistortionProcessor(config.drive.toDouble())
-
-                is EffectConfig.Tremolo -> TremoloProcessor(config.frequency, config.depth, TARSOS_FORMAT.sampleRate)
-
-                else -> null
-            }
-
-            if (effectProcessor != null) {
-                previewDispatcher?.addAudioProcessor(effectProcessor)
-
-
-                if (config is EffectConfig.Telephone) {
-                    val lowPass = LowPassFS(3000f, TARSOS_FORMAT.sampleRate.toFloat())
-                    previewDispatcher?.addAudioProcessor(lowPass)
-
-                    previewDispatcher?.addAudioProcessor(GainProcessor(1.5))
+                        previewDispatcher?.addAudioProcessor(GainProcessor(1.5))
+                    }
                 }
             }
-
 
             val audioPlayer = AndroidAudioPlayer(TARSOS_FORMAT, bufferSize * 2, AudioManager.STREAM_MUSIC)
             previewDispatcher?.addAudioProcessor(audioPlayer)
@@ -1213,7 +1272,62 @@ class AudioMixerRepositoryImpl @Inject constructor(
             }
         }
 
+    override suspend fun applyPreset(trackId: Long, type: PresetType): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val track = tracks.value.find { it.id == trackId } ?: throw IllegalStateException("No track")
+                prepareFileForEffect(track)
+                val tempFile = File(track.path + ".tmp")
 
+                processAudioWithTarsos(track.path + ".original_effect", tempFile.path) { audioEvent ->
+                    val sampleRate = TARSOS_FORMAT.sampleRate
+
+
+                    when (type) {
+                        PresetType.ROBOT -> {
+                            FlangerEffect(0.01, 0.8, sampleRate.toDouble(), 10.0).process(audioEvent)
+                            DelayEffect(0.05, 0.6, sampleRate.toDouble()).process(audioEvent)
+                        }
+                        PresetType.MEGAPHONE -> {
+                            HighPass(500f, sampleRate).process(audioEvent)
+                            LowPassFS(2500f, sampleRate).process(audioEvent)
+                            DistortionProcessor(0.1).process(audioEvent)
+                            GainProcessor(2.0).process(audioEvent)
+                        }
+                        PresetType.CATHEDRAL -> {
+                            DelayEffect(0.4, 0.6, sampleRate.toDouble()).process(audioEvent)
+                            LowPassFS(12000f, sampleRate).process(audioEvent)
+                        }
+                        PresetType.UNDERWATER -> {
+                            LowPassFS(400f, sampleRate).process(audioEvent)
+                            GainProcessor(1.5).process(audioEvent)
+                        }
+                        PresetType.ALIEN -> {
+                            TremoloProcessor(10f, 0.8f, sampleRate).process(audioEvent)
+                            FlangerEffect(0.005, 0.7, sampleRate.toDouble(), 2.0).process(audioEvent)
+                        }
+                        PresetType.SLAPBACK -> {
+                            DelayEffect(0.12, 0.0, sampleRate.toDouble()).process(audioEvent)
+                        }
+                        PresetType.ETHEREAL -> {
+                            HighPass(300f, sampleRate).process(audioEvent)
+                            FlangerEffect(0.05, 0.4, sampleRate.toDouble(), 0.2).process(audioEvent)
+                            DelayEffect(0.6, 0.5, sampleRate.toDouble()).process(audioEvent)
+                        }
+                        PresetType.RADIO_AM -> {
+                            HighPass(500f, sampleRate).process(audioEvent)
+                            LowPassFS(4000f, sampleRate).process(audioEvent)
+                            DistortionProcessor(0.3).process(audioEvent)
+                            GainProcessor(1.8).process(audioEvent)
+                        }
+                        PresetType.CHOPPER -> {
+                            TremoloProcessor(8.0f, 1.0f, sampleRate).process(audioEvent)
+                        }
+                    }
+                }
+                finalizeEffectApplication(track, tempFile)
+            }
+        }
 
     private fun prepareFileForEffect(track: Track) {
         val originalFile = File(track.path)
