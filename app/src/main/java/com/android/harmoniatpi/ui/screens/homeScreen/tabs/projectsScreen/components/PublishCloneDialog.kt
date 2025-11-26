@@ -53,14 +53,17 @@ fun PublishCloneDialog(
     BasePublishDialog(
         dialogTitle = "Publicar Versión",
         isPublishing = isPublishing,
+        // Habilita solo si hay título y contenido válido
         isPublishButtonEnabled = postTitle.isNotBlank(),
         onDismissRequest = onDismiss,
         onPublishClick = {
             keyboardController?.hide()
             isPublishing = true
+            // Combinamos el mensaje de atribución con el mensaje personal para la descripción del post
             val finalDescription = "$attributionMessage\n${personalMessage.trim()}"
+
             viewModel.publishClonedProject(
-                projectToPublish = project,
+                project = project,
                 postTitle = postTitle,
                 postDescription = finalDescription,
                 postHashtags = postHashtags,

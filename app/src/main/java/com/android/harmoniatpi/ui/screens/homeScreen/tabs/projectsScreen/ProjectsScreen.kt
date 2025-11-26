@@ -1,5 +1,8 @@
 package com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen
 
+import android.content.Context
+import android.content.Intent
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -24,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -53,6 +57,7 @@ fun ProjectsScreen(
     onNavigateToVersion: (Project) -> Unit,
     viewModel: ProjectViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val sharedState by viewModel.sharedMenuUiState.uiState.collectAsState()
     var projectToEdit by remember { mutableStateOf<Project?>(null) }
@@ -158,6 +163,17 @@ fun ProjectsScreen(
                             },
                             onNavigateToVersions = { onNavigateToVersion(project) },
                             isPreviewLoading = isPreviewLoading,
+                            onShareClick = {
+                                if (project.isPublished) {
+                                    shareProject(context, project)
+                                } else {
+                                    Toast.makeText(
+                                        context,
+                                        "Debes publicar el proyecto para poder compartirlo.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            }
                         )
                     }
                 }
@@ -254,4 +270,24 @@ fun ProjectsScreen(
     }
 }
 
+fun shareProject(context: Context, project: Project) {
+    val shareText = buildString {
+        append("¡Escucha mi proyecto '${project.title}' en HoloJam!\n\n")
+        append("Creado por: ${project.name} ${project.lastName}\n")
+        if (!project.description.isNullOrBlank()) {
+            append("${project.description}\n\n")
+        }
+        if (!project.urlCompleteAudio.isNullOrBlank()) {
+            append(project.urlCompleteAudio)
+        }
+    }
+
+    val sendIntent: Intent = Intent().apply {
+        action = Intent.ACTION_SEND
+        putExtra(Intent.EXTRA_TEXT, shareText)
+        type = "text/plain"
+    }
+    val shareIntent = Intent.createChooser(sendIntent, "Compartir proyecto vía...")
+    context.startActivity(shareIntent)
+}
 

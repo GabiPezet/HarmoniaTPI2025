@@ -69,8 +69,6 @@ class RepositoryImpl @Inject constructor(
                         return@withContext Result.failure(Exception("Usuario no autenticado."))
                     }
 
-                    // ✨ AQUÍ ESTÁ LA MAGIA: Guardamos el ID de suscripción
-                    // Si viene un ID nuevo, lo usamos. Si no (ej. botón de prueba), mantenemos el que tenía o null.
                     val updatedUser = currentUser.copy(
                         isPremium = true,
                         subscriptionId = subscriptionId ?: currentUser.subscriptionId
@@ -707,39 +705,43 @@ class RepositoryImpl @Inject constructor(
     }
 
     override suspend fun cancelSubscription(preapprovalId: String): Result<Unit> {
-        // Usamos el mismo token de producción que ya tienes configurado
         val accessToken = com.android.harmoniatpi.BuildConfig.MP_ACCESS_TOKEN
 
         return try {
-            // 1. Llamada a la API de Mercado Pago para cancelar
+            //Intentar cancelar en Mercado Pago PRIMERO
             val request = SubscriptionStatusUpdateRequest(status = "cancelled")
-            mercadoPagoApi.cancelSubscription("Bearer $accessToken", preapprovalId, request)
 
-            // 2. Lógica para volver a FREE en la Base de Datos
-            // Obtenemos el usuario actual (que ya sincroniza Firestore -> Local)
+            // Si esta línea falla (lanza excepción), salta directamente al catch
+            // y NO ejecuta la lógica de degradación.
+            mercadoPagoApi.cancelSubscription(accessToken, preapprovalId, request)
+
+            Log.i("MercadoPago", "Suscripción cancelada exitosamente en la API.")
+
+            //Si la API no falló, procedemos a actualizar la DB local/remota
             val currentUser = getUserPreferences()
 
             if (currentUser != null) {
-                // Creamos una copia del usuario con isPremium en FALSE
                 val updatedUser = currentUser.copy(
                     isPremium = false,
-                    // Opcional: Si guardas el subscriptionId en el modelo, podrías borrarlo aquí también
-                    // subscriptionId = null
+                    subscriptionId = null
                 )
 
-                // Guardamos en Room y Firestore usando tu función existente
                 updateUserPreferences(updatedUser)
-
-                Log.i("RepositoryImpl", "Suscripción cancelada en MP y usuario actualizado a FREE local/remoto.")
+                Log.i("RepositoryImpl", "Usuario actualizado a FREE local/remoto.")
                 Result.success(Unit)
             } else {
-                Result.failure(Exception("No se pudo obtener el usuario local para degradar a Free."))
+                // Si no hay usuario local, lanzamos excepción para ir al catch
+                throw Exception("No se pudo obtener el usuario local para actualizar.")
             }
+
         } catch (e: Exception) {
-            Log.e("MercadoPago", "Error cancelando suscripción: ${e.message}")
+            // Si falla la API o la DB, devolvemos Failure.
+            // El usuario SE QUEDA como Premium en la App hasta que se solucione.
+            Log.e("RepositoryImpl", "Error al cancelar suscripción (API o DB): ${e.message}", e)
             Result.failure(e)
         }
     }
+
 
 
     override suspend fun getFirestoreProjectsByUser(userId: String): Flow<List<ProjectFirebaseModel>> =

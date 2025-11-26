@@ -39,7 +39,7 @@ fun PublishOriginalDialog(
     BasePublishDialog(
         dialogTitle = "Publicar Proyecto",
         isPublishing = isPublishing,
-        isPublishButtonEnabled = postTitle.isNotBlank() && !postAudioUrl.isNullOrBlank(),
+        isPublishButtonEnabled = postTitle.isNotBlank(),
         onDismissRequest = onDismiss,
         onPublishClick = {
             keyboardController?.hide()
