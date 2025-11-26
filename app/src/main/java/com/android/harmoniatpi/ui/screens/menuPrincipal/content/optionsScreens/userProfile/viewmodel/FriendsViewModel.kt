@@ -6,16 +6,16 @@ import androidx.lifecycle.viewModelScope
 import com.android.harmoniatpi.domain.interfaces.Repository
 import com.android.harmoniatpi.domain.model.UserPreferences
 import com.android.harmoniatpi.domain.model.userPreferences.FriendRequestReceived
-import com.android.harmoniatpi.domain.usecases.firebaseUseCases.FetchAndSyncUsersUseCase
-import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetAllUserFromDBUseCase
+import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetUsersFromFirestoreUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.ObserveCurrentUserUseCase
+import com.android.harmoniatpi.domain.usecases.friendUseCases.AcceptFriendRequestUseCase
+import com.android.harmoniatpi.domain.usecases.friendUseCases.DeclineFriendRequestUseCase
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.SharedMenuUiState
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.model.FriendsUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -23,11 +23,11 @@ import javax.inject.Inject
 
 @HiltViewModel
 class FriendsViewModel @Inject constructor(
-    private val repository: Repository,
     private val sharedMenuUiState: SharedMenuUiState,
-    private val fetchAndSyncUsersUseCase: FetchAndSyncUsersUseCase,
-    private val getAllUsersUseCase: GetAllUserFromDBUseCase,
-    private val observeCurrentUserUseCase: ObserveCurrentUserUseCase
+    private val observeCurrentUserUseCase: ObserveCurrentUserUseCase,
+    private val getUsersFromFirestoreUseCase: GetUsersFromFirestoreUseCase,
+    private val acceptFriendRequestUseCase: AcceptFriendRequestUseCase,
+    private val declineFriendRequestUseCase: DeclineFriendRequestUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(FriendsUiState())
@@ -44,56 +44,75 @@ class FriendsViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
-            combine(
-                observeCurrentUserUseCase(),
-                getAllUsersUseCase()
-            ) { localCurrentUser, allUsersInRoom ->
+            // Solo observamos al usuario actual (Room), que tiene la lista de IDs de amigos
+            observeCurrentUserUseCase().collect { localCurrentUser ->
 
                 this@FriendsViewModel.currentUser = localCurrentUser
 
                 if (localCurrentUser == null) {
-                    return@combine null
+                    _uiState.update { it.copy(isLoading = false) }
+                    return@collect
                 }
 
-                val friends = localCurrentUser.friendsList
+                val rawFriends = localCurrentUser.friendsList
                 val requestsReceived = localCurrentUser.friendRequestReceived
+
+                // 1. Obtenemos TODOS los IDs necesarios (Amigos + Solicitudes)
+                val friendIds = rawFriends.map { it.id }
                 val requestIds = requestsReceived.map { it.fromUserID }
+                val allRequiredIds = (friendIds + requestIds).distinct()
 
-                val usersToFetch = requestIds.filter { reqId ->
-                    allUsersInRoom.none { it.userID == reqId }
-                }
-                if (usersToFetch.isNotEmpty()) {
-                    launch(Dispatchers.IO) {
-                        fetchAndSyncUsersUseCase(usersToFetch)
-                            .onFailure { Log.e("FriendsViewModel", "Error fetching profiles", it) }
-                    }
+                if (allRequiredIds.isEmpty()) {
+                    _uiState.update { it.copy(isLoading = false, friendsList = emptyList(), requestList = emptyList()) }
+                    return@collect
                 }
 
+                // 2. Llamamos a Firestore para obtener datos FRESCOS (Solo lectura)
+                // Esto soluciona lo de Juanma, porque siempre traerá su foto actual de la nube.
+                launch(Dispatchers.IO) {
+                    getUsersFromFirestoreUseCase(allRequiredIds)
+                        .onSuccess { remoteUsers ->
 
-                val requestUserProfiles = allUsersInRoom.filter { user ->
-                    requestIds.contains(user.userID)
-                }
+                            // 3. Cruzar datos en Memoria (Sin tocar Room)
 
-
-                Triple(friends, requestUserProfiles, requestsReceived)
-
-            }.collect { data ->
-                if (data != null) {
-                    val (friends, requestProfiles, requestsReceived) = data
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            friendsList = friends,
-                            requestList = requestProfiles,
-                            friendRequestReceived = requestsReceived,
-                            loadingActionId = it.loadingActionId?.takeIf { id ->
-                                requestsReceived.any { req -> req.fromUserID == id }
+                            // A) Actualizar lista de amigos con fotos nuevas
+                            val updatedFriends = rawFriends.map { friend ->
+                                val remoteData = remoteUsers.find { it.userID == friend.id }
+                                if (remoteData != null) {
+                                    // Usamos la foto y nombre frescos de Firestore
+                                    friend.copy(
+                                        urlPhoto = remoteData.userPhotoPathRemote,
+                                        name = remoteData.userName,
+                                        lastName = remoteData.userLastName
+                                    )
+                                } else {
+                                    friend // Si falla, mantenemos los datos viejos que teníamos
+                                }
                             }
-                        )
-                    }
-                    sharedMenuUiState.updateState { it.copy(totalFriends = friends.size) }
-                } else {
-                    _uiState.update { it.copy(isLoading = true) } // Sigue cargando
+
+                            // B) Preparar lista de solicitudes (objetos User completos para la UI)
+                            val requestUserProfiles = remoteUsers.filter { user ->
+                                requestIds.contains(user.userID)
+                            }
+
+                            // 4. Actualizar UI State
+                            _uiState.update {
+                                it.copy(
+                                    isLoading = false,
+                                    friendsList = updatedFriends,
+                                    requestList = requestUserProfiles,
+                                    friendRequestReceived = requestsReceived,
+                                    loadingActionId = it.loadingActionId?.takeIf { id ->
+                                        requestsReceived.any { req -> req.fromUserID == id }
+                                    }
+                                )
+                            }
+                            sharedMenuUiState.updateState { it.copy(totalFriends = updatedFriends.size) }
+                        }
+                        .onFailure {
+                            Log.e("FriendsViewModel", "Error cargando amigos", it)
+                            _uiState.update { it.copy(isLoading = false) }
+                        }
                 }
             }
         }
@@ -105,9 +124,9 @@ class FriendsViewModel @Inject constructor(
         _uiState.update { it.copy(loadingActionId = request.fromUserID) }
         viewModelScope.launch(Dispatchers.IO) {
             val result = if (accept) {
-                repository.acceptFriendRequest(user, request)
+                acceptFriendRequestUseCase(user, request)
             } else {
-                repository.declineFriendRequest(user, request)
+                declineFriendRequestUseCase(user, request)
             }
 
             if (result.isSuccess) {

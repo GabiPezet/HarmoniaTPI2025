@@ -185,23 +185,11 @@ fun PostCard(
                         viewUserProfile(post.userID)
                     }
             ) {
-                if (post.userImagePathURL.isNotBlank()) {
-                    AsyncImage(
-                        model = post.userImagePathURL,
-                        contentDescription = "Foto de perfil",
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(CircleShape),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Default.AccountCircle,
-                        contentDescription = "Foto de perfil",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(48.dp)
-                    )
-                }
+                PostProfileImage(
+                    imageUrl = post.userImagePathURL,
+                    userName = post.name,
+                    size = 48.dp
+                )
             }
 
             Spacer(Modifier.width(12.dp))
