@@ -5,7 +5,6 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.harmoniatpi.domain.interfaces.ExoAudioPlayerRepository
-import com.android.harmoniatpi.domain.interfaces.Repository
 import com.android.harmoniatpi.domain.model.UserPreferences
 import com.android.harmoniatpi.domain.model.project.Project
 import com.android.harmoniatpi.domain.model.song.DerivedVersion
@@ -13,15 +12,12 @@ import com.android.harmoniatpi.domain.model.song.Song
 import com.android.harmoniatpi.domain.model.song.VersionType
 import com.android.harmoniatpi.domain.model.user.User
 import com.android.harmoniatpi.domain.usecases.GetProjectByIdUseCase
-import com.android.harmoniatpi.domain.usecases.firebaseUseCases.FetchAndSyncUsersUseCase
-import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetAllUserFromDBUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetDerivedProjectsFromFirestoreUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetProjectByIdFromFirestoreUseCase
 import com.android.harmoniatpi.domain.usecases.firebaseUseCases.GetUsersFromFirestoreUseCase
 import com.android.harmoniatpi.ui.screens.songVersionsScreen.model.PlaybackState
 import com.android.harmoniatpi.ui.screens.songVersionsScreen.model.SongVersionsUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
