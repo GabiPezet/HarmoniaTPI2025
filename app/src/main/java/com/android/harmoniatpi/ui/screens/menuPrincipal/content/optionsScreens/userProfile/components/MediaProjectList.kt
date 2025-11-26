@@ -19,12 +19,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -38,13 +41,25 @@ import com.android.harmoniatpi.R
 import com.android.harmoniatpi.domain.model.project.Project
 
 @Composable
-fun MediaProjectList(projects: List<Project>) {
+fun MediaProjectList(
+    projects: List<Project>,
+    currentlyPlayingId: String?,
+    isAudioPlaying: Boolean,
+    onPlayClick: (Project) -> Unit,
+    onGoToStudio: () -> Unit
+) {
     if (projects.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(
-                "Aún no hay proyectos multimedia",
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    "Aún no tienes proyectos publicados",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(onClick = onGoToStudio) {
+                    Text("Ir a mi Estudio")
+                }
+            }
         }
         return
     }
@@ -54,24 +69,49 @@ fun MediaProjectList(projects: List<Project>) {
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
     ) {
         items(projects) { project ->
-            ProjectCard(project = project)
+            val isThisPlaying = currentlyPlayingId == project.id && isAudioPlaying
+
+            ProjectCard(
+                project = project,
+                isPlaying = isThisPlaying,
+                onPlayClick = { onPlayClick(project) }
+            )
+        }
+
+
+        item {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                OutlinedButton(onClick = onGoToStudio) {
+                    Text("Ver borradores y locales (Ir al Estudio)")
+                }
+            }
         }
     }
 }
 
 @Composable
-fun ProjectCard(project: Project) {
+fun ProjectCard(
+    project: Project,
+    isPlaying: Boolean,
+    onPlayClick: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .height(100.dp)
-            .padding(vertical = 16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-        shape = RoundedCornerShape(12.dp)
+            .padding(vertical = 8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
             modifier = Modifier
-                .padding(horizontal = 4.dp)
+                .padding(12.dp)
                 .fillMaxSize(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
@@ -79,17 +119,16 @@ fun ProjectCard(project: Project) {
 
             Box(
                 modifier = Modifier
-                    .size(50.dp)
-                    .background(MaterialTheme.colorScheme.primary, CircleShape),
+                    .size(76.dp)
+                    .background(MaterialTheme.colorScheme.secondaryContainer, RoundedCornerShape(8.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.ic_harmonyicon),
-                    contentDescription = "Harmony Logo",
+                    contentDescription = null,
                     modifier = Modifier.size(40.dp),
                     contentScale = ContentScale.Fit
                 )
-
             }
 
             Spacer(modifier = Modifier.width(16.dp))
@@ -103,7 +142,8 @@ fun ProjectCard(project: Project) {
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -112,16 +152,15 @@ fun ProjectCard(project: Project) {
                     text = project.description,
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(8.dp))
 
             IconButton(
-                onClick = {
-                    // Reproducir el audio completo del proyecto
-                },
+                onClick = onPlayClick,
                 modifier = Modifier
                     .size(48.dp)
                     .background(
@@ -130,8 +169,8 @@ fun ProjectCard(project: Project) {
                     )
             ) {
                 Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = "Reproducir proyecto",
+                    imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                    contentDescription = if (isPlaying) "Pausar" else "Reproducir",
                     tint = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.size(24.dp)
                 )
