@@ -173,86 +173,65 @@ class ProjectManagementScreenViewModel @Inject constructor(
         _state.update { it.copy(currentProjectSelected = project) }
 
         if (project != null && project.urlAudioTracks.isNotEmpty()) {
+
+            //ACTIVAMOS CARGA
+            _state.update { it.copy(isLoadingProject = true) }
+
             viewModelScope.launch {
                 Log.i("KlyxDevs", "Restaurando pistas del proyecto guardado...")
                 loadProjectTrackUseCase.clearAllTracks()
 
-                coroutineScope {
-                    project.urlAudioTracks.forEach { audioTrack ->
-                        launch(Dispatchers.IO) { // Cada pista en su propio hilo
-                            val pcmFile = File(audioTrack.path)
+                try {
+                    coroutineScope {
+                        project.urlAudioTracks.forEach { audioTrack ->
+                            launch(Dispatchers.IO) { // Cada pista en su propio hilo
+                                val pcmFile = File(audioTrack.path)
 
-                            // Lógica de restaurar pista
-                            if (!pcmFile.exists() && audioTrack.remoteUrl != null) {
+                                // Lógica de restaurar pista
+                                if (!pcmFile.exists() && audioTrack.remoteUrl != null) {
 
-                                Log.w("KlyxDevs", "Falta archivo local ${pcmFile.name}. Descargando desde ${audioTrack.remoteUrl}...")
-                                val tempMp3File = File(context.cacheDir, "restore_${audioTrack.id}.mp3")
+                                    Log.w("KlyxDevs", "Falta archivo local ${pcmFile.name}. Descargando desde ${audioTrack.remoteUrl}...")
+                                    val tempMp3File = File(context.cacheDir, "restore_${audioTrack.id}.mp3")
 
-                                try {
+                                    try {
+                                        downloadFileUseCase(audioTrack.remoteUrl, tempMp3File).getOrThrow()
 
-                                    downloadFileUseCase(audioTrack.remoteUrl, tempMp3File).getOrThrow()
+                                        Log.i("KlyxDevs", "Descarga completa. Convirtiendo ${tempMp3File.name} a ${pcmFile.name}...")
+                                        convertMp3ToPcmUseCase(tempMp3File, pcmFile).getOrThrow()
 
+                                        Log.i("KlyxDevs", "Pista ${audioTrack.id} restaurada. Cargando en mixer...")
+                                        loadTrackIntoMixer(audioTrack)
 
-                                    Log.i("KlyxDevs", "Descarga completa. Convirtiendo ${tempMp3File.name} a ${pcmFile.name}...")
-                                    convertMp3ToPcmUseCase(tempMp3File, pcmFile).getOrThrow()
+                                    } catch (e: Exception) {
+                                        Log.e("KlyxDevs", "Error restaurando pista ${audioTrack.id} desde backup", e)
+                                    } finally {
+                                        tempMp3File.delete()
+                                    }
 
-
-                                    Log.i("KlyxDevs", "Pista ${audioTrack.id} restaurada. Cargando en mixer...")
+                                } else if (pcmFile.exists()) {
                                     loadTrackIntoMixer(audioTrack)
-
-                                } catch (e: Exception) {
-                                    Log.e("KlyxDevs", "Error restaurando pista ${audioTrack.id} desde backup", e)
-                                } finally {
-
-                                    tempMp3File.delete()
+                                } else {
+                                    Log.e("KlyxDevs", "Archivo no encontrado y sin backup remoto: ${audioTrack.path}")
                                 }
-
-                            } else if (pcmFile.exists()) {
-
-                                loadTrackIntoMixer(audioTrack)
-                            } else {
-
-                                Log.e("KlyxDevs", "Archivo no encontrado y sin backup remoto: ${audioTrack.path}")
                             }
                         }
-                    }
+                    } // Fin del coroutineScope (espera a que todas terminen)
+
+                    Log.d("KlyxDevs", "Todas las tareas de carga de pistas terminadas.")
+                    fetchTracks()
+
+                } catch (e: Exception) {
+                    Log.e("KlyxDevs", "Error general en la restauración", e)
+                } finally {
+                    //DESACTIVAMOS CARGA (Incluso si hay error)
+                    _state.update { it.copy(isLoadingProject = false) }
                 }
-
-                Log.d("KlyxDevs", "Todas las tareas de carga de pistas lanzadas.")
-
-               /* project.urlAudioTracks.forEach { audioTrack ->
-                    val file = File(audioTrack.path)
-                    if (file.exists()) {
-                        loadProjectTrackUseCase(
-                            pcmFilePath = audioTrack.path,
-                            id = audioTrack.id,
-                            sourceType = audioTrack.sourceType,
-                            startOffsetMs = audioTrack.startOffsetMs
-                        )
-                            .onSuccess {
-                                Log.i(
-                                    "KlyxDevs",
-                                    "Pista restaurada en el mixer: ${audioTrack.id}"
-                                )
-                            }
-                            .onFailure { e ->
-                                Log.e(
-                                    "KlyxDevs",
-                                    "Error restaurando pista ${audioTrack.id}: ${e.message}"
-                                )
-                            }
-                    } else {
-                        Log.w(
-                            "KlyxDevs",
-                            "Archivo no encontrado para pista ${audioTrack.id}: ${audioTrack.path}"
-                        )
-                    }
-                }*/
-                fetchTracks()
             }
         } else {
             Log.i("KlyxDevs", "Proyecto nuevo o sin pistas guardadas.")
             fetchTracks()
+            // Asegurarnos de que esté en false si no había nada que cargar
+            _state.update { it.copy(isLoadingProject = false) }
         }
     }
 

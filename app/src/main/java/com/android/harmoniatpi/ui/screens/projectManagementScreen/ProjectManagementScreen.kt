@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.ZoomOut
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -567,7 +568,7 @@ fun ProjectManagementScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(Color(0xFF858585)), //Pasar ESTE background al Theme Colors
+                .background(Color(0xFF858585)),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
@@ -589,73 +590,99 @@ fun ProjectManagementScreen(
                     .weight(1f)
             ) {
 
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-
-                    if (state.tracks.isEmpty()) {
-                        item {
-                            Box(modifier = Modifier.padding(top = 64.dp)) {
-                                EmptyProjectMessage()
+                // 1. LA LISTA DE PISTAS (SOLO SE VE SI NO ESTÁ CARGANDO)
+                if (!state.isLoadingProject) {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        if (state.tracks.isEmpty()) {
+                            item {
+                                Box(modifier = Modifier.padding(top = 64.dp)) {
+                                    EmptyProjectMessage()
+                                }
                             }
                         }
-                    }
 
-                    items(state.tracks) { track ->
-                        TrackItem(
-                            track = track,
-                            onClick = { viewModel.selectTrack(track.id) },
-                            onDelete = { showDeleteDialog = true },
-                            onShowEffects = { trackForEffects = track },
-                            onUndo = {
-                                viewModel.undoTrim(track.id)
-                            },
-                            scrollState = sharedScrollState,
-                            timelineWidth = state.timelineWidth,
-                            isBeingRecorded = state.isRecording && track.selected,
-                            onMute = {
-                                if (track.isMuted) {
-                                    viewModel.unMuteTrack()
-                                } else {
-                                    viewModel.muteTrack()
-                                }
-                            },
-                            currentPlaybackMs = 0L,
-                            onSeekClick = { ms -> viewModel.seekAndPlay(ms) },
-                            onOffsetChange = { trackId, newOffset ->
-                                viewModel.updateTrackOffset(
-                                    trackId,
-                                    newOffset
-                                )
-                            },
-                            onSelectionChanged = { startMs, endMs ->
-                                viewModel.updateTrackSelection(track.id, startMs, endMs)
-                            },
-                            onCopy = {
-                                scope.launch { viewModel.copySelection() }
-                            },
-                            onCut = {
-                                scope.launch { viewModel.cutSelection() }
-                            },
-                            onUndoEffect = { viewModel.undoEffect(track.id) },
-                            isUndoEffectAvailable = track.isUndoEffectAvailable,
-                            isSelectionActive = track.selectionStartMs != null &&
-                                    (track.selectionEndMs == null || track.selectionEndMs > track.selectionStartMs),
-                            msPerDpScale = state.msPerDpScale,
-                            areControlsEnabled = !state.isRecording,
-                            onShowBottomSheet = viewModel::showBottomSheet
-                        )
+                        items(state.tracks) { track ->
+                            TrackItem(
+                                track = track,
+                                onClick = { viewModel.selectTrack(track.id) },
+                                onDelete = { showDeleteDialog = true },
+                                onShowEffects = { trackForEffects = track },
+                                onUndo = {
+                                    viewModel.undoTrim(track.id)
+                                },
+                                scrollState = sharedScrollState,
+                                timelineWidth = state.timelineWidth,
+                                isBeingRecorded = state.isRecording && track.selected,
+                                onMute = {
+                                    if (track.isMuted) {
+                                        viewModel.unMuteTrack()
+                                    } else {
+                                        viewModel.muteTrack()
+                                    }
+                                },
+                                currentPlaybackMs = 0L,
+                                onSeekClick = { ms -> viewModel.seekAndPlay(ms) },
+                                onOffsetChange = { trackId, newOffset ->
+                                    viewModel.updateTrackOffset(
+                                        trackId,
+                                        newOffset
+                                    )
+                                },
+                                onSelectionChanged = { startMs, endMs ->
+                                    viewModel.updateTrackSelection(track.id, startMs, endMs)
+                                },
+                                onCopy = {
+                                    scope.launch { viewModel.copySelection() }
+                                },
+                                onCut = {
+                                    scope.launch { viewModel.cutSelection() }
+                                },
+                                onUndoEffect = { viewModel.undoEffect(track.id) },
+                                isUndoEffectAvailable = track.isUndoEffectAvailable,
+                                isSelectionActive = track.selectionStartMs != null &&
+                                        (track.selectionEndMs == null || track.selectionEndMs > track.selectionStartMs),
+                                msPerDpScale = state.msPerDpScale,
+                                areControlsEnabled = !state.isRecording,
+                                onShowBottomSheet = viewModel::showBottomSheet
+                            )
+                        }
+                    }
+                }
+                if (state.isLoadingProject) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.3f)), // Fondo semi-oscuro opcional
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            CircularProgressIndicator(
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Spacer(modifier = Modifier.size(16.dp))
+                            Text(
+                                text = "Restaurando pistas...",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
 
-                GlobalPlayhead(
-                    currentPlaybackMs = state.currentPlaybackMs,
-                    msPerDpScale = state.msPerDpScale,
-                    scrollState = sharedScrollState
-                )
+                // 3. GlobalPlayhead (Siempre visible o condicional, según prefieras)
+                if (!state.isLoadingProject) {
+                    GlobalPlayhead(
+                        currentPlaybackMs = state.currentPlaybackMs,
+                        msPerDpScale = state.msPerDpScale,
+                        scrollState = sharedScrollState
+                    )
+                }
 
             }
         }

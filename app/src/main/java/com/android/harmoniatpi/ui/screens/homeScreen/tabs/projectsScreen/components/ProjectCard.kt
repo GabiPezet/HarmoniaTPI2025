@@ -67,6 +67,7 @@ fun ProjectCard(
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
     onPublishClick: () -> Unit,
+    onShareClick: () -> Unit,
     onNavigateToVersions: (project: Project) -> Unit,
 ) {
     var showMenu by remember { mutableStateOf(false) }
@@ -231,7 +232,10 @@ fun ProjectCard(
                         // --- Opciones Comunes ---
                         DropdownMenuItem(
                             text = { Text("Compartir") },
-                            onClick = { /* TODO */; showMenu = false },
+                            onClick = {
+                                onShareClick()
+                                showMenu = false
+                            },
                             leadingIcon = { Icon(Icons.Default.Share, null) }
                         )
 
