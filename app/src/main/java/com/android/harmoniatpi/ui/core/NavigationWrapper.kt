@@ -5,6 +5,8 @@ import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavType
@@ -29,6 +31,7 @@ import com.android.harmoniatpi.ui.screens.homeScreen.HomeScreen
 import com.android.harmoniatpi.ui.screens.loginScreen.LoginScreen
 import com.android.harmoniatpi.ui.screens.menuPrincipal.DrawerScreen
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.DrawerContent
+import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.UserDetailProfile
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.viewmodel.DrawerContentViewModel
 import com.android.harmoniatpi.ui.screens.notificationScreen.NotificationsScreen
 import com.android.harmoniatpi.ui.screens.paymentMarketScreen.PaymentMarketScreen
@@ -48,6 +51,7 @@ fun NavigationWrapper(
 ) {
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val appConfigState by drawerViewModel.uiState.collectAsState()
     val coroutineScope = rememberCoroutineScope()
     NavHost(navController = navController, startDestination = LoginScreenRoute) {
         composable<LoginScreenRoute> {
@@ -68,11 +72,13 @@ fun NavigationWrapper(
                 drawerState = drawerState,
                 drawerContent = {
                     DrawerContent(
-                        innerPadding,
-                        drawerViewModel,
-                        drawerState,
-                        onCloseDrawer = {
+                        innerPadding = innerPadding,
+                        drawerViewModel = drawerViewModel,
+                        drawerState = drawerState,
+                        onCloseDrawer = { coroutineScope.launch { drawerState.close() } },
+                        onNavigateToProfile = {
                             coroutineScope.launch { drawerState.close() }
+                            navController.navigate(NavigationRoutes.UserProfileScreenRoute)
                         },
                         onNavigateToNotifications = {
                             navController.navigate(NotificationScreenRoute)
@@ -145,6 +151,18 @@ fun NavigationWrapper(
                 onNavigateBack = { navController.popBackStack() },
                 onPaymentReturn = { deepLinkUri ->
                     navController.navigate(deepLinkUri)
+                }
+            )
+        }
+
+        composable<NavigationRoutes.UserProfileScreenRoute> {
+            UserDetailProfile(
+                viewModel = drawerViewModel,
+                uiState = appConfigState,
+                innerPadding = innerPadding,
+                onNavigateBack = { navController.popBackStack() },
+                onGoToStudio = {
+                    navController.popBackStack(HomeScreenRoute, inclusive = false)
                 }
             )
         }

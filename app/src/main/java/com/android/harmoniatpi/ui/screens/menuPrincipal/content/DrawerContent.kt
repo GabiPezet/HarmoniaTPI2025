@@ -35,7 +35,8 @@ fun DrawerContent(
     onNavigateToNotifications: () -> Unit,
     onLogOutNavigateToLogin: () -> Unit,
     onNavigateToFriends: () -> Unit,
-    navigateToPaymentMarketScreen: () -> Unit
+    navigateToPaymentMarketScreen: () -> Unit,
+    onNavigateToProfile: () -> Unit,
 ) {
     val scrollState = rememberScrollState()
     val uiState by drawerViewModel.uiState.collectAsState()
@@ -77,6 +78,7 @@ fun DrawerContent(
             showCloseSessionDialog = { showCloseSessionDialog = true },
             onNavigateToFriends = onNavigateToFriends,
             navigateToPaymentMarketScreen = { navigateToPaymentMarketScreen() },
+            onNavigateToProfile = onNavigateToProfile,
         )
     }
 }
@@ -93,6 +95,7 @@ fun DrawerScreenContent(
     innerPadding: PaddingValues,
     showCloseSessionDialog: () -> Unit,
     onNavigateToFriends: () -> Unit,
+    onNavigateToProfile: () -> Unit,
     navigateToPaymentMarketScreen: () -> Unit
 ) {
     when (optionsMenu) {
@@ -107,6 +110,7 @@ fun DrawerScreenContent(
                 onNavigateToNotifications = onNavigateToNotifications,
                 showCloseSessionDialog = showCloseSessionDialog,
                 navigateToPaymentMarketScreen = { navigateToPaymentMarketScreen() },
+                onNavigateToProfile = onNavigateToProfile,
             )
         }
 
@@ -117,13 +121,6 @@ fun DrawerScreenContent(
             )
         }
 
-        OptionsMenu.USER_PROFILE -> {
-            UserDetailProfile(
-                viewModel = drawerViewModel,
-                uiState = uiState,
-                innerPadding = innerPadding,
-            )
-        }
 
         OptionsMenu.MY_POSTS_SCREEN -> {
             MyPostsScreen(

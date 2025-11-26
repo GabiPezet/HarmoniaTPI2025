@@ -6,78 +6,45 @@ import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.Done
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.PhotoCamera
-import androidx.compose.material.icons.filled.PhotoLibrary
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material3.*
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
-import coil.compose.rememberAsyncImagePainter
+import coil.compose.AsyncImage
 import com.android.harmoniatpi.R
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.MenuUiState
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.OptionsMenu
-import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.ContactProfileCard
-import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.FriendsScreen
-import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.MediaProjectList
-import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.ProfileNavButton
-import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.ProfileTab
-import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.ProfileTabItem
-import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.WorkProfileCard
+import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.*
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.viewmodel.DrawerContentViewModel
 import com.android.harmoniatpi.ui.core.utils.PermissionRequester
 import java.io.File
@@ -88,54 +55,45 @@ fun UserDetailProfile(
     viewModel: DrawerContentViewModel,
     uiState: MenuUiState,
     innerPadding: PaddingValues,
+    onNavigateBack: () -> Unit,
+    onGoToStudio: () -> Unit
 ) {
     val context = LocalContext.current
     var photoUri by rememberSaveable { mutableStateOf<Uri?>(null) }
     var showSheet by remember { mutableStateOf(false) }
     val userPhotoPath by viewModel.userPhotoPath.collectAsState()
-    var selectedTab by remember { mutableStateOf(ProfileTab.WORK) }
-    var isEditing by remember { mutableStateOf(false) }
+    var selectedTabIndex by rememberSaveable { mutableIntStateOf(ProfileTab.WORK.ordinal) }
+    val tabs = ProfileTab.entries
+    var isEditingName by remember { mutableStateOf(false) }
     var name by remember(uiState.userName) { mutableStateOf(uiState.userName) }
     var requestCameraPermission by remember { mutableStateOf(false) }
     val contactData by viewModel.contactData.collectAsState()
 
-    val takePictureLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicture()
-    ) { success ->
+
+    val takePictureLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.TakePicture()) { success ->
         if (success && photoUri != null) {
             val picturesDir = File(context.filesDir, "pictures")
             val imageFile = File(picturesDir, "profile_photo_${userPhotoPath.version}.jpg")
             viewModel.saveUserPhoto(imageFile.absolutePath)
         }
     }
-
-    val pickImageLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
+    val pickImageLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { uri: Uri? ->
         uri?.let {
             val picturesDir = File(context.filesDir, "pictures")
             if (!picturesDir.exists()) picturesDir.mkdirs()
             val imageFile = File(picturesDir, "profile_photo_${userPhotoPath.version}.jpg")
-
-            context.contentResolver.openInputStream(uri)?.use { input ->
-                imageFile.outputStream().use { output ->
-                    input.copyTo(output)
-                }
+            context.contentResolver.openInputStream(it)?.use { input ->
+                imageFile.outputStream().use { output -> input.copyTo(output) }
             }
             viewModel.saveUserPhoto(imageFile.absolutePath)
         }
     }
-
     fun createImageUri(context: Context): Uri {
         val picturesDir = File(context.filesDir, "pictures")
         if (!picturesDir.exists()) picturesDir.mkdirs()
-
         val imageFile = File(picturesDir, "profile_photo_${userPhotoPath.version}.jpg")
         if (!imageFile.exists()) imageFile.createNewFile()
-
-        return FileProvider.getUriForFile(
-            context, "${context.packageName}.fileprovider", imageFile
-        )
+        return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", imageFile)
     }
 
     BackHandler {
@@ -148,298 +106,178 @@ fun UserDetailProfile(
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = "PERFIL", style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.SemiBold
-                        ), fontSize = 24.sp
+                        text = "Mi Perfil",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = {
-                        viewModel.changeOptionsMenu(OptionsMenu.MAIN_CONTENT_SCREEN)
-                    }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Volver al menú anterior",
-                        )
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                )
             )
         },
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(innerPadding),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(innerPadding)
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Box(contentAlignment = Alignment.BottomEnd) {
-                if (uiState.userPhotoPathRemote.isNotBlank()) {
-                    Image(
-                        painter = rememberAsyncImagePainter(uiState.userPhotoPathRemote),
-                        contentDescription = "Foto de perfil",
-                        modifier = Modifier
-                            .size(150.dp)
-                            .clip(CircleShape),
-                        contentScale = ContentScale.Crop
-                    )
-                } else
-                    if (userPhotoPath.path.isBlank()) {
-                        Icon(
-                            imageVector = Icons.Default.AccountCircle,
-                            contentDescription = "Foto de perfil",
-                            tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f),
-                            modifier = Modifier.size(150.dp)
-                        )
-                    } else {
-                        Image(
-                            painter = rememberAsyncImagePainter(userPhotoPath.path),
-                            contentDescription = "Foto de perfil",
-                            modifier = Modifier
-                                .size(150.dp)
-                                .clip(CircleShape)
-                                .border(
-                                    BorderStroke(2.dp, MaterialTheme.colorScheme.outlineVariant),
-                                    CircleShape
-                                ),
 
-                            contentScale = ContentScale.Crop
-                        )
+            ProfileHeader(
+                uiState = uiState,
+                userPhotoPath = userPhotoPath.path,
+                isEditingName = isEditingName,
+                nameValue = name,
+                onNameChange = { name = it },
+                onEditPhotoClick = { showSheet = true },
+                onEditNameToggle = { isEditingName = !isEditingName },
+                onSaveName = {
+                    if (name.isNotBlank()) {
+                        viewModel.updateUserName(name)
+                        viewModel.updateUserPreferences()
+                        isEditingName = false
+                    }
+                }
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+
+            TabRow(
+                selectedTabIndex = selectedTabIndex,
+                containerColor = MaterialTheme.colorScheme.background,
+                contentColor = MaterialTheme.colorScheme.primary,
+                indicator = { tabPositions ->
+                    TabRowDefaults.SecondaryIndicator(
+                        Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                },
+                divider = { HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)) }
+            ) {
+                tabs.forEachIndexed { index, tab ->
+
+                    val (icon, label) = when (tab) {
+                        ProfileTab.FRIENDS -> Icons.Outlined.People to "Red"
+                        ProfileTab.MEDIA -> Icons.Outlined.VideoLibrary to "Media"
+                        ProfileTab.WORK -> Icons.Outlined.Person to "Datos"
+                        ProfileTab.CONTACT -> Icons.Outlined.ContactMail to "Contacto"
                     }
 
-                IconButton(
-                    onClick = { showSheet = true },
-                    modifier = Modifier
-                        .offset(x = (-8).dp, y = (-8).dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.primary, shape = CircleShape
-                        )
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CameraAlt,
-                        contentDescription = "Cambiar foto",
-                        tint = MaterialTheme.colorScheme.onPrimary
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                if (isEditing) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        OutlinedTextField(
-                            value = name,
-                            onValueChange = { name = it },
-                            label = { Text("Nombre de usuario") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            isError = name.isBlank(),
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                            keyboardActions = KeyboardActions(
-                                onDone = {
-                                    if (name.isNotBlank()) {
-                                        viewModel.updateUserName(name)
-                                        viewModel.updateUserPreferences()
-                                        isEditing = false
-                                    }
-                                }
-                            )
-                        )
-                        if (name.isBlank()) {
+                    Tab(
+                        selected = selectedTabIndex == index,
+                        onClick = { selectedTabIndex = index },
+                        text = {
                             Text(
-                                text = "El nombre no puede estar vacío",
-                                color = MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.padding(start = 16.dp)
+                                text = label,
+                                style = MaterialTheme.typography.labelMedium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
-                        }
-                    }
-
-                    IconButton(
-                        onClick = {
-                            viewModel.updateUserName(name)
-                            viewModel.updateUserPreferences()
-                            isEditing = false
                         },
-                        enabled = name.isNotBlank()
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Done,
-                            contentDescription = "Guardar nombre",
-                            tint = if (name.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(
-                                alpha = 0.38f
-                            )
-                        )
-                    }
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 24.dp)
-                    ) {
-                        Text(
-                            text = uiState.userName.ifEmpty { "Sin nombre" },
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.align(Alignment.Center),
-                            textAlign = TextAlign.Center
-                        )
-                        IconButton(
-                            onClick = { isEditing = true },
-                            modifier = Modifier.align(Alignment.CenterEnd)
-                        ) {
+                        icon = {
                             Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = "Editar nombre",
-                                tint = MaterialTheme.colorScheme.secondary
+                                imageVector = icon,
+                                contentDescription = null,
+                                modifier = Modifier.size(22.dp)
                             )
-                        }
-                    }
+                        },
+                        unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
-            //Spacer(modifier = Modifier.height(24.dp))
-            //CompactSymmetricButtons()
-            //Spacer(modifier = Modifier.height(16.dp))
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                listOf(
-                    ProfileTabItem(painterResource(R.drawable.ic_community2_profile), "Seguidores", ProfileTab.FRIENDS),
-                    ProfileTabItem(painterResource(R.drawable.ic_projects_profile), "Proyectos", ProfileTab.MEDIA),
-                    ProfileTabItem(painterResource(R.drawable.ic_work_profile), "Mis Datos", ProfileTab.WORK),
-                    ProfileTabItem(
-                        painterResource(R.drawable.ic_contact2_profile),
-                        "Mi Contacto",
-                        ProfileTab.CONTACT
-                    ),
-
-                    ).forEach { (painter, label, tab) ->
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .wrapContentWidth(Alignment.CenterHorizontally)
-                    ) {
-                        ProfileNavButton(
-                            painter = painter,
-                            label = label,
-                            selected = selectedTab == tab,
-                            onClick = { selectedTab = tab }
-                        )
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
 
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
+                    .weight(1f)
+                    .padding(vertical = 16.dp)
             ) {
-                when (selectedTab) {
-                    ProfileTab.WORK -> WorkProfileCard(uiState = uiState, viewModel = viewModel)
-                    ProfileTab.MEDIA -> MediaProjectList(projects = uiState.projectsList)
-                    ProfileTab.CONTACT -> ContactProfileCard(
-                        contactData = contactData,
-                        onUpdateContact = { updated -> viewModel.updateContactInfo(updated) }
-                    )
 
-                    ProfileTab.FRIENDS -> FriendsScreen(uiState = uiState)
+                val contentModifier = Modifier.padding(horizontal = 16.dp)
+
+                AnimatedContent(
+                    targetState = tabs[selectedTabIndex],
+                    transitionSpec = { fadeIn() togetherWith fadeOut() },
+                    label = "TabContent"
+                ) { targetTab ->
+                    when (targetTab) {
+                        ProfileTab.WORK -> Box(contentModifier) { WorkProfileCard(uiState, viewModel) }
+                        ProfileTab.MEDIA -> MediaProjectList(
+                            projects = uiState.projectsList.filter { it.isPublished },
+                            currentlyPlayingId = uiState.currentlyPlayingProjectId,
+                            isAudioPlaying = uiState.isAudioPlaying,
+                            onPlayClick = { project ->
+                                viewModel.onPlayProjectClicked(project)
+                            },
+                            onGoToStudio = onGoToStudio
+                        )
+                        ProfileTab.CONTACT -> Box(contentModifier) {
+                            ContactProfileCard(contactData, { viewModel.updateContactInfo(it) })
+                        }
+                        ProfileTab.FRIENDS -> FriendsScreen(uiState)
+                    }
                 }
             }
-            Spacer(modifier = Modifier.height(24.dp))
         }
     }
+
 
     if (showSheet) {
         ModalBottomSheet(
             onDismissRequest = { showSheet = false },
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(24.dp)
+                    .padding(bottom = 32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                Text(
+                    "Actualizar foto de perfil",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                HorizontalDivider(modifier = Modifier.width(40.dp).padding(bottom = 8.dp))
 
                 Button(
                     onClick = {
                         requestCameraPermission = true
                         showSheet = false
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.PhotoCamera,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimary
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(
-                            text = "Tomar foto",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            fontSize = 16.sp
-                        )
-                    }
+                    Icon(Icons.Default.PhotoCamera, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Tomar foto")
                 }
 
-                Button(
+                OutlinedButton(
                     onClick = {
                         pickImageLauncher.launch("image/*")
                         showSheet = false
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.PhotoLibrary,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimary
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(
-                            text = "Elegir de galería",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            fontSize = 16.sp
-                        )
-                    }
+                    Icon(Icons.Default.PhotoLibrary, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Galería")
                 }
-                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
@@ -457,6 +295,120 @@ fun UserDetailProfile(
             },
             onDialogDismiss = { requestCameraPermission = false }
         )
+    }
+}
+
+@Composable
+fun ProfileHeader(
+    uiState: MenuUiState,
+    userPhotoPath: String,
+    isEditingName: Boolean,
+    nameValue: String,
+    onNameChange: (String) -> Unit,
+    onEditPhotoClick: () -> Unit,
+    onEditNameToggle: () -> Unit,
+    onSaveName: () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(contentAlignment = Alignment.BottomEnd) {
+            val imageModifier = Modifier
+                .size(110.dp)
+                .clip(CircleShape)
+                .border(2.dp, MaterialTheme.colorScheme.surfaceVariant, CircleShape)
+
+            if (uiState.userPhotoPathRemote.isNotBlank()) {
+                AsyncImage(
+                    model = uiState.userPhotoPathRemote,
+                    contentDescription = "Foto",
+                    modifier = imageModifier,
+                    contentScale = ContentScale.Crop
+                )
+            } else if (userPhotoPath.isNotBlank()) {
+                AsyncImage(
+                    model = userPhotoPath,
+                    contentDescription = "Foto",
+                    modifier = imageModifier,
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Box(
+                    modifier = imageModifier.background(MaterialTheme.colorScheme.surfaceContainerHighest),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.Person,
+                        contentDescription = null,
+                        modifier = Modifier.size(50.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            IconButton(
+                onClick = onEditPhotoClick,
+                modifier = Modifier
+                    .size(32.dp)
+                    .offset(x = 4.dp, y = 4.dp)
+                    .background(MaterialTheme.colorScheme.primary, CircleShape)
+                    .border(2.dp, MaterialTheme.colorScheme.background, CircleShape)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = "Editar foto",
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        if (isEditingName) {
+            OutlinedTextField(
+                value = nameValue,
+                onValueChange = onNameChange,
+                label = { Text("Nombre") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(0.7f),
+                shape = RoundedCornerShape(12.dp),
+                trailingIcon = {
+                    IconButton(onClick = onSaveName) {
+                        Icon(Icons.Default.Check, contentDescription = "Guardar", tint = MaterialTheme.colorScheme.primary)
+                    }
+                },
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { onSaveName() })
+            )
+        } else {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .clickable { onEditNameToggle() }
+                    .padding(8.dp)
+            ) {
+                Text(
+                    text = uiState.userName.ifEmpty { "Usuario" },
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = "Editar nombre",
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                )
+            }
+            Text(
+                text = uiState.userEmail,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 

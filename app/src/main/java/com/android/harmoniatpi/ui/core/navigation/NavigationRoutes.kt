@@ -29,6 +29,8 @@ sealed class NavigationRoutes() {
     data object PaymentMarketScreenRoute : NavigationRoutes()
 
     @Serializable
+    data object UserProfileScreenRoute : NavigationRoutes()
+    @Serializable
     data class PaymentResultScreenRoute(
         val status: String? = null,
         val payment_id: String? = null,
