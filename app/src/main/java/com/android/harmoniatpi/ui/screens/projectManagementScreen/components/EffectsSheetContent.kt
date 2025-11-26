@@ -281,7 +281,17 @@ fun EffectsSheetContent(
                     onFrequencyChange = { lpfFrequency = it }
                 )
 
-                7 -> FlangerControlPanel(
+                7 ->  Column {
+                    Text("Velocidad: ${String.format("%.1f", tremFreq)} Hz")
+                    Slider(value = tremFreq, onValueChange = { tremFreq = it }, valueRange = 0.5f..15.0f)
+                    Spacer(Modifier.height(8.dp))
+                    Text("Profundidad: ${(tremDepth * 100).toInt()}%")
+                    Slider(value = tremDepth, onValueChange = { tremDepth = it }, valueRange = 0.0f..1.0f)
+                }
+
+
+
+                8 -> FlangerControlPanel(
                     rate = flangerRate,
                     wet = flangerWet,
                     onRateChange = { flangerRate = it },
@@ -290,23 +300,15 @@ fun EffectsSheetContent(
 
 
 
-                8 -> Column {
-                    Text("Efecto Teléfono", style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        "Aplica un filtro de banda y distorsión ligera para simular una llamada.",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
+                9 ->
+                    Column {
+                        Text("Efecto Teléfono", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            "Aplica un filtro de banda y distorsión ligera para simular una llamada.",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
 
-
-
-                9 -> Column {
-                    Text("Velocidad: ${String.format("%.1f", tremFreq)} Hz")
-                    Slider(value = tremFreq, onValueChange = { tremFreq = it }, valueRange = 0.5f..15.0f)
-                    Spacer(Modifier.height(8.dp))
-                    Text("Profundidad: ${(tremDepth * 100).toInt()}%")
-                    Slider(value = tremDepth, onValueChange = { tremDepth = it }, valueRange = 0.0f..1.0f)
-                }
 
             }
 
