@@ -66,6 +66,8 @@ enum class OptionsMenu {
     USER_PREFERENCES_SCREEN,
     MAIN_CONTENT_SCREEN,
     MY_POSTS_SCREEN,
-    USER_PROFILE
+    USER_PROFILE,
+
+    HELP_SCREEN
 }
 

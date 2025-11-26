@@ -112,7 +112,7 @@ class HamoniaServices : Service() {
                         if (post.hasNewClone) {
                             val title = "¡Tienes una nueva colaboración!"
                             val content =
-                                "Tu projecto '${post.title}' ha recibido nueva clonación."
+                                "Tu proyecto '${post.title}' ha recibido nueva clonación."
                             notificationManger(title, content)
                             shouldUpdate = true
                         }
