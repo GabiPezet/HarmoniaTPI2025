@@ -5,13 +5,13 @@ import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
 import androidx.navigation.toRoute
 import com.android.harmoniatpi.domain.model.project.Project
@@ -29,6 +29,7 @@ import com.android.harmoniatpi.ui.screens.homeScreen.HomeScreen
 import com.android.harmoniatpi.ui.screens.loginScreen.LoginScreen
 import com.android.harmoniatpi.ui.screens.menuPrincipal.DrawerScreen
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.DrawerContent
+import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.OptionsMenu
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.viewmodel.DrawerContentViewModel
 import com.android.harmoniatpi.ui.screens.notificationScreen.NotificationsScreen
 import com.android.harmoniatpi.ui.screens.paymentMarketScreen.PaymentMarketScreen
@@ -48,6 +49,7 @@ fun NavigationWrapper(
 ) {
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val uiState by drawerViewModel.uiState.collectAsState()
     val coroutineScope = rememberCoroutineScope()
     NavHost(navController = navController, startDestination = LoginScreenRoute) {
         composable<LoginScreenRoute> {
@@ -92,6 +94,11 @@ fun NavigationWrapper(
                                 PaymentMarketScreenRoute
                             )
                         },
+                        navigateToProjectScreen = {
+                            drawerViewModel.changeOptionsMenu(OptionsMenu.MAIN_CONTENT_SCREEN, true)
+                            coroutineScope.launch { drawerState.close() }
+
+                        }
                     )
 
                 }, screenContent = {
@@ -136,10 +143,6 @@ fun NavigationWrapper(
             SongVersionsScreen(onNavigateBack = { navController.popBackStack() })
         }
 
-        composable<FriendsScreenRoute> {
-            SongVersionsScreen(onNavigateBack = { navController.popBackStack() })
-        }
-
         composable<PaymentMarketScreenRoute> {
             PaymentMarketScreen(
                 onNavigateBack = { navController.popBackStack() },
@@ -154,7 +157,8 @@ fun NavigationWrapper(
             deepLinks = listOf(
                 navDeepLink {
                     // El patrón mapea 'collection_status' de la URL externa al campo 'status' de tu data class
-                    uriPattern = "harmoniatpi://payment_return?collection_status={status}&payment_id={payment_id}&preapproval_id={preapproval_id}"
+                    uriPattern =
+                        "harmoniatpi://payment_return?collection_status={status}&payment_id={payment_id}&preapproval_id={preapproval_id}"
                 }
             )
         ) { backStackEntry ->
