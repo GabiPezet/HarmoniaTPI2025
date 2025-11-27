@@ -73,7 +73,8 @@ data class ProjectEntity(
             likes = this.likes,
             totalShared = this.totalShared,
             isPublished = this.isPublished,
-            tracksJsonUrl = this.tracksJsonUrl
+            tracksJsonUrl = this.tracksJsonUrl,
+            originalProjectId = this.originalProjectId
         )
     }
 }
