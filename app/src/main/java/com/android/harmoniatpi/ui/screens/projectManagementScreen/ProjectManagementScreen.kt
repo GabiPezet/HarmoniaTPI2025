@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -36,7 +35,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.ZoomIn
 import androidx.compose.material.icons.filled.ZoomOut
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -50,9 +48,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarColors
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -69,8 +65,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -86,7 +82,7 @@ import com.android.harmoniatpi.ui.components.GlobalPlayhead
 import com.android.harmoniatpi.ui.components.ShowConfirmationDialog
 import com.android.harmoniatpi.ui.components.TrimAudioDialog
 import com.android.harmoniatpi.ui.components.TunerDialog
-import com.android.harmoniatpi.ui.components.UpsellDialog
+import com.android.harmoniatpi.ui.core.utils.PermissionRequester
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.AddTrackSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.EffectsSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.EmptyProjectMessage
@@ -102,7 +98,6 @@ import com.android.harmoniatpi.ui.screens.projectManagementScreen.components.Vol
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.BottomSheetContent
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.viewmodel.ProjectManagementScreenViewModel
-import com.android.harmoniatpi.ui.core.utils.PermissionRequester
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -293,20 +288,17 @@ fun ProjectManagementScreen(
                             viewModel.applyLowPassFilter(id, frequency)
                             viewModel.hideBottomSheet()
                         },
-                        onApplyTelephone = {
-                            id ->
+                        onApplyTelephone = { id ->
                             viewModel.stopEffectPreview()
                             viewModel.applyTelephoneEffect(id)
                             viewModel.hideBottomSheet()
                         },
-                        onApplyFadeIn = {
-                                id, duration ->
+                        onApplyFadeIn = { id, duration ->
                             viewModel.stopEffectPreview()
                             viewModel.applyFadeIn(id, duration)
                             viewModel.hideBottomSheet()
                         },
-                        onApplyFadeOut = {
-                                id, duration ->
+                        onApplyFadeOut = { id, duration ->
                             viewModel.stopEffectPreview()
                             viewModel.applyFadeOut(id, duration)
                             viewModel.hideBottomSheet()
@@ -376,7 +368,6 @@ fun ProjectManagementScreen(
     // SnackBar fin
 
 
-
     val errorPulseScale = remember { Animatable(1f) }
     LaunchedEffect(state.fabPulseTrigger) {
         if (state.fabPulseTrigger > 0) {
@@ -417,7 +408,9 @@ fun ProjectManagementScreen(
 
 
     Scaffold(
-        modifier = Modifier.fillMaxSize().testTag("ProjectManagementScreen"),
+        modifier = Modifier
+            .fillMaxSize()
+            .testTag("ProjectManagementScreen"),
         topBar = {
             TopAppBar(
                 title = {
@@ -434,7 +427,7 @@ fun ProjectManagementScreen(
                             modifier = Modifier.weight(1f, fill = false),
                             textAlign = TextAlign.End,
 
-                        )
+                            )
 
                         Spacer(Modifier.width(8.dp))
 

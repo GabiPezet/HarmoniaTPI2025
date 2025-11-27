@@ -13,7 +13,7 @@ import com.android.harmoniatpi.data.database.entities.UserPreferencesEntity
 
 @Database(
     entities = [UserPreferencesEntity::class, ProjectEntity::class, MyPostEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 @TypeConverters(UserPreferencesTypeConverters::class)
