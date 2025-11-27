@@ -79,7 +79,7 @@ class SongVersionsViewModel @Inject constructor(
                 val allOwnerIds = (derivedProjects.map { it.ownerId } + originalProject.ownerId).distinct()
 
                 // Obtener datos frescos de Firestore (sin guardar en DB local)
-                val usersResult =getUsersFromFirestoreUseCase(allOwnerIds).getOrNull() ?: emptyList()
+                val usersResult = getUsersFromFirestoreUseCase(allOwnerIds).getOrNull() ?: emptyList()
 
                 // Actualizar la lista en memoria por si acaso la UI la usa directamente
                 _uiState.update { it.copy(allUsers = usersResult) }
@@ -110,10 +110,15 @@ class SongVersionsViewModel @Inject constructor(
         // Buscamos al usuario en la lista fresca
         val userProfile = users.find { it.userID == project.ownerId }
 
+        // Lógica robusta para el nombre: Prioriza Perfil Fresco -> Nombre en Proyecto -> Fallback
+        val creatorName = userProfile?.userName?.ifBlank { null }
+            ?: project.name.ifBlank { null }
+            ?: "Usuario Desconocido"
+
         // Creamos el objeto User con la foto real (si existe)
         val creator = User(
             id = project.ownerId,
-            name = userProfile?.userName ?: project.name,
+            name = creatorName,
             avatarUrl = userProfile?.userPhotoPathRemote?.ifBlank { null }
         )
 
@@ -138,10 +143,14 @@ class SongVersionsViewModel @Inject constructor(
     private fun mapProjectToDerivedVersion(project: Project, users: List<UserPreferences>): DerivedVersion {
         val userProfile = users.find { it.userID == project.ownerId }
 
+        // Lógica robusta para el nombre
+        val creatorName = userProfile?.userName?.ifBlank { null }
+            ?: project.name.ifBlank { null }
+            ?: "Usuario Desconocido"
+
         val creator = User(
             id = project.ownerId,
-            name = userProfile?.userName ?: project.name,
-            // ✨ LA MAGIA: Foto fresca aquí también
+            name = creatorName,
             avatarUrl = userProfile?.userPhotoPathRemote?.ifBlank { null }
         )
 
