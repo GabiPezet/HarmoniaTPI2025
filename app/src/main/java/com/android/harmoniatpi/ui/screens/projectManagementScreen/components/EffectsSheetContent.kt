@@ -1,5 +1,6 @@
 package com.android.harmoniatpi.ui.screens.projectManagementScreen.components
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,12 +29,10 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.PrimaryTabRow
-import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -51,10 +50,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.android.harmoniatpi.domain.model.audio.EffectConfig
 import com.android.harmoniatpi.domain.model.audio.PresetType
-import com.android.harmoniatpi.ui.components.PremiumAwareButton
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import java.text.DecimalFormat
-import kotlin.math.ln
 
 /**
  * Contenido del BottomSheet para la configuración y aplicación de efectos de audio.
@@ -74,6 +71,7 @@ import kotlin.math.ln
  * @param onShowUpsell Callback para mostrar el diálogo de compra (Premium).
  */
 
+@SuppressLint("DefaultLocale")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EffectsSheetContent(
@@ -120,7 +118,6 @@ fun EffectsSheetContent(
     var pitchFactor by remember { mutableFloatStateOf(1.0f) }
     var fadeInSec by remember { mutableFloatStateOf(2.0f) }
     var fadeOutSec by remember { mutableFloatStateOf(2.0f) }
-    val decimalFormat = remember { DecimalFormat("0.##") }
     var distDrive by remember { mutableFloatStateOf(0.5f) }
     var tremFreq by remember { mutableFloatStateOf(5.0f) }
     var tremDepth by remember { mutableFloatStateOf(0.8f) }
@@ -128,7 +125,11 @@ fun EffectsSheetContent(
 
     fun getCurrentConfig(): EffectConfig {
         return when (selectedTabIndex) {
-            0 -> if (selectedPreset != null) EffectConfig.Preset(selectedPreset!!) else EffectConfig.Delay(0.5f, 0.5f)
+            0 -> if (selectedPreset != null) EffectConfig.Preset(selectedPreset!!) else EffectConfig.Delay(
+                0.5f,
+                0.5f
+            )
+
             1 -> EffectConfig.FadeIn(fadeInSec)
             2 -> EffectConfig.FadeOut(fadeOutSec)
             3 -> EffectConfig.Delay(delayTimeMs / 1000f, delayDecay)
@@ -141,6 +142,7 @@ fun EffectsSheetContent(
             else -> EffectConfig.Delay(0.5f, 0.5f)
         }
     }
+
     val isEffectPremium = selectedTabIndex > 4
     val canApply = isPremium || !isEffectPremium
 
@@ -212,18 +214,16 @@ fun EffectsSheetContent(
                 .verticalScroll(rememberScrollState())
         ) {
             // Pestañas
-            ScrollableTabRow(
+            SecondaryTabRow(
                 selectedTabIndex = selectedTabIndex,
-                edgePadding = 0.dp,
                 containerColor = MaterialTheme.colorScheme.surface,
                 contentColor = MaterialTheme.colorScheme.primary,
-                indicator = { tabPositions ->
-                    if (selectedTabIndex < tabPositions.size) {
-                        TabRowDefaults.SecondaryIndicator(
-                            modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
+                indicator = {
+                    TabRowDefaults.SecondaryIndicator(
+                        Modifier.tabIndicatorOffset(selectedTabIndex),
+                        height = 2.dp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
             ) {
                 tabs.forEachIndexed { index, title ->
@@ -261,8 +261,15 @@ fun EffectsSheetContent(
 
                 4 -> Column {
                     Text("Drive (Intensidad): ${(distDrive * 100).toInt()}%")
-                    Slider(value = distDrive, onValueChange = { distDrive = it }, valueRange = 0.0f..1.0f)
-                    Text("Agrega suciedad y saturación a la señal.", style = MaterialTheme.typography.bodySmall)
+                    Slider(
+                        value = distDrive,
+                        onValueChange = { distDrive = it },
+                        valueRange = 0.0f..1.0f
+                    )
+                    Text(
+                        "Agrega suciedad y saturación a la señal.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
                 }
 
                 5 -> FilterControlPanel(
@@ -281,14 +288,21 @@ fun EffectsSheetContent(
                     onFrequencyChange = { lpfFrequency = it }
                 )
 
-                7 ->  Column {
+                7 -> Column {
                     Text("Velocidad: ${String.format("%.1f", tremFreq)} Hz")
-                    Slider(value = tremFreq, onValueChange = { tremFreq = it }, valueRange = 0.5f..15.0f)
+                    Slider(
+                        value = tremFreq,
+                        onValueChange = { tremFreq = it },
+                        valueRange = 0.5f..15.0f
+                    )
                     Spacer(Modifier.height(8.dp))
                     Text("Profundidad: ${(tremDepth * 100).toInt()}%")
-                    Slider(value = tremDepth, onValueChange = { tremDepth = it }, valueRange = 0.0f..1.0f)
+                    Slider(
+                        value = tremDepth,
+                        onValueChange = { tremDepth = it },
+                        valueRange = 0.0f..1.0f
+                    )
                 }
-
 
 
                 8 -> FlangerControlPanel(
@@ -297,7 +311,6 @@ fun EffectsSheetContent(
                     onRateChange = { flangerRate = it },
                     onWetChange = { flangerWet = it }
                 )
-
 
 
                 9 ->
@@ -339,17 +352,19 @@ fun EffectsSheetContent(
         )
     }
 }
-    @Composable
-    fun FadeControlPanel(title: String, seconds: Float, onValueChange: (Float) -> Unit) {
-        Column {
-            Text("$title: ${String.format("%.1f", seconds)} segundos")
-            Slider(
-                value = seconds,
-                onValueChange = onValueChange,
-                valueRange = 0.1f..10.0f
-            )
-        }
+
+@SuppressLint("DefaultLocale")
+@Composable
+fun FadeControlPanel(title: String, seconds: Float, onValueChange: (Float) -> Unit) {
+    Column {
+        Text("$title: ${String.format("%.1f", seconds)} segundos")
+        Slider(
+            value = seconds,
+            onValueChange = onValueChange,
+            valueRange = 0.1f..10.0f
+        )
     }
+}
 
 
 @Composable
@@ -490,7 +505,9 @@ private fun EffectsActionButtons(
             Button(
                 onClick = { if (canApply) onApplyClick() else onUpsellClick() },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (canApply) MaterialTheme.colorScheme.primary else Color(0xFFD4AF37)
+                    containerColor = if (canApply) MaterialTheme.colorScheme.primary else Color(
+                        0xFFD4AF37
+                    )
                 )
             ) {
                 if (canApply) {
@@ -521,11 +538,14 @@ fun PresetsGrid(
         Text("Selecciona un estilo:", style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(12.dp))
 
-        val presets = PresetType.values()
+        val presets = PresetType.entries.toTypedArray()
 
 
         presets.toList().chunked(2).forEach { rowPresets ->
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 rowPresets.forEach { preset ->
                     PresetCard(
                         preset = preset,
@@ -550,7 +570,7 @@ fun PresetCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val title = when(preset) {
+    val title = when (preset) {
         PresetType.ROBOT -> "Robot"
         PresetType.MEGAPHONE -> "Megáfono"
         PresetType.CATHEDRAL -> "Catedral"
@@ -562,7 +582,8 @@ fun PresetCard(
         PresetType.CHOPPER -> "Chopper"
     }
 
-    val backgroundColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+    val backgroundColor =
+        if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
     val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
 
     Card(

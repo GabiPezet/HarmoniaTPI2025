@@ -2,7 +2,6 @@ package com.android.harmoniatpi.ui.screens.homeScreen
 
 import android.Manifest
 import android.os.Build
-import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -49,9 +48,9 @@ import com.android.harmoniatpi.ui.components.CircularProgressBar
 import com.android.harmoniatpi.ui.components.ShowConfirmationDialog
 import com.android.harmoniatpi.ui.core.navigation.bottomNavigationBar.BottomBarItem
 import com.android.harmoniatpi.ui.core.navigation.bottomNavigationBar.NavigationBottomWrapper
+import com.android.harmoniatpi.ui.core.utils.PermissionRequester
 import com.android.harmoniatpi.ui.screens.homeScreen.viewmodel.HomeScreenViewModel
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.viewmodel.DrawerContentViewModel
-import com.android.harmoniatpi.ui.core.utils.PermissionRequester
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -127,7 +126,10 @@ fun HomeScreen(
                         )
                     },
                     navigationIcon = {
-                        IconButton(modifier = Modifier.testTag("MENU_BUTTON"), onClick = openDrawerState) {
+                        IconButton(
+                            modifier = Modifier.testTag("MENU_BUTTON"),
+                            onClick = openDrawerState
+                        ) {
                             Icon(
                                 imageVector = Icons.Default.Menu,
                                 contentDescription = "Abrir menú"
@@ -144,7 +146,7 @@ fun HomeScreen(
                                 )
                             }
                         }
-                        BadgedBox (
+                        BadgedBox(
                             badge = {
                                 if (drawerUiState.newNotification) {
                                     Badge()
@@ -160,7 +162,7 @@ fun HomeScreen(
                         }
                     },
                     // --- CAMBIO 2: Añadimos el color de fondo ---
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
                     )
                 )
@@ -180,7 +182,7 @@ fun HomeScreen(
                     navController = navControllerNavBar,
                     drawerState = drawerState,
                     onExitApp = { showExitAppDialog = true },
-                    onNavigateToProjectManagementScreen = {onNavigateToProjectManagementScreen()},
+                    onNavigateToProjectManagementScreen = { onNavigateToProjectManagementScreen() },
                     onNavigateToVersion = onNavigateToVersion
                 )
             }

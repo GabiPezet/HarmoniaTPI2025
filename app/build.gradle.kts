@@ -29,13 +29,13 @@ val mpAccessToken: String = try {
 
 android {
     namespace = "com.android.harmoniatpi"
-    compileSdk = 35
+    compileSdk = 36
 
 
     defaultConfig {
         applicationId = "com.android.harmoniatpi"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 2
         versionName = "2.0.0"
 
@@ -166,5 +166,5 @@ dependencies {
     implementation (libs.jvm)
 
 
-    implementation("androidx.browser:browser:1.7.0")
+    implementation(libs.androidx.browser)
 }

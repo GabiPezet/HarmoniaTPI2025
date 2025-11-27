@@ -13,25 +13,61 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.outlined.ContactMail
+import androidx.compose.material.icons.outlined.People
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.VideoLibrary
+import androidx.compose.material3.Button
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SecondaryTabRow
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -43,11 +79,15 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import coil.compose.AsyncImage
 import com.android.harmoniatpi.R
+import com.android.harmoniatpi.ui.core.utils.PermissionRequester
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.MenuUiState
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.OptionsMenu
-import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.*
+import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.ContactProfileCard
+import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.FriendsScreen
+import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.MediaProjectList
+import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.ProfileTab
+import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.components.WorkProfileCard
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.viewmodel.DrawerContentViewModel
-import com.android.harmoniatpi.ui.core.utils.PermissionRequester
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -71,24 +111,27 @@ fun UserDetailProfile(
     val contactData by viewModel.contactData.collectAsState()
 
 
-    val takePictureLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.TakePicture()) { success ->
-        if (success && photoUri != null) {
-            val picturesDir = File(context.filesDir, "pictures")
-            val imageFile = File(picturesDir, "profile_photo_${userPhotoPath.version}.jpg")
-            viewModel.saveUserPhoto(imageFile.absolutePath)
-        }
-    }
-    val pickImageLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { uri: Uri? ->
-        uri?.let {
-            val picturesDir = File(context.filesDir, "pictures")
-            if (!picturesDir.exists()) picturesDir.mkdirs()
-            val imageFile = File(picturesDir, "profile_photo_${userPhotoPath.version}.jpg")
-            context.contentResolver.openInputStream(it)?.use { input ->
-                imageFile.outputStream().use { output -> input.copyTo(output) }
+    val takePictureLauncher =
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.TakePicture()) { success ->
+            if (success && photoUri != null) {
+                val picturesDir = File(context.filesDir, "pictures")
+                val imageFile = File(picturesDir, "profile_photo_${userPhotoPath.version}.jpg")
+                viewModel.saveUserPhoto(imageFile.absolutePath)
             }
-            viewModel.saveUserPhoto(imageFile.absolutePath)
         }
-    }
+    val pickImageLauncher =
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { uri: Uri? ->
+            uri?.let {
+                val picturesDir = File(context.filesDir, "pictures")
+                if (!picturesDir.exists()) picturesDir.mkdirs()
+                val imageFile = File(picturesDir, "profile_photo_${userPhotoPath.version}.jpg")
+                context.contentResolver.openInputStream(it)?.use { input ->
+                    imageFile.outputStream().use { output -> input.copyTo(output) }
+                }
+                viewModel.saveUserPhoto(imageFile.absolutePath)
+            }
+        }
+
     fun createImageUri(context: Context): Uri {
         val picturesDir = File(context.filesDir, "pictures")
         if (!picturesDir.exists()) picturesDir.mkdirs()
@@ -116,7 +159,7 @@ fun UserDetailProfile(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                     scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest
                 )
@@ -152,17 +195,24 @@ fun UserDetailProfile(
             Spacer(modifier = Modifier.height(24.dp))
 
 
-            TabRow(
+            SecondaryTabRow(
                 selectedTabIndex = selectedTabIndex,
                 containerColor = MaterialTheme.colorScheme.background,
                 contentColor = MaterialTheme.colorScheme.primary,
-                indicator = { tabPositions ->
+                indicator = {
                     TabRowDefaults.SecondaryIndicator(
-                        Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
+                        Modifier.tabIndicatorOffset(selectedTabIndex),
+                        height = 2.dp,
                         color = MaterialTheme.colorScheme.primary
                     )
                 },
-                divider = { HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)) }
+                divider = {
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(
+                            alpha = 0.2f
+                        )
+                    )
+                }
             ) {
                 tabs.forEachIndexed { index, tab ->
 
@@ -212,7 +262,13 @@ fun UserDetailProfile(
                     label = "TabContent"
                 ) { targetTab ->
                     when (targetTab) {
-                        ProfileTab.WORK -> Box(contentModifier) { WorkProfileCard(uiState, viewModel) }
+                        ProfileTab.WORK -> Box(contentModifier) {
+                            WorkProfileCard(
+                                uiState,
+                                viewModel
+                            )
+                        }
+
                         ProfileTab.MEDIA -> MediaProjectList(
                             projects = uiState.projectsList.filter { it.isPublished },
                             currentlyPlayingId = uiState.currentlyPlayingProjectId,
@@ -222,9 +278,11 @@ fun UserDetailProfile(
                             },
                             onGoToStudio = onGoToStudio
                         )
+
                         ProfileTab.CONTACT -> Box(contentModifier) {
-                            ContactProfileCard(contactData, { viewModel.updateContactInfo(it) })
+                            ContactProfileCard(contactData) { viewModel.updateContactInfo(it) }
                         }
+
                         ProfileTab.FRIENDS -> FriendsScreen(uiState)
                     }
                 }
@@ -252,14 +310,20 @@ fun UserDetailProfile(
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
-                HorizontalDivider(modifier = Modifier.width(40.dp).padding(bottom = 8.dp))
+                HorizontalDivider(
+                    modifier = Modifier
+                        .width(40.dp)
+                        .padding(bottom = 8.dp)
+                )
 
                 Button(
                     onClick = {
                         requestCameraPermission = true
                         showSheet = false
                     },
-                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Icon(Icons.Default.PhotoCamera, null)
@@ -272,7 +336,9 @@ fun UserDetailProfile(
                         pickImageLauncher.launch("image/*")
                         showSheet = false
                     },
-                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Icon(Icons.Default.PhotoLibrary, null)
@@ -384,7 +450,11 @@ fun ProfileHeader(
                 shape = RoundedCornerShape(12.dp),
                 trailingIcon = {
                     IconButton(onClick = onSaveName) {
-                        Icon(Icons.Default.Check, contentDescription = "Guardar", tint = MaterialTheme.colorScheme.primary)
+                        Icon(
+                            Icons.Default.Check,
+                            contentDescription = "Guardar",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
                     }
                 },
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
