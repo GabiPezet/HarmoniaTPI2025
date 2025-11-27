@@ -442,22 +442,6 @@ private fun TrackOptionsMenu(
         )
 
         DropdownMenuItem(
-            text = {
-                Text(text = "Paneo")
-            },
-            leadingIcon = {
-                Icon(
-                    painter = painterResource(R.drawable.pan_icon),
-                    contentDescription = "Paneo"
-                )
-            },
-            onClick = {
-                onShowBottomSheet(BottomSheetContent.InDevelopment)
-                onDismiss()
-            }
-        )
-
-        DropdownMenuItem(
             text = { Text(text = "Copiar") },
             leadingIcon = {
                 Icon(

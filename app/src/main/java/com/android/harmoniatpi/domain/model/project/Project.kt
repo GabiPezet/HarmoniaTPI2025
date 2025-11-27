@@ -23,27 +23,39 @@ data class Project(
     val hashtags: List<String>,
     val forkedByUserIds: List<String> = emptyList(),
     val originalProjectId: String? = null,
-    val isPublished: Boolean = false
+    val isPublished: Boolean = false,
+    val tracksJsonUrl: String? = null
 ) {
-    fun toDataBase(jsonUtils: JsonUtils) = ProjectEntity(
-        id = id,
-        ownerId = ownerId,
-        name = name,
-        lastName = lastName,
-        title = title,
-        description = description,
-        duration = duration.toString(),
-        createdAt = createdAt,
-        status = status,
-        likes = likes,
-        totalShared = totalShared,
-        comments = jsonUtils.encodeToJson(comments),
-        urlCompleteAudio = urlCompleteAudio,
-        urlAudioTracks = jsonUtils.encodeToJson(urlAudioTracks),
-        hashtags = jsonUtils.encodeToJson(hashtags),
-        imageUrl = imageUrl,
-        forkedByUserIds = jsonUtils.encodeToJson(forkedByUserIds),
-        originalProjectId = originalProjectId,
-        isPublished = isPublished
-    )
+    fun toDataBase(jsonUtils: JsonUtils): ProjectEntity {
+
+        val tracksLightweight = urlAudioTracks.map { track ->
+            track.copy(waveForm = emptyList())
+        }
+
+        return ProjectEntity(
+            id = id,
+            ownerId = ownerId,
+            name = name,
+            lastName = lastName,
+            title = title,
+            description = description,
+            duration = duration.toString(),
+            createdAt = createdAt,
+            status = status,
+            likes = likes,
+            totalShared = totalShared,
+            comments = jsonUtils.encodeToJson(comments),
+            urlCompleteAudio = urlCompleteAudio,
+
+            // Guardamos la versión ligera aquí
+            urlAudioTracks = jsonUtils.encodeToJson(tracksLightweight),
+
+            hashtags = jsonUtils.encodeToJson(hashtags),
+            imageUrl = imageUrl,
+            forkedByUserIds = jsonUtils.encodeToJson(forkedByUserIds),
+            originalProjectId = originalProjectId,
+            isPublished = isPublished,
+            tracksJsonUrl = tracksJsonUrl
+        )
+    }
 }

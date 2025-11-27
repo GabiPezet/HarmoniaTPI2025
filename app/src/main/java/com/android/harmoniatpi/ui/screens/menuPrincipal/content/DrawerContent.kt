@@ -20,6 +20,7 @@ import com.android.harmoniatpi.ui.components.ShowConfirmationDialog
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.MenuUiState
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.model.OptionsMenu
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.contentMainMenu.ContentMainMenu
+import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.helpScreen.HelpScreen
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.myPostScreen.MyPostsScreen
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userPreferencesScreen.UserPreferencesScreen
 import com.android.harmoniatpi.ui.screens.menuPrincipal.content.optionsScreens.userProfile.UserDetailProfile
@@ -35,7 +36,8 @@ fun DrawerContent(
     onNavigateToNotifications: () -> Unit,
     onLogOutNavigateToLogin: () -> Unit,
     onNavigateToFriends: () -> Unit,
-    navigateToPaymentMarketScreen: () -> Unit
+    navigateToPaymentMarketScreen: () -> Unit,
+    navigateToProjectScreen : () -> Unit
 ) {
     val scrollState = rememberScrollState()
     val uiState by drawerViewModel.uiState.collectAsState()
@@ -75,8 +77,8 @@ fun DrawerContent(
             scrollState = scrollState,
             innerPadding = innerPadding,
             showCloseSessionDialog = { showCloseSessionDialog = true },
-            onNavigateToFriends = onNavigateToFriends,
-            navigateToPaymentMarketScreen = { navigateToPaymentMarketScreen() },
+            navigateToProjectScreen = navigateToProjectScreen,
+            navigateToPaymentMarketScreen = { navigateToPaymentMarketScreen() }
         )
     }
 }
@@ -92,7 +94,7 @@ fun DrawerScreenContent(
     scrollState: ScrollState,
     innerPadding: PaddingValues,
     showCloseSessionDialog: () -> Unit,
-    onNavigateToFriends: () -> Unit,
+    navigateToProjectScreen: () -> Unit,
     navigateToPaymentMarketScreen: () -> Unit
 ) {
     when (optionsMenu) {
@@ -122,6 +124,8 @@ fun DrawerScreenContent(
                 viewModel = drawerViewModel,
                 uiState = uiState,
                 innerPadding = innerPadding,
+                onNavigateBack = { drawerViewModel.changeOptionsMenu(OptionsMenu.MAIN_CONTENT_SCREEN) },
+                onGoToStudio = { navigateToProjectScreen() }
             )
         }
 
@@ -130,5 +134,10 @@ fun DrawerScreenContent(
                 viewModel = drawerViewModel
             )
         }
+
+        OptionsMenu.HELP_SCREEN -> {
+            HelpScreen(viewModel = drawerViewModel)
+        }
+
     }
 }

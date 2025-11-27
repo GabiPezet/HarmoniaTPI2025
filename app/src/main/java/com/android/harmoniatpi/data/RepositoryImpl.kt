@@ -69,8 +69,6 @@ class RepositoryImpl @Inject constructor(
                         return@withContext Result.failure(Exception("Usuario no autenticado."))
                     }
 
-                    // ✨ AQUÍ ESTÁ LA MAGIA: Guardamos el ID de suscripción
-                    // Si viene un ID nuevo, lo usamos. Si no (ej. botón de prueba), mantenemos el que tenía o null.
                     val updatedUser = currentUser.copy(
                         isPremium = true,
                         subscriptionId = subscriptionId ?: currentUser.subscriptionId
@@ -91,6 +89,39 @@ class RepositoryImpl @Inject constructor(
         }
 
     override fun getFirebaseCurrentUser(): FirebaseUser? = firebaseAuth.currentUser
+
+    override suspend fun getUsersFromFirestore(userIds: List<String>): Result<List<UserPreferences>> =
+        withContext(Dispatchers.IO) {
+            try {
+                // Firestore tiene un límite de 10 items para comparaciones "IN",
+                // así que dividimos la lista en lotes pequeños para ser seguros.
+                val chunks = userIds.distinct().chunked(10)
+                val allUsers = mutableListOf<UserPreferences>()
+
+                chunks.forEach { chunk ->
+                    if (chunk.isNotEmpty()) {
+                        val querySnapshot = firestore.collection("users")
+                            .whereIn("userID", chunk)
+                            .get()
+                            .await()
+
+                        val users = querySnapshot.documents.mapNotNull { doc ->
+                            val firebaseModel = doc.toObject(UserFirebaseModel::class.java)
+                            // Convertimos a dominio, pero NO guardamos en Room
+                            firebaseModel?.toEntity()?.toDomain(jsonUtils)
+                        }
+                        allUsers.addAll(users)
+                    }
+                }
+
+                // Devolvemos la lista limpia desde Firestore
+                Result.success(allUsers)
+
+            } catch (e: Exception) {
+                Log.e("RepositoryImpl", "Error obteniendo usuarios de Firestore", e)
+                Result.failure(e)
+            }
+        }
 
     override suspend fun getUserById(userId: String): UserPreferences? {
         return try {
@@ -707,39 +738,43 @@ class RepositoryImpl @Inject constructor(
     }
 
     override suspend fun cancelSubscription(preapprovalId: String): Result<Unit> {
-        // Usamos el mismo token de producción que ya tienes configurado
         val accessToken = com.android.harmoniatpi.BuildConfig.MP_ACCESS_TOKEN
 
         return try {
-            // 1. Llamada a la API de Mercado Pago para cancelar
+            //Intentar cancelar en Mercado Pago PRIMERO
             val request = SubscriptionStatusUpdateRequest(status = "cancelled")
-            mercadoPagoApi.cancelSubscription("Bearer $accessToken", preapprovalId, request)
 
-            // 2. Lógica para volver a FREE en la Base de Datos
-            // Obtenemos el usuario actual (que ya sincroniza Firestore -> Local)
+            // Si esta línea falla (lanza excepción), salta directamente al catch
+            // y NO ejecuta la lógica de degradación.
+            mercadoPagoApi.cancelSubscription(accessToken, preapprovalId, request)
+
+            Log.i("MercadoPago", "Suscripción cancelada exitosamente en la API.")
+
+            //Si la API no falló, procedemos a actualizar la DB local/remota
             val currentUser = getUserPreferences()
 
             if (currentUser != null) {
-                // Creamos una copia del usuario con isPremium en FALSE
                 val updatedUser = currentUser.copy(
                     isPremium = false,
-                    // Opcional: Si guardas el subscriptionId en el modelo, podrías borrarlo aquí también
-                    // subscriptionId = null
+                    subscriptionId = null
                 )
 
-                // Guardamos en Room y Firestore usando tu función existente
                 updateUserPreferences(updatedUser)
-
-                Log.i("RepositoryImpl", "Suscripción cancelada en MP y usuario actualizado a FREE local/remoto.")
+                Log.i("RepositoryImpl", "Usuario actualizado a FREE local/remoto.")
                 Result.success(Unit)
             } else {
-                Result.failure(Exception("No se pudo obtener el usuario local para degradar a Free."))
+                // Si no hay usuario local, lanzamos excepción para ir al catch
+                throw Exception("No se pudo obtener el usuario local para actualizar.")
             }
+
         } catch (e: Exception) {
-            Log.e("MercadoPago", "Error cancelando suscripción: ${e.message}")
+            // Si falla la API o la DB, devolvemos Failure.
+            // El usuario SE QUEDA como Premium en la App hasta que se solucione.
+            Log.e("RepositoryImpl", "Error al cancelar suscripción (API o DB): ${e.message}", e)
             Result.failure(e)
         }
     }
+
 
 
     override suspend fun getFirestoreProjectsByUser(userId: String): Flow<List<ProjectFirebaseModel>> =
@@ -822,21 +857,40 @@ class RepositoryImpl @Inject constructor(
     override suspend fun getProjectByIdFromFirestore(projectId: String): Project? =
         withContext(Dispatchers.IO) {
             try {
-                // 1. Busca el documento por ID en la colección "projects"
                 val document = firestore.collection("projects")
                     .document(projectId)
                     .get()
                     .await()
 
                 if (document.exists()) {
-                    // 2. Lo convierte al modelo de Firebase
                     val firebaseModel = document.toObject(ProjectFirebaseModel::class.java)
 
-                    // 3. Lo convierte al modelo de Dominio (FirebaseModel -> Entity -> Domain)
-                    // (Esta es la misma lógica que usas en tu 'sync')
-                    firebaseModel?.toEntity()?.toDomain(jsonUtils)
+                    //Convertir lo que llegó de Firestore a Dominio
+                    var project = firebaseModel?.toEntity()?.toDomain(jsonUtils)
+
+                    // Si la lista de audios está vacía Y tiene una URL del JSON, descargar la info real
+                    if (project != null && project.urlAudioTracks.isEmpty() && !firebaseModel?.tracksJsonUrl.isNullOrBlank()) {
+                        try {
+                            Log.d("RepositoryImpl", "Recuperando tracks desde JSON externo: ${firebaseModel!!.tracksJsonUrl}")
+
+                            // Descargar el contenido del JSON
+                            val jsonString = java.net.URL(firebaseModel.tracksJsonUrl).readText()
+
+                            // Parsear el JSON a lista de AudioTrack usando tu jsonUtils
+                            val tracksFromUrl = jsonUtils.decodeJsonToListObject<com.android.harmoniatpi.domain.model.project.AudioTrack>(jsonString)
+
+                            // Reemplazamos la lista vacía con la lista descargada que contiene los remoteUrl
+                            project = project.copy(urlAudioTracks = tracksFromUrl)
+
+                            Log.d("RepositoryImpl", "Tracks recuperados exitosamente: ${tracksFromUrl.size}")
+
+                        } catch (e: Exception) {
+                            Log.e("RepositoryImpl", "Error descargando/parseando tracks.json", e)
+                        }
+                    }
+
+                    project
                 } else {
-                    // El proyecto no existe en Firestore
                     Log.w("RepositoryImpl", "No se encontró el proyecto $projectId en Firestore.")
                     null
                 }
@@ -871,55 +925,6 @@ class RepositoryImpl @Inject constructor(
             } catch (e: Exception) {
                 Log.e("RepositoryImpl", "Error al obtener derivados de Firestore", e)
                 emptyList<Project>() // Devuelve lista vacía en caso de error
-            }
-        }
-
-    override suspend fun fetchAndSyncUsersFromFirestore(userIds: List<String>): Result<Unit> =
-        withContext(Dispatchers.IO) {
-            try {
-                val chunks = userIds.distinct().chunked(30)
-                Log.d(
-                    "RepositoryImpl",
-                    "Iniciando fetch de ${userIds.size} usuarios en ${chunks.size} lotes."
-                )
-
-                chunks.forEach { chunk ->
-                    val querySnapshot = firestore.collection("users")
-                        .whereIn("userID", chunk)
-                        .get()
-                        .await()
-
-                    // 1. Mapea de FirebaseModel a Entity
-                    querySnapshot.documents.mapNotNull { doc ->
-                        doc.toObject(UserFirebaseModel::class.java)
-                            ?.toEntity() // Convierte a UserPreferencesEntity
-
-                        // --- ✨ 2. SANITIZA LA INFORMACIÓN ANTES DE GUARDAR ✨ ---
-                    }.forEach { entity ->
-                        // Creamos una copia de la entidad, pero borrando
-                        // todos los datos privados/innecesarios.
-                        val sanitizedEntity = entity.copy(
-                            friendsList = "[]", // Borra la lista de amigos de otros
-                            projectsList = "[]", // Borra sus proyectos
-                            myPostsList = "[]", // Borra sus posts
-                            notificationList = "[]", // Borra sus notificaciones
-                            friendRequestReceived = "[]",
-                            friendRequestSent = "[]"
-                            // Dejamos intactos: userID, userName, userLastName,
-                            // userPhotoPath y userPhotoPathRemote
-                        )
-
-                        // 3. Inserta la entidad "limpia" en Room
-                        userPreferencesDao.insertUserPreferences(sanitizedEntity)
-                    }
-                }
-
-                Log.d("RepositoryImpl", "Sincronización de usuarios (sanitizada) completada.")
-                Result.success(Unit)
-
-            } catch (e: Exception) {
-                Log.e("RepositoryImpl", "Error en fetchAndSyncUsersFromFirestore", e)
-                Result.failure(e)
             }
         }
 

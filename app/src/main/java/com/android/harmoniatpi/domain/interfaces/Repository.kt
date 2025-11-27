@@ -15,6 +15,8 @@ import kotlinx.coroutines.flow.Flow
 interface Repository {
     fun getFirebaseCurrentUser(): FirebaseUser?
 
+    suspend fun getUsersFromFirestore(userIds: List<String>): Result<List<UserPreferences>>
+
     suspend fun getUserById(userId: String): UserPreferences?
 
     suspend fun updateUserPreferences(userPreferences: UserPreferences)
@@ -50,8 +52,6 @@ interface Repository {
     ): Result<String>
 
     suspend fun deleteFileFromStorage(remotePath: String): Result<Unit>
-
-    suspend fun fetchAndSyncUsersFromFirestore(userIds: List<String>): Result<Unit>
 
     fun getMyPosts(): Flow<List<Post>>
 

@@ -56,4 +56,14 @@ sealed class EffectConfig {
     data class Preset(val type: PresetType) : EffectConfig()
 }
 
-enum class PresetType { MEGAPHONE, UNDERWATER, SLAPBACK }
+enum class PresetType {
+    ROBOT,
+    MEGAPHONE,
+    CATHEDRAL,
+    UNDERWATER,
+    ALIEN,
+    SLAPBACK,
+    ETHEREAL,
+    RADIO_AM,
+    CHOPPER
+}

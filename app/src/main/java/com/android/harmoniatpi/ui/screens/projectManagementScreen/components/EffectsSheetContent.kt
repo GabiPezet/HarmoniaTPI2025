@@ -1,10 +1,13 @@
 package com.android.harmoniatpi.ui.screens.projectManagementScreen.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -19,6 +22,8 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -36,13 +41,16 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.android.harmoniatpi.domain.model.audio.EffectConfig
+import com.android.harmoniatpi.domain.model.audio.PresetType
 import com.android.harmoniatpi.ui.components.PremiumAwareButton
 import com.android.harmoniatpi.ui.screens.projectManagementScreen.model.TrackUi
 import java.text.DecimalFormat
@@ -84,20 +92,22 @@ fun EffectsSheetContent(
     onApplyTelephone: (Long) -> Unit,
     onApplyDistortion: (Long, Float) -> Unit,
     onApplyTremolo: (Long, Float, Float) -> Unit,
+    onApplyPreset: (Long, PresetType) -> Unit,
     onNormalize: (id: Long) -> Unit,
     onDismiss: () -> Unit,
 ) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     val tabs = listOf(
-        "Delay",
-        "High Pass",
-        "Low Pass",
-        "Flanger",
+        "Presets",
         "Fade In",
         "Fade Out",
-        "Telephone",
+        "Delay",
         "Distorsión",
+        "High Pass",
+        "Low Pass",
         "Trémolo",
+        "Flanger",
+        "Teléfono"
     )
 
     // Estado local para cada efecto
@@ -114,33 +124,35 @@ fun EffectsSheetContent(
     var distDrive by remember { mutableFloatStateOf(0.5f) }
     var tremFreq by remember { mutableFloatStateOf(5.0f) }
     var tremDepth by remember { mutableFloatStateOf(0.8f) }
+    var selectedPreset by remember { mutableStateOf<PresetType?>(null) }
 
     fun getCurrentConfig(): EffectConfig {
         return when (selectedTabIndex) {
-            0 -> EffectConfig.Delay(delayTimeMs / 1000f, delayDecay)
-            1 -> EffectConfig.HighPass(hpfFrequency)
-            2 -> EffectConfig.LowPass(lpfFrequency)
-            3 -> EffectConfig.Flanger(flangerRate, flangerWet)
-            4 -> EffectConfig.FadeIn(fadeInSec)
-            5 -> EffectConfig.FadeOut(fadeOutSec)
-            6 -> EffectConfig.Telephone
-            7 -> EffectConfig.Distortion(distDrive)
-            8 -> EffectConfig.Tremolo(tremFreq, tremDepth)
+            0 -> if (selectedPreset != null) EffectConfig.Preset(selectedPreset!!) else EffectConfig.Delay(0.5f, 0.5f)
+            1 -> EffectConfig.FadeIn(fadeInSec)
+            2 -> EffectConfig.FadeOut(fadeOutSec)
+            3 -> EffectConfig.Delay(delayTimeMs / 1000f, delayDecay)
+            4 -> EffectConfig.Distortion(distDrive)
+            5 -> EffectConfig.HighPass(hpfFrequency)
+            6 -> EffectConfig.LowPass(lpfFrequency)
+            7 -> EffectConfig.Tremolo(tremFreq, tremDepth)
+            8 -> EffectConfig.Flanger(flangerRate, flangerWet)
+            9 -> EffectConfig.Telephone
             else -> EffectConfig.Delay(0.5f, 0.5f)
         }
     }
-    val isEffectPremium = selectedTabIndex != 0
+    val isEffectPremium = selectedTabIndex > 4
     val canApply = isPremium || !isEffectPremium
 
-    // Observador de cambios en tiempo real
+
     LaunchedEffect(delayTimeMs, delayDecay, hpfFrequency, flangerRate, flangerWet) {
         if (isPreviewing) {
             onParamChange(getCurrentConfig())
         }
     }
 
-    // Observador de cambios en tiempo real:
-    // Si el usuario mueve un slider mientras el preview está activo, actualizamos el motor de audio.
+
+
     LaunchedEffect(
         delayTimeMs,
         delayDecay,
@@ -155,7 +167,7 @@ fun EffectsSheetContent(
         }
     }
 
-    // Seguridad: Si cambiamos de efecto (Tab), detenemos el preview
+    // al cambiar efecto se detiene el preview
     LaunchedEffect(selectedTabIndex) {
         if (isPreviewing) {
             onPreviewToggle(getCurrentConfig())
@@ -179,7 +191,7 @@ fun EffectsSheetContent(
                 modifier = Modifier.weight(1f)
             )
 
-            // Botón de Acción Rápida: Normalizar
+            // Botón de Acción Rápida
             OutlinedButton(
                 onClick = { onNormalize(track.id) },
                 colors = ButtonDefaults.outlinedButtonColors(
@@ -199,7 +211,7 @@ fun EffectsSheetContent(
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
         ) {
-            // --- PESTAÑAS SCROLLABLES ---
+            // Pestañas
             ScrollableTabRow(
                 selectedTabIndex = selectedTabIndex,
                 edgePadding = 0.dp,
@@ -225,16 +237,35 @@ fun EffectsSheetContent(
 
             Spacer(Modifier.height(24.dp))
 
-            // --- PANELES DE CONTROL ---
+            // Panel de Control
             when (selectedTabIndex) {
-                0 -> DelayControlPanel(
+
+                0 -> PresetsGrid(
+                    selected = selectedPreset,
+                    onSelect = { type ->
+                        selectedPreset = type
+
+                        onPreviewToggle(EffectConfig.Preset(type))
+                    }
+                )
+
+                1 -> FadeControlPanel("Fade In", fadeInSec) { fadeInSec = it }
+                2 -> FadeControlPanel("Fade Out", fadeOutSec) { fadeOutSec = it }
+
+                3 -> DelayControlPanel(
                     timeMs = delayTimeMs,
                     decay = delayDecay,
                     onTimeChange = { delayTimeMs = it },
                     onDecayChange = { delayDecay = it }
                 )
 
-                1 -> FilterControlPanel(
+                4 -> Column {
+                    Text("Drive (Intensidad): ${(distDrive * 100).toInt()}%")
+                    Slider(value = distDrive, onValueChange = { distDrive = it }, valueRange = 0.0f..1.0f)
+                    Text("Agrega suciedad y saturación a la señal.", style = MaterialTheme.typography.bodySmall)
+                }
+
+                5 -> FilterControlPanel(
                     title = "Filtro Pasa-Altos (High Pass)",
                     description = "Elimina frecuencias graves (ruido de fondo, golpes) por debajo del corte.",
                     frequency = hpfFrequency,
@@ -242,7 +273,7 @@ fun EffectsSheetContent(
                     onFrequencyChange = { hpfFrequency = it }
                 )
 
-                2 -> FilterControlPanel(
+                6 -> FilterControlPanel(
                     title = "Filtro Pasa-Bajos (Low Pass)",
                     description = "Elimina frecuencias agudas (silbidos) por encima del corte. Crea sonido 'apagado'.",
                     frequency = lpfFrequency,
@@ -250,31 +281,7 @@ fun EffectsSheetContent(
                     onFrequencyChange = { lpfFrequency = it }
                 )
 
-                3 -> FlangerControlPanel(
-                    rate = flangerRate,
-                    wet = flangerWet,
-                    onRateChange = { flangerRate = it },
-                    onWetChange = { flangerWet = it }
-                )
-
-                4 -> FadeControlPanel("Fade In", fadeInSec) { fadeInSec = it }
-                5 -> FadeControlPanel("Fade Out", fadeOutSec) { fadeOutSec = it }
-
-                6 -> Column {
-                    Text("Efecto Teléfono", style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        "Aplica un filtro de banda y distorsión ligera para simular una llamada.",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-
-                7 -> Column {
-                    Text("Drive (Intensidad): ${(distDrive * 100).toInt()}%")
-                    Slider(value = distDrive, onValueChange = { distDrive = it }, valueRange = 0.0f..1.0f)
-                    Text("Agrega suciedad y saturación a la señal.", style = MaterialTheme.typography.bodySmall)
-                }
-
-                8 -> Column {
+                7 ->  Column {
                     Text("Velocidad: ${String.format("%.1f", tremFreq)} Hz")
                     Slider(value = tremFreq, onValueChange = { tremFreq = it }, valueRange = 0.5f..15.0f)
                     Spacer(Modifier.height(8.dp))
@@ -282,28 +289,50 @@ fun EffectsSheetContent(
                     Slider(value = tremDepth, onValueChange = { tremDepth = it }, valueRange = 0.0f..1.0f)
                 }
 
+
+
+                8 -> FlangerControlPanel(
+                    rate = flangerRate,
+                    wet = flangerWet,
+                    onRateChange = { flangerRate = it },
+                    onWetChange = { flangerWet = it }
+                )
+
+
+
+                9 ->
+                    Column {
+                        Text("Efecto Teléfono", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            "Aplica un filtro de banda y distorsión ligera para simular una llamada.",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+
+
             }
 
             Spacer(Modifier.height(16.dp))
         }
-        // Barra de Acciones Inferior (fija)
+
         EffectsActionButtons(
             canApply = canApply,
             isPreviewing = isPreviewing,
             onPreviewClick = { onPreviewToggle(getCurrentConfig()) },
             onCancelClick = onDismiss,
             onApplyClick = {
-                // Despacha la acción correspondiente al Tab activo
+
                 when (selectedTabIndex) {
-                    0 -> onApplyDelay(track.id, delayTimeMs / 1000f, delayDecay)
-                    1 -> onApplyHighPass(track.id, hpfFrequency)
-                    2 -> onApplyLowPass(track.id, lpfFrequency)
-                    3 -> onApplyFlanger(track.id, flangerRate, flangerWet)
-                    4 -> onApplyFadeIn(track.id, fadeInSec)
-                    5 -> onApplyFadeOut(track.id, fadeOutSec)
-                    6 -> onApplyTelephone(track.id)
-                    7 -> onApplyDistortion(track.id, distDrive)
-                    8 -> onApplyTremolo(track.id, tremFreq, tremDepth)
+                    0 -> selectedPreset?.let { onApplyPreset(track.id, it) }
+                    1 -> onApplyFadeIn(track.id, fadeInSec)
+                    2 -> onApplyFadeOut(track.id, fadeOutSec)
+                    3 -> onApplyDelay(track.id, delayTimeMs / 1000f, delayDecay)
+                    4 -> onApplyDistortion(track.id, distDrive)
+                    5 -> onApplyHighPass(track.id, hpfFrequency)
+                    6 -> onApplyLowPass(track.id, lpfFrequency)
+                    7 -> onApplyTremolo(track.id, tremFreq, tremDepth)
+                    8 -> onApplyFlanger(track.id, flangerRate, flangerWet)
+                    9 -> onApplyTelephone(track.id)
                 }
             },
             onUpsellClick = onShowUpsell
@@ -424,7 +453,7 @@ private fun EffectsActionButtons(
             .fillMaxWidth()
             .padding(top = 16.dp)
     ) {
-        // 1. NIVEL SUPERIOR: Botón de Preview (Alineado a la izquierda)
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Start
@@ -444,12 +473,12 @@ private fun EffectsActionButtons(
             }
         }
 
-        Spacer(Modifier.height(16.dp)) // Espacio entre la fila de preview y la fila de acciones
+        Spacer(Modifier.height(16.dp))
 
-        // 2. NIVEL INFERIOR: Cancelar y Aplicar (Alineados a la derecha, uno al lado del otro)
+
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End, // Alineados al final
+            horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically
         ) {
             TextButton(onClick = onCancelClick) {
@@ -461,7 +490,7 @@ private fun EffectsActionButtons(
             Button(
                 onClick = { if (canApply) onApplyClick() else onUpsellClick() },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (canApply) MaterialTheme.colorScheme.primary else Color(0xFFD4AF37) // Dorado
+                    containerColor = if (canApply) MaterialTheme.colorScheme.primary else Color(0xFFD4AF37)
                 )
             ) {
                 if (canApply) {
@@ -479,6 +508,71 @@ private fun EffectsActionButtons(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun PresetsGrid(
+    selected: PresetType?,
+    onSelect: (PresetType) -> Unit
+) {
+    Column {
+        Text("Selecciona un estilo:", style = MaterialTheme.typography.titleMedium)
+        Spacer(Modifier.height(12.dp))
+
+        val presets = PresetType.values()
+
+
+        presets.toList().chunked(2).forEach { rowPresets ->
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                rowPresets.forEach { preset ->
+                    PresetCard(
+                        preset = preset,
+                        isSelected = selected == preset,
+                        onClick = { onSelect(preset) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                if (rowPresets.size == 1) {
+                    Spacer(Modifier.weight(1f))
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+        }
+    }
+}
+
+@Composable
+fun PresetCard(
+    preset: PresetType,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val title = when(preset) {
+        PresetType.ROBOT -> "Robot"
+        PresetType.MEGAPHONE -> "Megáfono"
+        PresetType.CATHEDRAL -> "Catedral"
+        PresetType.UNDERWATER -> "Bajo Agua"
+        PresetType.ALIEN -> "Alien"
+        PresetType.SLAPBACK -> "Slapback"
+        PresetType.ETHEREAL -> "Etéreo"
+        PresetType.RADIO_AM -> "Radio AM"
+        PresetType.CHOPPER -> "Chopper"
+    }
+
+    val backgroundColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+    val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
+
+    Card(
+        onClick = onClick,
+        modifier = modifier.height(60.dp),
+        colors = CardDefaults.cardColors(containerColor = backgroundColor),
+        border = BorderStroke(2.dp, borderColor)
+    ) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text(title, fontWeight = FontWeight.Bold)
         }
     }
 }

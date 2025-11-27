@@ -1,6 +1,7 @@
 package com.android.harmoniatpi.data.local.model
 
 import com.android.harmoniatpi.data.database.entities.ProjectEntity
+import com.google.firebase.database.PropertyName
 
 data class ProjectFirebaseModel(
     val id: String = "",
@@ -18,8 +19,11 @@ data class ProjectFirebaseModel(
     val publishedTrackUrls: String = "",
     val likes: Int = 0,
     val totalShared: Int = 0,
-    val isPublished: Boolean = true,
-    val originalProjectId: String? = null
+    @get:PropertyName("published")
+    @set:PropertyName("published")
+    var isPublished: Boolean = true,
+    val originalProjectId: String? = null,
+    val tracksJsonUrl: String? = null
 ) {
     fun toEntity(): ProjectEntity {
         return ProjectEntity(
@@ -41,7 +45,8 @@ data class ProjectFirebaseModel(
             hashtags = this.hashtags,
             forkedByUserIds = this.forkedByUserIds,
             originalProjectId = this.originalProjectId,
-            isPublished = this.isPublished
+            isPublished = this.isPublished,
+            tracksJsonUrl = this.tracksJsonUrl
         )
     }
 }

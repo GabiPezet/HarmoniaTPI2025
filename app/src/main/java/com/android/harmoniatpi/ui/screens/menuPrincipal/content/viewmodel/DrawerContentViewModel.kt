@@ -3,8 +3,10 @@ package com.android.harmoniatpi.ui.screens.menuPrincipal.content.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.harmoniatpi.domain.interfaces.ExoAudioPlayerRepository
 import com.android.harmoniatpi.domain.interfaces.Repository
 import com.android.harmoniatpi.domain.model.UserPreferences
+import com.android.harmoniatpi.domain.model.project.Project
 import com.android.harmoniatpi.domain.model.userPreferences.AppTheme
 import com.android.harmoniatpi.domain.model.userPreferences.Comment
 import com.android.harmoniatpi.domain.model.userPreferences.ContactData
@@ -43,6 +45,7 @@ class DrawerContentViewModel @Inject constructor(
     private val updatePostFirebaseDataBaseUseCase: UpdatePostFirebaseDataBaseUseCase,
     private val deletePostFirebaseDataBaseUseCase: DeletePostFirebaseDataBaseUseCase,
     private val getAllProjectsFromDBUseCase: GetAllProjectsFromDBUseCase,
+    private val audioPlayer: ExoAudioPlayerRepository,
     private val repository: Repository,
 ) : ViewModel() {
 
@@ -59,7 +62,10 @@ class DrawerContentViewModel @Inject constructor(
         viewModelScope.launch {
             repository.observeCurrentUserFromFirestore().collectLatest { currentUser ->
                 if (currentUser != null) {
-                    Log.d("KlyxDevs", "DrawerViewModel: Recibido update de usuario. Premium: ${currentUser.isPremium}")
+                    Log.d(
+                        "KlyxDevs",
+                        "DrawerViewModel: Recibido update de usuario. Premium: ${currentUser.isPremium}"
+                    )
                     _userPhotoPath.update {
                         it.copy(
                             path = currentUser.userPhotoPath,
@@ -99,6 +105,7 @@ class DrawerContentViewModel @Inject constructor(
             initMyPostCollect()
         }
     }
+
     private fun initMyPostCollect() {
         viewModelScope.launch {
             getMyPostFromDataBaseUseCase().collect { posts ->
@@ -194,7 +201,10 @@ class DrawerContentViewModel @Inject constructor(
         }
     }
 
-    fun changeOptionsMenu(option: OptionsMenu) {
+    fun changeOptionsMenu(option: OptionsMenu, isAutoNavigationToProject: Boolean = false) {
+        if (isAutoNavigationToProject) {
+            sharedMenuUiState.updateState { it.copy(isAutoNavigationToProject = true) }
+        }
         sharedMenuUiState.updateState { it.copy(optionsMenu = option) }
     }
 
@@ -253,6 +263,49 @@ class DrawerContentViewModel @Inject constructor(
     fun updateContactInfo(newData: ContactData) {
         _contactData.value = newData
         // TODO: Hablar con Facu para ver si podemos persistir esta info en Firestore o en RTDatabase
+    }
+
+    fun onPlayProjectClicked(project: Project) {
+        val currentId = uiState.value.currentlyPlayingProjectId
+        val isPlaying = uiState.value.isAudioPlaying
+        val audioUrl = project.urlCompleteAudio
+
+        if (audioUrl.isNullOrBlank()) {
+            Log.e("DrawerVM", "El proyecto no tiene URL de audio")
+            return
+        }
+
+        if (currentId == project.id) {
+            if (isPlaying) {
+                audioPlayer.pause()
+                sharedMenuUiState.updateState { it.copy(isAudioPlaying = false) }
+            } else {
+                audioPlayer.resume()
+                sharedMenuUiState.updateState { it.copy(isAudioPlaying = true) }
+            }
+        } else {
+            audioPlayer.stop()
+            audioPlayer.play(audioUrl)
+            sharedMenuUiState.updateState {
+                it.copy(
+                    currentlyPlayingProjectId = project.id,
+                    isAudioPlaying = true
+                )
+            }
+        }
+    }
+
+    fun updateAutoNavigationToProject(value: Boolean) {
+        sharedMenuUiState.updateState {
+            it.copy(
+                isAutoNavigationToProject = value
+            )
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        audioPlayer.stop()
     }
 
 }
