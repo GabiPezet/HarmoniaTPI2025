@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -309,6 +310,15 @@ fun ProfileHeader(
     onEditNameToggle: () -> Unit,
     onSaveName: () -> Unit
 ) {
+
+    val imageModel = remember(userPhotoPath, uiState.userPhotoPathRemote) {
+        when {
+            userPhotoPath.isNotBlank() && File(userPhotoPath).exists() -> File(userPhotoPath)
+            uiState.userPhotoPathRemote.isNotBlank() -> uiState.userPhotoPathRemote
+            else -> null
+        }
+    }
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -319,19 +329,18 @@ fun ProfileHeader(
                 .clip(CircleShape)
                 .border(2.dp, MaterialTheme.colorScheme.surfaceVariant, CircleShape)
 
-            if (uiState.userPhotoPathRemote.isNotBlank()) {
+            if (imageModel != null) {
                 AsyncImage(
-                    model = uiState.userPhotoPathRemote,
-                    contentDescription = "Foto",
+                    model = coil.request.ImageRequest.Builder(LocalContext.current)
+                        .data(imageModel)
+                        .crossfade(true)
+                        .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                        .build(),
+                    contentDescription = "Foto de perfil",
                     modifier = imageModifier,
-                    contentScale = ContentScale.Crop
-                )
-            } else if (userPhotoPath.isNotBlank()) {
-                AsyncImage(
-                    model = userPhotoPath,
-                    contentDescription = "Foto",
-                    modifier = imageModifier,
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop,
+                    error = painterResource(id = R.drawable.holojamperfildefaultblackmode),
+                    placeholder = painterResource(id = R.drawable.holojamperfildefaultblackmode)
                 )
             } else {
                 Box(
@@ -339,7 +348,7 @@ fun ProfileHeader(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        Icons.Default.Person,
+                        imageVector = Icons.Default.Person,
                         contentDescription = null,
                         modifier = Modifier.size(50.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -363,7 +372,6 @@ fun ProfileHeader(
                 )
             }
         }
-
         Spacer(modifier = Modifier.height(16.dp))
 
         if (isEditingName) {
