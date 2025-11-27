@@ -29,7 +29,8 @@ data class ProjectEntity(
     val hashtags: String,
     val forkedByUserIds: String,
     val originalProjectId: String? = null,
-    val isPublished: Boolean
+    val isPublished: Boolean,
+    val tracksJsonUrl: String? = null
 ) {
     fun toDomain(jsonUtils: JsonUtils) = Project(
         id = id,
@@ -44,13 +45,14 @@ data class ProjectEntity(
         status = status,
         likes = likes,
         totalShared = totalShared,
-        comments = jsonUtils.decodeJsonToListObject<Comment>(comments),
+        comments = if (comments.isNotBlank()) jsonUtils.decodeJsonToListObject<Comment>(comments) else emptyList(),
         urlCompleteAudio = urlCompleteAudio,
-        urlAudioTracks = jsonUtils.decodeJsonToListObject<AudioTrack>(urlAudioTracks),
-        hashtags = jsonUtils.decodeJsonToListObject<String>(hashtags),
-        forkedByUserIds = jsonUtils.decodeJsonToListObject<String>(forkedByUserIds),
+        urlAudioTracks = if (urlAudioTracks.isNotBlank()) jsonUtils.decodeJsonToListObject<AudioTrack>(urlAudioTracks) else emptyList(),
+        hashtags = if (hashtags.isNotBlank()) jsonUtils.decodeJsonToListObject<String>(hashtags) else emptyList(),
+        forkedByUserIds = if (forkedByUserIds.isNotBlank()) jsonUtils.decodeJsonToListObject<String>(forkedByUserIds) else emptyList(),
         originalProjectId = originalProjectId,
-        isPublished = isPublished
+        isPublished = isPublished,
+        tracksJsonUrl = tracksJsonUrl
     )
 
     fun toFirebaseModel(): ProjectFirebaseModel {
@@ -70,7 +72,8 @@ data class ProjectEntity(
             publishedTrackUrls = this.urlAudioTracks,
             likes = this.likes,
             totalShared = this.totalShared,
-            isPublished = this.isPublished
+            isPublished = this.isPublished,
+            tracksJsonUrl = this.tracksJsonUrl
         )
     }
 }

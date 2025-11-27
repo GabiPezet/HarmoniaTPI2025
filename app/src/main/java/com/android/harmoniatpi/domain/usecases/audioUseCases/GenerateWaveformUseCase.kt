@@ -7,64 +7,84 @@ import kotlin.math.abs
 
 class GenerateWaveformUseCase @Inject constructor() {
 
-    // Función principal modificada para devolver WaveformResult
     operator fun invoke(path: String): WaveformResult {
         val file = File(path)
 
-        // compruebo si el archivo existe y tiene contenido antes de leerlo
         if (!file.exists() || file.length() == 0L) {
             return WaveformResult(emptyList(), 0L)
         }
 
-        val pcmBytes = file.readBytes()
+        // Configuración de ventana (Downsampling)
+        val samplesPerPeak = 256
+        val peaks = mutableListOf<Float>()
 
-        val pcmShortArray = byteArrayToShortArray(pcmBytes)
-        val waveform = pcmShortArrayToNormalizedWaveform(pcmShortArray)
+        var currentMax = Short.MIN_VALUE
+        var currentMin = Short.MAX_VALUE
+        var sampleCount = 0
 
-        // CÁLCULO DE DURACIÓN (44100 muestras/segundo)
-        val totalSamples = pcmShortArray.size.toLong()
+        // Para normalización final
+        var globalMaxAbs = 0f
+        var totalBytesRead = 0L
+
+        try {
+            //Leer en stream
+            file.inputStream().buffered().use { inputStream ->
+                val buffer = ByteArray(8192) // Buffer de 8KB (4096 muestras)
+                var bytesRead = inputStream.read(buffer)
+
+                while (bytesRead != -1) {
+                    totalBytesRead += bytesRead
+
+                    //Procesar el buffer actual
+                    for (i in 0 until bytesRead step 2) {
+                        if (i + 1 < bytesRead) {
+                            val low = buffer[i].toInt() and 0xFF
+                            val high = buffer[i + 1].toInt()
+                            val sample = ((high shl 8) or low).toShort()
+
+                            //Lógica de Picos (Min/Max en la ventana)
+                            if (sample > currentMax) currentMax = sample
+                            if (sample < currentMin) currentMin = sample
+
+                            sampleCount++
+
+                            //Si se llenó la ventana, guardamos los picos y reseteamos
+                            if (sampleCount >= samplesPerPeak) {
+                                val maxVal = currentMax.toFloat()
+                                val minVal = currentMin.toFloat()
+
+                                peaks.add(maxVal)
+                                peaks.add(minVal)
+
+                                val absMax = abs(maxVal)
+                                val absMin = abs(minVal)
+                                if (absMax > globalMaxAbs) globalMaxAbs = absMax
+                                if (absMin > globalMaxAbs) globalMaxAbs = absMin
+
+                                currentMax = Short.MIN_VALUE
+                                currentMin = Short.MAX_VALUE
+                                sampleCount = 0
+                            }
+                        }
+                    }
+                    bytesRead = inputStream.read(buffer)
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return WaveformResult(emptyList(), 0L)
+        }
+
+        val normalizedWaveform = if (globalMaxAbs > 0) {
+            peaks.map { it / globalMaxAbs }
+        } else {
+            peaks.map { 0f }
+        }
+
+        val totalSamples = totalBytesRead / 2
         val sampleRate = 44100L
         val durationMs = (totalSamples * 1000L) / sampleRate
 
-        return WaveformResult(waveform, durationMs)
-    }
-
-    private fun byteArrayToShortArray(pcmBytes: ByteArray): ShortArray {
-        val shorts = ShortArray(pcmBytes.size / 2)
-        for (i in shorts.indices) {
-            val low = pcmBytes[i * 2].toInt() and 0xFF
-            val high = pcmBytes[i * 2 + 1].toInt()
-            shorts[i] = ((high shl 8) or low).toShort()
-        }
-        return shorts
-    }
-
-    private fun pcmShortArrayToNormalizedWaveform(
-        pcm: ShortArray,
-        samplesPerPeak: Int = 256 // Cada cuantos samples se tomará un pico
-    ): List<Float> {
-        if (pcm.isEmpty()) return emptyList()
-
-        val numWindows = pcm.size / samplesPerPeak
-        val peaks = mutableListOf<Float>()
-
-        for (i in 0 until numWindows) {
-            val start = i * samplesPerPeak
-            val end = (start + samplesPerPeak).coerceAtMost(pcm.size)
-            if (start >= end) continue
-
-            // Tomamos una "ventana" de la señal de audio
-            val window = pcm.slice(start until end)
-
-            // Encontramos el valor más alto y más bajo en esa ventana
-            peaks.add(window.maxOrNull()?.toFloat() ?: 0f) // Pico máximo
-            peaks.add(window.minOrNull()?.toFloat() ?: 0f) // Pico mínimo
-        }
-
-        // Normalizamos la lista de picos para que estén en el rango de -1.0 a 1.0
-        val maxAbsValue = peaks.maxOfOrNull { abs(it) }
-        if (maxAbsValue == null || maxAbsValue == 0f) return peaks.map { 0f }
-
-        return peaks.map { it / maxAbsValue }
+        return WaveformResult(normalizedWaveform, durationMs)
     }
 }
