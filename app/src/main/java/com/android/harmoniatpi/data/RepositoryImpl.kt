@@ -857,21 +857,40 @@ class RepositoryImpl @Inject constructor(
     override suspend fun getProjectByIdFromFirestore(projectId: String): Project? =
         withContext(Dispatchers.IO) {
             try {
-                // 1. Busca el documento por ID en la colección "projects"
                 val document = firestore.collection("projects")
                     .document(projectId)
                     .get()
                     .await()
 
                 if (document.exists()) {
-                    // 2. Lo convierte al modelo de Firebase
                     val firebaseModel = document.toObject(ProjectFirebaseModel::class.java)
 
-                    // 3. Lo convierte al modelo de Dominio (FirebaseModel -> Entity -> Domain)
-                    // (Esta es la misma lógica que usas en tu 'sync')
-                    firebaseModel?.toEntity()?.toDomain(jsonUtils)
+                    //Convertir lo que llegó de Firestore a Dominio
+                    var project = firebaseModel?.toEntity()?.toDomain(jsonUtils)
+
+                    // Si la lista de audios está vacía Y tiene una URL del JSON, descargar la info real
+                    if (project != null && project.urlAudioTracks.isEmpty() && !firebaseModel?.tracksJsonUrl.isNullOrBlank()) {
+                        try {
+                            Log.d("RepositoryImpl", "Recuperando tracks desde JSON externo: ${firebaseModel!!.tracksJsonUrl}")
+
+                            // Descargar el contenido del JSON
+                            val jsonString = java.net.URL(firebaseModel.tracksJsonUrl).readText()
+
+                            // Parsear el JSON a lista de AudioTrack usando tu jsonUtils
+                            val tracksFromUrl = jsonUtils.decodeJsonToListObject<com.android.harmoniatpi.domain.model.project.AudioTrack>(jsonString)
+
+                            // Reemplazamos la lista vacía con la lista descargada que contiene los remoteUrl
+                            project = project.copy(urlAudioTracks = tracksFromUrl)
+
+                            Log.d("RepositoryImpl", "Tracks recuperados exitosamente: ${tracksFromUrl.size}")
+
+                        } catch (e: Exception) {
+                            Log.e("RepositoryImpl", "Error descargando/parseando tracks.json", e)
+                        }
+                    }
+
+                    project
                 } else {
-                    // El proyecto no existe en Firestore
                     Log.w("RepositoryImpl", "No se encontró el proyecto $projectId en Firestore.")
                     null
                 }

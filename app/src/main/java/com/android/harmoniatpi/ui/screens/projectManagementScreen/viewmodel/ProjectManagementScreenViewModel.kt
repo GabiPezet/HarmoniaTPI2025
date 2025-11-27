@@ -817,9 +817,10 @@ class ProjectManagementScreenViewModel @Inject constructor(
                     val isUndoTrimAvailable = File(domainTrack.path + ".original_trim").exists()
                     val isUndoEffectAvailable = File(domainTrack.path + ".original_effect").exists()
                     val waveformResult =
-                        if (savedTrackInfo?.waveForm != null && savedTrackInfo.durationMs > 0) {
+                        if (savedTrackInfo?.waveForm != null && savedTrackInfo.waveForm.isNotEmpty() && savedTrackInfo.durationMs > 0) {
                             WaveformResult(savedTrackInfo.waveForm, savedTrackInfo.durationMs)
                         } else {
+                            // Si es nula O ESTÁ VACÍA (porque venimos de la DB limpia), regeneramos
                             Log.d("KlyxDevs", "Generando waveform para pista ${domainTrack.id}")
                             generateWaveform(domainTrack.path)
                         }

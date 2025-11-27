@@ -70,7 +70,6 @@ class ProjectViewModel @Inject constructor(
     private val deleteProjectByIdFromDBUseCase: DeleteProjectByIdFromDBUseCase,
     private val insertNewPostFirebaseDataBaseUseCase: InsertNewPostFirebaseDataBaseUseCase,
     private val exportProjectUseCase: ExportProjectUseCase,
-    private val getProjectByIdFromDBUseCase: GetProjectByIdFromDBUseCase,
     private val playPreviewUseCase: PlayPreviewUseCase,
     private val stopPreviewUseCase: StopPreviewUseCase,
     private val onPreviewCompletedUseCase: OnPreviewCompletedUseCase,
@@ -719,7 +718,7 @@ class ProjectViewModel @Inject constructor(
         _uiState.update { it.copy(isPublishing = true) }
 
         viewModelScope.launch {
-            //Guardar cambios locales previos (Título, descripción, imagen nueva)
+            // 1. Guardar cambios locales previos
             val updatedProject = project.copy(
                 description = if (!isClone) postDescription else project.description,
                 hashtags = postHashtags.split(",").map { it.trim() },
@@ -734,41 +733,52 @@ class ProjectViewModel @Inject constructor(
                 return@launch
             }
 
-            // Variables para limpieza final
             var mixedMp3File: File? = null
-            var individualMp3Files: List<File> = emptyList()
 
             try {
                 withContext(Dispatchers.Main) {
                     Toast.makeText(context, "Preparando publicación...", Toast.LENGTH_SHORT).show()
                 }
 
-                //Subir Imagen (si es local)
+                // 2. Subir Imagen (si es local)
                 val finalImageUrl = uploadImageIfNeeded(updatedProject.id, postImageUrl)
 
-                //Exportar y Subir Audio
+                // 3. Exportar audio, subir mp3 y pistas individuales
                 val (finalAudioUrl, uploadedTracks) = exportAndUploadAudio(updatedProject)
 
-                //Guardar Proyecto en Firestore y Local (Actualizar URLs remotas)
+                // 4. NUEVO: Subir configuración de pistas como archivo JSON para evitar crash en Room/Firestore
+                val tracksJsonUrl = uploadTracksMetadataAsJson(updatedProject.id, uploadedTracks)
+
+                // 5. Preparar objeto final
                 val finalProjectData = updatedProject.copy(
                     isPublished = true,
                     urlCompleteAudio = finalAudioUrl,
                     urlAudioTracks = uploadedTracks,
-                    imageUrl = finalImageUrl
+                    imageUrl = finalImageUrl,
+                    // Asegúrate de agregar este campo a tu Data Class Project:
+                    // tracksJsonUrl = tracksJsonUrl
                 )
 
-                //Firestore
-                val projectFirebaseModel = finalProjectData.toDataBase(jsonUtils).toFirebaseModel().copy(
+                // 6. Firestore: Guardamos la URL del JSON y DEJAMOS VACÍO el string gigante
+                var projectFirebaseModel = finalProjectData.toDataBase(jsonUtils).toFirebaseModel()
+
+                projectFirebaseModel = projectFirebaseModel.copy(
                     publishedAudioUrl = finalAudioUrl,
-                    publishedTrackUrls = jsonUtils.encodeToJson(uploadedTracks),
-                    imageUrl = finalImageUrl
+                    imageUrl = finalImageUrl,
+                    // IMPORTANTE: Dejamos esto vacío o nulo para que no pese 2MB
+                    publishedTrackUrls = "", // o "" si tu modelo exige String
+                    // Guardamos la URL del archivo JSON
+                    tracksJsonUrl = tracksJsonUrl
                 )
+
                 upsertProjectInFirestoreUseCase(projectFirebaseModel).getOrThrow()
 
-                //Room (Local)
+                // 7. Room (Local): Guardamos el objeto actualizado
+                // Nota: Tu entidad local también debería tener el campo tracksJsonUrl
+                // y evitar guardar el json gigante en texto si es posible, aunque Room aguanta un poco más que Firestore.
                 insertProjectInDBUseCase(finalProjectData)
 
-                //Crear Post en Realtime Database
+                // 8. Crear Post en Realtime Database
                 createPostInRealtimeDB(
                     project = finalProjectData,
                     postTitle = postTitle,
@@ -777,10 +787,10 @@ class ProjectViewModel @Inject constructor(
                     finalAudioUrl = finalAudioUrl!!,
                     finalImageUrl = finalImageUrl,
                     isClone = isClone,
-                    cloningAccess = cloningAccess
+                    cloningAccess = cloningAccess,
+                    tracksJsonUrl = tracksJsonUrl // Pasamos la URL del JSON al post también
                 )
 
-                //Lógica específica si es CLON (Actualizar al original)
                 if (isClone && finalProjectData.originalProjectId != null) {
                     updateOriginalProjectAfterFork(
                         originalProjectId = finalProjectData.originalProjectId!!,
@@ -794,13 +804,10 @@ class ProjectViewModel @Inject constructor(
 
             } catch (e: Exception) {
                 handlePublishError("Error al publicar", e)
-                //Revertir estado local si falló
                 try {
                     insertProjectInDBUseCase(project.copy(isPublished = false))
                 } catch (_: Exception) { }
             } finally {
-                //Limpieza de archivos temporales (Implementación simplificada)
-                //Idealmente exportProjectUseCase debería darte handles a los archivos para borrarlos aquí.
                 withContext(Dispatchers.IO) {
                     mixedMp3File?.delete()
                 }
@@ -808,6 +815,79 @@ class ProjectViewModel @Inject constructor(
                 onComplete()
             }
         }
+    }
+
+    /**
+     * Nueva función: Convierte la lista de tracks a JSON, lo guarda en un archivo temporal
+     * y lo sube a Firebase Storage para obtener una URL limpia.
+     */
+    private suspend fun uploadTracksMetadataAsJson(projectId: String, tracks: List<AudioTrack>): String {
+        return withContext(Dispatchers.IO) {
+            // 1. Convertir lista a JSON String
+            val jsonString = jsonUtils.encodeToJson(tracks)
+
+            // 2. Crear archivo temporal
+            val fileName = "tracks_config_$projectId.json"
+            val file = File(context.cacheDir, fileName)
+            file.writeText(jsonString)
+
+            // 3. Subir a Firebase Storage
+            // Usamos la carpeta 'project_metadata' o la que prefieras
+            val remotePath = "project_metadata/$projectId/tracks.json"
+
+            try {
+                // Reutilizamos el caso de uso existente que sube archivos
+                val downloadUrl = uploadAudioToStorageUseCase(projectId, file, remotePath).getOrThrow()
+                Log.d("ProjectViewModel", "JSON de tracks subido exitosamente: $downloadUrl")
+                downloadUrl
+            } finally {
+                // 4. Borrar archivo temporal
+                if (file.exists()) {
+                    file.delete()
+                }
+            }
+        }
+    }
+
+    private suspend fun createPostInRealtimeDB(
+        project: Project,
+        postTitle: String,
+        postDescription: String,
+        postHashtags: List<String>,
+        finalAudioUrl: String,
+        finalImageUrl: String?,
+        isClone: Boolean,
+        cloningAccess: CloningAccess,
+        tracksJsonUrl: String // Recibimos la URL del JSON
+    ) {
+        Log.d("ProjectViewModel", "Creando Post en Realtime DB...")
+
+        // Lo ideal es que tu modelo Post también tenga 'tracksJsonUrl'
+        // y dejes 'urlAudioTracks' vacío o con datos mínimos.
+        val post = Post(
+            id = System.currentTimeMillis().toString(),
+            userID = project.ownerId,
+            userImagePathURL = sharedMenuUiState.uiState.value.userPhotoPathRemote,
+            title = postTitle,
+            description = postDescription,
+            name = project.name,
+            lasName = project.lastName,
+            hashtags = postHashtags,
+            idProject = project.id,
+            urlCompleteAudio = finalAudioUrl,
+            // IMPORTANTE: Si RealtimeDB también crashea, envía una lista vacía aquí
+            // y usa el tracksJsonUrl para cargar los datos cuando se abra el post.
+            urlAudioTracks = emptyList(),
+            imageUrl = finalImageUrl ?: "",
+            createdAt = LocalDateTime.now().toString(),
+            likes = 0,
+            totalShared = 0,
+            comments = emptyList(),
+            clonedOption = !isClone,
+            cloningAccess = cloningAccess
+            // Agrega tracksJsonUrl al modelo Post si es necesario recuperarlo desde el feed
+        )
+        insertNewPostFirebaseDataBaseUseCase(post)
     }
 
     private suspend fun uploadImageIfNeeded(projectId: String, imageUrl: String?): String? {
@@ -862,40 +942,6 @@ class ProjectViewModel @Inject constructor(
         mainMp3.delete()
 
         return Pair(mixUrl, uploadedTracks)
-    }
-
-    private suspend fun createPostInRealtimeDB(
-        project: Project,
-        postTitle: String,
-        postDescription: String,
-        postHashtags: List<String>,
-        finalAudioUrl: String,
-        finalImageUrl: String?,
-        isClone: Boolean,
-        cloningAccess: CloningAccess
-    ) {
-        Log.d("ProjectViewModel", "Creando Post en Realtime DB...")
-        val post = Post(
-            id = System.currentTimeMillis().toString(),
-            userID = project.ownerId,
-            userImagePathURL = sharedMenuUiState.uiState.value.userPhotoPathRemote,
-            title = postTitle,
-            description = postDescription,
-            name = project.name,
-            lasName = project.lastName,
-            hashtags = postHashtags,
-            idProject = project.id,
-            urlCompleteAudio = finalAudioUrl,
-            urlAudioTracks = project.urlAudioTracks.mapNotNull { it.remoteUrl },
-            imageUrl = finalImageUrl ?: "",
-            createdAt = LocalDateTime.now().toString(),
-            likes = 0,
-            totalShared = 0,
-            comments = emptyList(),
-            clonedOption = !isClone,
-            cloningAccess = cloningAccess
-        )
-        insertNewPostFirebaseDataBaseUseCase(post)
     }
 
     private suspend fun updateOriginalProjectAfterFork(originalProjectId: String, clonerUserId: String) {
