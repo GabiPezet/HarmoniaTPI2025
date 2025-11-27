@@ -208,8 +208,7 @@ fun SongVersionsContent(
                             onPlayClick = onPlayOriginal,
                             onOpenProjectClick = { onOpenOriginalProject(originalSong.projectId) },
                             onSliderValueChange = onSliderChange,
-                            // 2. Pasa la URL remota
-                            creatorAvatarUrl = originalCreatorUserPref?.userPhotoPathRemote
+                            creatorAvatarUrl = originalSong.creator.avatarUrl
                         )
                         Spacer(modifier = Modifier.height(32.dp))
                         Text(
@@ -224,14 +223,9 @@ fun SongVersionsContent(
 
                     items(uiState.derivedVersions) { version ->
                         val isThisSongActive = uiState.playingSongId == version.id
-
                         val isThisPlaying =
                             uiState.playingSongId == version.id && uiState.playbackState.isPlaying
 
-                        val derivedCreatorUserPref =
-                            remember(version.creator.id, uiState.allUsers) {
-                                uiState.allUsers.find { it.userID == version.creator.id }
-                            }
                         DerivedVersionItem(
                             version = version,
                             isPlaying = isThisPlaying,
@@ -239,7 +233,7 @@ fun SongVersionsContent(
                             playbackState = uiState.playbackState,
                             onPlayClick = { onPlayDerived(version.id) },
                             onSliderChange = onSliderChange,
-                            creatorAvatarUrl = derivedCreatorUserPref?.userPhotoPathRemote,
+                            creatorAvatarUrl = version.creator.avatarUrl,
                             modifier = Modifier.padding(vertical = 4.dp)
                         )
                     }
