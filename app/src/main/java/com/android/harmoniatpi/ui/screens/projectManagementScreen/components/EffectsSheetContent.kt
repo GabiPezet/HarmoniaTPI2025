@@ -29,6 +29,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.SecondaryScrollableTabRow
 import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Tab
@@ -214,7 +216,7 @@ fun EffectsSheetContent(
                 .verticalScroll(rememberScrollState())
         ) {
             // Pestañas
-            SecondaryTabRow(
+            SecondaryScrollableTabRow(
                 selectedTabIndex = selectedTabIndex,
                 containerColor = MaterialTheme.colorScheme.surface,
                 contentColor = MaterialTheme.colorScheme.primary,
