@@ -7,36 +7,49 @@ data class HelpTopic(
 
 val helpTopicsList = listOf(
     HelpTopic(
-        title = "Primeros Pasos y Cuenta",
-        content = "• Registro: Puedes usar HoloCuenta o Google Sign In.\n" +
-                "• Perfil: Cambia tu foto desde la cámara o galería y completa tus datos (Instrumento, Género) para que otros te encuentren.\n" +
-                "• Seguridad: Tu cuenta es personal e intransferible. Protege tus credenciales."
+        title = "Primeros Pasos y Tu Cuenta",
+        content = "¡Bienvenido a HoloJam! Queremos que te sientas como en casa (o en tu estudio).\n\n" +
+                "• Registro Sencillo: Puedes crear tu cuenta rápidamente con Google o usando tu correo electrónico a modo de HoloCuenta.\n" +
+                "• Tu Identidad Musical: En tu perfil, sube esa foto que te representa y cuéntanos qué tocas o qué géneros te apasionan. Esto ayuda a que otros músicos con tus mismos gustos te encuentren fácilimente.\n" +
+                "• Seguridad ante todo: Tu cuenta es tuya y de nadie más. No compartas credenciales ni datos personales."
     ),
     HelpTopic(
-        title = "Mi Estudio: Grabación y Pistas",
-        content = "• Crear Proyecto: Usa el botón (+) en 'Mis Proyectos'.\n" +
-                "• Tipos de Pista: 'Grabar Voz' usa cancelación de eco. 'Grabar Instrumento' es audio Hi-Fi sin filtros.\n" +
-                "• Edición: Para mover una pista, simplemente toca en el círculo del medio y desliza tu dedo. Usa el menú (3 puntos) para renombrar pista, volumen, efectos o borrar."
+        title = "Mi Estudio: Creación sin límites",
+        content = "Aquí es donde ocurre la magia.\n\n" +
+                "• Nuevo Proyecto: Toca el botón (+) en 'Mis Proyectos' para empezar de cero.\n" +
+                "• Herramientas de Ayuda: Antes de grabar, recuerda que tienes un Afinador y un Metrónomo integrados para que tu toma sea perfecta.\n" +
+                "• Tipos de Pista: \n" +
+                "   - Voz: Activamos automáticamente la cancelación de eco para que suenes nítido.\n" +
+                "   - Instrumento: Grabación en alta fidelidad (Hi-Fi) para captar cada detalle.\n" +
+                "• Edición Intuitiva: ¿La pista no quedó donde querías? Mantén presionado el círculo central y desliza para moverla. Toca los tres puntos (...) para ajustar volumen, recortar o aplicar efectos como Flanger y Delay."
     ),
     HelpTopic(
         title = "Comunidad y Colaboraciones",
-        content = "• Clonar/Fork: Si un proyecto es público o lo ha subido un amigo, puedes clonarlo para agregar tu versión. Aparecerá en la pestaña 'Colaboraciones'.\n" +
-                "• Social: Puedes dar Like, Comentar y Seguir a otros artistas.\n" +
-                "• Publicar: Al publicar un proyecto, se genera un post visible para todos."
+        content = "La música es mejor cuando se comparte. Conecta con otros artistas:\n\n" +
+                "• Clonar y Remixar: ¿Te gusta el proyecto de un amigo? Si es público, puedes usar la función 'Clonar' para añadir tu propio instrumento o voz sobre su base. ¡Aparecerá en tu pestaña de Colaboraciones!\n" +
+                "• Socializa: Inspira a otros dando 'Like', comentando sus obras o siguiendo a tus artistas favoritos.\n" +
+                "• Comparte tu Talento: Al publicar un proyecto, este será visible para toda la comunidad HoloJam. ¡Prepárate para recibir aplausos!"
     ),
     HelpTopic(
         title = "HoloJam Premium",
-        content = "Desbloquea pistas ilimitadas (más de 5), efectos exclusivos (Filtros avanzados) y mayor capacidad en la nube. Cancela cuando quieras desde la sección Premium."
+        content = "Lleva tu producción al siguiente nivel sin compromisos.\n\n" +
+                "Con Premium obtienes:\n" +
+                "• Pistas Ilimitadas: Olvídate del límite de 4 pistas y crea proyectos increíbles.\n" +
+                "• Efectos de Estudio: Acceso a filtros avanzados (Flanger, Paso Alto/Bajo) y herramientas de masterización.\n" +
+                "• Sin Interrupciones: Una experiencia fluida y con mayor almacenamiento en la nube.\n\n" +
+                "Puedes probarlo y cancelar cuando quieras desde tu perfil. ¡Tú tienes el control!"
     ),
     HelpTopic(
-        title = "Solución de Problemas Frecuentes",
-        content = "• No puedo grabar: Verifica permisos de micrófono en Configuración de Android.\n" +
-                "• Sin audio: Revisa si el volumen del celular está bajo o la pista está silenciada (Mute).\n" +
-                "• Error al publicar: Verifica tu conexión a internet.\n" +
-                "• Login fallido: Revisa mayúsculas o intenta recuperar contraseña."
+        title = "Solución de dudas frecuentes",
+        content = "Todo tiene solución:\n\n" +
+                "• ¿No graba el audio? Ve a la Configuración de tu Android y asegúrate de que HoloJam tenga permiso para usar el Micrófono.\n" +
+                "• ¿No se escucha nada? Verifica que no tengas el volumen del móvil en silencio o que la pista no esté muteada (icono de altavoz tachado).\n" +
+                "• Error al publicar: Generalmente es por una conexión inestable. Intenta conectarte a Wi-Fi y prueba de nuevo.\n" +
+                "• Problemas de acceso: Revisa que no tengas las mayúsculas activadas o intenta restablecer tu contraseña."
     ),
     HelpTopic(
         title = "Privacidad y Derechos",
-        content = "Tus obras están protegidas. HoloJam solo tiene licencia para reproducir en la app. Para ejercer derechos ARCO o borrar datos, contáctanos."
+        content = "Tu tranquilidad es nuestra prioridad.\n\n" +
+                "Tus obras son 100% tuyas. HoloJam solo obtiene el permiso para reproducirlas dentro de la aplicación para que la comunidad las escuche. Tus datos personales están protegidos y puedes solicitar su eliminación o ejercer tus derechos ARCO contactándonos directamente a soporte."
     )
 )

@@ -553,32 +553,22 @@ fun DbWaveform(
     isInteractionEnabled: Boolean = true,
 ) {
     val waveformColor = if (isMuted) color else MaterialTheme.colorScheme.primary
-    val backgroundColor =
-        if (isMuted) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surfaceContainerHighest.copy(
-            alpha = 0.6f
-        )
+    val backgroundColor = if (isMuted) MaterialTheme.colorScheme.surfaceVariant
+    else MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f)
     val density = LocalDensity.current
-
     val canvasWidthDp = (maxDurationMs / msPerDpScale).dp
     var dragOffsetMs by remember { mutableLongStateOf(0L) }
     val visualOffsetDp = ((startOffsetMs + dragOffsetMs) / msPerDpScale).dp
-
     val canvasWidthPx = with(density) { canvasWidthDp.toPx() }
-
     var handleStartPx by remember(selectionStartMs, density, msPerDpScale) {
-        mutableFloatStateOf(
-            selectionStartMs?.let { (it / msPerDpScale) * density.density } ?: 0f
-        )
+        mutableFloatStateOf(selectionStartMs?.let { (it / msPerDpScale) * density.density } ?: 0f)
     }
     var handleEndPx by remember(selectionEndMs, canvasWidthPx, density, msPerDpScale) {
-        mutableFloatStateOf(
-            selectionEndMs?.let { (it / msPerDpScale) * density.density } ?: canvasWidthPx
-        )
+        mutableFloatStateOf(selectionEndMs?.let { (it / msPerDpScale) * density.density }
+            ?: canvasWidthPx)
     }
 
     val minClipWidthPx = with(density) { 10.dp.toPx() }
-
-
     val handleWidth = 20.dp
     val handleWidthPx = with(density) { handleWidth.toPx() }
 
@@ -593,14 +583,18 @@ fun DbWaveform(
             shape = RoundedCornerShape(8.dp),
             color = backgroundColor
         ) {
-
             Box(modifier = Modifier.fillMaxSize()) {
 
                 Canvas(
                     modifier = Modifier
                         .fillMaxSize()
-
-                        .pointerInput(Unit, msPerDpScale, onSeekClick, density, isInteractionEnabled) {
+                        .pointerInput(
+                            Unit,
+                            msPerDpScale,
+                            onSeekClick,
+                            density,
+                            isInteractionEnabled
+                        ) {
                             if (isInteractionEnabled) {
                                 detectTapGestures(onTap = { offset ->
                                     val tappedMs =
@@ -609,9 +603,9 @@ fun DbWaveform(
                                 })
                             }
                         }
-
                         .drawWithContent {
                             drawContent()
+
                             val validStartPx = handleStartPx.coerceIn(0f, handleEndPx)
                             if (validStartPx > 0f) {
                                 drawRect(
@@ -631,19 +625,32 @@ fun DbWaveform(
                 ) {
                     if (waveform.isNotEmpty()) {
                         val centerY = size.height / 2
-                        val stepX = size.width / waveform.size.toFloat()
+                        val width = size.width
+                        val pixelStep = 2f
+                        val totalPointsToDraw = (width / pixelStep).toInt().coerceAtLeast(1)
+                        val dataStep = waveform.size.toFloat() / totalPointsToDraw
+
                         val path = Path().apply {
-                            moveTo(0f, centerY)
-                            waveform.forEachIndexed { index, value ->
-                                val x = index * stepX
+                            val startY = centerY - (waveform[0] * centerY)
+                            moveTo(0f, startY)
+
+                            for (i in 0 until totalPointsToDraw) {
+                                val dataIndex = (i * dataStep).toInt().coerceIn(waveform.indices)
+                                val value = waveform[dataIndex]
+
+                                val x = i * pixelStep
                                 val y = centerY - (value * centerY)
                                 lineTo(x, y)
                             }
                         }
+
                         drawPath(
                             path,
                             color = waveformColor,
-                            style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
+                            style = Stroke(
+                                width = 1.5.dp.toPx(),
+                                cap = StrokeCap.Round
+                            ) // Stroke un poco más fino para detalle
                         )
                     }
                 }

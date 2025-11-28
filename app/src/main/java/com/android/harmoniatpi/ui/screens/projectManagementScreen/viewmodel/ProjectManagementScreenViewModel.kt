@@ -136,6 +136,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
     private val originalVolumes = mutableMapOf<Long, Float>()
     private val _trackForVolume = MutableStateFlow<TrackUi?>(null)
     val trackForVolume = _trackForVolume.asStateFlow()
+
     // atributos para tuner
     private var audioDispatcher: AudioDispatcher? = null
     private var tunerThread: Thread? = null
@@ -190,20 +191,37 @@ class ProjectManagementScreenViewModel @Inject constructor(
                                 // Lógica de restaurar pista
                                 if (!pcmFile.exists() && audioTrack.remoteUrl != null) {
 
-                                    Log.w("KlyxDevs", "Falta archivo local ${pcmFile.name}. Descargando desde ${audioTrack.remoteUrl}...")
-                                    val tempMp3File = File(context.cacheDir, "restore_${audioTrack.id}.mp3")
+                                    Log.w(
+                                        "KlyxDevs",
+                                        "Falta archivo local ${pcmFile.name}. Descargando desde ${audioTrack.remoteUrl}..."
+                                    )
+                                    val tempMp3File =
+                                        File(context.cacheDir, "restore_${audioTrack.id}.mp3")
 
                                     try {
-                                        downloadFileUseCase(audioTrack.remoteUrl, tempMp3File).getOrThrow()
+                                        downloadFileUseCase(
+                                            audioTrack.remoteUrl,
+                                            tempMp3File
+                                        ).getOrThrow()
 
-                                        Log.i("KlyxDevs", "Descarga completa. Convirtiendo ${tempMp3File.name} a ${pcmFile.name}...")
+                                        Log.i(
+                                            "KlyxDevs",
+                                            "Descarga completa. Convirtiendo ${tempMp3File.name} a ${pcmFile.name}..."
+                                        )
                                         convertMp3ToPcmUseCase(tempMp3File, pcmFile).getOrThrow()
 
-                                        Log.i("KlyxDevs", "Pista ${audioTrack.id} restaurada. Cargando en mixer...")
+                                        Log.i(
+                                            "KlyxDevs",
+                                            "Pista ${audioTrack.id} restaurada. Cargando en mixer..."
+                                        )
                                         loadTrackIntoMixer(audioTrack)
 
                                     } catch (e: Exception) {
-                                        Log.e("KlyxDevs", "Error restaurando pista ${audioTrack.id} desde backup", e)
+                                        Log.e(
+                                            "KlyxDevs",
+                                            "Error restaurando pista ${audioTrack.id} desde backup",
+                                            e
+                                        )
                                     } finally {
                                         tempMp3File.delete()
                                     }
@@ -211,7 +229,10 @@ class ProjectManagementScreenViewModel @Inject constructor(
                                 } else if (pcmFile.exists()) {
                                     loadTrackIntoMixer(audioTrack)
                                 } else {
-                                    Log.e("KlyxDevs", "Archivo no encontrado y sin backup remoto: ${audioTrack.path}")
+                                    Log.e(
+                                        "KlyxDevs",
+                                        "Archivo no encontrado y sin backup remoto: ${audioTrack.path}"
+                                    )
                                 }
                             }
                         }
@@ -236,7 +257,6 @@ class ProjectManagementScreenViewModel @Inject constructor(
     }
 
 
-
     private fun getUpdatedTimeline(updatedTracks: List<TrackUi>, msPerDpScale: Float): Int {
         if (updatedTracks.isEmpty()) return 500
 
@@ -246,9 +266,11 @@ class ProjectManagementScreenViewModel @Inject constructor(
 
         val timelineWidthInDp = (maxDurationPlusOffset / msPerDpScale).toInt()
 
-        return timelineWidthInDp.coerceAtLeast(500)
-    }
 
+        val extraScrollPadding = 300
+
+        return (timelineWidthInDp + extraScrollPadding).coerceAtLeast(500)
+    }
 
 
     fun updateCurrentProjectWithTracks() {
@@ -277,7 +299,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
     /**
      * Inicia la grabación de audio.
      */
-   private fun executeRecording() {
+    private fun executeRecording() {
         metronomeEngine.start()
         selectedTrack = state.value.tracks.find { it.selected }
         selectedTrack?.let { trackToRecord ->
@@ -346,7 +368,8 @@ class ProjectManagementScreenViewModel @Inject constructor(
                                 }
                             }
                             val totalMs = getMaxProjectDuration(updatedTracks)
-                            val timelineWidth = getUpdatedTimeline(updatedTracks, _state.value.msPerDpScale)
+                            val timelineWidth =
+                                getUpdatedTimeline(updatedTracks, _state.value.msPerDpScale)
                             currentState.copy(
                                 tracks = updatedTracks,
                                 timelineWidth = timelineWidth,
@@ -398,7 +421,11 @@ class ProjectManagementScreenViewModel @Inject constructor(
     fun addNewTrack(sourceType: AudioSourceType) {
         val isPremium = state.value.isPremium // Obtener de UiState
         if (!isPremium && state.value.tracks.size >= 5) {
-            Toast.makeText(context, "El límite para usuarios Free es de 5 pistas.", Toast.LENGTH_LONG).show()
+            Toast.makeText(
+                context,
+                "El límite para usuarios Free es de 5 pistas.",
+                Toast.LENGTH_LONG
+            ).show()
             return
         }
         addTrack(sourceType)
@@ -427,7 +454,11 @@ class ProjectManagementScreenViewModel @Inject constructor(
     fun importTrackFromFile(uri: Uri) {
         val isPremium = state.value.isPremium
         if (!isPremium && state.value.tracks.size >= 5) {
-            Toast.makeText(context, "El límite para usuarios Free es de 5 pistas.", Toast.LENGTH_LONG).show()
+            Toast.makeText(
+                context,
+                "El límite para usuarios Free es de 5 pistas.",
+                Toast.LENGTH_LONG
+            ).show()
             return
         }
         _state.update { it.copy(importAudioLoading = true) }
@@ -437,13 +468,21 @@ class ProjectManagementScreenViewModel @Inject constructor(
                 // *** ATENCIÓN: Debes implementar 'getMediaDuration' para obtener la duración real del archivo ***
                 val durationMs = getMediaDuration(uri)
                 if (!isPremium && durationMs > 300000L) { // 5 minutos = 300,000 ms
-                    Toast.makeText(context, "La duración máxima para usuarios Free es de 5 minutos.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        context,
+                        "La duración máxima para usuarios Free es de 5 minutos.",
+                        Toast.LENGTH_LONG
+                    ).show()
                     _state.update { it.copy(importAudioLoading = false) }
                     return@launch
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "No se pudo obtener la duración del archivo importado.", e)
-                Toast.makeText(context, "Error al validar la duración del archivo.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    context,
+                    "Error al validar la duración del archivo.",
+                    Toast.LENGTH_SHORT
+                ).show()
                 _state.update { it.copy(importAudioLoading = false) }
                 return@launch
             }
@@ -537,8 +576,10 @@ class ProjectManagementScreenViewModel @Inject constructor(
 
         val sampleRate = 44100
         val bytesPerSample = 2
-        val startByte = (selectedTrackWithSelection.selectionStartMs!! * sampleRate / 1000f).roundToLong() * bytesPerSample
-        val endByte = (selectedTrackWithSelection.selectionEndMs!! * sampleRate / 1000f).roundToLong() * bytesPerSample
+        val startByte =
+            (selectedTrackWithSelection.selectionStartMs!! * sampleRate / 1000f).roundToLong() * bytesPerSample
+        val endByte =
+            (selectedTrackWithSelection.selectionEndMs!! * sampleRate / 1000f).roundToLong() * bytesPerSample
         val lengthToCopy = endByte - startByte
 
         if (lengthToCopy <= 0) return
@@ -799,8 +840,6 @@ class ProjectManagementScreenViewModel @Inject constructor(
     }
 
 
-
-
     private fun fetchTracks() {
         viewModelScope.launch {
             getTracks().collect { domainTracks ->
@@ -851,9 +890,15 @@ class ProjectManagementScreenViewModel @Inject constructor(
                 }
 
                 val updatedTracks = updatedTracksPromises
-                val totalMs =getMaxProjectDuration(updatedTracks)
+                val totalMs = getMaxProjectDuration(updatedTracks)
                 val timelineWidth = getUpdatedTimeline(updatedTracks, _state.value.msPerDpScale)
-                _state.update { it.copy(tracks = updatedTracks, timelineWidth = timelineWidth, totalProjectMs = totalMs) }
+                _state.update {
+                    it.copy(
+                        tracks = updatedTracks,
+                        timelineWidth = timelineWidth,
+                        totalProjectMs = totalMs
+                    )
+                }
 
                 if (updatedTracks.isNotEmpty()) {
                     // Verificar si el último track es nuevo
@@ -917,7 +962,11 @@ class ProjectManagementScreenViewModel @Inject constructor(
     fun applyHighPassFilter(trackId: Long, frequency: Float) {
         val isPremium = state.value.isPremium // Obtener de UiState
         if (!isPremium) {
-            Toast.makeText(context, "El Filtro de Paso Alto es un efecto Premium.", Toast.LENGTH_LONG).show()
+            Toast.makeText(
+                context,
+                "El Filtro de Paso Alto es un efecto Premium.",
+                Toast.LENGTH_LONG
+            ).show()
             return
         }
         viewModelScope.launch {
@@ -937,7 +986,8 @@ class ProjectManagementScreenViewModel @Inject constructor(
     fun applyFlangerEffect(trackId: Long, rate: Float, wet: Float) {
         val isPremium = state.value.isPremium // Obtener de UiState
         if (!isPremium) {
-            Toast.makeText(context, "El efecto Flanger es una función Premium.", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, "El efecto Flanger es una función Premium.", Toast.LENGTH_LONG)
+                .show()
             return
         }
         viewModelScope.launch {
@@ -1080,6 +1130,7 @@ class ProjectManagementScreenViewModel @Inject constructor(
 
         metronomeEngine.setBpm(clampedBpm)
     }
+
     /*
     * Activa o desactiva el metrónomo.
     */
@@ -1374,7 +1425,11 @@ class ProjectManagementScreenViewModel @Inject constructor(
                         it.copy(isPremium = updatedUser.isPremium)
                     }
 
-                    Toast.makeText(context, "Modo de prueba: $statusText activado", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        context,
+                        "Modo de prueba: $statusText activado",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
                 .onFailure { e ->
                     Log.e(TAG, "Error al cambiar el estado Premium de prueba", e)
