@@ -116,7 +116,8 @@ fun NavigationWrapper(
                         },
                         onNavigateToVersion = { project: Project ->
                             navController.navigate(SongVersionsScreenRoute(projectId = project.id))
-                        }
+                        },
+                        onNavigateToPremium = { navController.navigate(PaymentMarketScreenRoute) }
                     )
                 }
             )
