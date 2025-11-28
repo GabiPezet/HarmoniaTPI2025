@@ -564,7 +564,8 @@ fun DbWaveform(
         mutableFloatStateOf(selectionStartMs?.let { (it / msPerDpScale) * density.density } ?: 0f)
     }
     var handleEndPx by remember(selectionEndMs, canvasWidthPx, density, msPerDpScale) {
-        mutableFloatStateOf(selectionEndMs?.let { (it / msPerDpScale) * density.density } ?: canvasWidthPx)
+        mutableFloatStateOf(selectionEndMs?.let { (it / msPerDpScale) * density.density }
+            ?: canvasWidthPx)
     }
 
     val minClipWidthPx = with(density) { 10.dp.toPx() }
@@ -587,10 +588,17 @@ fun DbWaveform(
                 Canvas(
                     modifier = Modifier
                         .fillMaxSize()
-                        .pointerInput(Unit, msPerDpScale, onSeekClick, density, isInteractionEnabled) {
+                        .pointerInput(
+                            Unit,
+                            msPerDpScale,
+                            onSeekClick,
+                            density,
+                            isInteractionEnabled
+                        ) {
                             if (isInteractionEnabled) {
                                 detectTapGestures(onTap = { offset ->
-                                    val tappedMs = (offset.x / density.density * msPerDpScale).toLong()
+                                    val tappedMs =
+                                        (offset.x / density.density * msPerDpScale).toLong()
                                     onSeekClick(tappedMs)
                                 })
                             }
@@ -639,7 +647,10 @@ fun DbWaveform(
                         drawPath(
                             path,
                             color = waveformColor,
-                            style = Stroke(width = 1.5.dp.toPx(), cap = StrokeCap.Round) // Stroke un poco más fino para detalle
+                            style = Stroke(
+                                width = 1.5.dp.toPx(),
+                                cap = StrokeCap.Round
+                            ) // Stroke un poco más fino para detalle
                         )
                     }
                 }
