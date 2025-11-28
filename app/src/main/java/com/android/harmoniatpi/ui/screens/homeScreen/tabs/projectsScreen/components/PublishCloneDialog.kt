@@ -1,5 +1,7 @@
 package com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.components
 
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -24,7 +26,10 @@ import kotlinx.coroutines.launch
 fun PublishCloneDialog(
     project: Project,
     viewModel: ProjectViewModel,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    isPremium: Boolean,
+    publishedCount: Int,
+    onGoToPremium: () -> Unit
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
     val sharedUiState by viewModel.sharedMenuUiState.uiState.collectAsState()
@@ -36,8 +41,9 @@ fun PublishCloneDialog(
     var postImageUrl by remember(project) { mutableStateOf(project.imageUrl) }
     var attributionMessage by remember { mutableStateOf("Cargando atribución...") }
     var isPublishing by remember { mutableStateOf(false) }
+    val isLimitReached = !isPremium && publishedCount >= 5
 
-    // --- Lógica Específica del Clon: Obtener atribución ---
+    //Lógica Específica del Clon: Obtener atribución
     LaunchedEffect(key1 = project) {
         scope.launch {
             attributionMessage = try {
@@ -56,6 +62,11 @@ fun PublishCloneDialog(
         // Habilita solo si hay título y contenido válido
         isPublishButtonEnabled = postTitle.isNotBlank(),
         onDismissRequest = onDismiss,
+        isPremiumLocked = isLimitReached,
+        onPremiumUpgrade = {
+            onDismiss()
+            onGoToPremium()
+        },
         onPublishClick = {
             keyboardController?.hide()
             isPublishing = true
@@ -102,6 +113,14 @@ fun PublishCloneDialog(
                 placeholder = "Añade un comentario (ej. '¡Le agregué un bajo!')",
                 textStyle = MaterialTheme.typography.bodyMedium
             )
+            if (isLimitReached) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Has alcanzado el límite de 5 publicaciones gratuitas.",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
         }
     }
 }

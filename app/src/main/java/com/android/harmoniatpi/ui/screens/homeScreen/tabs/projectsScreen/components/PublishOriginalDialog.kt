@@ -23,7 +23,10 @@ import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.viewmod
 fun PublishOriginalDialog(
     project: Project,
     viewModel: ProjectViewModel,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    isPremium: Boolean,
+    publishedCount: Int,
+    onGoToPremium: () -> Unit
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
     val sharedUiState by viewModel.sharedMenuUiState.uiState.collectAsState()
@@ -37,12 +40,18 @@ fun PublishOriginalDialog(
     val hasValidContent = remember(project.urlAudioTracks) {
         project.urlAudioTracks.isNotEmpty() && project.urlAudioTracks.any { it.durationMs > 0 }
     }
+    val isLimitReached = !isPremium && publishedCount >= 5
 
     BasePublishDialog(
         dialogTitle = "Publicar Proyecto",
         isPublishing = isPublishing,
         isPublishButtonEnabled = postTitle.isNotBlank() && hasValidContent,
         onDismissRequest = onDismiss,
+        isPremiumLocked = isLimitReached,
+        onPremiumUpgrade = {
+            onDismiss()
+            onGoToPremium()
+        },
         onPublishClick = {
             keyboardController?.hide()
             isPublishing = true
@@ -89,7 +98,14 @@ fun PublishOriginalDialog(
             selectedOption = cloningAccess,
             onOptionSelected = { cloningAccess = it }
         )
-        if (!hasValidContent) {
+        if (isLimitReached) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Has alcanzado el límite de 5 publicaciones gratuitas.",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.error
+            )
+        } else if (!hasValidContent) {
             Text(
                 text = "Tu proyecto aún no tiene audio para ser publicado. ",
                 style = MaterialTheme.typography.labelMedium,

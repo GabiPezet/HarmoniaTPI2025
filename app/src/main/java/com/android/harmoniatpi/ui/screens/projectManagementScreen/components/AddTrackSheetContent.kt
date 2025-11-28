@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -18,6 +20,9 @@ import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -41,12 +46,13 @@ fun AddTrackSheetContent(
     onPasteTrack: () -> Unit,
     isClipboardFull: Boolean,
     isPremium: Boolean,
-    currentTrackCount: Int
+    currentTrackCount: Int,
+    onGoToPremium: () -> Unit
 ) {
 
     // Lógica de restricción de 3 pistas
-    val maxTrackReached = !isPremium && currentTrackCount >= 5
-    val trackLimitMessage = "Límite de 5 pistas alcanzado para Free"
+    val maxTrackReached = !isPremium && currentTrackCount >= 4
+    val trackLimitMessage = "Límite de 4 pistas alcanzado para Free"
     val showWarning = maxTrackReached
 
     Column(
@@ -55,11 +61,44 @@ fun AddTrackSheetContent(
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(
-            text = "Añadir pista",
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Añadir pista",
+                style = MaterialTheme.typography.titleLarge
+                // Nota: Se eliminó el padding(bottom) aquí para evitar desalineación con el botón.
+                // El espacio vertical lo maneja el 'verticalArrangement' del Column padre.
+            )
+
+            if (maxTrackReached) {
+                Button(
+                    onClick = onGoToPremium,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFD4AF37) // Color Dorado
+                    ),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                    modifier = Modifier.height(32.dp),
+                    shape = RoundedCornerShape(50)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                        tint = Color.White
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = "Obtener Premium",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = Color.White
+                    )
+                }
+            }
+        }
+
         if (showWarning) {
             Text(
                 text = trackLimitMessage,
@@ -67,7 +106,8 @@ fun AddTrackSheetContent(
                     color = MaterialTheme.colorScheme.error,
                     fontWeight = FontWeight.Bold
                 ),
-                modifier = Modifier.padding(bottom = 8.dp)
+                // Aquí sí mantenemos un padding pequeño si quieres separar el aviso de las tarjetas
+                modifier = Modifier.padding(bottom = 4.dp)
             )
         }
 
@@ -81,14 +121,14 @@ fun AddTrackSheetContent(
                 icon = Icons.Default.Mic,
                 onClick = onRecordVoice,
                 modifier = Modifier.weight(1f),
-                enabled = !maxTrackReached, // Aplicación de la restricción
+                enabled = !maxTrackReached,
             )
             OptionCard(
                 title = "Grabar Instrumento\n(Hi-Fi)",
                 icon = Icons.Default.MusicNote,
                 onClick = onRecordInstrument,
                 modifier = Modifier.weight(1f),
-                enabled = !maxTrackReached, // Aplicación de la restricción
+                enabled = !maxTrackReached,
             )
         }
 
@@ -113,6 +153,7 @@ fun AddTrackSheetContent(
         }
     }
 }
+
 
 // Composable para cada opción de la BottomSheet
 @Composable

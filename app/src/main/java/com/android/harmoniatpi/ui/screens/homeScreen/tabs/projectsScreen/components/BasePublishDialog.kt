@@ -9,11 +9,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -21,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -44,6 +50,8 @@ fun BasePublishDialog(
     isPublishButtonEnabled: Boolean,
     onDismissRequest: () -> Unit,
     onPublishClick: () -> Unit,
+    isPremiumLocked: Boolean = false,
+    onPremiumUpgrade: () -> Unit = {},
     content: @Composable ColumnScope.() -> Unit // <-- SLOT API
 ) {
     Dialog(
@@ -94,20 +102,50 @@ fun BasePublishDialog(
                     }
 
                     Button(
-                        onClick = onPublishClick,
+                        onClick = {
+                            if (isPremiumLocked) {
+                                onPremiumUpgrade()
+                            } else {
+                                onPublishClick()
+                            }
+                        },
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(16.dp),
-                        enabled = isPublishButtonEnabled && !isPublishing
+                        // Habilitado si es premium locked (para ir a comprar) O si cumple las condiciones de publicación
+                        enabled = (isPublishButtonEnabled || isPremiumLocked) && !isPublishing,
+                        colors = ButtonDefaults.buttonColors(
+                            // Color Dorado si está bloqueado, Primario si no
+                            containerColor = if (isPremiumLocked) Color(0xFFD4AF37) else MaterialTheme.colorScheme.primary
+                        )
                     ) {
                         if (isPublishing) {
                             CircularProgressIndicator(modifier = Modifier.size(24.dp))
                         } else {
-                            Text(
-                                "Publicar",
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontWeight = FontWeight.Bold, fontSize = 16.sp
-                                ),
-                            )
+                            if (isPremiumLocked) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.Star,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                        tint = Color.White
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        "Premium",
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            fontWeight = FontWeight.Bold, fontSize = 16.sp
+                                        ),
+                                        color = Color.White
+                                    )
+                                }
+                            } else {
+                                Text(
+                                    "Publicar",
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontWeight = FontWeight.Bold, fontSize = 16.sp
+                                    ),
+                                )
+                            }
                         }
                     }
                 }

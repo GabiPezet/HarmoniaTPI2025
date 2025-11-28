@@ -55,6 +55,7 @@ import com.android.harmoniatpi.ui.screens.homeScreen.tabs.projectsScreen.viewmod
 fun ProjectsScreen(
     onNavigateToProjectManagementScreen: () -> Unit,
     onNavigateToVersion: (Project) -> Unit,
+    onNavigateToPremium: () -> Unit,
     viewModel: ProjectViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -70,6 +71,9 @@ fun ProjectsScreen(
     var projectToPublishAsOriginal by remember { mutableStateOf<Project?>(null) }
     //dialogo borrado
     var projectToDelete by remember { mutableStateOf<Project?>(null) }
+    val publishedCount = remember(uiState.myProjects) {
+        uiState.myProjects.count { it.isPublished }
+    }
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -237,7 +241,10 @@ fun ProjectsScreen(
         PublishCloneDialog(
             project = project,
             viewModel = viewModel,
-            onDismiss = { projectToPublishAsClone = null }
+            onDismiss = { projectToPublishAsClone = null },
+            isPremium = sharedState.isPremium,
+            publishedCount = publishedCount,
+            onGoToPremium = onNavigateToPremium
         )
     }
 
@@ -245,7 +252,10 @@ fun ProjectsScreen(
         PublishOriginalDialog(
             project = project,
             viewModel = viewModel,
-            onDismiss = { projectToPublishAsOriginal = null }
+            onDismiss = { projectToPublishAsOriginal = null },
+            isPremium = sharedState.isPremium,
+            publishedCount = publishedCount,
+            onGoToPremium = onNavigateToPremium
         )
     }
 
