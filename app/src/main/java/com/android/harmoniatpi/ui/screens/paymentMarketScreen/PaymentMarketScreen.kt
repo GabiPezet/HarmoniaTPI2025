@@ -4,7 +4,8 @@ import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,7 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Star
+import com.android.harmoniatpi.R
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -49,8 +50,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -140,33 +143,12 @@ fun PaymentMarketScreen(
                     shape = RoundedCornerShape(24.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(premiumBrush),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(48.dp)
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "HoloJam Premium",
-                                style = MaterialTheme.typography.headlineMedium,
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "Lleva tu música al próximo nivel",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color.White.copy(alpha = 0.9f)
-                            )
-                        }
-                    }
+                    Image(
+                        painter = painterResource(id = R.drawable.premium),
+                        contentDescription = "HoloJam Premium Banner",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
 
                 if (uiState.subscriptionId != null) {
@@ -180,7 +162,7 @@ fun PaymentMarketScreen(
                         preferenceId = uiState.preference?.preferenceId,
                         onGenerate = {
                             viewModel.createPreference(
-                                100.0,
+                                7437.25,
                                 "HoloJam Premium"
                             )
                         }, //modificarlo luego
@@ -222,7 +204,7 @@ fun NoSuscritoView(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "$100 / mes",
+            text = "$5 USD / mes",
             style = MaterialTheme.typography.displaySmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary
@@ -238,10 +220,13 @@ fun NoSuscritoView(
         )
 
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            BenefitItem("Acceso a más de 5 pistas")
+            BenefitItem("Acceso a más de 4 pistas")
             BenefitItem("Aislamiento de sonido premium")
-            BenefitItem("Sin publicidad")
-            BenefitItem("Sé partner de HoloJam desde el comienzo")
+            BenefitItem("Más efectos y acceso anticipado")
+            BenefitItem("Publica más de 5 proyectos")
+            BenefitItem("Atención prioritaria")
+            BenefitItem("Sé partner de HoloJam desde el inicio")
+            BenefitItem("Lleva tu música al siguiente nivel")
         }
 
         Spacer(modifier = Modifier.weight(1f))
