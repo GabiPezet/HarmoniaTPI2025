@@ -246,7 +246,10 @@ class ProjectManagementScreenViewModel @Inject constructor(
 
         val timelineWidthInDp = (maxDurationPlusOffset / msPerDpScale).toInt()
 
-        return timelineWidthInDp.coerceAtLeast(500)
+
+        val extraScrollPadding = 300
+
+        return (timelineWidthInDp + extraScrollPadding).coerceAtLeast(500)
     }
 
 
