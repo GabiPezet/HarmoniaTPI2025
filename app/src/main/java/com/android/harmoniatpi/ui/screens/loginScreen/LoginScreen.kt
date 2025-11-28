@@ -206,7 +206,7 @@ private fun LoginForm(
                 onClick = {
                     scope.launch {
                         try {
-                            Log.d("GoogleLogin", "Iniciando flujo con Credential Manager")
+                            Log.d("GoogleLogin", "Iniciando flujo con Credential Manager ")
                             val result = credentialManager.getCredential(
                                 request = credentialRequest,
                                 context = context
