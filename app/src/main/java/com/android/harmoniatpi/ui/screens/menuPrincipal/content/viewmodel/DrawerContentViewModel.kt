@@ -38,7 +38,6 @@ import javax.inject.Inject
 class DrawerContentViewModel @Inject constructor(
     private val logOutUseCase: LogOutFirebaseUseCase,
     private val sharedMenuUiState: SharedMenuUiState,
-    private val getUserPreferencesUseCase: GetUserPreferencesUseCase,
     private val setUserPreferencesUseCase: SetUserPreferencesUseCase,
     private val uploadLocalFileToFirebaseStorage: UploadLocalFileToFirebaseStorage,
     private val getMyPostFromDataBaseUseCase: GetMyPostFromDataBaseUseCase,

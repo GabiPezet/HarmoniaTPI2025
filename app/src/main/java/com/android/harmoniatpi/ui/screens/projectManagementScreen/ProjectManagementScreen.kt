@@ -217,8 +217,12 @@ fun ProjectManagementScreen(
                             viewModel.pasteFromClipboard()
                         },
                         isClipboardFull = state.isClipboardFull,
-                        isPremium = state.isPremium, // USANDO EL UI STATE
-                        currentTrackCount = state.tracks.size // USANDO EL UI STATE
+                        isPremium = state.isPremium,
+                        currentTrackCount = state.tracks.size,
+                        onGoToPremium = {
+                            viewModel.hideBottomSheet()
+                            onNavigateToPremium()
+                        }
                     )
                 }
 

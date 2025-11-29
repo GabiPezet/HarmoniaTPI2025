@@ -420,10 +420,10 @@ class ProjectManagementScreenViewModel @Inject constructor(
 
     fun addNewTrack(sourceType: AudioSourceType) {
         val isPremium = state.value.isPremium // Obtener de UiState
-        if (!isPremium && state.value.tracks.size >= 5) {
+        if (!isPremium && state.value.tracks.size >= 4) {
             Toast.makeText(
                 context,
-                "El límite para usuarios Free es de 5 pistas.",
+                "El límite para usuarios Free es de 4 pistas.",
                 Toast.LENGTH_LONG
             ).show()
             return
@@ -453,10 +453,10 @@ class ProjectManagementScreenViewModel @Inject constructor(
 
     fun importTrackFromFile(uri: Uri) {
         val isPremium = state.value.isPremium
-        if (!isPremium && state.value.tracks.size >= 5) {
+        if (!isPremium && state.value.tracks.size >= 4) {
             Toast.makeText(
                 context,
-                "El límite para usuarios Free es de 5 pistas.",
+                "El límite para usuarios Free es de 4 pistas.",
                 Toast.LENGTH_LONG
             ).show()
             return
@@ -465,12 +465,11 @@ class ProjectManagementScreenViewModel @Inject constructor(
         viewModelScope.launch {
             val tempFile = File(context.cacheDir, "temp_import_${System.currentTimeMillis()}.tmp")
             try {
-                // *** ATENCIÓN: Debes implementar 'getMediaDuration' para obtener la duración real del archivo ***
                 val durationMs = getMediaDuration(uri)
-                if (!isPremium && durationMs > 300000L) { // 5 minutos = 300,000 ms
+                if (!isPremium && durationMs > 180000L) { // 3 minutos = 180,000 ms
                     Toast.makeText(
                         context,
-                        "La duración máxima para usuarios Free es de 5 minutos.",
+                        "La duración máxima para usuarios Free es de 3 minutos.",
                         Toast.LENGTH_LONG
                     ).show()
                     _state.update { it.copy(importAudioLoading = false) }
