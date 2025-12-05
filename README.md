@@ -17,7 +17,7 @@ Básicamente, unimos dos mundos:
 
 | Inicio / Feed | Estudio de Grabación | Perfil de Usuario | Efectos de Audio |
 |:---:|:---:|:---:|:---:|
-| <img width="112" height="305" alt="image" src="https://github.com/user-attachments/assets/71b37d10-548c-4396-bf60-f706410f6387" /> | <img width="112" height="305" alt="image" src="https://github.com/user-attachments/assets/913cc1b3-4fe9-4000-977c-448a87f47778" />  |<img width="112" height="305" alt="image" src="https://github.com/user-attachments/assets/8be1f848-6963-4431-b53b-8f72474dd1ed" /> | <img width="112" height="305" alt="image" src="https://github.com/user-attachments/assets/19bd0626-9f4e-4d0f-8022-53c245e9252b" />|
+| <img width="224" height="610" alt="image" src="https://github.com/user-attachments/assets/71b37d10-548c-4396-bf60-f706410f6387" /> | <img width="224" height="610" alt="image" src="https://github.com/user-attachments/assets/913cc1b3-4fe9-4000-977c-448a87f47778" />  |<img width="224" height="610" alt="image" src="https://github.com/user-attachments/assets/8be1f848-6963-4431-b53b-8f72474dd1ed" /> | <img width="224" height="610" alt="image" src="https://github.com/user-attachments/assets/19bd0626-9f4e-4d0f-8022-53c245e9252b" />|
 
 
 ## Funcionalidades Clave
